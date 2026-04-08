@@ -19,6 +19,26 @@ It is built for people who want a simple desktop interface instead of memorizing
 
 This repository currently targets Windows desktop builds.
 
+## Dependencies
+
+Required system dependencies on Windows:
+
+- Node.js 20+ and npm
+- Rust stable via `rustup`
+- Microsoft Visual Studio Build Tools with the C++ workload
+- Microsoft Edge WebView2 runtime
+
+Required downloader/media tools:
+
+- `yt-dlp`
+- `ffmpeg`
+- `ffprobe`
+
+This source repository intentionally does not include third-party binary dependencies.
+
+- For development, the app can use `yt-dlp`, `ffmpeg`, and `ffprobe` from your system `PATH`
+- For Windows release bundling, place local copies in `nuclear-app/src-tauri/binaries`
+
 ## Download and Run
 
 Use one of the following:
@@ -30,22 +50,48 @@ If you use the portable executable, keep it next to the bundled sidecar tools pl
 
 ## Developer Setup
 
-You need the following on Windows:
+The JavaScript and Rust package dependencies are declared in the repo. Install the system dependencies above first, then install the app packages from the `nuclear-app` directory.
 
-- Node.js 20+ and npm
-- Rust stable toolchain via `rustup`
-- Microsoft Visual Studio C++ build tools for Rust/Tauri native compilation
-- Microsoft Edge WebView2 runtime
+## Compile From Source
 
-The project already declares the JavaScript and Rust dependencies in the repo.
+Install the app dependencies:
 
-This source repository intentionally does not include third-party binary dependencies. Development can use tools from your system `PATH`, and Windows release bundling expects you to provide local copies of these tools in `src-tauri/binaries` before building an installer:
+```powershell
+cd nuclear-app
+npm install
+```
 
-- `yt-dlp`
-- `ffmpeg`
-- `ffprobe`
+Run in development:
 
-## Build from Source
+```powershell
+npm run tauri dev
+```
+
+Run checks:
+
+```powershell
+npm run check
+npm run build
+cd src-tauri
+cargo check
+cargo clippy -- -D warnings
+```
+
+Build a Windows release:
+
+```powershell
+cd ..
+npm run tauri build -- --no-sign -b nsis
+```
+
+Release outputs:
+
+- Portable app in `nuclear-app/src-tauri/target/release`
+- NSIS installer in `nuclear-app/src-tauri/target/release/bundle/nsis`
+
+For installer or portable bundling with sidecars, provide local copies of `yt-dlp`, `ffmpeg`, and `ffprobe` in `nuclear-app/src-tauri/binaries` first.
+
+## More Detail
 
 See [docs/quickstart.md](docs/quickstart.md) for the full setup, development, and release build workflow.
 

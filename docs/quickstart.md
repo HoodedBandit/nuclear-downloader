@@ -30,13 +30,14 @@ Important directories:
 
 - `nuclear-app/src` for the Svelte UI
 - `nuclear-app/src-tauri` for the Rust/Tauri backend
-- `nuclear-app/src-tauri/binaries` for bundled `yt-dlp`, `ffmpeg`, and `ffprobe`
+- `nuclear-app/src-tauri/binaries` for local `yt-dlp`, `ffmpeg`, and `ffprobe` sidecars used in release bundling
 
 ## Install Dependencies
 
 From `nuclear-app`:
 
 ```powershell
+cd nuclear-app
 npm install
 ```
 
@@ -83,6 +84,7 @@ cargo clippy -- -D warnings
 From `nuclear-app`:
 
 ```powershell
+cd nuclear-app
 npm run tauri build -- --no-sign -b nsis
 ```
 
@@ -90,6 +92,23 @@ Useful outputs:
 
 - Portable app binary in `src-tauri/target/release`
 - NSIS installer in `src-tauri/target/release/bundle/nsis`
+
+## Compile Summary
+
+Common commands:
+
+```powershell
+cd nuclear-app
+npm install
+npm run tauri dev
+npm run check
+npm run build
+cd src-tauri
+cargo check
+cargo clippy -- -D warnings
+cd ..
+npm run tauri build -- --no-sign -b nsis
+```
 
 ## Using the App
 
