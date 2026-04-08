@@ -4,6 +4,7 @@ node_modules
 /.svelte-kit
 /package
 /src-tauri/target
+/src-tauri/target-*
 /src-tauri/binaries/*
 !/src-tauri/binaries/
 !/src-tauri/binaries/README.md

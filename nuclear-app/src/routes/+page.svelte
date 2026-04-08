@@ -7,6 +7,7 @@
   type DownloadStatus =
     | "fetching"
     | "ready"
+    | "queued"
     | "downloading"
     | "postprocessing"
     | "completed"
@@ -30,6 +31,7 @@
   type VideoFormat = (typeof videoFormats)[number];
   type AudioFormat = (typeof audioFormats)[number];
   type OutputFormat = VideoFormat | AudioFormat;
+  const MAX_PARALLEL_DOWNLOADS = 5;
 
   interface CookieConfig {
     enabled: boolean;
@@ -115,6 +117,67 @@
     filename: string | null;
   }
 
+  function isActiveStatus(status: DownloadStatus): boolean {
+    return status === "downloading" || status === "postprocessing";
+  }
+
+  function isEditablePendingStatus(status: DownloadStatus): boolean {
+    return status === "ready" || status === "queued";
+  }
+
+  function buildQueueSummary(items: QueueItem[]) {
+    const counts = {
+      total: items.length,
+      ready: 0,
+      downloading: 0,
+      completed: 0,
+      failed: 0,
+    };
+
+    let hasReady = false;
+    let hasSelectedReady = false;
+    let hasActive = false;
+    let hasCompleted = false;
+    let hasSelected = false;
+
+    for (const item of items) {
+      if (item.status === "ready") {
+        counts.ready += 1;
+        hasReady = true;
+        if (item.selected) {
+          hasSelectedReady = true;
+        }
+      }
+
+      if (isActiveStatus(item.status)) {
+        counts.downloading += 1;
+        hasActive = true;
+      }
+
+      if (item.status === "completed") {
+        counts.completed += 1;
+        hasCompleted = true;
+      } else if (item.status === "cancelled") {
+        hasCompleted = true;
+      } else if (item.status === "error") {
+        counts.failed += 1;
+      }
+
+      if (item.selected) {
+        hasSelected = true;
+      }
+    }
+
+    return {
+      counts,
+      hasReady,
+      hasSelectedReady,
+      hasActive,
+      hasCompleted,
+      hasSelected,
+    };
+  }
+
   // -- State --
   let urlInput = $state("");
   let outputDir = $state("");
@@ -133,6 +196,9 @@
   let editingTitleId = $state<string | null>(null);
   let editingTitleDraft = $state("");
   let titleEditorInput = $state<HTMLInputElement | null>(null);
+  let pendingDownloadIds = $state<string[]>([]);
+  let priorityDownloadId = $state<string | null>(null);
+  let schedulerRunning = false;
 
   // -- Lifecycle --
   onMount(() => {
@@ -170,12 +236,30 @@
           queue[idx] = {
             ...queue[idx],
             status: progress.status,
+            downloadId:
+              progress.status === "completed" ||
+              progress.status === "error" ||
+              progress.status === "cancelled"
+                ? null
+                : queue[idx].downloadId,
             progress: progress.progress,
-            speed: progress.speed ?? "",
-            eta: progress.eta ?? "",
+            speed: progress.status === "completed" || progress.status === "error" || progress.status === "cancelled"
+              ? ""
+              : progress.speed ?? "",
+            eta: progress.status === "completed" || progress.status === "error" || progress.status === "cancelled"
+              ? ""
+              : progress.eta ?? "",
             error: progress.error ? normalizeDownloadError(progress.error) : null,
             filename: progress.filename ?? queue[idx].filename,
           };
+
+          if (
+            progress.status === "completed" ||
+            progress.status === "error" ||
+            progress.status === "cancelled"
+          ) {
+            void pumpDownloadQueue();
+          }
         }
       );
     };
@@ -242,6 +326,152 @@
     return null;
   }
 
+  function getQueueUrls(): Set<string> {
+    return new Set(queue.map((item) => item.url));
+  }
+
+  function getActiveDownloadCount(): number {
+    let activeCount = 0;
+    for (const item of queue) {
+      if (isActiveStatus(item.status)) {
+        activeCount += 1;
+      }
+    }
+    return activeCount;
+  }
+
+  function enqueueItems(itemIds: string[], prioritize = false): void {
+    const enqueueIds: string[] = [];
+
+    for (const itemId of itemIds) {
+      const item = queue.find((queueItem) => queueItem.id === itemId);
+      if (!item || !isEditablePendingStatus(item.status) || enqueueIds.includes(itemId)) {
+        continue;
+      }
+
+      enqueueIds.push(itemId);
+    }
+
+    if (enqueueIds.length === 0) return;
+
+    const queuedIds = new Set(enqueueIds);
+    queue = queue.map((item) =>
+      queuedIds.has(item.id) && item.status === "ready"
+        ? { ...item, status: "queued" }
+        : item
+    );
+
+    const knownPendingIds = new Set(pendingDownloadIds);
+    pendingDownloadIds = [
+      ...pendingDownloadIds,
+      ...enqueueIds.filter((itemId) => !knownPendingIds.has(itemId)),
+    ];
+
+    if (prioritize) {
+      priorityDownloadId = enqueueIds[0] ?? priorityDownloadId;
+    }
+
+    void pumpDownloadQueue();
+  }
+
+  async function startDownloadForItemId(itemId: string): Promise<boolean> {
+    const idx = queue.findIndex((queueItem) => queueItem.id === itemId);
+    if (idx === -1 || !isEditablePendingStatus(queue[idx].status)) {
+      return false;
+    }
+
+    const downloadId = genId();
+    const request: DownloadRequest = {
+      url: queue[idx].url,
+      quality: queue[idx].quality,
+      format: queue[idx].format,
+      output_dir: outputDir,
+      cookie_config: queue[idx].cookieConfig,
+      filename_override: queue[idx].customFilename,
+    };
+
+    queue[idx] = {
+      ...queue[idx],
+      downloadId,
+      status: "downloading",
+      error: null,
+      progress: 0,
+      speed: "",
+      eta: "",
+    };
+
+    try {
+      await invoke("start_download", { downloadId, request });
+      return true;
+    } catch (error) {
+      const currentIdx = queue.findIndex((queueItem) => queueItem.id === itemId);
+      if (currentIdx !== -1) {
+        queue[currentIdx] = {
+          ...queue[currentIdx],
+          downloadId: null,
+          status: "error",
+          speed: "",
+          eta: "",
+          error: normalizeDownloadError(String(error)),
+        };
+      }
+
+      return false;
+    }
+  }
+
+  async function pumpDownloadQueue(): Promise<void> {
+    if (schedulerRunning) return;
+
+    schedulerRunning = true;
+
+    try {
+      while (
+        pendingDownloadIds.length > 0 &&
+        getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS
+      ) {
+        const prioritizedItemStillQueued =
+          priorityDownloadId &&
+          pendingDownloadIds.includes(priorityDownloadId) &&
+          queue.some(
+            (item) =>
+              item.id === priorityDownloadId &&
+              isEditablePendingStatus(item.status)
+          )
+            ? priorityDownloadId
+            : null;
+
+        if (priorityDownloadId && !prioritizedItemStillQueued) {
+          priorityDownloadId = null;
+        }
+
+        const nextId = prioritizedItemStillQueued ?? pendingDownloadIds[0];
+
+        if (nextId === editingTitleId) {
+          break;
+        }
+
+        pendingDownloadIds = pendingDownloadIds.filter((itemId) => itemId !== nextId);
+        if (priorityDownloadId === nextId) {
+          priorityDownloadId = null;
+        }
+        await startDownloadForItemId(nextId);
+      }
+    } finally {
+      schedulerRunning = false;
+
+      if (
+        pendingDownloadIds.length > 0 &&
+        getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
+        pendingDownloadIds[0] !== editingTitleId
+      ) {
+        queueMicrotask(() => {
+          void pumpDownloadQueue();
+        });
+      }
+    }
+  }
+
   function resolveQualitySelection(
     requestedQuality: string,
     availableQualities: string[]
@@ -274,7 +504,7 @@
   }
 
   function canEditFilename(item: QueueItem): boolean {
-    return item.status === "ready";
+    return isEditablePendingStatus(item.status);
   }
 
   async function beginFilenameEdit(item: QueueItem): Promise<void> {
@@ -315,12 +545,14 @@
     editingTitleId = null;
     editingTitleDraft = "";
     titleEditorInput = null;
+    void pumpDownloadQueue();
   }
 
   function cancelFilenameEdit(): void {
     editingTitleId = null;
     editingTitleDraft = "";
     titleEditorInput = null;
+    void pumpDownloadQueue();
   }
 
   function handleFilenameEditorKeydown(event: KeyboardEvent): void {
@@ -404,7 +636,7 @@
       return;
     }
 
-    if (queue.some((item) => item.url === url)) {
+    if (getQueueUrls().has(url)) {
       urlError = "URL already in queue";
       return;
     }
@@ -483,12 +715,14 @@
     if (!modal) return;
 
     const selectedEntries = modal.entries.filter((entry) => entry.selected);
+    const queuedUrls = getQueueUrls();
     urlInput = "";
     closePlaylistModal();
 
     for (const entry of selectedEntries) {
-      if (!queue.some((item) => item.url === entry.url)) {
+      if (!queuedUrls.has(entry.url)) {
         addSingleVideo(entry.url);
+        queuedUrls.add(entry.url);
       }
     }
   }
@@ -508,53 +742,34 @@
 
   async function downloadItem(item: QueueItem): Promise<void> {
     const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
-    if (idx === -1 || queue[idx].status !== "ready") return;
+    if (idx === -1 || !isEditablePendingStatus(queue[idx].status)) return;
 
-    const downloadId = genId();
-      const request: DownloadRequest = {
-      url: queue[idx].url,
-      quality: queue[idx].quality,
-      format: queue[idx].format,
-      output_dir: outputDir,
-      cookie_config: queue[idx].cookieConfig,
-      filename_override: queue[idx].customFilename,
-    };
-
-    queue[idx] = {
-      ...queue[idx],
-      downloadId,
-      status: "downloading",
-      error: null,
-      progress: 0,
-    };
-
-    try {
-      await invoke("start_download", { downloadId, request });
-    } catch (error) {
-      queue[idx] = {
-        ...queue[idx],
-        downloadId: null,
-        status: "error",
-        error: normalizeDownloadError(String(error)),
-      };
+    if (
+      pendingDownloadIds.length === 0 &&
+      getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
+      !schedulerRunning
+    ) {
+      await startDownloadForItemId(item.id);
+      return;
     }
+
+    enqueueItems([item.id], true);
   }
 
   async function downloadAll(): Promise<void> {
-    const ready = queue.filter((item) => item.status === "ready");
-    for (const item of ready) {
-      await downloadItem(item);
-    }
+    const readyIds = queue
+      .filter((item) => item.status === "ready")
+      .map((item) => item.id);
+    enqueueItems(readyIds);
   }
 
   async function downloadSelected(): Promise<void> {
-    const selected = queue.filter(
+    const selectedIds = queue
+      .filter(
       (item) => item.selected && item.status === "ready"
-    );
-
-    for (const item of selected) {
-      await downloadItem(item);
-    }
+    )
+      .map((item) => item.id);
+    enqueueItems(selectedIds);
   }
 
   async function cancelItem(item: QueueItem): Promise<void> {
@@ -579,12 +794,23 @@
   }
 
   function removeSelected(): void {
-    queue = queue.filter(
-      (item) =>
-        !item.selected ||
-        item.status === "downloading" ||
-        item.status === "postprocessing"
+    const removableIds = new Set(
+      queue
+        .filter((item) => item.selected && !isActiveStatus(item.status))
+        .map((item) => item.id)
     );
+
+    if (removableIds.size === 0) return;
+
+    queue = queue.filter((item) => !removableIds.has(item.id));
+    pendingDownloadIds = pendingDownloadIds.filter((itemId) => !removableIds.has(itemId));
+    if (priorityDownloadId && removableIds.has(priorityDownloadId)) {
+      priorityDownloadId = null;
+    }
+
+    if (editingTitleId && removableIds.has(editingTitleId)) {
+      cancelFilenameEdit();
+    }
   }
 
   function clearCompleted(): void {
@@ -595,13 +821,17 @@
 
   function applyGlobalQuality(): void {
     queue = queue.map((item) =>
-      item.status === "ready" ? { ...item, quality: globalQuality } : item
+      isEditablePendingStatus(item.status)
+        ? { ...item, quality: globalQuality }
+        : item
     );
   }
 
   function applyGlobalFormat(): void {
     queue = queue.map((item) =>
-      item.status === "ready" ? { ...item, format: globalFormat } : item
+      isEditablePendingStatus(item.status)
+        ? { ...item, format: globalFormat }
+        : item
     );
   }
 
@@ -612,33 +842,7 @@
   }
 
   // -- Derived --
-  let counts = $derived({
-    total: queue.length,
-    ready: queue.filter((item) => item.status === "ready").length,
-    downloading: queue.filter(
-      (item) =>
-        item.status === "downloading" || item.status === "postprocessing"
-    ).length,
-    completed: queue.filter((item) => item.status === "completed").length,
-    failed: queue.filter((item) => item.status === "error").length,
-  });
-
-  let hasReady = $derived(queue.some((item) => item.status === "ready"));
-  let hasSelectedReady = $derived(
-    queue.some((item) => item.selected && item.status === "ready")
-  );
-  let hasActive = $derived(
-    queue.some(
-      (item) =>
-        item.status === "downloading" || item.status === "postprocessing"
-    )
-  );
-  let hasCompleted = $derived(
-    queue.some(
-      (item) => item.status === "completed" || item.status === "cancelled"
-    )
-  );
-  let hasSelected = $derived(queue.some((item) => item.selected));
+  let queueSummary = $derived(buildQueueSummary(queue));
 </script>
 
 <svelte:window onkeydown={handleWindowKeydown} />
@@ -746,11 +950,11 @@
 
   <!-- Action Buttons -->
   <section class="actions">
-    <button class="primary" onclick={downloadAll} disabled={!hasReady}>Download All</button>
-    <button onclick={downloadSelected} disabled={!hasSelectedReady}>Download Selected</button>
-    <button onclick={removeSelected} disabled={!hasSelected}>Remove Selected</button>
-    <button onclick={clearCompleted} disabled={!hasCompleted}>Clear Done</button>
-    <button class="danger" onclick={cancelAll} disabled={!hasActive}>Cancel All</button>
+    <button class="primary" onclick={downloadAll} disabled={!queueSummary.hasReady}>Download All</button>
+    <button onclick={downloadSelected} disabled={!queueSummary.hasSelectedReady}>Download Selected</button>
+    <button onclick={removeSelected} disabled={!queueSummary.hasSelected}>Remove Selected</button>
+    <button onclick={clearCompleted} disabled={!queueSummary.hasCompleted}>Clear Done</button>
+    <button class="danger" onclick={cancelAll} disabled={!queueSummary.hasActive}>Cancel All</button>
   </section>
 
   <!-- Queue Table -->
@@ -788,7 +992,14 @@
               <td class="col-title" title={item.url}>
                 <div class="title-cell">
                   {#if item.thumbnail}
-                    <img src={item.thumbnail} alt="" class="thumb" />
+                    <img
+                      src={item.thumbnail}
+                      alt=""
+                      class="thumb"
+                      loading="lazy"
+                      decoding="async"
+                      referrerpolicy="no-referrer"
+                    />
                   {/if}
                   <div class="title-info">
                     {#if editingTitleId === item.id}
@@ -832,7 +1043,7 @@
                 {/if}
               </td>
               <td class="col-quality">
-                {#if item.status === "ready"}
+                {#if isEditablePendingStatus(item.status)}
                   <select bind:value={queue[i].quality}>
                     {#each item.availableQualities as q}
                       <option value={q}>{q === "best" ? "Best" : q}</option>
@@ -843,7 +1054,7 @@
                 {/if}
               </td>
               <td class="col-format">
-                {#if item.status === "ready"}
+                {#if isEditablePendingStatus(item.status)}
                   <select bind:value={queue[i].format}>
                     <optgroup label="Video">
                       {#each videoFormats as fmt}
@@ -878,7 +1089,7 @@
                 <span class="muted">{item.eta}</span>
               </td>
               <td class="col-actions">
-                {#if item.status === "ready"}
+                {#if isEditablePendingStatus(item.status)}
                   <button class="small primary" onclick={() => downloadItem(item)}>DL</button>
                 {:else if item.status === "downloading" || item.status === "postprocessing"}
                   <button class="small danger" onclick={() => cancelItem(item)}>X</button>
@@ -893,16 +1104,16 @@
 
   <!-- Status Bar -->
   <footer>
-    <span>{counts.total} items</span>
+    <span>{queueSummary.counts.total} items</span>
     <span class="sep">|</span>
-    <span>{counts.ready} ready</span>
+    <span>{queueSummary.counts.ready} ready</span>
     <span class="sep">|</span>
-    <span>{counts.downloading} downloading</span>
+    <span>{queueSummary.counts.downloading} downloading</span>
     <span class="sep">|</span>
-    <span>{counts.completed} done</span>
-    {#if counts.failed > 0}
+    <span>{queueSummary.counts.completed} done</span>
+    {#if queueSummary.counts.failed > 0}
       <span class="sep">|</span>
-      <span class="error-text">{counts.failed} failed</span>
+      <span class="error-text">{queueSummary.counts.failed} failed</span>
     {/if}
   </footer>
 </main>
@@ -953,7 +1164,14 @@
               bind:checked={playlistModal.entries[i].selected}
             />
             {#if entry.thumbnail}
-              <img src={entry.thumbnail} alt="" class="entry-thumb" />
+              <img
+                src={entry.thumbnail}
+                alt=""
+                class="entry-thumb"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              />
             {/if}
             <div class="entry-info">
               <span class="entry-title">{entry.title || entry.id}</span>
@@ -1342,6 +1560,7 @@
   }
   .status-pill.fetching { background: color-mix(in srgb, var(--mauve) 20%, transparent); color: var(--mauve); }
   .status-pill.ready { background: color-mix(in srgb, var(--blue) 20%, transparent); color: var(--blue); }
+  .status-pill.queued { background: color-mix(in srgb, var(--teal) 14%, transparent); color: var(--teal); }
   .status-pill.downloading { background: color-mix(in srgb, var(--teal) 20%, transparent); color: var(--teal); }
   .status-pill.postprocessing { background: color-mix(in srgb, var(--yellow) 20%, transparent); color: var(--yellow); }
   .status-pill.completed { background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }

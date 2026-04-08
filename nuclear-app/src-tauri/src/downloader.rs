@@ -1,17 +1,107 @@
 use crate::models::{CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo};
 use regex::Regex;
-use std::collections::HashMap;
+use serde_json::Deserializer;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::Mutex;
+use url::Url;
+
+const MAX_STDERR_LINES: usize = 32;
+const MAX_STDERR_BYTES: usize = 16 * 1024;
+const VIDEO_FORMATS: &[&str] = &["mp4", "mkv", "webm"];
+const AUDIO_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "opus"];
+const COOKIE_BROWSERS: &[&str] = &["firefox", "chrome", "edge", "brave", "opera", "chromium"];
+
+static DOWNLOAD_PROGRESS_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[download\]\s+([\d.]+)%\s+of").unwrap());
+static DOWNLOAD_SPEED_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"at\s+([\d.]+\w+/s)").unwrap());
+static DOWNLOAD_ETA_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"ETA\s+(\S+)").unwrap());
+static DOWNLOAD_DEST_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[download\] Destination:\s+(.+)").unwrap());
+static DOWNLOAD_MERGE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\[Merger\]|post-?process|\[ExtractAudio\]|converting").unwrap());
+static QUALITY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{3,4}p$").unwrap());
+
+struct TailBuffer {
+    lines: VecDeque<String>,
+    bytes: usize,
+}
+
+impl TailBuffer {
+    fn new() -> Self {
+        Self {
+            lines: VecDeque::new(),
+            bytes: 0,
+        }
+    }
+
+    fn push(&mut self, line: String) {
+        self.bytes += line.len();
+        self.lines.push_back(line);
+
+        while self.lines.len() > MAX_STDERR_LINES || self.bytes > MAX_STDERR_BYTES {
+            if let Some(removed) = self.lines.pop_front() {
+                self.bytes = self.bytes.saturating_sub(removed.len());
+            } else {
+                break;
+            }
+        }
+    }
+
+    fn into_string(self) -> String {
+        self.lines.into_iter().collect::<Vec<_>>().join("\n")
+    }
+}
 
 pub type ActiveDownloads = Arc<Mutex<HashMap<String, tokio::process::Child>>>;
 
 pub fn create_active_downloads() -> ActiveDownloads {
     Arc::new(Mutex::new(HashMap::new()))
+}
+
+pub fn is_allowed_download_url(raw: &str) -> bool {
+    Url::parse(raw)
+        .map(|url| matches!(url.scheme(), "http" | "https"))
+        .unwrap_or(false)
+}
+
+pub fn validate_fetch_request(
+    url: &str,
+    cookie_config: Option<&CookieConfig>,
+) -> Result<(), String> {
+    if !is_allowed_download_url(url) {
+        return Err("Only http:// and https:// URLs are allowed.".into());
+    }
+
+    if let Some(config) = cookie_config {
+        validate_cookie_config(config)?;
+    }
+
+    Ok(())
+}
+
+pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String> {
+    validate_fetch_request(&request.url, request.cookie_config.as_ref())?;
+
+    if !is_allowed_format(&request.format) {
+        return Err("Unsupported output format.".into());
+    }
+
+    if !is_allowed_quality(&request.quality) {
+        return Err("Unsupported quality selection.".into());
+    }
+
+    if request.output_dir.trim().is_empty() {
+        return Err("Output folder is not set.".into());
+    }
+
+    Ok(())
 }
 
 /// Resolve a binary name to the bundled sidecar path if it exists,
@@ -34,6 +124,153 @@ fn ytdlp_bin() -> PathBuf {
 
 fn ffmpeg_bin() -> PathBuf {
     resolve_bin("ffmpeg")
+}
+
+fn validate_cookie_config(config: &CookieConfig) -> Result<(), String> {
+    if !config.enabled {
+        return Ok(());
+    }
+
+    match config.mode.as_str() {
+        "browser" => {
+            if COOKIE_BROWSERS.contains(&config.browser.as_str()) {
+                Ok(())
+            } else {
+                Err("Unsupported browser for cookie import.".into())
+            }
+        }
+        "file" => {
+            if config
+                .cookie_file
+                .as_deref()
+                .map(str::trim)
+                .filter(|path| !path.is_empty())
+                .is_some()
+            {
+                Ok(())
+            } else {
+                Err("Cookie file mode requires a cookies.txt path.".into())
+            }
+        }
+        _ => Err("Unsupported cookie mode.".into()),
+    }
+}
+
+fn append_cookie_args(args: &mut Vec<String>, config: &CookieConfig) {
+    if !config.enabled {
+        return;
+    }
+
+    match config.mode.as_str() {
+        "file" => {
+            if let Some(path) = config.cookie_file.as_deref() {
+                args.push("--cookies".to_string());
+                args.push(path.to_string());
+            }
+        }
+        "browser" => {
+            args.push("--cookies-from-browser".to_string());
+            args.push(config.browser.clone());
+        }
+        _ => {}
+    }
+}
+
+fn configure_cookie_args(cmd: &mut Command, cookie_config: Option<&CookieConfig>) {
+    if let Some(config) = cookie_config {
+        let mut args = Vec::new();
+        append_cookie_args(&mut args, config);
+        cmd.args(args);
+    }
+}
+
+fn is_allowed_format(format: &str) -> bool {
+    VIDEO_FORMATS.contains(&format) || AUDIO_FORMATS.contains(&format)
+}
+
+fn is_allowed_quality(quality: &str) -> bool {
+    quality == "best" || QUALITY_RE.is_match(quality)
+}
+
+fn is_x_or_twitter_url(raw: &str) -> bool {
+    Url::parse(raw)
+        .ok()
+        .and_then(|url| url.host_str().map(|host| host.to_ascii_lowercase()))
+        .map(|host| {
+            host == "x.com"
+                || host.ends_with(".x.com")
+                || host == "twitter.com"
+                || host.ends_with(".twitter.com")
+        })
+        .unwrap_or(false)
+}
+
+fn is_twitter_api_auth_error(message: &str) -> bool {
+    let lower = message.to_ascii_lowercase();
+    lower.contains("guest token")
+        || lower.contains("bad guest token")
+        || lower.contains("failed to query api")
+        || (lower.contains("[twitter]") && lower.contains("unauthorized"))
+}
+
+fn should_retry_with_twitter_syndication(url: &str, message: &str) -> bool {
+    is_x_or_twitter_url(url) && is_twitter_api_auth_error(message)
+}
+
+fn append_twitter_syndication_args(args: &mut Vec<String>, url: &str, enabled: bool) {
+    if enabled && is_x_or_twitter_url(url) {
+        args.push("--extractor-args".to_string());
+        args.push("twitter:api=syndication".to_string());
+    }
+}
+
+fn sanitize_thumbnail_url(raw: Option<&str>) -> Option<String> {
+    raw.and_then(|value| {
+        Url::parse(value)
+            .ok()
+            .filter(|url| url.scheme() == "https")
+            .map(|_| value.to_string())
+    })
+}
+
+fn build_error_message(stderr_output: &str, exit_code: Option<i32>) -> String {
+    if stderr_output.is_empty() {
+        return format!("yt-dlp exited with code {}", exit_code.unwrap_or(-1));
+    }
+
+    stderr_output
+        .lines()
+        .rev()
+        .take(3)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+fn parse_first_json_value(stdout: &str) -> Result<serde_json::Value, String> {
+    serde_json::from_str(stdout).or_else(|primary_error| {
+        let mut stream = Deserializer::from_str(stdout).into_iter::<serde_json::Value>();
+        match stream.next() {
+            Some(Ok(value)) => Ok(value),
+            Some(Err(_)) | None => Err(format!("Failed to parse info: {}", primary_error)),
+        }
+    })
+}
+
+fn spawn_stderr_tail_reader(stderr: tokio::process::ChildStderr) -> tokio::task::JoinHandle<String> {
+    tokio::spawn(async move {
+        let reader = BufReader::new(stderr);
+        let mut lines = reader.lines();
+        let mut tail = TailBuffer::new();
+
+        while let Ok(Some(line)) = lines.next_line().await {
+            tail.push(line);
+        }
+
+        tail.into_string()
+    })
 }
 
 fn sanitize_filename_component(raw: &str) -> Option<String> {
@@ -128,41 +365,56 @@ pub fn ffmpeg_available() -> bool {
         .unwrap_or(false)
 }
 
-pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Result<VideoInfo, String> {
+async fn run_fetch_info_command(
+    url: &str,
+    cookie_config: Option<&CookieConfig>,
+    use_twitter_syndication: bool,
+) -> Result<std::process::Output, String> {
     let bin = ytdlp_bin();
-    let mut cmd = Command::new(&bin);
-    cmd.args(["--dump-json", "--no-download", "--no-playlist", url]);
+    let mut args = vec![
+        "--dump-single-json".to_string(),
+        "--no-download".to_string(),
+        "--no-playlist".to_string(),
+    ];
 
-    if let Some(config) = cookie_config {
-        if config.enabled {
-            match config.mode.as_str() {
-                "file" => {
-                    if let Some(ref path) = config.cookie_file {
-                        cmd.arg("--cookies").arg(path);
-                    }
-                }
-                _ => {
-                    cmd.arg("--cookies-from-browser").arg(&config.browser);
-                }
-            }
-        }
-    }
+    append_twitter_syndication_args(&mut args, url, use_twitter_syndication);
 
-    // Point yt-dlp at our bundled ffmpeg if available
     let ffmpeg = ffmpeg_bin();
     if ffmpeg.exists() {
         if let Some(dir) = ffmpeg.parent() {
-            cmd.arg("--ffmpeg-location").arg(dir);
+            args.push("--ffmpeg-location".to_string());
+            args.push(dir.to_string_lossy().to_string());
         }
     }
+
+    if let Some(config) = cookie_config {
+        append_cookie_args(&mut args, config);
+    }
+
+    args.push(url.to_string());
+
+    let mut cmd = Command::new(&bin);
+    cmd.args(&args);
 
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
 
-    let output = cmd
-        .output()
+    cmd.output()
         .await
-        .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))?;
+        .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))
+}
+
+pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Result<VideoInfo, String> {
+    validate_fetch_request(url, cookie_config)?;
+
+    let mut output = run_fetch_info_command(url, cookie_config, false).await?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if should_retry_with_twitter_syndication(url, &stderr) {
+            output = run_fetch_info_command(url, cookie_config, true).await?;
+        }
+    }
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -170,8 +422,7 @@ pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Resu
     }
 
     let json_str = String::from_utf8_lossy(&output.stdout);
-    let data: serde_json::Value =
-        serde_json::from_str(&json_str).map_err(|e| format!("Failed to parse info: {}", e))?;
+    let data = parse_first_json_value(&json_str)?;
 
     let mut qualities: Vec<String> = Vec::new();
     if let Some(formats) = data["formats"].as_array() {
@@ -202,7 +453,7 @@ pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Resu
             .to_string(),
         duration: data["duration"].as_f64(),
         channel: data["channel"].as_str().map(|s| s.to_string()),
-        thumbnail: data["thumbnail"].as_str().map(|s| s.to_string()),
+        thumbnail: sanitize_thumbnail_url(data["thumbnail"].as_str()),
         url: url.to_string(),
         available_qualities: qualities,
         has_audio,
@@ -210,51 +461,41 @@ pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Resu
 }
 
 pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> Result<PlaylistInfo, String> {
+    validate_fetch_request(url, cookie_config)?;
+
     let bin = ytdlp_bin();
     let mut cmd = Command::new(&bin);
     cmd.args(["--flat-playlist", "--dump-json", "--no-download", url]);
-
-    if let Some(config) = cookie_config {
-        if config.enabled {
-            match config.mode.as_str() {
-                "file" => {
-                    if let Some(ref path) = config.cookie_file {
-                        cmd.arg("--cookies").arg(path);
-                    }
-                }
-                _ => {
-                    cmd.arg("--cookies-from-browser").arg(&config.browser);
-                }
-            }
-        }
-    }
+    configure_cookie_args(&mut cmd, cookie_config);
 
     #[cfg(windows)]
     cmd.creation_flags(0x08000000);
 
-    let output = cmd
-        .output()
-        .await
+    cmd.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+
+    let mut child = cmd
+        .spawn()
         .map_err(|e| format!("Failed to run yt-dlp: {}", e))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("yt-dlp error: {}", stderr.trim()));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let lines: Vec<&str> = stdout.lines().collect();
-
-    if lines.is_empty() {
-        return Err("No entries found in playlist".into());
-    }
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "Failed to capture yt-dlp playlist output.".to_string())?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| "Failed to capture yt-dlp playlist errors.".to_string())?;
+    let stderr_handle = spawn_stderr_tail_reader(stderr);
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
 
     let mut entries: Vec<PlaylistEntry> = Vec::new();
     let mut playlist_title = String::from("Playlist");
     let mut playlist_channel: Option<String> = None;
 
-    for line in &lines {
-        if let Ok(data) = serde_json::from_str::<serde_json::Value>(line) {
+    while let Ok(Some(line)) = lines.next_line().await {
+        if let Ok(data) = serde_json::from_str::<serde_json::Value>(&line) {
             // Extract playlist-level info from first entry
             if entries.is_empty() {
                 if let Some(t) = data["playlist_title"].as_str() {
@@ -278,14 +519,28 @@ pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> 
                 title: data["title"].as_str().map(|s| s.to_string()),
                 duration: data["duration"].as_f64(),
                 url: video_url,
-                thumbnail: data["thumbnails"]
-                    .as_array()
-                    .and_then(|t| t.last())
-                    .and_then(|t| t["url"].as_str())
-                    .or(data["thumbnail"].as_str())
-                    .map(|s| s.to_string()),
+                thumbnail: sanitize_thumbnail_url(
+                    data["thumbnails"]
+                        .as_array()
+                        .and_then(|t| t.last())
+                        .and_then(|t| t["url"].as_str())
+                        .or(data["thumbnail"].as_str()),
+                ),
             });
         }
+    }
+
+    let stderr_output = stderr_handle.await.unwrap_or_default();
+    let status = child
+        .wait()
+        .await
+        .map_err(|e| format!("Failed to wait for yt-dlp: {}", e))?;
+
+    if !status.success() {
+        return Err(format!(
+            "yt-dlp error: {}",
+            build_error_message(&stderr_output, status.code())
+        ));
     }
 
     if entries.is_empty() {
@@ -298,6 +553,150 @@ pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> 
         entry_count: entries.len(),
         entries,
     })
+}
+
+fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool) -> Vec<String> {
+    let mut args: Vec<String> = Vec::new();
+
+    let ffmpeg = ffmpeg_bin();
+    if ffmpeg.exists() {
+        if let Some(dir) = ffmpeg.parent() {
+            args.push("--ffmpeg-location".to_string());
+            args.push(dir.to_string_lossy().to_string());
+        }
+    }
+
+    let is_audio_only = matches!(
+        request.format.as_str(),
+        "mp3" | "flac" | "wav" | "aac" | "opus"
+    );
+
+    if is_audio_only {
+        args.push("-x".to_string());
+        args.push("--audio-format".to_string());
+        args.push(request.format.clone());
+        args.push("--audio-quality".to_string());
+        args.push("0".to_string());
+    } else {
+        let format_selector = if request.quality == "best" {
+            format!(
+                "bestvideo[ext={}]+bestaudio/best[ext={}]/bestvideo+bestaudio/best",
+                request.format, request.format
+            )
+        } else {
+            let height = request.quality.replace('p', "");
+            format!(
+                "bestvideo[height<={}][ext={}]+bestaudio/bestvideo[height<={}]+bestaudio/best[height<={}]/best",
+                height, request.format, height, height
+            )
+        };
+        args.push("-f".to_string());
+        args.push(format_selector);
+        args.push("--merge-output-format".to_string());
+        args.push(request.format.clone());
+    }
+
+    args.push("--newline".to_string());
+    args.push("--progress".to_string());
+    args.push("--no-playlist".to_string());
+    append_twitter_syndication_args(&mut args, &request.url, use_twitter_syndication);
+    args.push("-o".to_string());
+    args.push(build_output_template(request));
+
+    if let Some(config) = request.cookie_config.as_ref() {
+        append_cookie_args(&mut args, config);
+    }
+
+    args.push(request.url.clone());
+    args
+}
+
+enum DownloadAttemptResult {
+    Completed(Option<String>),
+    Cancelled,
+    RetryWithTwitterSyndication,
+    Error(String),
+}
+
+async fn run_download_attempt(
+    emit_progress: &impl Fn(&str, f64, Option<String>, Option<String>, Option<String>, Option<String>),
+    download_id: &str,
+    request: &DownloadRequest,
+    active: ActiveDownloads,
+    use_twitter_syndication: bool,
+) -> DownloadAttemptResult {
+    let args = build_download_args(request, use_twitter_syndication);
+
+    let bin = ytdlp_bin();
+    let mut cmd = Command::new(&bin);
+    cmd.args(&args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+
+    #[cfg(windows)]
+    cmd.creation_flags(0x08000000);
+
+    let mut child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            return DownloadAttemptResult::Error(format!("Failed to start yt-dlp: {}", error));
+        }
+    };
+
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+
+    {
+        let mut downloads = active.lock().await;
+        downloads.insert(download_id.to_string(), child);
+    }
+
+    let stderr_handle = spawn_stderr_tail_reader(stderr);
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+    let mut last_filename: Option<String> = None;
+
+    while let Ok(Some(line)) = lines.next_line().await {
+        if let Some(caps) = DOWNLOAD_DEST_RE.captures(&line) {
+            last_filename = Some(caps[1].trim().to_string());
+        }
+
+        if let Some(caps) = DOWNLOAD_PROGRESS_RE.captures(&line) {
+            let pct: f64 = caps[1].parse().unwrap_or(0.0);
+            let speed = DOWNLOAD_SPEED_RE.captures(&line).map(|c| c[1].to_string());
+            let eta = DOWNLOAD_ETA_RE.captures(&line).map(|c| c[1].to_string());
+            emit_progress("downloading", pct, speed, eta, None, last_filename.clone());
+        } else if DOWNLOAD_MERGE_RE.is_match(&line) {
+            emit_progress("postprocessing", 100.0, None, None, None, last_filename.clone());
+        }
+    }
+
+    let stderr_output = stderr_handle.await.unwrap_or_default();
+
+    let maybe_child = {
+        let mut downloads = active.lock().await;
+        downloads.remove(download_id)
+    };
+
+    let status = if let Some(mut child) = maybe_child {
+        child.wait().await.ok()
+    } else {
+        return DownloadAttemptResult::Cancelled;
+    };
+
+    match status {
+        Some(s) if s.success() => DownloadAttemptResult::Completed(last_filename),
+        Some(s) => {
+            if !use_twitter_syndication
+                && should_retry_with_twitter_syndication(&request.url, &stderr_output)
+            {
+                DownloadAttemptResult::RetryWithTwitterSyndication
+            } else {
+                DownloadAttemptResult::Error(build_error_message(&stderr_output, s.code()))
+            }
+        }
+        None => DownloadAttemptResult::Error("Process terminated unexpectedly".into()),
+    }
 }
 
 pub async fn start_download(
@@ -347,171 +746,45 @@ pub async fn start_download(
 
     emit_progress("downloading", 0.0, None, None, None, None);
 
-    let mut args: Vec<String> = Vec::new();
+    let mut use_twitter_syndication = false;
 
-    // Point yt-dlp at our bundled ffmpeg
-    let ffmpeg = ffmpeg_bin();
-    if ffmpeg.exists() {
-        if let Some(dir) = ffmpeg.parent() {
-            args.push("--ffmpeg-location".to_string());
-            args.push(dir.to_string_lossy().to_string());
-        }
-    }
-
-    let is_audio_only = matches!(
-        request.format.as_str(),
-        "mp3" | "flac" | "wav" | "aac" | "opus"
-    );
-
-    if is_audio_only {
-        args.push("-x".to_string());
-        args.push("--audio-format".to_string());
-        args.push(request.format.clone());
-        args.push("--audio-quality".to_string());
-        args.push("0".to_string());
-    } else {
-        let format_selector = if request.quality == "best" {
-            format!("bestvideo[ext={}]+bestaudio/best[ext={}]/bestvideo+bestaudio/best", request.format, request.format)
-        } else {
-            let height = request.quality.replace("p", "");
-            format!(
-                "bestvideo[height<={}][ext={}]+bestaudio/bestvideo[height<={}]+bestaudio/best[height<={}]/best",
-                height, request.format, height, height
-            )
-        };
-        args.push("-f".to_string());
-        args.push(format_selector);
-        args.push("--merge-output-format".to_string());
-        args.push(request.format.clone());
-    }
-
-    args.push("--newline".to_string());
-    args.push("--progress".to_string());
-    args.push("--no-playlist".to_string());
-    args.push("-o".to_string());
-    args.push(build_output_template(&request));
-    if let Some(ref config) = request.cookie_config {
-        if config.enabled {
-            match config.mode.as_str() {
-                "file" => {
-                    if let Some(ref path) = config.cookie_file {
-                        args.push("--cookies".to_string());
-                        args.push(path.clone());
-                    }
-                }
-                _ => {
-                    args.push("--cookies-from-browser".to_string());
-                    args.push(config.browser.clone());
-                }
+    loop {
+        match run_download_attempt(
+            &emit_progress,
+            &download_id,
+            &request,
+            active.clone(),
+            use_twitter_syndication,
+        )
+        .await
+        {
+            DownloadAttemptResult::Completed(filename) => {
+                emit_progress("completed", 100.0, None, None, None, filename);
+                return;
             }
-        }
-    }
-
-    args.push(request.url.clone());
-
-    let bin = ytdlp_bin();
-    let mut cmd = Command::new(&bin);
-    cmd.args(&args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped());
-
-    #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
-
-    let child_result = cmd.spawn();
-
-    let mut child = match child_result {
-        Ok(c) => c,
-        Err(e) => {
-            emit_progress("error", 0.0, None, None, Some(format!("Failed to start yt-dlp: {}", e)), None);
-            return;
-        }
-    };
-
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-
-    {
-        let mut downloads = active.lock().await;
-        downloads.insert(download_id.clone(), child);
-    }
-
-    // Collect stderr in background for error reporting
-    let stderr_handle = tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
-        let mut collected = String::new();
-        while let Ok(Some(line)) = lines.next_line().await {
-            if !collected.is_empty() {
-                collected.push('\n');
+            DownloadAttemptResult::Cancelled => {
+                emit_progress("cancelled", 0.0, None, None, None, None);
+                return;
             }
-            collected.push_str(&line);
-        }
-        collected
-    });
-
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
-
-    let progress_re = Regex::new(r"\[download\]\s+([\d.]+)%\s+of").unwrap();
-    let speed_re = Regex::new(r"at\s+([\d.]+\w+/s)").unwrap();
-    let eta_re = Regex::new(r"ETA\s+(\S+)").unwrap();
-    let dest_re = Regex::new(r"\[download\] Destination:\s+(.+)").unwrap();
-    let merge_re = Regex::new(r"\[Merger\]|post-?process|\[ExtractAudio\]|converting").unwrap();
-
-    let mut last_filename: Option<String> = None;
-
-    while let Ok(Some(line)) = lines.next_line().await {
-        if let Some(caps) = dest_re.captures(&line) {
-            last_filename = Some(caps[1].trim().to_string());
-        }
-
-        if let Some(caps) = progress_re.captures(&line) {
-            let pct: f64 = caps[1].parse().unwrap_or(0.0);
-            let speed = speed_re.captures(&line).map(|c| c[1].to_string());
-            let eta = eta_re.captures(&line).map(|c| c[1].to_string());
-            emit_progress("downloading", pct, speed, eta, None, last_filename.clone());
-        } else if merge_re.is_match(&line) {
-            emit_progress("postprocessing", 100.0, None, None, None, last_filename.clone());
-        }
-    }
-
-    let stderr_output = stderr_handle.await.unwrap_or_default();
-
-    let status = {
-        let mut downloads = active.lock().await;
-        if let Some(mut child) = downloads.remove(&download_id) {
-            child.wait().await.ok()
-        } else {
-            emit_progress("cancelled", 0.0, None, None, None, None);
-            return;
-        }
-    };
-
-    match status {
-        Some(s) if s.success() => {
-            emit_progress("completed", 100.0, None, None, None, last_filename);
-        }
-        Some(s) => {
-            let err_msg = if stderr_output.is_empty() {
-                format!("yt-dlp exited with code {}", s.code().unwrap_or(-1))
-            } else {
-                // Take last meaningful lines from stderr
-                let last_lines: Vec<&str> = stderr_output.lines().rev().take(3).collect();
-                last_lines.into_iter().rev().collect::<Vec<_>>().join(" | ")
-            };
-            emit_progress("error", 0.0, None, None, Some(err_msg), None);
-        }
-        None => {
-            emit_progress("error", 0.0, None, None, Some("Process terminated unexpectedly".into()), None);
+            DownloadAttemptResult::RetryWithTwitterSyndication => {
+                use_twitter_syndication = true;
+            }
+            DownloadAttemptResult::Error(error) => {
+                emit_progress("error", 0.0, None, None, Some(error), None);
+                return;
+            }
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::build_output_template;
-    use crate::models::DownloadRequest;
+    use super::{
+        build_output_template, is_twitter_api_auth_error, is_x_or_twitter_url,
+        parse_first_json_value, sanitize_thumbnail_url, should_retry_with_twitter_syndication,
+        validate_download_request, validate_fetch_request,
+    };
+    use crate::models::{CookieConfig, DownloadRequest};
 
     #[test]
     fn uses_default_template_without_override() {
@@ -563,12 +836,96 @@ mod tests {
             "C:/Users/Mr.W/100%%Downloads/CON_ 100%%_.%(ext)s"
         );
     }
+
+    #[test]
+    fn rejects_non_http_download_urls() {
+        let request = DownloadRequest {
+            url: "file:///C:/Users/Mr.W/video.mp4".into(),
+            quality: "best".into(),
+            format: "mp4".into(),
+            output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
+            cookie_config: None,
+            filename_override: None,
+        };
+
+        assert!(validate_download_request(&request).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_output_format() {
+        let request = DownloadRequest {
+            url: "https://example.com/video".into(),
+            quality: "best".into(),
+            format: "avi".into(),
+            output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
+            cookie_config: None,
+            filename_override: None,
+        };
+
+        assert!(validate_download_request(&request).is_err());
+    }
+
+    #[test]
+    fn rejects_cookie_file_mode_without_path() {
+        let cookie_config = CookieConfig {
+            enabled: true,
+            mode: "file".into(),
+            browser: "firefox".into(),
+            cookie_file: Some("   ".into()),
+        };
+
+        assert!(validate_fetch_request("https://example.com/video", Some(&cookie_config)).is_err());
+    }
+
+    #[test]
+    fn keeps_only_https_thumbnail_urls() {
+        assert_eq!(
+            sanitize_thumbnail_url(Some("https://example.com/thumb.jpg")),
+            Some("https://example.com/thumb.jpg".into())
+        );
+        assert_eq!(sanitize_thumbnail_url(Some("http://example.com/thumb.jpg")), None);
+        assert_eq!(sanitize_thumbnail_url(Some("file:///C:/thumb.jpg")), None);
+    }
+
+    #[test]
+    fn parses_first_json_value_from_multiple_documents() {
+        let value = parse_first_json_value("{\"id\":\"one\"}\n{\"id\":\"two\"}").unwrap();
+        assert_eq!(value["id"].as_str(), Some("one"));
+    }
+
+    #[test]
+    fn identifies_x_and_twitter_hosts() {
+        assert!(is_x_or_twitter_url("https://x.com/user/status/1"));
+        assert!(is_x_or_twitter_url("https://twitter.com/user/status/1"));
+        assert!(is_x_or_twitter_url("https://mobile.twitter.com/user/status/1"));
+        assert!(!is_x_or_twitter_url("https://example.com/video"));
+    }
+
+    #[test]
+    fn detects_twitter_guest_auth_failures() {
+        assert!(is_twitter_api_auth_error(
+            "ERROR: [twitter] 12345: Failed to query API: Bad guest token"
+        ));
+        assert!(should_retry_with_twitter_syndication(
+            "https://x.com/user/status/1",
+            "ERROR: [twitter] 12345: Failed to query API: Bad guest token"
+        ));
+        assert!(!should_retry_with_twitter_syndication(
+            "https://example.com/video",
+            "ERROR: [twitter] 12345: Failed to query API: Bad guest token"
+        ));
+    }
 }
 
 pub async fn cancel_download(download_id: &str, active: ActiveDownloads) -> Result<(), String> {
-    let mut downloads = active.lock().await;
-    if let Some(mut child) = downloads.remove(download_id) {
+    let child = {
+        let mut downloads = active.lock().await;
+        downloads.remove(download_id)
+    };
+
+    if let Some(mut child) = child {
         child.kill().await.map_err(|e| format!("Failed to cancel: {}", e))?;
+        let _ = child.wait().await;
         Ok(())
     } else {
         Err("Download not found or already finished".into())

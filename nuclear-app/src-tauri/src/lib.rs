@@ -3,7 +3,6 @@ mod models;
 
 use downloader::{ActiveDownloads, create_active_downloads};
 use models::DownloadRequest;
-use regex::Regex;
 use tauri::State;
 
 struct AppState {
@@ -12,18 +11,18 @@ struct AppState {
 
 #[tauri::command]
 fn validate_url(url: &str) -> bool {
-    Regex::new(r"^https?://[^\s/$.?#].[^\s]*$")
-        .map(|re| re.is_match(url))
-        .unwrap_or(false)
+    downloader::is_allowed_download_url(url)
 }
 
 #[tauri::command]
 async fn fetch_video_info(url: String, cookie_config: Option<models::CookieConfig>) -> Result<models::VideoInfo, String> {
+    downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
     downloader::fetch_info(&url, cookie_config.as_ref()).await
 }
 
 #[tauri::command]
 async fn fetch_playlist_info(url: String, cookie_config: Option<models::CookieConfig>) -> Result<models::PlaylistInfo, String> {
+    downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
     downloader::fetch_playlist(&url, cookie_config.as_ref()).await
 }
 
@@ -34,6 +33,7 @@ async fn start_download(
     download_id: String,
     request: DownloadRequest,
 ) -> Result<(), String> {
+    downloader::validate_download_request(&request)?;
     let active = state.active_downloads.clone();
     tauri::async_runtime::spawn(async move {
         downloader::start_download(app, download_id, request, active).await;
@@ -89,7 +89,6 @@ pub fn run() {
     let cleanup_downloads = active_downloads.clone();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
             active_downloads,
@@ -108,9 +107,14 @@ pub fn run() {
             if let tauri::WindowEvent::Destroyed = event {
                 let downloads = cleanup_downloads.clone();
                 tauri::async_runtime::spawn(async move {
-                    let mut map = downloads.lock().await;
-                    for (_, mut child) in map.drain() {
+                    let children = {
+                        let mut map = downloads.lock().await;
+                        map.drain().map(|(_, child)| child).collect::<Vec<_>>()
+                    };
+
+                    for mut child in children {
                         let _ = child.kill().await;
+                        let _ = child.wait().await;
                     }
                 });
             }

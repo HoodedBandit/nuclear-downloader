@@ -1,6 +1,6 @@
 {
   "name": "nuclear",
-  "version": "0.3.0",
+  "version": "0.3.5",
   "description": "Nuclear Downloader is an easy-to-use Windows desktop downloader for YouTube, X, and other yt-dlp-supported sites.",
   "type": "module",
   "scripts": {
@@ -14,8 +14,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-dialog": "^2.6.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.6",

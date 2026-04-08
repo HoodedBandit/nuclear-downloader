@@ -1,6 +1,6 @@
 [package]
 name = "nuclear"
-version = "0.3.0"
+version = "0.3.5"
 description = "Nuclear Downloader is an easy-to-use Windows desktop downloader for YouTube, X, and other yt-dlp-supported sites."
 authors = ["HoodedBandit"]
 edition = "2021"
@@ -16,7 +16,6 @@ serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -24,3 +23,4 @@ tokio = { version = "1", features = ["process", "io-util", "sync", "time", "rt"]
 uuid = { version = "1", features = ["v4"] }
 regex = "1"
 dirs = "5"
+url = "2"
