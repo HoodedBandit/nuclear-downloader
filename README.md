@@ -95,6 +95,14 @@ For installer or portable bundling with sidecars, provide local copies of `yt-dl
 
 See [docs/quickstart.md](docs/quickstart.md) for the full setup, development, and release build workflow.
 
+## License
+
+This repository is source-available, not open-source.
+
+All rights are reserved by the author. You may not use, copy, modify, or distribute this code without explicit written permission.
+
+See [LICENSE](LICENSE) for the full terms.
+
 ## Login-Required Downloads
 
 Some supported sites require login before media can be fetched. Nuclear Downloader supports:

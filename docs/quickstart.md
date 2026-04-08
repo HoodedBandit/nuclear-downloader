@@ -138,3 +138,7 @@ Do not assume every site or embedded player will work identically.
 ## Legal Note
 
 Use this tool only when you have permission to access and download the content. Do not use it to violate copyright, terms of service, or DMCA restrictions.
+
+## Source Code License
+
+The repository source code is distributed under the custom terms in the root [LICENSE](../LICENSE). It is not an open-source license, and reuse or redistribution requires explicit written permission from the author.
