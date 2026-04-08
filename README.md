@@ -1,5 +1,7 @@
 # Nuclear Downloader
 
+If you want to support my work, donations are welcome: [ko-fi.com/hoodedbandit](https://ko-fi.com/hoodedbandit)
+
 Nuclear Downloader is an easy-to-use Windows desktop app for downloading videos from YouTube, X (Twitter), and many other sites supported by `yt-dlp`.
 
 It is built for people who want a simple desktop interface instead of memorizing command-line flags. Paste a URL, choose format and quality, optionally provide cookies for login-required downloads, and download to your chosen folder.
@@ -41,12 +43,13 @@ This source repository intentionally does not include third-party binary depende
 
 ## Download and Run
 
-Use one of the following:
+Prebuilt downloads are published on the GitHub Releases page:
 
-- NSIS installer from `nuclear-app/src-tauri/target/release/bundle/nsis`
-- Portable executable from `nuclear-app/src-tauri/target/release`
+- [GitHub Releases](https://github.com/HoodedBandit/nuclear-downloader/releases)
 
-If you use the portable executable, keep it next to the bundled sidecar tools placed in the same release folder.
+This source repository does not store release `.exe` files. If you want a ready-to-run installer or portable build, download it from Releases.
+
+If you want to create your own local build instead, use the compile steps below.
 
 ## Developer Setup
 
