@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.0 - 2026-04-11
+
+- Fixed queue-wide cancellation so `Cancel All` now stops active work, clears queued starts, and prevents the scheduler from immediately restarting new downloads mid-cancel.
+- Changed pending downloads to use the current cookie settings at the moment they start, which makes auth-required downloads more reliable after switching browsers or updating `cookies.txt`.
+- Added in-place retry for failed and cancelled rows, along with clearer auth-specific error messages for X/Twitter guest-token failures and stale or locked cookie sources.
+- Reused already-fetched playlist metadata when adding batches to the queue instead of re-querying every selected entry, reducing extractor churn and auth-related failure surface.
+- Tightened `cookies.txt` validation so missing files fail early with a clear error before `yt-dlp` is spawned.
+
 ## v0.3.5 - 2026-04-08
 
 - Fixed X and Twitter downloads that were failing with `Failed to query API` and `Bad guest token` errors by retrying through a safer `yt-dlp` fallback path.

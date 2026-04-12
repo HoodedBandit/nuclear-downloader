@@ -2,7 +2,7 @@ use crate::models::{CookieConfig, DownloadProgress, DownloadRequest, PlaylistEnt
 use regex::Regex;
 use serde_json::Deserializer;
 use std::collections::{HashMap, VecDeque};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -140,14 +140,17 @@ fn validate_cookie_config(config: &CookieConfig) -> Result<(), String> {
             }
         }
         "file" => {
-            if config
+            if let Some(path) = config
                 .cookie_file
                 .as_deref()
                 .map(str::trim)
                 .filter(|path| !path.is_empty())
-                .is_some()
             {
-                Ok(())
+                if Path::new(path).is_file() {
+                    Ok(())
+                } else {
+                    Err("Cookie file was not found.".into())
+                }
             } else {
                 Err("Cookie file mode requires a cookies.txt path.".into())
             }
@@ -872,6 +875,26 @@ mod tests {
             mode: "file".into(),
             browser: "firefox".into(),
             cookie_file: Some("   ".into()),
+        };
+
+        assert!(validate_fetch_request("https://example.com/video", Some(&cookie_config)).is_err());
+    }
+
+    #[test]
+    fn rejects_missing_cookie_file() {
+        let missing_path = std::env::temp_dir().join(format!(
+            "nuclear-missing-cookie-{}.txt",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+
+        let cookie_config = CookieConfig {
+            enabled: true,
+            mode: "file".into(),
+            browser: "firefox".into(),
+            cookie_file: Some(missing_path.to_string_lossy().to_string()),
         };
 
         assert!(validate_fetch_request("https://example.com/video", Some(&cookie_config)).is_err());

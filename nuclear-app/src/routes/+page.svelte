@@ -28,6 +28,15 @@
 
   const videoFormats = ["mp4", "mkv", "webm"] as const;
   const audioFormats = ["mp3", "flac", "wav", "aac", "opus"] as const;
+  const defaultQualityOptions = [
+    "best",
+    "2160p",
+    "1440p",
+    "1080p",
+    "720p",
+    "480p",
+    "360p",
+  ] as const;
   type VideoFormat = (typeof videoFormats)[number];
   type AudioFormat = (typeof audioFormats)[number];
   type OutputFormat = VideoFormat | AudioFormat;
@@ -85,6 +94,7 @@
     duration: number | null;
     channel: string | null;
     thumbnail: string | null;
+    infoLoaded: boolean;
     status: DownloadStatus;
     quality: string;
     format: OutputFormat;
@@ -199,6 +209,7 @@
   let pendingDownloadIds = $state<string[]>([]);
   let priorityDownloadId = $state<string | null>(null);
   let schedulerRunning = false;
+  let schedulerPaused = false;
 
   // -- Lifecycle --
   onMount(() => {
@@ -296,14 +307,33 @@
 
   function normalizeDownloadError(message: string): string {
     if (
-      /saml|oauth|microsoftonline|okta|shibboleth/i.test(message) ||
+      /(guest token|bad guest token|failed to query api|unauthorized)/i.test(
+        message
+      ) &&
+      /(twitter|x\.com|\[twitter\])/i.test(message)
+    ) {
+      return "X blocked anonymous access. Enable Cookies and make sure you're logged in, then retry.";
+    }
+
+    if (
+      /saml|oauth|microsoftonline|okta|shibboleth|login required|authentication required|sign.?in to confirm|private video|members-only|age-restricted|confirm you'?re not a bot/i.test(
+        message
+      ) ||
       (/Unsupported URL/i.test(message) && /login|auth|sign.?in/i.test(message))
     ) {
       return "This site requires login. Enable Cookies (use Firefox or a cookies.txt file) and make sure you're logged in.";
     }
 
-    if (/[Cc]ould not copy.*cookie|cookie.*database/i.test(message)) {
+    if (
+      /[Cc]ould not copy.*cookie|cookie.*database|cookies-from-browser|decrypt.*cookie|cookie.*locked/i.test(
+        message
+      )
+    ) {
       return "Browser cookie database is locked. Close your browser first, or switch to Firefox/cookie file mode.";
+    }
+
+    if (/cookie.*expired|cookies? are no longer valid|session expired/i.test(message)) {
+      return "Your login cookies were rejected. Refresh them from Firefox or export a new cookies.txt file and retry.";
     }
 
     return message;
@@ -318,6 +348,15 @@
       browser: cookieBrowser,
       cookie_file: cookieMode === "file" ? cookieFilePath || null : null,
     };
+  }
+
+  function getCookieConfigSnapshot(): CookieConfig | null {
+    const config = getCookieConfig();
+    return config ? { ...config } : null;
+  }
+
+  function createDefaultQualityOptions(): string[] {
+    return [...defaultQualityOptions];
   }
 
   function pickFirstPath(selection: string | string[] | null): string | null {
@@ -338,6 +377,46 @@
       }
     }
     return activeCount;
+  }
+
+  function getNextPendingDownloadId(): string | null {
+    const prioritizedItemStillQueued =
+      priorityDownloadId &&
+      pendingDownloadIds.includes(priorityDownloadId) &&
+      queue.some(
+        (item) =>
+          item.id === priorityDownloadId && isEditablePendingStatus(item.status)
+      )
+        ? priorityDownloadId
+        : null;
+
+    if (priorityDownloadId && !prioritizedItemStillQueued) {
+      priorityDownloadId = null;
+    }
+
+    return prioritizedItemStillQueued ?? pendingDownloadIds[0] ?? null;
+  }
+
+  function clearPendingQueue(resetQueuedToReady = true): void {
+    const pendingIds = new Set(pendingDownloadIds);
+    if (priorityDownloadId) {
+      pendingIds.add(priorityDownloadId);
+    }
+
+    pendingDownloadIds = [];
+    priorityDownloadId = null;
+
+    if (!resetQueuedToReady || pendingIds.size === 0) return;
+
+    queue = queue.map((item) =>
+      pendingIds.has(item.id) && item.status === "queued"
+        ? { ...item, status: "ready" }
+        : item
+    );
+  }
+
+  function canRetryItem(item: QueueItem): boolean {
+    return item.status === "error" || item.status === "cancelled";
   }
 
   function enqueueItems(itemIds: string[], prioritize = false): void {
@@ -381,18 +460,20 @@
     }
 
     const downloadId = genId();
+    const cookieConfig = getCookieConfigSnapshot();
     const request: DownloadRequest = {
       url: queue[idx].url,
       quality: queue[idx].quality,
       format: queue[idx].format,
       output_dir: outputDir,
-      cookie_config: queue[idx].cookieConfig,
+      cookie_config: cookieConfig,
       filename_override: queue[idx].customFilename,
     };
 
     queue[idx] = {
       ...queue[idx],
       downloadId,
+      cookieConfig,
       status: "downloading",
       error: null,
       progress: 0,
@@ -421,7 +502,7 @@
   }
 
   async function pumpDownloadQueue(): Promise<void> {
-    if (schedulerRunning) return;
+    if (schedulerRunning || schedulerPaused) return;
 
     schedulerRunning = true;
 
@@ -430,22 +511,10 @@
         pendingDownloadIds.length > 0 &&
         getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS
       ) {
-        const prioritizedItemStillQueued =
-          priorityDownloadId &&
-          pendingDownloadIds.includes(priorityDownloadId) &&
-          queue.some(
-            (item) =>
-              item.id === priorityDownloadId &&
-              isEditablePendingStatus(item.status)
-          )
-            ? priorityDownloadId
-            : null;
-
-        if (priorityDownloadId && !prioritizedItemStillQueued) {
-          priorityDownloadId = null;
+        const nextId = getNextPendingDownloadId();
+        if (!nextId) {
+          break;
         }
-
-        const nextId = prioritizedItemStillQueued ?? pendingDownloadIds[0];
 
         if (nextId === editingTitleId) {
           break;
@@ -459,11 +528,13 @@
       }
     } finally {
       schedulerRunning = false;
+      const nextPendingId = getNextPendingDownloadId();
 
       if (
-        pendingDownloadIds.length > 0 &&
+        !schedulerPaused &&
+        nextPendingId &&
         getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
-        pendingDownloadIds[0] !== editingTitleId
+        nextPendingId !== editingTitleId
       ) {
         queueMicrotask(() => {
           void pumpDownloadQueue();
@@ -645,6 +716,7 @@
   }
 
   function addSingleVideo(url: string): void {
+    const cookieConfig = getCookieConfigSnapshot();
     const item: QueueItem = {
       id: genId(),
       downloadId: null,
@@ -654,10 +726,11 @@
       duration: null,
       channel: null,
       thumbnail: null,
+      infoLoaded: false,
       status: "fetching",
       quality: globalQuality,
       format: globalFormat,
-      cookieConfig: getCookieConfig(),
+      cookieConfig,
       availableQualities: [],
       progress: 0,
       speed: "",
@@ -668,7 +741,7 @@
     };
 
     queue = [...queue, item];
-    void fetchVideoInfoForItem(item.id, url, item.cookieConfig);
+    void fetchVideoInfoForItem(item.id, url, cookieConfig);
   }
 
   async function fetchVideoInfoForItem(
@@ -693,9 +766,12 @@
         duration: info.duration,
         channel: info.channel,
         thumbnail: info.thumbnail,
+        infoLoaded: true,
+        cookieConfig,
         availableQualities,
         quality: resolveQualitySelection(queue[idx].quality, availableQualities),
         status: "ready",
+        error: null,
       };
     } catch (error) {
       const idx = queue.findIndex((item) => item.id === itemId);
@@ -704,6 +780,8 @@
       queue[idx] = {
         ...queue[idx],
         title: "Error",
+        infoLoaded: false,
+        cookieConfig,
         status: "error",
         error: normalizeDownloadError(String(error)),
       };
@@ -716,14 +794,41 @@
 
     const selectedEntries = modal.entries.filter((entry) => entry.selected);
     const queuedUrls = getQueueUrls();
+    const cookieConfig = getCookieConfigSnapshot();
+    const newItems: QueueItem[] = [];
     urlInput = "";
     closePlaylistModal();
 
     for (const entry of selectedEntries) {
       if (!queuedUrls.has(entry.url)) {
-        addSingleVideo(entry.url);
+        newItems.push({
+          id: genId(),
+          downloadId: null,
+          url: entry.url,
+          title: entry.title || entry.id,
+          customFilename: null,
+          duration: entry.duration,
+          channel: modal.info.channel,
+          thumbnail: entry.thumbnail,
+          infoLoaded: true,
+          status: "ready",
+          quality: globalQuality,
+          format: globalFormat,
+          cookieConfig,
+          availableQualities: createDefaultQualityOptions(),
+          progress: 0,
+          speed: "",
+          eta: "",
+          error: null,
+          filename: null,
+          selected: false,
+        });
         queuedUrls.add(entry.url);
       }
+    }
+
+    if (newItems.length > 0) {
+      queue = [...queue, ...newItems];
     }
   }
 
@@ -745,6 +850,7 @@
     if (idx === -1 || !isEditablePendingStatus(queue[idx].status)) return;
 
     if (
+      !schedulerPaused &&
       pendingDownloadIds.length === 0 &&
       getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
       !schedulerRunning
@@ -783,14 +889,60 @@
   }
 
   async function cancelAll(): Promise<void> {
+    schedulerPaused = true;
+    clearPendingQueue();
+
     const active = queue.filter(
       (item) =>
         item.status === "downloading" || item.status === "postprocessing"
     );
 
-    for (const item of active) {
-      await cancelItem(item);
+    try {
+      for (const item of active) {
+        await cancelItem(item);
+      }
+    } finally {
+      schedulerPaused = false;
+      void pumpDownloadQueue();
     }
+  }
+
+  async function retryItem(item: QueueItem): Promise<void> {
+    const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
+    if (idx === -1 || isActiveStatus(queue[idx].status)) return;
+
+    if (!queue[idx].infoLoaded) {
+      queue[idx] = {
+        ...queue[idx],
+        title: "Fetching info...",
+        status: "fetching",
+        error: null,
+        progress: 0,
+        speed: "",
+        eta: "",
+        downloadId: null,
+        filename: null,
+      };
+      await fetchVideoInfoForItem(
+        queue[idx].id,
+        queue[idx].url,
+        getCookieConfigSnapshot()
+      );
+      return;
+    }
+
+    queue[idx] = {
+      ...queue[idx],
+      status: "ready",
+      error: null,
+      progress: 0,
+      speed: "",
+      eta: "",
+      downloadId: null,
+      filename: null,
+    };
+
+    await downloadItem(queue[idx]);
   }
 
   function removeSelected(): void {
@@ -1093,6 +1245,8 @@
                   <button class="small primary" onclick={() => downloadItem(item)}>DL</button>
                 {:else if item.status === "downloading" || item.status === "postprocessing"}
                   <button class="small danger" onclick={() => cancelItem(item)}>X</button>
+                {:else if canRetryItem(item)}
+                  <button class="small" onclick={() => retryItem(item)}>Retry</button>
                 {/if}
               </td>
             </tr>
@@ -1478,7 +1632,7 @@
   .col-progress { width: 130px; }
   .col-speed { width: 85px; }
   .col-eta { width: 65px; }
-  .col-actions { width: 50px; }
+  .col-actions { width: 64px; }
 
   /* Title cell */
   .title-cell {

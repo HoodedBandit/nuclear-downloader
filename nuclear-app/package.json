@@ -1,6 +1,6 @@
 {
   "name": "nuclear",
-  "version": "0.3.5",
+  "version": "0.4.0",
   "description": "Nuclear Downloader is an easy-to-use Windows desktop downloader for YouTube, X, and other yt-dlp-supported sites.",
   "type": "module",
   "scripts": {
