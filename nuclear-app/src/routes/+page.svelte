@@ -41,6 +41,7 @@
   type AudioFormat = (typeof audioFormats)[number];
   type OutputFormat = VideoFormat | AudioFormat;
   const MAX_PARALLEL_DOWNLOADS = 5;
+  const PLAYLIST_INSERT_BATCH_SIZE = 25;
 
   interface CookieConfig {
     enabled: boolean;
@@ -210,6 +211,8 @@
   let priorityDownloadId = $state<string | null>(null);
   let schedulerRunning = false;
   let schedulerPaused = false;
+  let pendingPlaylistQueueItems: QueueItem[] = [];
+  let playlistInsertFramePending = false;
 
   // -- Lifecycle --
   onMount(() => {
@@ -366,7 +369,42 @@
   }
 
   function getQueueUrls(): Set<string> {
-    return new Set(queue.map((item) => item.url));
+    return new Set([
+      ...queue.map((item) => item.url),
+      ...pendingPlaylistQueueItems.map((item) => item.url),
+    ]);
+  }
+
+  function flushAllPendingPlaylistQueueItems(): void {
+    if (pendingPlaylistQueueItems.length === 0) return;
+
+    playlistInsertFramePending = false;
+    queue = [...queue, ...pendingPlaylistQueueItems];
+    pendingPlaylistQueueItems = [];
+  }
+
+  function flushPendingPlaylistQueueItems(): void {
+    playlistInsertFramePending = false;
+    if (pendingPlaylistQueueItems.length === 0) return;
+
+    const batch = pendingPlaylistQueueItems.slice(0, PLAYLIST_INSERT_BATCH_SIZE);
+    pendingPlaylistQueueItems = pendingPlaylistQueueItems.slice(batch.length);
+    queue = [...queue, ...batch];
+
+    if (pendingPlaylistQueueItems.length > 0) {
+      playlistInsertFramePending = true;
+      requestAnimationFrame(flushPendingPlaylistQueueItems);
+    }
+  }
+
+  function appendQueueItemsInBatches(items: QueueItem[]): void {
+    if (items.length === 0) return;
+
+    pendingPlaylistQueueItems = [...pendingPlaylistQueueItems, ...items];
+    if (!playlistInsertFramePending) {
+      playlistInsertFramePending = true;
+      requestAnimationFrame(flushPendingPlaylistQueueItems);
+    }
   }
 
   function getActiveDownloadCount(): number {
@@ -827,9 +865,7 @@
       }
     }
 
-    if (newItems.length > 0) {
-      queue = [...queue, ...newItems];
-    }
+    appendQueueItemsInBatches(newItems);
   }
 
   function toggleAllPlaylist(checked: boolean): void {
@@ -863,6 +899,7 @@
   }
 
   async function downloadAll(): Promise<void> {
+    flushAllPendingPlaylistQueueItems();
     const readyIds = queue
       .filter((item) => item.status === "ready")
       .map((item) => item.id);
@@ -870,6 +907,7 @@
   }
 
   async function downloadSelected(): Promise<void> {
+    flushAllPendingPlaylistQueueItems();
     const selectedIds = queue
       .filter(
       (item) => item.selected && item.status === "ready"

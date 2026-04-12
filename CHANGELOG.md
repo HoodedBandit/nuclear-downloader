@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.1 - 2026-04-11
+
+- Improved large playlist loading by enabling lazy `yt-dlp` playlist enumeration and switching the backend parser to typed streaming deserialization.
+- Removed the worst UI freeze when adding large playlist selections by batching queue-row insertion across animation frames instead of appending everything in one blocking update.
+- Preserved the existing playlist picker flow, queue behavior, auth handling, and 5-active-download scheduler while making big imports materially faster and more responsive.
+
 ## v0.4.0 - 2026-04-11
 
 - Fixed queue-wide cancellation so `Cancel All` now stops active work, clears queued starts, and prevents the scheduler from immediately restarting new downloads mid-cancel.

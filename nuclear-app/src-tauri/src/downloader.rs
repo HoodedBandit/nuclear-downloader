@@ -1,5 +1,6 @@
 use crate::models::{CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo};
 use regex::Regex;
+use serde::Deserialize;
 use serde_json::Deserializer;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
@@ -31,6 +32,74 @@ static QUALITY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{3,4}p$").
 struct TailBuffer {
     lines: VecDeque<String>,
     bytes: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct PlaylistThumbnailRecord {
+    url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PlaylistLineRecord {
+    id: Option<String>,
+    title: Option<String>,
+    duration: Option<f64>,
+    url: Option<String>,
+    webpage_url: Option<String>,
+    thumbnail: Option<String>,
+    thumbnails: Option<Vec<PlaylistThumbnailRecord>>,
+    playlist_title: Option<String>,
+    playlist: Option<String>,
+    playlist_uploader: Option<String>,
+    channel: Option<String>,
+}
+
+impl PlaylistLineRecord {
+    fn playlist_title_hint(&self) -> Option<&str> {
+        self.playlist_title.as_deref().or(self.playlist.as_deref())
+    }
+
+    fn playlist_channel_hint(&self) -> Option<&str> {
+        self.playlist_uploader
+            .as_deref()
+            .or(self.channel.as_deref())
+    }
+
+    fn preferred_thumbnail_url(&self) -> Option<&str> {
+        self.thumbnails
+            .as_ref()
+            .and_then(|thumbnails| {
+                thumbnails
+                    .iter()
+                    .rev()
+                    .find_map(|thumbnail| thumbnail.url.as_deref())
+            })
+            .or(self.thumbnail.as_deref())
+    }
+
+    fn into_playlist_entry(self) -> PlaylistEntry {
+        let thumbnail = sanitize_thumbnail_url(self.preferred_thumbnail_url());
+        let PlaylistLineRecord {
+            id,
+            title,
+            duration,
+            url,
+            webpage_url,
+            ..
+        } = self;
+        let id = id.unwrap_or_else(|| "unknown".to_string());
+        let video_url = url
+            .or(webpage_url)
+            .unwrap_or_else(|| format!("https://www.youtube.com/watch?v={id}"));
+
+        PlaylistEntry {
+            id,
+            title,
+            duration,
+            url: video_url,
+            thumbnail,
+        }
+    }
 }
 
 impl TailBuffer {
@@ -468,7 +537,13 @@ pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> 
 
     let bin = ytdlp_bin();
     let mut cmd = Command::new(&bin);
-    cmd.args(["--flat-playlist", "--dump-json", "--no-download", url]);
+    cmd.args([
+        "--flat-playlist",
+        "--dump-json",
+        "--lazy-playlist",
+        "--no-download",
+        url,
+    ]);
     configure_cookie_args(&mut cmd, cookie_config);
 
     #[cfg(windows)]
@@ -498,39 +573,21 @@ pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> 
     let mut playlist_channel: Option<String> = None;
 
     while let Ok(Some(line)) = lines.next_line().await {
-        if let Ok(data) = serde_json::from_str::<serde_json::Value>(&line) {
-            // Extract playlist-level info from first entry
-            if entries.is_empty() {
-                if let Some(t) = data["playlist_title"].as_str() {
-                    playlist_title = t.to_string();
-                } else if let Some(t) = data["playlist"].as_str() {
-                    playlist_title = t.to_string();
-                }
-                playlist_channel = data["playlist_uploader"].as_str()
-                    .or(data["channel"].as_str())
-                    .map(|s| s.to_string());
+        let Ok(data) = serde_json::from_str::<PlaylistLineRecord>(&line) else {
+            continue;
+        };
+
+        if entries.is_empty() {
+            if let Some(title) = data.playlist_title_hint() {
+                playlist_title = title.to_string();
             }
 
-            let id = data["id"].as_str().unwrap_or("unknown").to_string();
-            let video_url = data["url"].as_str()
-                .or(data["webpage_url"].as_str())
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| format!("https://www.youtube.com/watch?v={}", id));
-
-            entries.push(PlaylistEntry {
-                id,
-                title: data["title"].as_str().map(|s| s.to_string()),
-                duration: data["duration"].as_f64(),
-                url: video_url,
-                thumbnail: sanitize_thumbnail_url(
-                    data["thumbnails"]
-                        .as_array()
-                        .and_then(|t| t.last())
-                        .and_then(|t| t["url"].as_str())
-                        .or(data["thumbnail"].as_str()),
-                ),
-            });
+            playlist_channel = data
+                .playlist_channel_hint()
+                .map(|channel| channel.to_string());
         }
+
+        entries.push(data.into_playlist_entry());
     }
 
     let stderr_output = stderr_handle.await.unwrap_or_default();
@@ -785,7 +842,7 @@ mod tests {
     use super::{
         build_output_template, is_twitter_api_auth_error, is_x_or_twitter_url,
         parse_first_json_value, sanitize_thumbnail_url, should_retry_with_twitter_syndication,
-        validate_download_request, validate_fetch_request,
+        validate_download_request, validate_fetch_request, PlaylistLineRecord,
     };
     use crate::models::{CookieConfig, DownloadRequest};
 
@@ -908,6 +965,49 @@ mod tests {
         );
         assert_eq!(sanitize_thumbnail_url(Some("http://example.com/thumb.jpg")), None);
         assert_eq!(sanitize_thumbnail_url(Some("file:///C:/thumb.jpg")), None);
+    }
+
+    #[test]
+    fn playlist_line_prefers_last_thumbnail_and_keeps_metadata_hints() {
+        let line = serde_json::from_str::<PlaylistLineRecord>(
+            r#"{
+                "id":"abc123",
+                "title":"Example Clip",
+                "duration":42,
+                "url":"https://example.com/watch/abc123",
+                "thumbnail":"http://example.com/thumb-low.jpg",
+                "thumbnails":[
+                    {"url":"http://example.com/thumb-low.jpg"},
+                    {"url":"https://example.com/thumb-hi.jpg"}
+                ],
+                "playlist_title":"Example Playlist",
+                "playlist_uploader":"Example Channel"
+            }"#,
+        )
+        .unwrap();
+
+        assert_eq!(line.playlist_title_hint(), Some("Example Playlist"));
+        assert_eq!(line.playlist_channel_hint(), Some("Example Channel"));
+
+        let entry = line.into_playlist_entry();
+        assert_eq!(entry.id, "abc123");
+        assert_eq!(entry.title.as_deref(), Some("Example Clip"));
+        assert_eq!(entry.duration, Some(42.0));
+        assert_eq!(entry.url, "https://example.com/watch/abc123");
+        assert_eq!(
+            entry.thumbnail.as_deref(),
+            Some("https://example.com/thumb-hi.jpg")
+        );
+    }
+
+    #[test]
+    fn playlist_line_falls_back_to_watch_url_when_missing_urls() {
+        let line =
+            serde_json::from_str::<PlaylistLineRecord>(r#"{"id":"fallback-id","title":"Fallback"}"#)
+                .unwrap();
+
+        let entry = line.into_playlist_entry();
+        assert_eq!(entry.url, "https://www.youtube.com/watch?v=fallback-id");
     }
 
     #[test]
