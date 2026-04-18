@@ -15,7 +15,7 @@ pub struct VideoInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CookieConfig {
     pub enabled: bool,
-    pub mode: String,           // "browser" or "file"
+    pub mode: String, // "browser" or "file"
     pub browser: String,
     pub cookie_file: Option<String>, // path to cookies.txt
 }
@@ -56,4 +56,25 @@ pub struct DownloadProgress {
     pub eta: Option<String>,
     pub error: Option<String>,
     pub filename: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateCheckResult {
+    pub current_version: String,
+    pub has_update: bool,
+    pub latest_version: Option<String>,
+    pub notes: Option<String>,
+    pub published_at: Option<String>,
+    pub installer_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInstallProgress {
+    pub status: String,
+    pub version: String,
+    pub downloaded_bytes: u64,
+    pub total_bytes: Option<u64>,
+    pub message: Option<String>,
 }

@@ -6,6 +6,8 @@ Nuclear Downloader is an easy-to-use Windows desktop app for downloading videos 
 
 It is built for people who want a simple desktop interface instead of memorizing command-line flags. Paste a URL, choose format and quality, optionally provide cookies for login-required downloads, and download to your chosen folder.
 
+Installed Windows builds can also check the latest stable GitHub Release from inside the app and reinstall automatically through the published NSIS installer.
+
 ## Features
 
 - Download single videos and supported playlists
@@ -48,6 +50,8 @@ Prebuilt downloads are published on the GitHub Releases page:
 - [GitHub Releases](https://github.com/HoodedBandit/nuclear-downloader/releases)
 
 This source repository does not store release `.exe` files. If you want a ready-to-run installer or portable build, download it from Releases.
+
+If you install Nuclear Downloader with the Windows NSIS installer, the app can later check GitHub Releases for updates and hand off to the latest published installer automatically. It does not patch files in place.
 
 If you want to create your own local build instead, use the compile steps below.
 

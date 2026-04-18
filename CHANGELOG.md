@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.0 - 2026-04-18
+
+- Added a Windows auto-update flow that checks the latest stable GitHub Release from inside the app, downloads the published NSIS installer, and relaunches automatically after install.
+- Hardened the updater path with SemVer tag normalization, strict NSIS asset matching, HTTPS installer URL validation, temp `.part` downloads, duplicate-install guards, and truncated-download detection before installer handoff.
+- Improved misleading failure handling by stripping non-actionable DRM warning lines out of the surfaced download error when a real extractor or ffmpeg failure is also present.
+
 ## v0.4.2 - 2026-04-17
 
 - Smoothed the visible download percent and ETA display so both now refresh at a steadier 500 ms cadence instead of snapping multiple times per second.

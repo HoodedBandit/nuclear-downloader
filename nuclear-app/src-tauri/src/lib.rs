@@ -1,7 +1,8 @@
 mod downloader;
 mod models;
+mod updater;
 
-use downloader::{ActiveDownloads, create_active_downloads};
+use downloader::{create_active_downloads, ActiveDownloads};
 use models::DownloadRequest;
 use tauri::State;
 
@@ -15,13 +16,19 @@ fn validate_url(url: &str) -> bool {
 }
 
 #[tauri::command]
-async fn fetch_video_info(url: String, cookie_config: Option<models::CookieConfig>) -> Result<models::VideoInfo, String> {
+async fn fetch_video_info(
+    url: String,
+    cookie_config: Option<models::CookieConfig>,
+) -> Result<models::VideoInfo, String> {
     downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
     downloader::fetch_info(&url, cookie_config.as_ref()).await
 }
 
 #[tauri::command]
-async fn fetch_playlist_info(url: String, cookie_config: Option<models::CookieConfig>) -> Result<models::PlaylistInfo, String> {
+async fn fetch_playlist_info(
+    url: String,
+    cookie_config: Option<models::CookieConfig>,
+) -> Result<models::PlaylistInfo, String> {
     downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
     downloader::fetch_playlist(&url, cookie_config.as_ref()).await
 }
@@ -42,10 +49,7 @@ async fn start_download(
 }
 
 #[tauri::command]
-async fn cancel_download(
-    state: State<'_, AppState>,
-    download_id: String,
-) -> Result<(), String> {
+async fn cancel_download(state: State<'_, AppState>, download_id: String) -> Result<(), String> {
     downloader::cancel_download(&download_id, state.active_downloads.clone()).await
 }
 
@@ -76,11 +80,23 @@ async fn check_ffmpeg() -> Result<bool, String> {
 
 #[tauri::command]
 fn default_download_dir() -> Result<String, String> {
-    if let Some(path) = dirs::download_dir().or_else(|| dirs::home_dir().map(|dir| dir.join("Downloads"))) {
+    if let Some(path) =
+        dirs::download_dir().or_else(|| dirs::home_dir().map(|dir| dir.join("Downloads")))
+    {
         Ok(path.to_string_lossy().to_string())
     } else {
         Err("Could not determine a default downloads folder".into())
     }
+}
+
+#[tauri::command]
+async fn check_for_app_update(app: tauri::AppHandle) -> Result<models::UpdateCheckResult, String> {
+    updater::check_for_app_update(&app).await
+}
+
+#[tauri::command]
+async fn install_app_update(app: tauri::AppHandle, expected_version: String) -> Result<(), String> {
+    updater::install_app_update(&app, expected_version).await
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -90,9 +106,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState {
-            active_downloads,
-        })
+        .manage(AppState { active_downloads })
         .invoke_handler(tauri::generate_handler![
             validate_url,
             fetch_video_info,
@@ -102,6 +116,8 @@ pub fn run() {
             check_ytdlp,
             check_ffmpeg,
             default_download_dir,
+            check_for_app_update,
+            install_app_update,
         ])
         .on_window_event(move |_window, event| {
             if let tauri::WindowEvent::Destroyed = event {

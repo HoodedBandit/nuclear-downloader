@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getVersion } from "@tauri-apps/api/app";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -129,6 +130,23 @@
     filename: string | null;
   }
 
+  interface UpdateCheckResult {
+    currentVersion: string;
+    hasUpdate: boolean;
+    latestVersion: string | null;
+    notes: string | null;
+    publishedAt: string | null;
+    installerName: string | null;
+  }
+
+  interface UpdateInstallProgressPayload {
+    status: "downloading" | "launching" | "error";
+    version: string;
+    downloadedBytes: number;
+    totalBytes: number | null;
+    message: string | null;
+  }
+
   function isActiveStatus(status: DownloadStatus): boolean {
     return status === "downloading" || status === "postprocessing";
   }
@@ -196,12 +214,61 @@
     };
   }
 
+  function normalizeAppError(error: unknown): string {
+    const message = String(error ?? "Unknown error");
+    return message.startsWith("Error: ") ? message.slice(7) : message;
+  }
+
+  function formatByteCount(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let value = bytes;
+    let unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+
+    const digits = value >= 10 || unitIndex === 0 ? 0 : 1;
+    return `${value.toFixed(digits)} ${units[unitIndex]}`;
+  }
+
+  function formatPublishedAt(value: string | null): string {
+    if (!value) return "Unknown";
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  function getUpdateDownloadPercent(
+    progress: UpdateInstallProgressPayload | null,
+  ): number {
+    if (!progress) return 0;
+    if (progress.status === "launching") return 100;
+    if (!progress.totalBytes || progress.totalBytes <= 0) return 0;
+
+    return Math.max(
+      0,
+      Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100),
+    );
+  }
+
   // -- State --
   let urlInput = $state("");
   let outputDir = $state("");
   let globalQuality = $state("best");
   let globalFormat = $state<OutputFormat>("mp4");
   let queue = $state<QueueItem[]>([]);
+  let appVersion = $state<string | null>(null);
   let ytdlpVersion = $state<string | null>(null);
   let ffmpegAvailable = $state(false);
   let urlError = $state("");
@@ -221,12 +288,25 @@
   let pendingPlaylistQueueItems: QueueItem[] = [];
   let playlistInsertFramePending = false;
   const downloadDisplayUpdatedAt = new Map<string, number>();
+  let updateCheckState = $state<"idle" | "checking">("idle");
+  let updateInfo = $state<UpdateCheckResult | null>(null);
+  let updateModalOpen = $state(false);
+  let updateError = $state<string | null>(null);
+  let updateInstallProgress = $state<UpdateInstallProgressPayload | null>(null);
+  let updateInstallRunning = $state(false);
 
   // -- Lifecycle --
   onMount(() => {
     let unlistenProgress: (() => void) | undefined;
+    let unlistenUpdateProgress: (() => void) | undefined;
 
     const setup = async () => {
+      try {
+        appVersion = await getVersion();
+      } catch {
+        appVersion = null;
+      }
+
       try {
         ytdlpVersion = await invoke<string>("check_ytdlp");
       } catch {
@@ -296,12 +376,27 @@
           }
         }
       );
+
+      unlistenUpdateProgress = await listen<UpdateInstallProgressPayload>(
+        "update-install-progress",
+        (event) => {
+          updateInstallProgress = event.payload;
+
+          if (event.payload.status === "error") {
+            updateInstallRunning = false;
+            updateError = event.payload.message ?? "Update installation failed.";
+          }
+        },
+      );
+
+      void checkForAppUpdate({ openModal: false, showErrors: false });
     };
 
     void setup();
 
     return () => {
       unlistenProgress?.();
+      unlistenUpdateProgress?.();
     };
   });
 
@@ -764,8 +859,24 @@
     playlistModal = null;
   }
 
+  function openUpdateModal(): void {
+    updateModalOpen = true;
+  }
+
+  function closeUpdateModal(): void {
+    if (updateInstallRunning) return;
+    updateModalOpen = false;
+  }
+
   function handleWindowKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape" && playlistModal) {
+    if (event.key !== "Escape") return;
+
+    if (updateModalOpen && !updateInstallRunning) {
+      closeUpdateModal();
+      return;
+    }
+
+    if (playlistModal) {
       closePlaylistModal();
     }
   }
@@ -793,6 +904,63 @@
   async function browseOutputDir(): Promise<void> {
     const dir = pickFirstPath(await open({ directory: true }));
     if (dir) outputDir = dir;
+  }
+
+  async function checkForAppUpdate(options: {
+    openModal: boolean;
+    showErrors: boolean;
+  }): Promise<void> {
+    if (updateCheckState === "checking") {
+      if (options.openModal) updateModalOpen = true;
+      return;
+    }
+
+    updateCheckState = "checking";
+    if (options.openModal) updateModalOpen = true;
+    if (options.showErrors) updateError = null;
+    if (!updateInstallRunning) updateInstallProgress = null;
+
+    try {
+      const result = await invoke<UpdateCheckResult>("check_for_app_update");
+      updateInfo = result;
+      appVersion = result.currentVersion;
+    } catch (error) {
+      if (options.showErrors) {
+        updateError = normalizeAppError(error);
+      }
+    } finally {
+      updateCheckState = "idle";
+    }
+  }
+
+  async function handleManualUpdateCheck(): Promise<void> {
+    await checkForAppUpdate({ openModal: true, showErrors: true });
+  }
+
+  async function installAppUpdate(): Promise<void> {
+    const targetVersion = updateInfo?.latestVersion;
+    if (!targetVersion || !updateInfo?.hasUpdate || updateInstallRunning) return;
+
+    updateError = null;
+    updateModalOpen = true;
+    updateInstallRunning = true;
+    updateInstallProgress = {
+      status: "downloading",
+      version: targetVersion,
+      downloadedBytes: 0,
+      totalBytes: null,
+      message: "Preparing update download...",
+    };
+
+    try {
+      await invoke("install_app_update", {
+        expectedVersion: targetVersion,
+      });
+    } catch (error) {
+      updateError = normalizeAppError(error);
+    } finally {
+      updateInstallRunning = false;
+    }
   }
 
   // -- Actions --
@@ -1138,17 +1306,45 @@
   <!-- Header -->
   <header>
     <h1>Nuclear Downloader</h1>
-    <div class="status-badges">
-      {#if ytdlpVersion}
-        <span class="badge ok">yt-dlp {ytdlpVersion}</span>
-      {:else}
-        <span class="badge err">yt-dlp not found</span>
-      {/if}
-      {#if ffmpegAvailable}
-        <span class="badge ok">FFmpeg</span>
-      {:else}
-        <span class="badge warn">No FFmpeg</span>
-      {/if}
+    <div class="header-tools">
+      <div class="status-badges">
+        {#if appVersion}
+          <span class="badge neutral">v{appVersion}</span>
+        {/if}
+        {#if ytdlpVersion}
+          <span class="badge ok">yt-dlp {ytdlpVersion}</span>
+        {:else}
+          <span class="badge err">yt-dlp not found</span>
+        {/if}
+        {#if ffmpegAvailable}
+          <span class="badge ok">FFmpeg</span>
+        {:else}
+          <span class="badge warn">No FFmpeg</span>
+        {/if}
+        {#if updateInfo?.hasUpdate && updateInfo.latestVersion}
+          <button
+            type="button"
+            class="badge-button"
+            onclick={openUpdateModal}
+            disabled={updateCheckState === "checking" || updateInstallRunning}
+          >
+            Update v{updateInfo.latestVersion}
+          </button>
+        {/if}
+      </div>
+      <button
+        class="small header-action"
+        onclick={handleManualUpdateCheck}
+        disabled={updateCheckState === "checking" || updateInstallRunning}
+      >
+        {#if updateInstallRunning}
+          Installing...
+        {:else if updateCheckState === "checking"}
+          Checking...
+        {:else}
+          Check for Updates
+        {/if}
+      </button>
     </div>
   </header>
 
@@ -1482,6 +1678,135 @@
   </div>
 {/if}
 
+<!-- Update Modal -->
+{#if updateModalOpen}
+  <div class="modal-layer">
+    <button
+      type="button"
+      class="modal-backdrop"
+      aria-label="Close update dialog"
+      onclick={closeUpdateModal}
+      disabled={updateInstallRunning}
+    ></button>
+    <div
+      class="modal update-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="update-modal-title"
+    >
+      <div class="modal-header">
+        <div>
+          <h2 id="update-modal-title">App Updates</h2>
+          <span class="modal-count">GitHub Releases installer update</span>
+        </div>
+        <button class="small" onclick={closeUpdateModal} disabled={updateInstallRunning}>
+          Close
+        </button>
+      </div>
+      <div class="update-body">
+        {#if updateCheckState === "checking" && !updateInfo}
+          <p class="update-summary">Checking the latest stable GitHub Release...</p>
+        {:else}
+          <div class="update-meta">
+            <div class="update-meta-row">
+              <span class="update-meta-label">Current</span>
+              <span class="update-meta-value">v{appVersion ?? updateInfo?.currentVersion ?? "Unknown"}</span>
+            </div>
+            <div class="update-meta-row">
+              <span class="update-meta-label">Latest</span>
+              <span class="update-meta-value">
+                {#if updateInfo?.latestVersion}
+                  v{updateInfo.latestVersion}
+                {:else}
+                  Unknown
+                {/if}
+              </span>
+            </div>
+            <div class="update-meta-row">
+              <span class="update-meta-label">Published</span>
+              <span class="update-meta-value">
+                {formatPublishedAt(updateInfo?.publishedAt ?? null)}
+              </span>
+            </div>
+            <div class="update-meta-row">
+              <span class="update-meta-label">Installer</span>
+              <span class="update-meta-value">
+                {updateInfo?.installerName ?? "Checked during install"}
+              </span>
+            </div>
+          </div>
+
+          {#if updateInfo?.hasUpdate}
+            <p class="update-summary">
+              A newer version is available. Installing it downloads the published Windows NSIS
+              installer, closes the app, and relaunches Nuclear Downloader automatically.
+            </p>
+          {:else if updateInfo}
+            <p class="update-summary">
+              You are already on the latest stable release.
+            </p>
+          {/if}
+
+          {#if updateInstallProgress}
+            <div class="update-progress-panel">
+              <div class="update-progress-header">
+                <span>{updateInstallProgress.message ?? "Working..."}</span>
+                <span>
+                  {#if updateInstallProgress.totalBytes}
+                    {formatByteCount(updateInstallProgress.downloadedBytes)} / {formatByteCount(updateInstallProgress.totalBytes)}
+                  {:else if updateInstallProgress.downloadedBytes > 0}
+                    {formatByteCount(updateInstallProgress.downloadedBytes)}
+                  {:else}
+                    Waiting...
+                  {/if}
+                </span>
+              </div>
+              <div class="update-progress-bar">
+                <div
+                  class="update-progress-fill"
+                  style="width: {getUpdateDownloadPercent(updateInstallProgress)}%"
+                ></div>
+              </div>
+            </div>
+          {/if}
+
+          {#if updateError}
+            <p class="update-error">{updateError}</p>
+          {/if}
+
+          <div class="update-notes-block">
+            <h3>Release Notes</h3>
+            <div class="update-notes">
+              {updateInfo?.notes ?? "No release notes were provided for this release."}
+            </div>
+          </div>
+        {/if}
+      </div>
+      <div class="modal-footer">
+        {#if updateInfo?.hasUpdate && updateInfo.latestVersion}
+          <button
+            class="primary"
+            onclick={installAppUpdate}
+            disabled={updateInstallRunning || updateCheckState === "checking"}
+          >
+            {#if updateInstallRunning}
+              Installing...
+            {:else}
+              Install v{updateInfo.latestVersion}
+            {/if}
+          </button>
+        {/if}
+        <button
+          onclick={handleManualUpdateCheck}
+          disabled={updateCheckState === "checking" || updateInstallRunning}
+        >
+          {updateCheckState === "checking" ? "Checking..." : "Refresh Check"}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   /* -- Catppuccin Mocha Palette -- */
   :root {
@@ -1540,9 +1865,19 @@
     color: var(--blue);
   }
 
+  .header-tools {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .status-badges {
     display: flex;
     gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
   }
 
   .badge {
@@ -1550,6 +1885,10 @@
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: 500;
+  }
+  .badge.neutral {
+    background: color-mix(in srgb, var(--surface1) 55%, transparent);
+    color: var(--subtext1);
   }
   .badge.ok {
     background: color-mix(in srgb, var(--green) 20%, transparent);
@@ -1562,6 +1901,24 @@
   .badge.err {
     background: color-mix(in srgb, var(--red) 20%, transparent);
     color: var(--red);
+  }
+
+  .badge-button {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--blue) 20%, transparent);
+    color: var(--blue);
+  }
+
+  .badge-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--blue) 30%, transparent);
+  }
+
+  .header-action {
+    white-space: nowrap;
   }
 
   /* URL Bar */
@@ -2134,6 +2491,124 @@
     justify-content: flex-end;
     padding: 12px 20px;
     border-top: 1px solid var(--surface0);
+  }
+
+  .update-modal {
+    width: min(760px, 92vw);
+  }
+
+  .update-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 20px;
+    overflow-y: auto;
+  }
+
+  .update-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+  }
+
+  .update-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--mantle);
+    border: 1px solid var(--surface0);
+    border-radius: 8px;
+  }
+
+  .update-meta-label {
+    color: var(--subtext0);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .update-meta-value {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .update-summary {
+    margin: 0;
+    color: var(--subtext0);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .update-progress-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--mantle);
+    border: 1px solid var(--surface0);
+    border-radius: 8px;
+  }
+
+  .update-progress-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--subtext0);
+    font-size: 12px;
+  }
+
+  .update-progress-bar {
+    height: 12px;
+    background: var(--surface0);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .update-progress-fill {
+    height: 100%;
+    background: var(--blue);
+    transition: width 0.2s ease;
+  }
+
+  .update-error {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--red) 12%, transparent);
+    color: var(--red);
+    font-size: 12px;
+  }
+
+  .update-notes-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .update-notes-block h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .update-notes {
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 12px;
+    background: var(--mantle);
+    border: 1px solid var(--surface0);
+    border-radius: 8px;
+    color: var(--subtext0);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
   }
 
   .modal-list::-webkit-scrollbar {

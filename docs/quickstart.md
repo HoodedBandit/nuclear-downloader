@@ -93,6 +93,8 @@ Useful outputs:
 - Portable app binary in `src-tauri/target/release`
 - NSIS installer in `src-tauri/target/release/bundle/nsis`
 
+Installed Windows builds can later use the in-app update check to download the latest GitHub Release NSIS installer and reinstall automatically. The updater uses the published installer rather than patching the existing files in place.
+
 ## Compile Summary
 
 Common commands:

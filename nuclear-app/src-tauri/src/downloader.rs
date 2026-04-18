@@ -1,4 +1,6 @@
-use crate::models::{CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo};
+use crate::models::{
+    CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo,
+};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Deserializer;
@@ -21,8 +23,7 @@ static DOWNLOAD_PROGRESS_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\]\s+([\d.]+)%\s+of").unwrap());
 static DOWNLOAD_SPEED_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"at\s+([\d.]+\w+/s)").unwrap());
-static DOWNLOAD_ETA_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"ETA\s+(\S+)").unwrap());
+static DOWNLOAD_ETA_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"ETA\s+(\S+)").unwrap());
 static DOWNLOAD_DEST_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\] Destination:\s+(.+)").unwrap());
 static DOWNLOAD_MERGE_RE: LazyLock<Regex> =
@@ -305,13 +306,41 @@ fn sanitize_thumbnail_url(raw: Option<&str>) -> Option<String> {
     })
 }
 
+fn is_non_actionable_error_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    trimmed.is_empty()
+        || trimmed
+            .to_ascii_lowercase()
+            .contains("drm protected stream detected, decoding will likely fail")
+}
+
 fn build_error_message(stderr_output: &str, exit_code: Option<i32>) -> String {
     if stderr_output.is_empty() {
         return format!("yt-dlp exited with code {}", exit_code.unwrap_or(-1));
     }
 
-    stderr_output
+    let lines = stderr_output
         .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>();
+
+    let summary_lines = {
+        let actionable_lines = lines
+            .iter()
+            .copied()
+            .filter(|line| !is_non_actionable_error_line(line))
+            .collect::<Vec<_>>();
+
+        if actionable_lines.is_empty() {
+            lines
+        } else {
+            actionable_lines
+        }
+    };
+
+    summary_lines
+        .into_iter()
         .rev()
         .take(3)
         .collect::<Vec<_>>()
@@ -331,7 +360,9 @@ fn parse_first_json_value(stdout: &str) -> Result<serde_json::Value, String> {
     })
 }
 
-fn spawn_stderr_tail_reader(stderr: tokio::process::ChildStderr) -> tokio::task::JoinHandle<String> {
+fn spawn_stderr_tail_reader(
+    stderr: tokio::process::ChildStderr,
+) -> tokio::task::JoinHandle<String> {
     tokio::spawn(async move {
         let reader = BufReader::new(stderr);
         let mut lines = reader.lines();
@@ -476,7 +507,10 @@ async fn run_fetch_info_command(
         .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))
 }
 
-pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Result<VideoInfo, String> {
+pub async fn fetch_info(
+    url: &str,
+    cookie_config: Option<&CookieConfig>,
+) -> Result<VideoInfo, String> {
     validate_fetch_request(url, cookie_config)?;
 
     let mut output = run_fetch_info_command(url, cookie_config, false).await?;
@@ -509,16 +543,10 @@ pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Resu
         qualities = heights.iter().map(|h| format!("{}p", h)).collect();
     }
 
-    let has_audio = data["acodec"]
-        .as_str()
-        .map(|a| a != "none")
-        .unwrap_or(true);
+    let has_audio = data["acodec"].as_str().map(|a| a != "none").unwrap_or(true);
 
     Ok(VideoInfo {
-        id: data["id"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string(),
+        id: data["id"].as_str().unwrap_or("unknown").to_string(),
         title: data["title"]
             .as_str()
             .unwrap_or("Unknown Title")
@@ -532,7 +560,10 @@ pub async fn fetch_info(url: &str, cookie_config: Option<&CookieConfig>) -> Resu
     })
 }
 
-pub async fn fetch_playlist(url: &str, cookie_config: Option<&CookieConfig>) -> Result<PlaylistInfo, String> {
+pub async fn fetch_playlist(
+    url: &str,
+    cookie_config: Option<&CookieConfig>,
+) -> Result<PlaylistInfo, String> {
     validate_fetch_request(url, cookie_config)?;
 
     let bin = ytdlp_bin();
@@ -727,7 +758,14 @@ async fn run_download_attempt(
             let eta = DOWNLOAD_ETA_RE.captures(&line).map(|c| c[1].to_string());
             emit_progress("downloading", pct, speed, eta, None, last_filename.clone());
         } else if DOWNLOAD_MERGE_RE.is_match(&line) {
-            emit_progress("postprocessing", 100.0, None, None, None, last_filename.clone());
+            emit_progress(
+                "postprocessing",
+                100.0,
+                None,
+                None,
+                None,
+                last_filename.clone(),
+            );
         }
     }
 
@@ -765,7 +803,12 @@ pub async fn start_download(
     request: DownloadRequest,
     active: ActiveDownloads,
 ) {
-    let emit_progress = |status: &str, progress: f64, speed: Option<String>, eta: Option<String>, error: Option<String>, filename: Option<String>| {
+    let emit_progress = |status: &str,
+                         progress: f64,
+                         speed: Option<String>,
+                         eta: Option<String>,
+                         error: Option<String>,
+                         filename: Option<String>| {
         let _ = app.emit(
             "download-progress",
             DownloadProgress {
@@ -840,7 +883,7 @@ pub async fn start_download(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_output_template, is_twitter_api_auth_error, is_x_or_twitter_url,
+        build_error_message, build_output_template, is_twitter_api_auth_error, is_x_or_twitter_url,
         parse_first_json_value, sanitize_thumbnail_url, should_retry_with_twitter_syndication,
         validate_download_request, validate_fetch_request, PlaylistLineRecord,
     };
@@ -963,7 +1006,10 @@ mod tests {
             sanitize_thumbnail_url(Some("https://example.com/thumb.jpg")),
             Some("https://example.com/thumb.jpg".into())
         );
-        assert_eq!(sanitize_thumbnail_url(Some("http://example.com/thumb.jpg")), None);
+        assert_eq!(
+            sanitize_thumbnail_url(Some("http://example.com/thumb.jpg")),
+            None
+        );
         assert_eq!(sanitize_thumbnail_url(Some("file:///C:/thumb.jpg")), None);
     }
 
@@ -1002,12 +1048,36 @@ mod tests {
 
     #[test]
     fn playlist_line_falls_back_to_watch_url_when_missing_urls() {
-        let line =
-            serde_json::from_str::<PlaylistLineRecord>(r#"{"id":"fallback-id","title":"Fallback"}"#)
-                .unwrap();
+        let line = serde_json::from_str::<PlaylistLineRecord>(
+            r#"{"id":"fallback-id","title":"Fallback"}"#,
+        )
+        .unwrap();
 
         let entry = line.into_playlist_entry();
         assert_eq!(entry.url, "https://www.youtube.com/watch?v=fallback-id");
+    }
+
+    #[test]
+    fn build_error_message_skips_drm_warning_when_real_error_exists() {
+        let stderr = "\
+[hls @ 000001] DRM protected stream detected, decoding will likely fail!\n\
+ERROR: unable to open segment 3\n\
+ffmpeg exited with code 1";
+
+        assert_eq!(
+            build_error_message(stderr, Some(1)),
+            "ERROR: unable to open segment 3 | ffmpeg exited with code 1"
+        );
+    }
+
+    #[test]
+    fn build_error_message_keeps_drm_warning_when_it_is_all_we_have() {
+        let stderr = "[hls @ 000001] DRM protected stream detected, decoding will likely fail!";
+
+        assert_eq!(
+            build_error_message(stderr, Some(1)),
+            "[hls @ 000001] DRM protected stream detected, decoding will likely fail!"
+        );
     }
 
     #[test]
@@ -1020,7 +1090,9 @@ mod tests {
     fn identifies_x_and_twitter_hosts() {
         assert!(is_x_or_twitter_url("https://x.com/user/status/1"));
         assert!(is_x_or_twitter_url("https://twitter.com/user/status/1"));
-        assert!(is_x_or_twitter_url("https://mobile.twitter.com/user/status/1"));
+        assert!(is_x_or_twitter_url(
+            "https://mobile.twitter.com/user/status/1"
+        ));
         assert!(!is_x_or_twitter_url("https://example.com/video"));
     }
 
@@ -1047,7 +1119,10 @@ pub async fn cancel_download(download_id: &str, active: ActiveDownloads) -> Resu
     };
 
     if let Some(mut child) = child {
-        child.kill().await.map_err(|e| format!("Failed to cancel: {}", e))?;
+        child
+            .kill()
+            .await
+            .map_err(|e| format!("Failed to cancel: {}", e))?;
         let _ = child.wait().await;
         Ok(())
     } else {
