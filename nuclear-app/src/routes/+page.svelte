@@ -42,6 +42,7 @@
   type OutputFormat = VideoFormat | AudioFormat;
   const MAX_PARALLEL_DOWNLOADS = 5;
   const PLAYLIST_INSERT_BATCH_SIZE = 25;
+  const DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS = 500;
 
   interface CookieConfig {
     enabled: boolean;
@@ -132,6 +133,12 @@
     return status === "downloading" || status === "postprocessing";
   }
 
+  function isTerminalStatus(status: DownloadStatus): boolean {
+    return (
+      status === "completed" || status === "error" || status === "cancelled"
+    );
+  }
+
   function isEditablePendingStatus(status: DownloadStatus): boolean {
     return status === "ready" || status === "queued";
   }
@@ -213,6 +220,7 @@
   let schedulerPaused = false;
   let pendingPlaylistQueueItems: QueueItem[] = [];
   let playlistInsertFramePending = false;
+  const downloadDisplayUpdatedAt = new Map<string, number>();
 
   // -- Lifecycle --
   onMount(() => {
@@ -247,32 +255,44 @@
 
           if (idx === -1) return;
 
+          const item = queue[idx];
+          const statusChanged = item.status !== progress.status;
+          const isTerminal = isTerminalStatus(progress.status);
+          const shouldRefreshDisplay = shouldRefreshDownloadDisplay(
+            item,
+            progress,
+            statusChanged
+          );
+          const nextProgress = getDisplayProgress(
+            item,
+            progress,
+            shouldRefreshDisplay
+          );
+          const nextEta = getDisplayEta(
+            item,
+            progress,
+            shouldRefreshDisplay
+          );
+
           queue[idx] = {
-            ...queue[idx],
+            ...item,
             status: progress.status,
             downloadId:
-              progress.status === "completed" ||
-              progress.status === "error" ||
-              progress.status === "cancelled"
-                ? null
-                : queue[idx].downloadId,
-            progress: progress.progress,
-            speed: progress.status === "completed" || progress.status === "error" || progress.status === "cancelled"
+              isTerminal ? null : item.downloadId,
+            progress: nextProgress,
+            speed: isTerminal
               ? ""
               : progress.speed ?? "",
-            eta: progress.status === "completed" || progress.status === "error" || progress.status === "cancelled"
-              ? ""
-              : progress.eta ?? "",
+            eta: nextEta,
             error: progress.error ? normalizeDownloadError(progress.error) : null,
-            filename: progress.filename ?? queue[idx].filename,
+            filename: progress.filename ?? item.filename,
           };
 
-          if (
-            progress.status === "completed" ||
-            progress.status === "error" ||
-            progress.status === "cancelled"
-          ) {
+          if (isTerminal) {
+            clearProgressDisplayState(item.id);
             void pumpDownloadQueue();
+          } else if (shouldRefreshDisplay && progress.status === "downloading") {
+            downloadDisplayUpdatedAt.set(item.id, Date.now());
           }
         }
       );
@@ -288,6 +308,70 @@
   // -- Helpers --
   function genId(): string {
     return crypto.randomUUID();
+  }
+
+  function clearProgressDisplayState(itemId: string): void {
+    downloadDisplayUpdatedAt.delete(itemId);
+  }
+
+  function clampProgressValue(value: number): number {
+    return Math.min(100, Math.max(0, value));
+  }
+
+  function getDisplayProgress(
+    item: QueueItem,
+    payload: DownloadProgressPayload,
+    shouldRefreshDisplay: boolean
+  ): number {
+    if (payload.status === "completed" || payload.status === "postprocessing") {
+      return 100;
+    }
+
+    if (payload.status !== "downloading") {
+      return clampProgressValue(payload.progress);
+    }
+
+    if (!shouldRefreshDisplay) {
+      return item.progress;
+    }
+
+    return Math.max(item.progress, clampProgressValue(payload.progress));
+  }
+
+  function shouldRefreshDownloadDisplay(
+    item: QueueItem,
+    payload: DownloadProgressPayload,
+    statusChanged: boolean
+  ): boolean {
+    if (payload.status !== "downloading") {
+      return true;
+    }
+
+    const now = Date.now();
+    const lastUpdatedAt = downloadDisplayUpdatedAt.get(item.id) ?? 0;
+    return (
+      statusChanged ||
+      item.progress === 0 ||
+      item.eta === "" ||
+      now - lastUpdatedAt >= DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS
+    );
+  }
+
+  function getDisplayEta(
+    item: QueueItem,
+    payload: DownloadProgressPayload,
+    shouldRefreshDisplay: boolean
+  ): string {
+    if (payload.status !== "downloading") {
+      return "";
+    }
+
+    const nextEta = payload.eta ?? "";
+    if (nextEta === "" || !shouldRefreshDisplay) {
+      return item.eta;
+    }
+
+    return nextEta;
   }
 
   function formatDuration(seconds: number | null | undefined): string {
@@ -508,6 +592,7 @@
       filename_override: queue[idx].customFilename,
     };
 
+    clearProgressDisplayState(itemId);
     queue[idx] = {
       ...queue[idx],
       downloadId,
@@ -523,6 +608,7 @@
       await invoke("start_download", { downloadId, request });
       return true;
     } catch (error) {
+      clearProgressDisplayState(itemId);
       const currentIdx = queue.findIndex((queueItem) => queueItem.id === itemId);
       if (currentIdx !== -1) {
         queue[currentIdx] = {
@@ -949,6 +1035,7 @@
     const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
     if (idx === -1 || isActiveStatus(queue[idx].status)) return;
 
+    clearProgressDisplayState(item.id);
     if (!queue[idx].infoLoaded) {
       queue[idx] = {
         ...queue[idx],
@@ -992,6 +1079,10 @@
 
     if (removableIds.size === 0) return;
 
+    for (const itemId of removableIds) {
+      clearProgressDisplayState(itemId);
+    }
+
     queue = queue.filter((item) => !removableIds.has(item.id));
     pendingDownloadIds = pendingDownloadIds.filter((itemId) => !removableIds.has(itemId));
     if (priorityDownloadId && removableIds.has(priorityDownloadId)) {
@@ -1004,6 +1095,12 @@
   }
 
   function clearCompleted(): void {
+    for (const item of queue) {
+      if (item.status === "completed" || item.status === "cancelled") {
+        clearProgressDisplayState(item.id);
+      }
+    }
+
     queue = queue.filter(
       (item) => item.status !== "completed" && item.status !== "cancelled"
     );

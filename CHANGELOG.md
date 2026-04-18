@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.2 - 2026-04-17
+
+- Smoothed the visible download percent and ETA display so both now refresh at a steadier 500 ms cadence instead of snapping multiple times per second.
+- Kept the displayed download percent monotonic during active downloads so progress no longer jumps backward mid-transfer when `yt-dlp` emits noisy per-stage updates.
+- Preserved the underlying download, scheduler, and cancellation behavior by keeping the fix entirely in the renderer display layer.
+
 ## v0.4.1 - 2026-04-11
 
 - Improved large playlist loading by enabling lazy `yt-dlp` playlist enumeration and switching the backend parser to typed streaming deserialization.
