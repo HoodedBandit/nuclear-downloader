@@ -18,6 +18,10 @@ const MAX_STDERR_BYTES: usize = 16 * 1024;
 const VIDEO_FORMATS: &[&str] = &["mp4", "mkv", "webm"];
 const AUDIO_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "opus"];
 const COOKIE_BROWSERS: &[&str] = &["firefox", "chrome", "edge", "brave", "opera", "chromium"];
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+#[cfg(windows)]
+const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x00004000;
 
 static DOWNLOAD_PROGRESS_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\]\s+([\d.]+)%\s+of").unwrap());
@@ -26,8 +30,12 @@ static DOWNLOAD_SPEED_RE: LazyLock<Regex> =
 static DOWNLOAD_ETA_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"ETA\s+(\S+)").unwrap());
 static DOWNLOAD_DEST_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\] Destination:\s+(.+)").unwrap());
-static DOWNLOAD_MERGE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\[Merger\]|post-?process|\[ExtractAudio\]|converting").unwrap());
+static DOWNLOAD_FINAL_DEST_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?i)\[(?:Merger|VideoConvertor|VideoRemuxer)\].*(?:into|Destination:)\s+"?(.+?)"?\s*$"#).unwrap()
+});
+static DOWNLOAD_MERGE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\[Merger\]|\[VideoConvertor\]|\[VideoRemuxer\]|\[ExtractAudio\]|post-?process|converting|remuxing").unwrap()
+});
 static QUALITY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{3,4}p$").unwrap());
 
 struct TailBuffer {
@@ -129,6 +137,41 @@ impl TailBuffer {
     }
 }
 
+#[derive(Default)]
+struct ProgressFields {
+    speed: Option<String>,
+    eta: Option<String>,
+    error: Option<String>,
+    filename: Option<String>,
+    phase: Option<&'static str>,
+    download_progress: Option<f64>,
+    conversion_progress: Option<f64>,
+}
+
+fn emit_progress(
+    app: &AppHandle,
+    download_id: &str,
+    status: &str,
+    progress: f64,
+    fields: ProgressFields,
+) {
+    let _ = app.emit(
+        "download-progress",
+        DownloadProgress {
+            download_id: download_id.to_string(),
+            status: status.to_string(),
+            progress,
+            phase: fields.phase.map(str::to_string),
+            download_progress: fields.download_progress,
+            conversion_progress: fields.conversion_progress,
+            speed: fields.speed,
+            eta: fields.eta,
+            error: fields.error,
+            filename: fields.filename,
+        },
+    );
+}
+
 pub type ActiveDownloads = Arc<Mutex<HashMap<String, tokio::process::Child>>>;
 
 pub fn create_active_downloads() -> ActiveDownloads {
@@ -194,6 +237,10 @@ fn ytdlp_bin() -> PathBuf {
 
 fn ffmpeg_bin() -> PathBuf {
     resolve_bin("ffmpeg")
+}
+
+fn ffprobe_bin() -> PathBuf {
+    resolve_bin("ffprobe")
 }
 
 fn validate_cookie_config(config: &CookieConfig) -> Result<(), String> {
@@ -265,6 +312,16 @@ fn is_allowed_quality(quality: &str) -> bool {
     quality == "best" || QUALITY_RE.is_match(quality)
 }
 
+#[cfg(windows)]
+fn hidden_process_flags() -> u32 {
+    CREATE_NO_WINDOW
+}
+
+#[cfg(windows)]
+fn download_process_flags() -> u32 {
+    CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS
+}
+
 fn is_x_or_twitter_url(raw: &str) -> bool {
     Url::parse(raw)
         .ok()
@@ -287,7 +344,8 @@ fn is_twitter_api_auth_error(message: &str) -> bool {
 }
 
 fn should_retry_with_twitter_syndication(url: &str, message: &str) -> bool {
-    is_x_or_twitter_url(url) && is_twitter_api_auth_error(message)
+    is_x_or_twitter_url(url)
+        && (is_twitter_api_auth_error(message) || is_twitter_missing_video_error(message))
 }
 
 fn append_twitter_syndication_args(args: &mut Vec<String>, url: &str, enabled: bool) {
@@ -304,6 +362,15 @@ fn sanitize_thumbnail_url(raw: Option<&str>) -> Option<String> {
             .filter(|url| url.scheme() == "https")
             .map(|_| value.to_string())
     })
+}
+
+fn is_twitter_missing_video_error(message: &str) -> bool {
+    let lower = message.to_ascii_lowercase();
+    lower.contains("no video")
+        || lower.contains("does not contain a video")
+        || lower.contains("no video could be found")
+        || lower.contains("no media")
+        || lower.contains("requested format is not available")
 }
 
 fn is_non_actionable_error_line(line: &str) -> bool {
@@ -453,6 +520,51 @@ fn build_output_template(request: &DownloadRequest) -> String {
     format!("{}/%(title)s [%(id)s].%(ext)s", output_dir)
 }
 
+fn format_selector_for_video(request: &DownloadRequest) -> String {
+    let height_limit = (request.quality != "best").then(|| request.quality.replace('p', ""));
+
+    match (request.format.as_str(), height_limit.as_deref()) {
+        ("mp4", None) => "bestvideo*+bestaudio/best".to_string(),
+        ("mp4", Some(height)) => format!(
+            "bestvideo*[height<={height}]+bestaudio/best[height<={height}]/bestvideo*+bestaudio/best"
+        ),
+        ("mkv", None) => "bestvideo+bestaudio/best".to_string(),
+        ("mkv", Some(height)) => {
+            format!("bestvideo[height<={height}]+bestaudio/best[height<={height}]/bestvideo+bestaudio/best")
+        }
+        ("webm", None) => {
+            "bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/bestvideo+bestaudio/best"
+                .to_string()
+        }
+        ("webm", Some(height)) => format!(
+            "bestvideo[height<={height}][ext=webm]+bestaudio[ext=webm]/best[height<={height}][ext=webm]/bestvideo[height<={height}]+bestaudio/best[height<={height}]/bestvideo+bestaudio/best"
+        ),
+        _ => "bestvideo+bestaudio/best".to_string(),
+    }
+}
+
+fn append_video_postprocess_args(args: &mut Vec<String>, format: &str) {
+    match format {
+        "mp4" => {
+            args.push("--merge-output-format".to_string());
+            args.push("mp4/mkv".to_string());
+            args.push("--remux-video".to_string());
+            args.push("mp4".to_string());
+        }
+        "mkv" => {
+            args.push("--merge-output-format".to_string());
+            args.push("mkv".to_string());
+            args.push("--remux-video".to_string());
+            args.push("mkv".to_string());
+        }
+        "webm" => {
+            args.push("--merge-output-format".to_string());
+            args.push("mkv".to_string());
+        }
+        _ => {}
+    }
+}
+
 pub fn ffmpeg_available() -> bool {
     let path = ffmpeg_bin();
     if path.exists() {
@@ -500,7 +612,7 @@ async fn run_fetch_info_command(
     cmd.args(&args);
 
     #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
+    cmd.creation_flags(hidden_process_flags());
 
     cmd.output()
         .await
@@ -578,7 +690,7 @@ pub async fn fetch_playlist(
     configure_cookie_args(&mut cmd, cookie_config);
 
     #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
+    cmd.creation_flags(hidden_process_flags());
 
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -669,26 +781,15 @@ fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool)
         args.push("--audio-quality".to_string());
         args.push("0".to_string());
     } else {
-        let format_selector = if request.quality == "best" {
-            format!(
-                "bestvideo[ext={}]+bestaudio/best[ext={}]/bestvideo+bestaudio/best",
-                request.format, request.format
-            )
-        } else {
-            let height = request.quality.replace('p', "");
-            format!(
-                "bestvideo[height<={}][ext={}]+bestaudio/bestvideo[height<={}]+bestaudio/best[height<={}]/best",
-                height, request.format, height, height
-            )
-        };
         args.push("-f".to_string());
-        args.push(format_selector);
-        args.push("--merge-output-format".to_string());
-        args.push(request.format.clone());
+        args.push(format_selector_for_video(request));
+        append_video_postprocess_args(&mut args, &request.format);
     }
 
     args.push("--newline".to_string());
     args.push("--progress".to_string());
+    args.push("--progress-delta".to_string());
+    args.push("0.5".to_string());
     args.push("--no-playlist".to_string());
     append_twitter_syndication_args(&mut args, &request.url, use_twitter_syndication);
     args.push("-o".to_string());
@@ -702,6 +803,225 @@ fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool)
     args
 }
 
+fn staging_root() -> PathBuf {
+    std::env::temp_dir()
+        .join("nuclear-downloader")
+        .join("downloads")
+}
+
+fn build_staging_dir(download_id: &str) -> PathBuf {
+    let safe_id = sanitize_filename_component(download_id).unwrap_or_else(|| "download".to_string());
+    staging_root().join(safe_id)
+}
+
+fn is_safe_staging_dir(path: &Path) -> bool {
+    path.starts_with(staging_root())
+}
+
+fn reset_staging_dir(path: &Path) -> Result<(), String> {
+    if !is_safe_staging_dir(path) {
+        return Err("Refusing to use unsafe staging folder.".into());
+    }
+
+    if path.exists() {
+        std::fs::remove_dir_all(path)
+            .map_err(|error| format!("Failed to reset staging folder: {error}"))?;
+    }
+
+    std::fs::create_dir_all(path)
+        .map_err(|error| format!("Failed to create staging folder: {error}"))
+}
+
+fn cleanup_staging_dir(path: &Path) {
+    if is_safe_staging_dir(path) {
+        let _ = std::fs::remove_dir_all(path);
+    }
+}
+
+fn path_to_string(path: &Path) -> String {
+    path.to_string_lossy().to_string()
+}
+
+fn build_webm_final_path(request: &DownloadRequest, intermediate_path: &Path) -> PathBuf {
+    let filename = request
+        .filename_override
+        .as_deref()
+        .and_then(sanitize_filename_component)
+        .or_else(|| {
+            intermediate_path
+                .file_stem()
+                .and_then(|stem| stem.to_str())
+                .and_then(sanitize_filename_component)
+        })
+        .unwrap_or_else(|| "download".to_string());
+
+    PathBuf::from(&request.output_dir).join(format!("{filename}.webm"))
+}
+
+fn build_staged_webm_output_path(staging_dir: &Path, final_path: &Path) -> PathBuf {
+    let stem = final_path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .and_then(sanitize_filename_component)
+        .unwrap_or_else(|| "download".to_string());
+
+    staging_dir.join(format!("{stem}.converted.webm"))
+}
+
+fn build_publish_temp_path(final_path: &Path) -> PathBuf {
+    let stem = final_path
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .and_then(sanitize_filename_component)
+        .unwrap_or_else(|| "download".to_string());
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+
+    final_path.with_file_name(format!(".{stem}.nuclear-publish-{unique}.webm"))
+}
+
+fn find_latest_media_file(dir: &Path) -> Option<PathBuf> {
+    let mut latest: Option<(std::time::SystemTime, PathBuf)> = None;
+
+    for entry in std::fs::read_dir(dir).ok()?.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+
+        let extension = path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase();
+
+        if matches!(extension.as_str(), "part" | "ytdl" | "temp") {
+            continue;
+        }
+
+        let modified = entry
+            .metadata()
+            .and_then(|metadata| metadata.modified())
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+        if latest
+            .as_ref()
+            .map(|(latest_modified, _)| modified > *latest_modified)
+            .unwrap_or(true)
+        {
+            latest = Some((modified, path));
+        }
+    }
+
+    latest.map(|(_, path)| path)
+}
+
+fn parse_ffmpeg_time_value(value: &str) -> Option<f64> {
+    let value = value.trim();
+
+    if let Ok(microseconds) = value.parse::<f64>() {
+        return (microseconds >= 0.0).then_some(microseconds / 1_000_000.0);
+    }
+
+    let parts: Vec<&str> = value.split(':').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+
+    let hours = parts[0].parse::<f64>().ok()?;
+    let minutes = parts[1].parse::<f64>().ok()?;
+    let seconds = parts[2].parse::<f64>().ok()?;
+
+    Some((hours * 3600.0) + (minutes * 60.0) + seconds)
+}
+
+fn parse_ffmpeg_progress_percent(line: &str, duration_seconds: f64) -> Option<f64> {
+    if duration_seconds <= 0.0 || !duration_seconds.is_finite() {
+        return None;
+    }
+
+    let value = line
+        .strip_prefix("out_time_us=")
+        .or_else(|| line.strip_prefix("out_time_ms="))
+        .or_else(|| line.strip_prefix("out_time="))?;
+    let seconds = parse_ffmpeg_time_value(value)?;
+
+    Some(((seconds / duration_seconds) * 100.0).clamp(0.0, 100.0))
+}
+
+async fn probe_media_duration_seconds(path: &Path) -> Result<f64, String> {
+    let mut cmd = Command::new(ffprobe_bin());
+    cmd.args([
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+    ]);
+    cmd.arg(path);
+
+    #[cfg(windows)]
+    cmd.creation_flags(hidden_process_flags());
+
+    let output = cmd
+        .output()
+        .await
+        .map_err(|error| format!("Failed to run ffprobe: {error}"))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("ffprobe failed: {}", stderr.trim()));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let duration = stdout
+        .trim()
+        .parse::<f64>()
+        .map_err(|_| "ffprobe did not return a valid duration.".to_string())?;
+
+    if duration.is_finite() && duration > 0.0 {
+        Ok(duration)
+    } else {
+        Err("ffprobe could not determine media duration.".into())
+    }
+}
+
+async fn publish_converted_output(staged_output: &Path, final_path: &Path) -> Result<(), String> {
+    if let Some(parent) = final_path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|error| format!("Failed to create output folder: {error}"))?;
+    }
+
+    match tokio::fs::rename(staged_output, final_path).await {
+        Ok(()) => Ok(()),
+        Err(_) => {
+            let publish_temp = build_publish_temp_path(final_path);
+            tokio::fs::copy(staged_output, &publish_temp)
+                .await
+                .map_err(|error| format!("Failed to stage converted output: {error}"))?;
+
+            if final_path.exists() {
+                if let Err(error) = tokio::fs::remove_file(final_path).await {
+                    let _ = tokio::fs::remove_file(&publish_temp).await;
+                    return Err(format!("Failed to replace existing output file: {error}"));
+                }
+            }
+
+            if let Err(error) = tokio::fs::rename(&publish_temp, final_path).await {
+                let _ = tokio::fs::remove_file(&publish_temp).await;
+                return Err(format!("Failed to publish converted output: {error}"));
+            }
+
+            let _ = tokio::fs::remove_file(staged_output).await;
+            Ok(())
+        }
+    }
+}
+
 enum DownloadAttemptResult {
     Completed(Option<String>),
     Cancelled,
@@ -710,7 +1030,7 @@ enum DownloadAttemptResult {
 }
 
 async fn run_download_attempt(
-    emit_progress: &impl Fn(&str, f64, Option<String>, Option<String>, Option<String>, Option<String>),
+    app: &AppHandle,
     download_id: &str,
     request: &DownloadRequest,
     active: ActiveDownloads,
@@ -725,7 +1045,7 @@ async fn run_download_attempt(
         .stderr(std::process::Stdio::piped());
 
     #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
+    cmd.creation_flags(download_process_flags());
 
     let mut child = match cmd.spawn() {
         Ok(child) => child,
@@ -750,21 +1070,40 @@ async fn run_download_attempt(
     while let Ok(Some(line)) = lines.next_line().await {
         if let Some(caps) = DOWNLOAD_DEST_RE.captures(&line) {
             last_filename = Some(caps[1].trim().to_string());
+        } else if let Some(caps) = DOWNLOAD_FINAL_DEST_RE.captures(&line) {
+            last_filename = Some(caps[1].trim().trim_matches('"').to_string());
         }
 
         if let Some(caps) = DOWNLOAD_PROGRESS_RE.captures(&line) {
             let pct: f64 = caps[1].parse().unwrap_or(0.0);
             let speed = DOWNLOAD_SPEED_RE.captures(&line).map(|c| c[1].to_string());
             let eta = DOWNLOAD_ETA_RE.captures(&line).map(|c| c[1].to_string());
-            emit_progress("downloading", pct, speed, eta, None, last_filename.clone());
+            emit_progress(
+                app,
+                download_id,
+                "downloading",
+                pct,
+                ProgressFields {
+                    speed,
+                    eta,
+                    filename: last_filename.clone(),
+                    phase: Some("download"),
+                    download_progress: Some(pct),
+                    ..Default::default()
+                },
+            );
         } else if DOWNLOAD_MERGE_RE.is_match(&line) {
             emit_progress(
+                app,
+                download_id,
                 "postprocessing",
                 100.0,
-                None,
-                None,
-                None,
-                last_filename.clone(),
+                ProgressFields {
+                    filename: last_filename.clone(),
+                    phase: Some("postprocess"),
+                    download_progress: Some(100.0),
+                    ..Default::default()
+                },
             );
         }
     }
@@ -797,63 +1136,315 @@ async fn run_download_attempt(
     }
 }
 
+async fn run_webm_conversion(
+    app: &AppHandle,
+    download_id: &str,
+    input_path: &Path,
+    staged_output: &Path,
+    final_path: &Path,
+    active: ActiveDownloads,
+) -> DownloadAttemptResult {
+    let duration_seconds = match probe_media_duration_seconds(input_path).await {
+        Ok(duration) => duration,
+        Err(error) => return DownloadAttemptResult::Error(error),
+    };
+
+    emit_progress(
+        app,
+        download_id,
+        "postprocessing",
+        0.0,
+        ProgressFields {
+            filename: Some(path_to_string(final_path)),
+            phase: Some("conversion"),
+            download_progress: Some(100.0),
+            conversion_progress: Some(0.0),
+            ..Default::default()
+        },
+    );
+
+    let mut cmd = Command::new(ffmpeg_bin());
+    cmd.args([
+        "-y",
+        "-hide_banner",
+        "-nostats",
+        "-stats_period",
+        "0.5",
+        "-i",
+    ]);
+    cmd.arg(input_path);
+    cmd.args([
+        "-map",
+        "0:v:0",
+        "-map",
+        "0:a?",
+        "-c:v",
+        "libvpx-vp9",
+        "-row-mt",
+        "1",
+        "-cpu-used",
+        "4",
+        "-crf",
+        "32",
+        "-b:v",
+        "0",
+        "-c:a",
+        "libopus",
+        "-b:a",
+        "128k",
+        "-f",
+        "webm",
+        "-progress",
+        "pipe:1",
+    ]);
+    cmd.arg(staged_output);
+    cmd.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+
+    #[cfg(windows)]
+    cmd.creation_flags(download_process_flags());
+
+    let mut child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            return DownloadAttemptResult::Error(format!("Failed to start ffmpeg: {error}"));
+        }
+    };
+
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+
+    {
+        let mut downloads = active.lock().await;
+        downloads.insert(download_id.to_string(), child);
+    }
+
+    let stderr_handle = spawn_stderr_tail_reader(stderr);
+    let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
+    let mut last_progress: f64 = 0.0;
+
+    while let Ok(Some(line)) = lines.next_line().await {
+        if line.trim() == "progress=end" {
+            last_progress = 100.0;
+        } else if let Some(progress) = parse_ffmpeg_progress_percent(&line, duration_seconds) {
+            last_progress = last_progress.max(progress);
+        } else {
+            continue;
+        }
+
+        emit_progress(
+            app,
+            download_id,
+            "postprocessing",
+            last_progress,
+            ProgressFields {
+                filename: Some(path_to_string(final_path)),
+                phase: Some("conversion"),
+                download_progress: Some(100.0),
+                conversion_progress: Some(last_progress),
+                ..Default::default()
+            },
+        );
+    }
+
+    let stderr_output = stderr_handle.await.unwrap_or_default();
+
+    let maybe_child = {
+        let mut downloads = active.lock().await;
+        downloads.remove(download_id)
+    };
+
+    let status = if let Some(mut child) = maybe_child {
+        child.wait().await.ok()
+    } else {
+        return DownloadAttemptResult::Cancelled;
+    };
+
+    match status {
+        Some(status) if status.success() => {
+            if let Err(error) = publish_converted_output(staged_output, final_path).await {
+                DownloadAttemptResult::Error(error)
+            } else {
+                DownloadAttemptResult::Completed(Some(path_to_string(final_path)))
+            }
+        }
+        Some(status) => DownloadAttemptResult::Error(build_error_message(
+            &stderr_output,
+            status.code(),
+        )),
+        None => DownloadAttemptResult::Error("FFmpeg terminated unexpectedly".into()),
+    }
+}
+
+async fn run_webm_download(
+    app: &AppHandle,
+    download_id: &str,
+    request: &DownloadRequest,
+    active: ActiveDownloads,
+) -> DownloadAttemptResult {
+    let staging_dir = build_staging_dir(download_id);
+    let mut use_twitter_syndication = false;
+
+    loop {
+        if let Err(error) = reset_staging_dir(&staging_dir) {
+            return DownloadAttemptResult::Error(error);
+        }
+
+        let mut staged_request = request.clone();
+        staged_request.output_dir = path_to_string(&staging_dir);
+
+        match run_download_attempt(
+            app,
+            download_id,
+            &staged_request,
+            active.clone(),
+            use_twitter_syndication,
+        )
+        .await
+        {
+            DownloadAttemptResult::Completed(filename) => {
+                let intermediate_path = filename
+                    .map(PathBuf::from)
+                    .or_else(|| find_latest_media_file(&staging_dir));
+                let Some(intermediate_path) = intermediate_path else {
+                    cleanup_staging_dir(&staging_dir);
+                    return DownloadAttemptResult::Error(
+                        "Download completed but no staged media file was found.".into(),
+                    );
+                };
+
+                let final_path = build_webm_final_path(request, &intermediate_path);
+                let staged_output = build_staged_webm_output_path(&staging_dir, &final_path);
+                let result = run_webm_conversion(
+                    app,
+                    download_id,
+                    &intermediate_path,
+                    &staged_output,
+                    &final_path,
+                    active.clone(),
+                )
+                .await;
+
+                cleanup_staging_dir(&staging_dir);
+                return result;
+            }
+            DownloadAttemptResult::RetryWithTwitterSyndication => {
+                use_twitter_syndication = true;
+            }
+            other => {
+                cleanup_staging_dir(&staging_dir);
+                return other;
+            }
+        }
+    }
+}
+
 pub async fn start_download(
     app: AppHandle,
     download_id: String,
     request: DownloadRequest,
     active: ActiveDownloads,
 ) {
-    let emit_progress = |status: &str,
-                         progress: f64,
-                         speed: Option<String>,
-                         eta: Option<String>,
-                         error: Option<String>,
-                         filename: Option<String>| {
-        let _ = app.emit(
-            "download-progress",
-            DownloadProgress {
-                download_id: download_id.clone(),
-                status: status.to_string(),
-                progress,
-                speed,
-                eta,
-                error,
-                filename,
-            },
-        );
-    };
-
     if request.output_dir.trim().is_empty() {
         emit_progress(
+            &app,
+            &download_id,
             "error",
             0.0,
-            None,
-            None,
-            Some("Output folder is not set.".into()),
-            None,
+            ProgressFields {
+                error: Some("Output folder is not set.".into()),
+                ..Default::default()
+            },
         );
         return;
     }
 
     if let Err(error) = std::fs::create_dir_all(&request.output_dir) {
         emit_progress(
+            &app,
+            &download_id,
             "error",
             0.0,
-            None,
-            None,
-            Some(format!("Failed to create output folder: {}", error)),
-            None,
+            ProgressFields {
+                error: Some(format!("Failed to create output folder: {}", error)),
+                ..Default::default()
+            },
         );
         return;
     }
 
-    emit_progress("downloading", 0.0, None, None, None, None);
+    emit_progress(
+        &app,
+        &download_id,
+        "downloading",
+        0.0,
+        ProgressFields {
+            phase: Some("download"),
+            download_progress: Some(0.0),
+            ..Default::default()
+        },
+    );
+
+    if request.format == "webm" {
+        match run_webm_download(&app, &download_id, &request, active).await {
+            DownloadAttemptResult::Completed(filename) => {
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "completed",
+                    100.0,
+                    ProgressFields {
+                        filename,
+                        phase: Some("complete"),
+                        download_progress: Some(100.0),
+                        conversion_progress: Some(100.0),
+                        ..Default::default()
+                    },
+                );
+            }
+            DownloadAttemptResult::Cancelled => {
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "cancelled",
+                    0.0,
+                    ProgressFields::default(),
+                );
+            }
+            DownloadAttemptResult::Error(error) => {
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "error",
+                    0.0,
+                    ProgressFields {
+                        error: Some(error),
+                        ..Default::default()
+                    },
+                );
+            }
+            DownloadAttemptResult::RetryWithTwitterSyndication => {
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "error",
+                    0.0,
+                    ProgressFields {
+                        error: Some("Download failed before retry could complete.".into()),
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+        return;
+    }
 
     let mut use_twitter_syndication = false;
 
     loop {
         match run_download_attempt(
-            &emit_progress,
+            &app,
             &download_id,
             &request,
             active.clone(),
@@ -862,18 +1453,44 @@ pub async fn start_download(
         .await
         {
             DownloadAttemptResult::Completed(filename) => {
-                emit_progress("completed", 100.0, None, None, None, filename);
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "completed",
+                    100.0,
+                    ProgressFields {
+                        filename,
+                        phase: Some("complete"),
+                        download_progress: Some(100.0),
+                        ..Default::default()
+                    },
+                );
                 return;
             }
             DownloadAttemptResult::Cancelled => {
-                emit_progress("cancelled", 0.0, None, None, None, None);
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "cancelled",
+                    0.0,
+                    ProgressFields::default(),
+                );
                 return;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
                 use_twitter_syndication = true;
             }
             DownloadAttemptResult::Error(error) => {
-                emit_progress("error", 0.0, None, None, Some(error), None);
+                emit_progress(
+                    &app,
+                    &download_id,
+                    "error",
+                    0.0,
+                    ProgressFields {
+                        error: Some(error),
+                        ..Default::default()
+                    },
+                );
                 return;
             }
         }
@@ -883,11 +1500,31 @@ pub async fn start_download(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_error_message, build_output_template, is_twitter_api_auth_error, is_x_or_twitter_url,
+        build_download_args, build_error_message, build_output_template, build_staging_dir,
+        build_webm_final_path, is_safe_staging_dir, is_twitter_api_auth_error,
+        is_twitter_missing_video_error, is_x_or_twitter_url, parse_ffmpeg_progress_percent,
         parse_first_json_value, sanitize_thumbnail_url, should_retry_with_twitter_syndication,
         validate_download_request, validate_fetch_request, PlaylistLineRecord,
     };
     use crate::models::{CookieConfig, DownloadRequest};
+    use std::path::{Path, PathBuf};
+
+    fn arg_value_after<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
+        args.windows(2)
+            .find(|pair| pair[0] == flag)
+            .map(|pair| pair[1].as_str())
+    }
+
+    fn download_request(format: &str, quality: &str) -> DownloadRequest {
+        DownloadRequest {
+            url: "https://example.com/video".into(),
+            quality: quality.into(),
+            format: format.into(),
+            output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
+            cookie_config: None,
+            filename_override: None,
+        }
+    }
 
     #[test]
     fn uses_default_template_without_override() {
@@ -938,6 +1575,169 @@ mod tests {
             build_output_template(&request),
             "C:/Users/Mr.W/100%%Downloads/CON_ 100%%_.%(ext)s"
         );
+    }
+
+    #[test]
+    fn mp4_download_uses_broad_selector_and_remuxes_final_video() {
+        let request = download_request("mp4", "best");
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo*+bestaudio/best")
+        );
+        assert_eq!(
+            arg_value_after(&args, "--merge-output-format"),
+            Some("mp4/mkv")
+        );
+        assert_eq!(arg_value_after(&args, "--remux-video"), Some("mp4"));
+        assert!(arg_value_after(&args, "--recode-video").is_none());
+    }
+
+    #[test]
+    fn mp4_quality_download_keeps_requested_height_before_remux() {
+        let request = download_request("mp4", "720p");
+
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo*[height<=720]+bestaudio/best[height<=720]/bestvideo*+bestaudio/best")
+        );
+        assert_eq!(
+            arg_value_after(&args, "--merge-output-format"),
+            Some("mp4/mkv")
+        );
+        assert_eq!(arg_value_after(&args, "--remux-video"), Some("mp4"));
+        assert!(arg_value_after(&args, "--recode-video").is_none());
+    }
+
+    #[test]
+    fn mkv_download_remuxes_final_video_to_mkv() {
+        let request = download_request("mkv", "best");
+
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo+bestaudio/best")
+        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
+        assert_eq!(arg_value_after(&args, "--remux-video"), Some("mkv"));
+        assert!(arg_value_after(&args, "--recode-video").is_none());
+    }
+
+    #[test]
+    fn mkv_quality_download_keeps_requested_height_before_remux() {
+        let request = download_request("mkv", "720p");
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best")
+        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
+        assert_eq!(arg_value_after(&args, "--remux-video"), Some("mkv"));
+    }
+
+    #[test]
+    fn webm_download_prefers_webm_streams_and_leaves_conversion_to_ffmpeg() {
+        let request = download_request("webm", "best");
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/bestvideo+bestaudio/best")
+        );
+        assert_eq!(
+            arg_value_after(&args, "--merge-output-format"),
+            Some("mkv")
+        );
+        assert!(arg_value_after(&args, "--recode-video").is_none());
+        assert!(arg_value_after(&args, "--remux-video").is_none());
+    }
+
+    #[test]
+    fn webm_quality_download_keeps_requested_height_before_ffmpeg_conversion() {
+        let request = download_request("webm", "720p");
+        let args = build_download_args(&request, false);
+
+        assert_eq!(
+            arg_value_after(&args, "-f"),
+            Some("bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/best[height<=720][ext=webm]/bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best")
+        );
+        assert_eq!(
+            arg_value_after(&args, "--merge-output-format"),
+            Some("mkv")
+        );
+        assert!(arg_value_after(&args, "--recode-video").is_none());
+    }
+
+    #[test]
+    fn every_audio_output_uses_extract_audio_conversion() {
+        for format in ["mp3", "flac", "wav", "aac", "opus"] {
+            let request = download_request(format, "best");
+            let args = build_download_args(&request, false);
+
+            assert!(args.iter().any(|arg| arg == "-x"));
+            assert_eq!(arg_value_after(&args, "--audio-format"), Some(format));
+            assert_eq!(arg_value_after(&args, "--audio-quality"), Some("0"));
+            assert!(arg_value_after(&args, "--merge-output-format").is_none());
+            assert!(arg_value_after(&args, "--recode-video").is_none());
+            assert!(arg_value_after(&args, "--remux-video").is_none());
+        }
+    }
+
+    #[test]
+    fn parses_ffmpeg_progress_from_microseconds_and_timestamps() {
+        assert_eq!(
+            parse_ffmpeg_progress_percent("out_time_us=5000000", 20.0),
+            Some(25.0)
+        );
+        assert_eq!(
+            parse_ffmpeg_progress_percent("out_time_ms=10000000", 20.0),
+            Some(50.0)
+        );
+        assert_eq!(
+            parse_ffmpeg_progress_percent("out_time=00:00:15.000000", 20.0),
+            Some(75.0)
+        );
+        assert_eq!(
+            parse_ffmpeg_progress_percent("out_time=00:00:30.000000", 20.0),
+            Some(100.0)
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_ffmpeg_progress_inputs() {
+        assert_eq!(parse_ffmpeg_progress_percent("progress=continue", 20.0), None);
+        assert_eq!(parse_ffmpeg_progress_percent("out_time_us=N/A", 20.0), None);
+        assert_eq!(parse_ffmpeg_progress_percent("out_time_us=1000", 0.0), None);
+    }
+
+    #[test]
+    fn webm_final_path_uses_custom_filename_or_staged_stem() {
+        let mut request = download_request("webm", "best");
+        request.output_dir = "C:\\Users\\Mr.W\\Desktop".into();
+        request.filename_override = Some("Clip: 100%?".into());
+
+        assert_eq!(
+            build_webm_final_path(&request, Path::new("C:\\Temp\\ignored.mkv")),
+            PathBuf::from("C:\\Users\\Mr.W\\Desktop").join("Clip_ 100%_.webm")
+        );
+
+        request.filename_override = None;
+        assert_eq!(
+            build_webm_final_path(&request, Path::new("C:\\Temp\\Title [abc123].mkv")),
+            PathBuf::from("C:\\Users\\Mr.W\\Desktop").join("Title [abc123].webm")
+        );
+    }
+
+    #[test]
+    fn staging_paths_are_scoped_to_temp_download_folder() {
+        let staging_dir = build_staging_dir("abc-123");
+        assert!(is_safe_staging_dir(&staging_dir));
+        assert!(!is_safe_staging_dir(Path::new("C:\\Users\\Mr.W\\Desktop")));
     }
 
     #[test]
@@ -1108,6 +1908,25 @@ ffmpeg exited with code 1";
         assert!(!should_retry_with_twitter_syndication(
             "https://example.com/video",
             "ERROR: [twitter] 12345: Failed to query API: Bad guest token"
+        ));
+    }
+
+    #[test]
+    fn retries_x_missing_video_errors_with_syndication() {
+        assert!(is_twitter_missing_video_error(
+            "ERROR: [twitter] 12345: No video could be found in this post"
+        ));
+        assert!(should_retry_with_twitter_syndication(
+            "https://x.com/user/status/1",
+            "ERROR: [twitter] 12345: No video could be found in this post"
+        ));
+        assert!(should_retry_with_twitter_syndication(
+            "https://x.com/user/status/1",
+            "ERROR: requested format is not available"
+        ));
+        assert!(!should_retry_with_twitter_syndication(
+            "https://example.com/video",
+            "ERROR: requested format is not available"
         ));
     }
 }

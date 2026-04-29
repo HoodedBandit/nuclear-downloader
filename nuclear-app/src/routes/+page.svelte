@@ -15,6 +15,7 @@
     | "error"
     | "cancelled";
 
+  type DownloadPhase = "download" | "postprocess" | "conversion" | "complete";
   type CookieMode = "browser" | "file";
 
   const supportedBrowsers = [
@@ -104,6 +105,8 @@
     cookieConfig: CookieConfig | null;
     availableQualities: string[];
     progress: number;
+    downloadProgress: number;
+    conversionProgress: number | null;
     speed: string;
     eta: string;
     error: string | null;
@@ -124,6 +127,9 @@
     download_id: string;
     status: DownloadStatus;
     progress: number;
+    phase?: DownloadPhase | null;
+    download_progress?: number | null;
+    conversion_progress?: number | null;
     speed: string | null;
     eta: string | null;
     error: string | null;
@@ -348,6 +354,16 @@
             progress,
             shouldRefreshDisplay
           );
+          const nextDownloadProgress = getDisplayDownloadProgress(
+            item,
+            progress,
+            shouldRefreshDisplay
+          );
+          const nextConversionProgress = getDisplayConversionProgress(
+            item,
+            progress,
+            shouldRefreshDisplay
+          );
           const nextEta = getDisplayEta(
             item,
             progress,
@@ -360,6 +376,8 @@
             downloadId:
               isTerminal ? null : item.downloadId,
             progress: nextProgress,
+            downloadProgress: nextDownloadProgress,
+            conversionProgress: nextConversionProgress,
             speed: isTerminal
               ? ""
               : progress.speed ?? "",
@@ -371,7 +389,7 @@
           if (isTerminal) {
             clearProgressDisplayState(item.id);
             void pumpDownloadQueue();
-          } else if (shouldRefreshDisplay && progress.status === "downloading") {
+          } else if (shouldRefreshDisplay && isActiveStatus(progress.status)) {
             downloadDisplayUpdatedAt.set(item.id, Date.now());
           }
         }
@@ -418,7 +436,19 @@
     payload: DownloadProgressPayload,
     shouldRefreshDisplay: boolean
   ): number {
-    if (payload.status === "completed" || payload.status === "postprocessing") {
+    if (payload.status === "completed") {
+      return 100;
+    }
+
+    if (payload.status === "postprocessing") {
+      const isConversionPhase =
+        payload.phase === "conversion" || payload.conversion_progress != null;
+      const conversionProgress =
+        payload.conversion_progress ?? (isConversionPhase ? payload.progress : null);
+      if (item.format === "webm" && isConversionPhase && conversionProgress !== null) {
+        if (!shouldRefreshDisplay) return item.progress;
+        return Math.max(item.progress, clampProgressValue(conversionProgress));
+      }
       return 100;
     }
 
@@ -433,21 +463,75 @@
     return Math.max(item.progress, clampProgressValue(payload.progress));
   }
 
+  function getDisplayDownloadProgress(
+    item: QueueItem,
+    payload: DownloadProgressPayload,
+    shouldRefreshDisplay: boolean
+  ): number {
+    if (payload.status === "completed" || payload.status === "postprocessing") {
+      return 100;
+    }
+
+    if (payload.status !== "downloading") {
+      return item.downloadProgress;
+    }
+
+    const rawProgress = payload.download_progress ?? payload.progress;
+    if (!shouldRefreshDisplay) {
+      return item.downloadProgress;
+    }
+
+    return Math.max(item.downloadProgress, clampProgressValue(rawProgress));
+  }
+
+  function getDisplayConversionProgress(
+    item: QueueItem,
+    payload: DownloadProgressPayload,
+    shouldRefreshDisplay: boolean
+  ): number | null {
+    if (payload.status === "completed" && item.format === "webm") {
+      return 100;
+    }
+
+    if (payload.status !== "postprocessing") {
+      return item.conversionProgress;
+    }
+
+    const isConversionPhase =
+      payload.phase === "conversion" || payload.conversion_progress != null;
+
+    if (!isConversionPhase || (item.format !== "webm" && payload.conversion_progress == null)) {
+      return item.conversionProgress;
+    }
+
+    const rawProgress = payload.conversion_progress ?? payload.progress;
+    const currentProgress = item.conversionProgress ?? 0;
+    if (!shouldRefreshDisplay) {
+      return currentProgress;
+    }
+
+    return Math.max(currentProgress, clampProgressValue(rawProgress));
+  }
+
   function shouldRefreshDownloadDisplay(
     item: QueueItem,
     payload: DownloadProgressPayload,
     statusChanged: boolean
   ): boolean {
-    if (payload.status !== "downloading") {
+    if (!isActiveStatus(payload.status)) {
       return true;
     }
 
     const now = Date.now();
     const lastUpdatedAt = downloadDisplayUpdatedAt.get(item.id) ?? 0;
+    const currentProgress =
+      payload.status === "postprocessing"
+        ? item.conversionProgress ?? 0
+        : item.downloadProgress;
     return (
       statusChanged ||
-      item.progress === 0 ||
-      item.eta === "" ||
+      currentProgress === 0 ||
+      (payload.status === "downloading" && item.eta === "") ||
       now - lastUpdatedAt >= DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS
     );
   }
@@ -467,6 +551,19 @@
     }
 
     return nextEta;
+  }
+
+  function shouldShowConversionProgress(item: QueueItem): boolean {
+    return (
+      item.format === "webm" &&
+      (item.status === "postprocessing" ||
+        item.conversionProgress !== null ||
+        item.status === "completed")
+    );
+  }
+
+  function roundedProgress(value: number | null): number {
+    return Math.round(clampProgressValue(value ?? 0));
   }
 
   function formatDuration(seconds: number | null | undefined): string {
@@ -695,6 +792,8 @@
       status: "downloading",
       error: null,
       progress: 0,
+      downloadProgress: 0,
+      conversionProgress: null,
       speed: "",
       eta: "",
     };
@@ -1025,6 +1124,8 @@
       cookieConfig,
       availableQualities: [],
       progress: 0,
+      downloadProgress: 0,
+      conversionProgress: null,
       speed: "",
       eta: "",
       error: null,
@@ -1109,6 +1210,8 @@
           cookieConfig,
           availableQualities: createDefaultQualityOptions(),
           progress: 0,
+          downloadProgress: 0,
+          conversionProgress: null,
           speed: "",
           eta: "",
           error: null,
@@ -1211,6 +1314,8 @@
         status: "fetching",
         error: null,
         progress: 0,
+        downloadProgress: 0,
+        conversionProgress: null,
         speed: "",
         eta: "",
         downloadId: null,
@@ -1229,6 +1334,8 @@
       status: "ready",
       error: null,
       progress: 0,
+      downloadProgress: 0,
+      conversionProgress: null,
       speed: "",
       eta: "",
       downloadId: null,
@@ -1555,15 +1662,44 @@
                 {/if}
               </td>
               <td class="col-progress">
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    class:complete={item.status === "completed"}
-                    class:error={item.status === "error"}
-                    style="width: {item.progress}%"
-                  ></div>
-                  <span class="progress-text">{Math.round(item.progress)}%</span>
-                </div>
+                {#if shouldShowConversionProgress(item)}
+                  <div class="phase-progress">
+                    <div class="phase-progress-row">
+                      <span class="phase-label">DL</span>
+                      <div class="progress-bar">
+                        <div
+                          class="progress-fill"
+                          class:complete={item.downloadProgress >= 100}
+                          class:error={item.status === "error" && item.conversionProgress === null}
+                          style="width: {item.downloadProgress}%"
+                        ></div>
+                        <span class="progress-text">{roundedProgress(item.downloadProgress)}%</span>
+                      </div>
+                    </div>
+                    <div class="phase-progress-row">
+                      <span class="phase-label">CV</span>
+                      <div class="progress-bar">
+                        <div
+                          class="progress-fill convert"
+                          class:complete={item.status === "completed"}
+                          class:error={item.status === "error" && item.conversionProgress !== null}
+                          style="width: {item.conversionProgress ?? 0}%"
+                        ></div>
+                        <span class="progress-text">{roundedProgress(item.conversionProgress)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                {:else}
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      class:complete={item.status === "completed"}
+                      class:error={item.status === "error"}
+                      style="width: {item.progress}%"
+                    ></div>
+                    <span class="progress-text">{roundedProgress(item.progress)}%</span>
+                  </div>
+                {/if}
               </td>
               <td class="col-speed">
                 <span class="muted">{item.speed}</span>
@@ -2244,6 +2380,10 @@
     border-radius: 4px;
   }
 
+  .progress-fill.convert {
+    background: var(--yellow);
+  }
+
   .progress-fill.complete {
     background: var(--green);
   }
@@ -2262,6 +2402,34 @@
     font-weight: 600;
     color: var(--text);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .phase-progress {
+    display: grid;
+    gap: 3px;
+  }
+
+  .phase-progress-row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+  }
+
+  .phase-progress-row .progress-bar {
+    height: 12px;
+  }
+
+  .phase-progress-row .progress-text {
+    font-size: 9px;
+  }
+
+  .phase-label {
+    color: var(--subtext0);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: right;
   }
 
   .muted {

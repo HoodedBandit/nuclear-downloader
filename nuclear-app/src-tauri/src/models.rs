@@ -52,6 +52,12 @@ pub struct DownloadProgress {
     pub download_id: String,
     pub status: String,
     pub progress: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phase: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub download_progress: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conversion_progress: Option<f64>,
     pub speed: Option<String>,
     pub eta: Option<String>,
     pub error: Option<String>,
