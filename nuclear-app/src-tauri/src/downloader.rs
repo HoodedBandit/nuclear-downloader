@@ -1,6 +1,7 @@
 use crate::models::{
     CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo,
 };
+use crate::runtime::{self, YtdlpCommandConfig};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Deserializer;
@@ -31,7 +32,10 @@ static DOWNLOAD_ETA_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"ETA\s+(\
 static DOWNLOAD_DEST_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\] Destination:\s+(.+)").unwrap());
 static DOWNLOAD_FINAL_DEST_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)\[(?:Merger|VideoConvertor|VideoRemuxer)\].*(?:into|Destination:)\s+"?(.+?)"?\s*$"#).unwrap()
+    Regex::new(
+        r#"(?i)\[(?:Merger|VideoConvertor|VideoRemuxer)\].*(?:into|Destination:)\s+"?(.+?)"?\s*$"#,
+    )
+    .unwrap()
 });
 static DOWNLOAD_MERGE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[Merger\]|\[VideoConvertor\]|\[VideoRemuxer\]|\[ExtractAudio\]|post-?process|converting|remuxing").unwrap()
@@ -98,7 +102,8 @@ impl PlaylistLineRecord {
         } = self;
         let id = id.unwrap_or_else(|| "unknown".to_string());
         let video_url = url
-            .or(webpage_url)
+            .filter(|value| is_allowed_download_url(value))
+            .or_else(|| webpage_url.filter(|value| is_allowed_download_url(value)))
             .unwrap_or_else(|| format!("https://www.youtube.com/watch?v={id}"));
 
         PlaylistEntry {
@@ -142,10 +147,19 @@ struct ProgressFields {
     speed: Option<String>,
     eta: Option<String>,
     error: Option<String>,
+    error_code: Option<String>,
+    error_detail: Option<String>,
     filename: Option<String>,
     phase: Option<&'static str>,
     download_progress: Option<f64>,
     conversion_progress: Option<f64>,
+}
+
+#[derive(Debug, Clone)]
+struct DownloadErrorInfo {
+    code: String,
+    message: String,
+    detail: String,
 }
 
 fn emit_progress(
@@ -167,6 +181,8 @@ fn emit_progress(
             speed: fields.speed,
             eta: fields.eta,
             error: fields.error,
+            error_code: fields.error_code,
+            error_detail: fields.error_detail,
             filename: fields.filename,
         },
     );
@@ -187,6 +203,7 @@ pub fn is_allowed_download_url(raw: &str) -> bool {
 pub fn validate_fetch_request(
     url: &str,
     cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
 ) -> Result<(), String> {
     if !is_allowed_download_url(url) {
         return Err("Only http:// and https:// URLs are allowed.".into());
@@ -196,11 +213,17 @@ pub fn validate_fetch_request(
         validate_cookie_config(config)?;
     }
 
+    validate_compat_config_path(compat_config_path)?;
+
     Ok(())
 }
 
 pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String> {
-    validate_fetch_request(&request.url, request.cookie_config.as_ref())?;
+    validate_fetch_request(
+        &request.url,
+        request.cookie_config.as_ref(),
+        request.compat_config_path.as_deref(),
+    )?;
 
     if !is_allowed_format(&request.format) {
         return Err("Unsupported output format.".into());
@@ -220,15 +243,7 @@ pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String
 /// Resolve a binary name to the bundled sidecar path if it exists,
 /// otherwise fall back to system PATH (for dev mode).
 pub fn resolve_bin(name: &str) -> PathBuf {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let sidecar = dir.join(format!("{}.exe", name));
-            if sidecar.exists() {
-                return sidecar;
-            }
-        }
-    }
-    PathBuf::from(name)
+    runtime::resolve_bin(name)
 }
 
 fn ytdlp_bin() -> PathBuf {
@@ -273,6 +288,51 @@ fn validate_cookie_config(config: &CookieConfig) -> Result<(), String> {
             }
         }
         _ => Err("Unsupported cookie mode.".into()),
+    }
+}
+
+fn validate_compat_config_path(path: Option<&str>) -> Result<(), String> {
+    let Some(path) = path.map(str::trim).filter(|path| !path.is_empty()) else {
+        return Ok(());
+    };
+
+    if Path::new(path).is_file() {
+        Ok(())
+    } else {
+        Err("Compatibility config file was not found.".into())
+    }
+}
+
+fn append_ytdlp_runtime_args(
+    args: &mut Vec<String>,
+    runtime_config: &YtdlpCommandConfig,
+    compat_config_path: Option<&str>,
+) {
+    args.push("--ignore-config".to_string());
+
+    if let Some(path) = compat_config_path
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+    {
+        args.push("--config-locations".to_string());
+        args.push(path.to_string());
+    }
+
+    args.push("--no-plugin-dirs".to_string());
+    if let Some(plugin_dir) = runtime_config.plugin_dir.as_ref() {
+        args.push("--plugin-dirs".to_string());
+        args.push(plugin_dir.to_string_lossy().to_string());
+    }
+
+    args.push("--no-js-runtimes".to_string());
+    if let Some(deno_path) = runtime_config.deno_path.as_ref() {
+        args.push("--js-runtimes".to_string());
+        args.push(format!("deno:{}", deno_path.to_string_lossy()));
+    }
+
+    if let Some(ffmpeg_dir) = runtime_config.ffmpeg_dir.as_ref() {
+        args.push("--ffmpeg-location".to_string());
+        args.push(ffmpeg_dir.to_string_lossy().to_string());
     }
 }
 
@@ -417,6 +477,147 @@ fn build_error_message(stderr_output: &str, exit_code: Option<i32>) -> String {
         .join(" | ")
 }
 
+fn simple_error(code: &str, message: impl Into<String>) -> DownloadErrorInfo {
+    let message = message.into();
+    DownloadErrorInfo {
+        code: code.to_string(),
+        message: message.clone(),
+        detail: message,
+    }
+}
+
+fn classify_process_error(
+    stderr_output: &str,
+    exit_code: Option<i32>,
+    format_hint: Option<&str>,
+) -> DownloadErrorInfo {
+    let summary = build_error_message(stderr_output, exit_code);
+    let lower = stderr_output.to_ascii_lowercase();
+    let format_hint = format_hint.unwrap_or_default();
+
+    let (code, message) = if lower.contains("no supported javascript runtime")
+        || lower.contains("js runtime")
+        || lower.contains("ejs")
+    {
+        (
+            "youtube_missing_js_runtime",
+            "YouTube extraction needs the bundled JavaScript runtime. Update the downloader runtime and retry.".to_string(),
+        )
+    } else if lower.contains("po token")
+        || lower.contains("potoken")
+        || lower.contains("proof of origin")
+        || lower.contains("confirm you")
+        || lower.contains("not a bot")
+        || lower.contains("bot verification")
+    {
+        (
+            "youtube_bot_verification",
+            "YouTube asked for bot or PO-token verification for this public video. Update the downloader runtime first; if it still fails, use the advanced compatibility config/plugin hook for that network.".to_string(),
+        )
+    } else if lower.contains("login required")
+        || lower.contains("authentication required")
+        || lower.contains("private video")
+        || lower.contains("members-only")
+        || lower.contains("age-restricted")
+        || lower.contains("sign in to confirm your age")
+    {
+        (
+            "login_required",
+            "This video requires an account that can access it. Enable cookies or provide a cookies.txt file, then retry.".to_string(),
+        )
+    } else if lower.contains("could not copy") && lower.contains("cookie")
+        || lower.contains("cookie database")
+        || lower.contains("cookies-from-browser")
+        || lower.contains("decrypt") && lower.contains("cookie")
+        || lower.contains("cookie") && lower.contains("locked")
+        || lower.contains("cookie") && lower.contains("expired")
+    {
+        (
+            "cookie_failure",
+            "The selected cookies could not be used. Refresh the cookies.txt file or close the browser before importing cookies.".to_string(),
+        )
+    } else if lower.contains("requested format is not available")
+        || lower.contains("no video formats found")
+        || lower.contains("no compatible formats")
+    {
+        if format_hint == "mp4" {
+            (
+                "format_unavailable",
+                "No compatible MP4 stream is available for this video. Choose MKV for best quality or WebM conversion and retry.".to_string(),
+            )
+        } else {
+            (
+                "format_unavailable",
+                "The requested format is not available for this video. Choose another format or quality and retry.".to_string(),
+            )
+        }
+    } else if lower.contains("not available in your country")
+        || lower.contains("geo")
+        || lower.contains("region")
+    {
+        (
+            "region_unavailable",
+            "This video is not available from the current region or network.".to_string(),
+        )
+    } else if lower.contains("video unavailable")
+        || lower.contains("this video is unavailable")
+        || lower.contains("removed")
+        || lower.contains("unsupported url")
+    {
+        (
+            "unavailable",
+            "This URL is unavailable or unsupported by the downloader runtime.".to_string(),
+        )
+    } else if lower.contains("ffmpeg")
+        || lower.contains("ffprobe")
+        || lower.contains("post-process")
+        || lower.contains("postprocess")
+    {
+        (
+            "postprocess_failed",
+            "The media downloaded but post-processing failed. Update the downloader runtime and retry.".to_string(),
+        )
+    } else {
+        ("download_failed", summary.clone())
+    };
+
+    let detail = format!(
+        "{}\n\nRuntime: {}",
+        if stderr_output.trim().is_empty() {
+            summary
+        } else {
+            stderr_output.trim().to_string()
+        },
+        runtime::diagnostic_summary()
+    );
+
+    DownloadErrorInfo {
+        code: code.to_string(),
+        message,
+        detail,
+    }
+}
+
+fn error_for_fetch(stderr_output: &str, exit_code: Option<i32>) -> String {
+    let error = classify_process_error(stderr_output, exit_code, None);
+    error.message
+}
+
+fn emit_error_progress(app: &AppHandle, download_id: &str, error: DownloadErrorInfo) {
+    emit_progress(
+        app,
+        download_id,
+        "error",
+        0.0,
+        ProgressFields {
+            error: Some(error.message),
+            error_code: Some(error.code),
+            error_detail: Some(error.detail),
+            ..Default::default()
+        },
+    );
+}
+
 fn parse_first_json_value(stdout: &str) -> Result<serde_json::Value, String> {
     serde_json::from_str(stdout).or_else(|primary_error| {
         let mut stream = Deserializer::from_str(stdout).into_iter::<serde_json::Value>();
@@ -524,9 +725,11 @@ fn format_selector_for_video(request: &DownloadRequest) -> String {
     let height_limit = (request.quality != "best").then(|| request.quality.replace('p', ""));
 
     match (request.format.as_str(), height_limit.as_deref()) {
-        ("mp4", None) => "bestvideo*+bestaudio/best".to_string(),
+        ("mp4", None) => {
+            "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best".to_string()
+        }
         ("mp4", Some(height)) => format!(
-            "bestvideo*[height<={height}]+bestaudio/best[height<={height}]/bestvideo*+bestaudio/best"
+            "bestvideo[height<={height}][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<={height}][ext=mp4]+bestaudio[ext=m4a]/best[height<={height}][ext=mp4]/best[height<={height}]"
         ),
         ("mkv", None) => "bestvideo+bestaudio/best".to_string(),
         ("mkv", Some(height)) => {
@@ -547,7 +750,7 @@ fn append_video_postprocess_args(args: &mut Vec<String>, format: &str) {
     match format {
         "mp4" => {
             args.push("--merge-output-format".to_string());
-            args.push("mp4/mkv".to_string());
+            args.push("mp4".to_string());
             args.push("--remux-video".to_string());
             args.push("mp4".to_string());
         }
@@ -565,42 +768,23 @@ fn append_video_postprocess_args(args: &mut Vec<String>, format: &str) {
     }
 }
 
-pub fn ffmpeg_available() -> bool {
-    let path = ffmpeg_bin();
-    if path.exists() {
-        return true;
-    }
-    // Check system PATH
-    std::process::Command::new("ffmpeg")
-        .arg("-version")
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
-}
-
 async fn run_fetch_info_command(
     url: &str,
     cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
     use_twitter_syndication: bool,
 ) -> Result<std::process::Output, String> {
     let bin = ytdlp_bin();
-    let mut args = vec![
+    let runtime_config = runtime::ytdlp_command_config();
+    let mut args = Vec::new();
+    append_ytdlp_runtime_args(&mut args, &runtime_config, compat_config_path);
+    args.extend([
         "--dump-single-json".to_string(),
         "--no-download".to_string(),
         "--no-playlist".to_string(),
-    ];
+    ]);
 
     append_twitter_syndication_args(&mut args, url, use_twitter_syndication);
-
-    let ffmpeg = ffmpeg_bin();
-    if ffmpeg.exists() {
-        if let Some(dir) = ffmpeg.parent() {
-            args.push("--ffmpeg-location".to_string());
-            args.push(dir.to_string_lossy().to_string());
-        }
-    }
 
     if let Some(config) = cookie_config {
         append_cookie_args(&mut args, config);
@@ -622,21 +806,22 @@ async fn run_fetch_info_command(
 pub async fn fetch_info(
     url: &str,
     cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
 ) -> Result<VideoInfo, String> {
-    validate_fetch_request(url, cookie_config)?;
+    validate_fetch_request(url, cookie_config, compat_config_path)?;
 
-    let mut output = run_fetch_info_command(url, cookie_config, false).await?;
+    let mut output = run_fetch_info_command(url, cookie_config, compat_config_path, false).await?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if should_retry_with_twitter_syndication(url, &stderr) {
-            output = run_fetch_info_command(url, cookie_config, true).await?;
+            output = run_fetch_info_command(url, cookie_config, compat_config_path, true).await?;
         }
     }
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("yt-dlp error: {}", stderr.trim()));
+        return Err(error_for_fetch(&stderr, output.status.code()));
     }
 
     let json_str = String::from_utf8_lossy(&output.stdout);
@@ -675,18 +860,23 @@ pub async fn fetch_info(
 pub async fn fetch_playlist(
     url: &str,
     cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
 ) -> Result<PlaylistInfo, String> {
-    validate_fetch_request(url, cookie_config)?;
+    validate_fetch_request(url, cookie_config, compat_config_path)?;
 
     let bin = ytdlp_bin();
-    let mut cmd = Command::new(&bin);
-    cmd.args([
-        "--flat-playlist",
-        "--dump-json",
-        "--lazy-playlist",
-        "--no-download",
-        url,
+    let runtime_config = runtime::ytdlp_command_config();
+    let mut args = Vec::new();
+    append_ytdlp_runtime_args(&mut args, &runtime_config, compat_config_path);
+    args.extend([
+        "--flat-playlist".to_string(),
+        "--dump-json".to_string(),
+        "--lazy-playlist".to_string(),
+        "--no-download".to_string(),
+        url.to_string(),
     ]);
+    let mut cmd = Command::new(&bin);
+    cmd.args(&args);
     configure_cookie_args(&mut cmd, cookie_config);
 
     #[cfg(windows)]
@@ -740,10 +930,7 @@ pub async fn fetch_playlist(
         .map_err(|e| format!("Failed to wait for yt-dlp: {}", e))?;
 
     if !status.success() {
-        return Err(format!(
-            "yt-dlp error: {}",
-            build_error_message(&stderr_output, status.code())
-        ));
+        return Err(error_for_fetch(&stderr_output, status.code()));
     }
 
     if entries.is_empty() {
@@ -758,16 +945,17 @@ pub async fn fetch_playlist(
     })
 }
 
-fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool) -> Vec<String> {
+fn build_download_args_with_runtime(
+    request: &DownloadRequest,
+    use_twitter_syndication: bool,
+    runtime_config: &YtdlpCommandConfig,
+) -> Vec<String> {
     let mut args: Vec<String> = Vec::new();
-
-    let ffmpeg = ffmpeg_bin();
-    if ffmpeg.exists() {
-        if let Some(dir) = ffmpeg.parent() {
-            args.push("--ffmpeg-location".to_string());
-            args.push(dir.to_string_lossy().to_string());
-        }
-    }
+    append_ytdlp_runtime_args(
+        &mut args,
+        runtime_config,
+        request.compat_config_path.as_deref(),
+    );
 
     let is_audio_only = matches!(
         request.format.as_str(),
@@ -803,6 +991,11 @@ fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool)
     args
 }
 
+fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool) -> Vec<String> {
+    let runtime_config = runtime::ytdlp_command_config();
+    build_download_args_with_runtime(request, use_twitter_syndication, &runtime_config)
+}
+
 fn staging_root() -> PathBuf {
     std::env::temp_dir()
         .join("nuclear-downloader")
@@ -810,7 +1003,8 @@ fn staging_root() -> PathBuf {
 }
 
 fn build_staging_dir(download_id: &str) -> PathBuf {
-    let safe_id = sanitize_filename_component(download_id).unwrap_or_else(|| "download".to_string());
+    let safe_id =
+        sanitize_filename_component(download_id).unwrap_or_else(|| "download".to_string());
     staging_root().join(safe_id)
 }
 
@@ -1026,7 +1220,7 @@ enum DownloadAttemptResult {
     Completed(Option<String>),
     Cancelled,
     RetryWithTwitterSyndication,
-    Error(String),
+    Error(DownloadErrorInfo),
 }
 
 async fn run_download_attempt(
@@ -1050,7 +1244,10 @@ async fn run_download_attempt(
     let mut child = match cmd.spawn() {
         Ok(child) => child,
         Err(error) => {
-            return DownloadAttemptResult::Error(format!("Failed to start yt-dlp: {}", error));
+            return DownloadAttemptResult::Error(simple_error(
+                "runtime_missing",
+                format!("Failed to start yt-dlp: {}", error),
+            ));
         }
     };
 
@@ -1129,10 +1326,17 @@ async fn run_download_attempt(
             {
                 DownloadAttemptResult::RetryWithTwitterSyndication
             } else {
-                DownloadAttemptResult::Error(build_error_message(&stderr_output, s.code()))
+                DownloadAttemptResult::Error(classify_process_error(
+                    &stderr_output,
+                    s.code(),
+                    Some(&request.format),
+                ))
             }
         }
-        None => DownloadAttemptResult::Error("Process terminated unexpectedly".into()),
+        None => DownloadAttemptResult::Error(simple_error(
+            "process_terminated",
+            "Process terminated unexpectedly",
+        )),
     }
 }
 
@@ -1146,7 +1350,9 @@ async fn run_webm_conversion(
 ) -> DownloadAttemptResult {
     let duration_seconds = match probe_media_duration_seconds(input_path).await {
         Ok(duration) => duration,
-        Err(error) => return DownloadAttemptResult::Error(error),
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("postprocess_failed", error))
+        }
     };
 
     emit_progress(
@@ -1207,7 +1413,10 @@ async fn run_webm_conversion(
     let mut child = match cmd.spawn() {
         Ok(child) => child,
         Err(error) => {
-            return DownloadAttemptResult::Error(format!("Failed to start ffmpeg: {error}"));
+            return DownloadAttemptResult::Error(simple_error(
+                "runtime_missing",
+                format!("Failed to start ffmpeg: {error}"),
+            ));
         }
     };
 
@@ -1264,16 +1473,20 @@ async fn run_webm_conversion(
     match status {
         Some(status) if status.success() => {
             if let Err(error) = publish_converted_output(staged_output, final_path).await {
-                DownloadAttemptResult::Error(error)
+                DownloadAttemptResult::Error(simple_error("postprocess_failed", error))
             } else {
                 DownloadAttemptResult::Completed(Some(path_to_string(final_path)))
             }
         }
-        Some(status) => DownloadAttemptResult::Error(build_error_message(
+        Some(status) => DownloadAttemptResult::Error(classify_process_error(
             &stderr_output,
             status.code(),
+            Some("webm"),
         )),
-        None => DownloadAttemptResult::Error("FFmpeg terminated unexpectedly".into()),
+        None => DownloadAttemptResult::Error(simple_error(
+            "process_terminated",
+            "FFmpeg terminated unexpectedly",
+        )),
     }
 }
 
@@ -1288,7 +1501,7 @@ async fn run_webm_download(
 
     loop {
         if let Err(error) = reset_staging_dir(&staging_dir) {
-            return DownloadAttemptResult::Error(error);
+            return DownloadAttemptResult::Error(simple_error("staging_failed", error));
         }
 
         let mut staged_request = request.clone();
@@ -1309,9 +1522,10 @@ async fn run_webm_download(
                     .or_else(|| find_latest_media_file(&staging_dir));
                 let Some(intermediate_path) = intermediate_path else {
                     cleanup_staging_dir(&staging_dir);
-                    return DownloadAttemptResult::Error(
-                        "Download completed but no staged media file was found.".into(),
-                    );
+                    return DownloadAttemptResult::Error(simple_error(
+                        "staging_failed",
+                        "Download completed but no staged media file was found.",
+                    ));
                 };
 
                 let final_path = build_webm_final_path(request, &intermediate_path);
@@ -1347,29 +1561,22 @@ pub async fn start_download(
     active: ActiveDownloads,
 ) {
     if request.output_dir.trim().is_empty() {
-        emit_progress(
+        emit_error_progress(
             &app,
             &download_id,
-            "error",
-            0.0,
-            ProgressFields {
-                error: Some("Output folder is not set.".into()),
-                ..Default::default()
-            },
+            simple_error("output_folder", "Output folder is not set."),
         );
         return;
     }
 
     if let Err(error) = std::fs::create_dir_all(&request.output_dir) {
-        emit_progress(
+        emit_error_progress(
             &app,
             &download_id,
-            "error",
-            0.0,
-            ProgressFields {
-                error: Some(format!("Failed to create output folder: {}", error)),
-                ..Default::default()
-            },
+            simple_error(
+                "output_folder",
+                format!("Failed to create output folder: {}", error),
+            ),
         );
         return;
     }
@@ -1413,27 +1620,16 @@ pub async fn start_download(
                 );
             }
             DownloadAttemptResult::Error(error) => {
-                emit_progress(
-                    &app,
-                    &download_id,
-                    "error",
-                    0.0,
-                    ProgressFields {
-                        error: Some(error),
-                        ..Default::default()
-                    },
-                );
+                emit_error_progress(&app, &download_id, error);
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
-                emit_progress(
+                emit_error_progress(
                     &app,
                     &download_id,
-                    "error",
-                    0.0,
-                    ProgressFields {
-                        error: Some("Download failed before retry could complete.".into()),
-                        ..Default::default()
-                    },
+                    simple_error(
+                        "download_failed",
+                        "Download failed before retry could complete.",
+                    ),
                 );
             }
         }
@@ -1481,16 +1677,7 @@ pub async fn start_download(
                 use_twitter_syndication = true;
             }
             DownloadAttemptResult::Error(error) => {
-                emit_progress(
-                    &app,
-                    &download_id,
-                    "error",
-                    0.0,
-                    ProgressFields {
-                        error: Some(error),
-                        ..Default::default()
-                    },
-                );
+                emit_error_progress(&app, &download_id, error);
                 return;
             }
         }
@@ -1500,13 +1687,15 @@ pub async fn start_download(
 #[cfg(test)]
 mod tests {
     use super::{
-        build_download_args, build_error_message, build_output_template, build_staging_dir,
-        build_webm_final_path, is_safe_staging_dir, is_twitter_api_auth_error,
-        is_twitter_missing_video_error, is_x_or_twitter_url, parse_ffmpeg_progress_percent,
-        parse_first_json_value, sanitize_thumbnail_url, should_retry_with_twitter_syndication,
-        validate_download_request, validate_fetch_request, PlaylistLineRecord,
+        build_download_args, build_download_args_with_runtime, build_error_message,
+        build_output_template, build_staging_dir, build_webm_final_path, classify_process_error,
+        is_safe_staging_dir, is_twitter_api_auth_error, is_twitter_missing_video_error,
+        is_x_or_twitter_url, parse_ffmpeg_progress_percent, parse_first_json_value,
+        sanitize_thumbnail_url, should_retry_with_twitter_syndication, validate_download_request,
+        validate_fetch_request, PlaylistLineRecord,
     };
     use crate::models::{CookieConfig, DownloadRequest};
+    use crate::runtime::YtdlpCommandConfig;
     use std::path::{Path, PathBuf};
 
     fn arg_value_after<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
@@ -1523,6 +1712,15 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
             cookie_config: None,
             filename_override: None,
+            compat_config_path: None,
+        }
+    }
+
+    fn deterministic_runtime_config() -> YtdlpCommandConfig {
+        YtdlpCommandConfig {
+            ffmpeg_dir: Some(PathBuf::from("C:\\NuclearRuntime")),
+            deno_path: Some(PathBuf::from("C:\\NuclearRuntime\\deno.exe")),
+            plugin_dir: Some(PathBuf::from("C:\\NuclearRuntime\\plugins")),
         }
     }
 
@@ -1535,6 +1733,7 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
             cookie_config: None,
             filename_override: None,
+            compat_config_path: None,
         };
 
         assert_eq!(
@@ -1552,6 +1751,7 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
             cookie_config: None,
             filename_override: Some("My custom clip".into()),
+            compat_config_path: None,
         };
 
         assert_eq!(
@@ -1569,6 +1769,7 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\100%Downloads".into(),
             cookie_config: None,
             filename_override: Some("CON: 100%?".into()),
+            compat_config_path: None,
         };
 
         assert_eq!(
@@ -1578,18 +1779,15 @@ mod tests {
     }
 
     #[test]
-    fn mp4_download_uses_broad_selector_and_remuxes_final_video() {
+    fn mp4_download_uses_compatible_selector_and_remuxes_final_video() {
         let request = download_request("mp4", "best");
         let args = build_download_args(&request, false);
 
         assert_eq!(
             arg_value_after(&args, "-f"),
-            Some("bestvideo*+bestaudio/best")
+            Some("bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best")
         );
-        assert_eq!(
-            arg_value_after(&args, "--merge-output-format"),
-            Some("mp4/mkv")
-        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mp4"));
         assert_eq!(arg_value_after(&args, "--remux-video"), Some("mp4"));
         assert!(arg_value_after(&args, "--recode-video").is_none());
     }
@@ -1602,14 +1800,40 @@ mod tests {
 
         assert_eq!(
             arg_value_after(&args, "-f"),
-            Some("bestvideo*[height<=720]+bestaudio/best[height<=720]/bestvideo*+bestaudio/best")
+            Some("bestvideo[height<=720][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]")
         );
-        assert_eq!(
-            arg_value_after(&args, "--merge-output-format"),
-            Some("mp4/mkv")
-        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mp4"));
         assert_eq!(arg_value_after(&args, "--remux-video"), Some("mp4"));
         assert!(arg_value_after(&args, "--recode-video").is_none());
+    }
+
+    #[test]
+    fn download_args_include_deterministic_runtime_flags() {
+        let mut request = download_request("mp4", "best");
+        request.compat_config_path = Some("C:\\Users\\Mr.W\\yt-dlp-compat.conf".into());
+        let runtime_config = deterministic_runtime_config();
+
+        let args = build_download_args_with_runtime(&request, false, &runtime_config);
+
+        assert!(args.iter().any(|arg| arg == "--ignore-config"));
+        assert_eq!(
+            arg_value_after(&args, "--config-locations"),
+            Some("C:\\Users\\Mr.W\\yt-dlp-compat.conf")
+        );
+        assert!(args.iter().any(|arg| arg == "--no-plugin-dirs"));
+        assert_eq!(
+            arg_value_after(&args, "--plugin-dirs"),
+            Some("C:\\NuclearRuntime\\plugins")
+        );
+        assert!(args.iter().any(|arg| arg == "--no-js-runtimes"));
+        assert_eq!(
+            arg_value_after(&args, "--js-runtimes"),
+            Some("deno:C:\\NuclearRuntime\\deno.exe")
+        );
+        assert_eq!(
+            arg_value_after(&args, "--ffmpeg-location"),
+            Some("C:\\NuclearRuntime")
+        );
     }
 
     #[test]
@@ -1649,10 +1873,7 @@ mod tests {
             arg_value_after(&args, "-f"),
             Some("bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/bestvideo+bestaudio/best")
         );
-        assert_eq!(
-            arg_value_after(&args, "--merge-output-format"),
-            Some("mkv")
-        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
         assert!(arg_value_after(&args, "--recode-video").is_none());
         assert!(arg_value_after(&args, "--remux-video").is_none());
     }
@@ -1666,10 +1887,7 @@ mod tests {
             arg_value_after(&args, "-f"),
             Some("bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/best[height<=720][ext=webm]/bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best")
         );
-        assert_eq!(
-            arg_value_after(&args, "--merge-output-format"),
-            Some("mkv")
-        );
+        assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
         assert!(arg_value_after(&args, "--recode-video").is_none());
     }
 
@@ -1710,7 +1928,10 @@ mod tests {
 
     #[test]
     fn rejects_invalid_ffmpeg_progress_inputs() {
-        assert_eq!(parse_ffmpeg_progress_percent("progress=continue", 20.0), None);
+        assert_eq!(
+            parse_ffmpeg_progress_percent("progress=continue", 20.0),
+            None
+        );
         assert_eq!(parse_ffmpeg_progress_percent("out_time_us=N/A", 20.0), None);
         assert_eq!(parse_ffmpeg_progress_percent("out_time_us=1000", 0.0), None);
     }
@@ -1749,6 +1970,7 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
             cookie_config: None,
             filename_override: None,
+            compat_config_path: None,
         };
 
         assert!(validate_download_request(&request).is_err());
@@ -1763,6 +1985,7 @@ mod tests {
             output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
             cookie_config: None,
             filename_override: None,
+            compat_config_path: None,
         };
 
         assert!(validate_download_request(&request).is_err());
@@ -1777,7 +2000,10 @@ mod tests {
             cookie_file: Some("   ".into()),
         };
 
-        assert!(validate_fetch_request("https://example.com/video", Some(&cookie_config)).is_err());
+        assert!(
+            validate_fetch_request("https://example.com/video", Some(&cookie_config), None)
+                .is_err()
+        );
     }
 
     #[test]
@@ -1797,7 +2023,35 @@ mod tests {
             cookie_file: Some(missing_path.to_string_lossy().to_string()),
         };
 
-        assert!(validate_fetch_request("https://example.com/video", Some(&cookie_config)).is_err());
+        assert!(
+            validate_fetch_request("https://example.com/video", Some(&cookie_config), None)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn classifies_youtube_runtime_and_format_errors() {
+        let js = classify_process_error(
+            "WARNING: [youtube] No supported JavaScript runtime could be found",
+            Some(1),
+            Some("mp4"),
+        );
+        assert_eq!(js.code, "youtube_missing_js_runtime");
+
+        let bot = classify_process_error(
+            "ERROR: [youtube] Sign in to confirm you're not a bot",
+            Some(1),
+            Some("mp4"),
+        );
+        assert_eq!(bot.code, "youtube_bot_verification");
+
+        let format = classify_process_error(
+            "ERROR: requested format is not available",
+            Some(1),
+            Some("mp4"),
+        );
+        assert_eq!(format.code, "format_unavailable");
+        assert!(format.message.contains("MP4"));
     }
 
     #[test]

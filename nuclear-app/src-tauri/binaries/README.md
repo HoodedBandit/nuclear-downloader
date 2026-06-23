@@ -7,5 +7,6 @@ If you want to build a Windows release that bundles its downloader sidecars, pla
 - `yt-dlp-x86_64-pc-windows-msvc.exe`
 - `ffmpeg-x86_64-pc-windows-msvc.exe`
 - `ffprobe-x86_64-pc-windows-msvc.exe`
+- `deno-x86_64-pc-windows-msvc.exe`
 
 Development can also use `yt-dlp` and `ffmpeg` from your system `PATH`.

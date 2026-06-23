@@ -17,6 +17,7 @@
 
   type DownloadPhase = "download" | "postprocess" | "conversion" | "complete";
   type CookieMode = "browser" | "file";
+  type RuntimeState = "ready" | "degraded" | "missing";
 
   const supportedBrowsers = [
     "firefox",
@@ -110,6 +111,9 @@
     speed: string;
     eta: string;
     error: string | null;
+    errorCode: string | null;
+    errorDetail: string | null;
+    diagnosticsOpen: boolean;
     filename: string | null;
     selected: boolean;
   }
@@ -121,6 +125,7 @@
     output_dir: string;
     cookie_config: CookieConfig | null;
     filename_override: string | null;
+    compat_config_path: string | null;
   }
 
   interface DownloadProgressPayload {
@@ -133,7 +138,39 @@
     speed: string | null;
     eta: string | null;
     error: string | null;
+    error_code?: string | null;
+    error_detail?: string | null;
     filename: string | null;
+  }
+
+  interface DownloaderToolStatus {
+    name: string;
+    required: boolean;
+    available: boolean;
+    version: string | null;
+    path: string | null;
+    source: string;
+    error: string | null;
+  }
+
+  interface DownloaderRuntimeStatus {
+    state: RuntimeState;
+    runtimeVersion: string | null;
+    source: string;
+    updateAvailable: boolean;
+    latestRuntimeVersion: string | null;
+    runtimeDir: string | null;
+    pluginDir: string;
+    message: string | null;
+    tools: DownloaderToolStatus[];
+  }
+
+  interface DownloaderRuntimeUpdateProgressPayload {
+    status: "checking" | "downloading" | "installing" | "complete" | "error";
+    version: string | null;
+    downloadedBytes: number;
+    totalBytes: number | null;
+    message: string | null;
   }
 
   interface UpdateCheckResult {
@@ -268,6 +305,111 @@
     );
   }
 
+  function getRuntimeUpdatePercent(
+    progress: DownloaderRuntimeUpdateProgressPayload | null,
+  ): number {
+    if (!progress) return 0;
+    if (progress.status === "complete") return 100;
+    if (!progress.totalBytes || progress.totalBytes <= 0) return 0;
+
+    return Math.max(
+      0,
+      Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100),
+    );
+  }
+
+  function getRuntimeTool(name: string): DownloaderToolStatus | null {
+    return runtimeStatus?.tools.find((tool) => tool.name === name) ?? null;
+  }
+
+  function runtimeCanDownload(): boolean {
+    return runtimeStatus !== null && runtimeStatus.state !== "missing";
+  }
+
+  function runtimeBadgeClass(): string {
+    if (!runtimeStatus || runtimeCheckState === "checking") return "neutral";
+    if (runtimeStatus.state === "ready") return "ok";
+    if (runtimeStatus.state === "degraded") return "warn";
+    return "err";
+  }
+
+  function runtimeMissingRequiredTools(): string[] {
+    return (
+      runtimeStatus?.tools
+        .filter((tool) => tool.required && !tool.available)
+        .map((tool) => tool.name) ?? []
+    );
+  }
+
+  function compactRuntimeToolVersion(tool: DownloaderToolStatus): string | null {
+    const version = tool.version?.trim();
+    if (!version) return null;
+    const firstLine = version.split(/\r?\n/)[0]?.trim() ?? "";
+    if (!firstLine) return null;
+
+    if (tool.name === "deno") {
+      return firstLine.match(/^deno\s+([^\s]+)/i)?.[1] ?? firstLine;
+    }
+
+    if (tool.name === "ffmpeg") {
+      return firstLine.match(/^ffmpeg version\s+([^\s]+)/i)?.[1] ?? firstLine;
+    }
+
+    if (tool.name === "ffprobe") {
+      return firstLine.match(/^ffprobe version\s+([^\s]+)/i)?.[1] ?? firstLine;
+    }
+
+    return firstLine.split(/\s+/)[0] ?? firstLine;
+  }
+
+  function runtimeToolBadgeLabel(
+    tool: DownloaderToolStatus | null,
+    displayName: string,
+  ): string | null {
+    if (!tool || !tool.available) return null;
+    const version = compactRuntimeToolVersion(tool);
+    return version ? `${displayName} ${version}` : displayName;
+  }
+
+  function runtimeBadgeText(): string {
+    if (!runtimeStatus || runtimeCheckState === "checking") return "Runtime checking";
+    const ytDlp = getRuntimeTool("yt-dlp");
+    const deno = getRuntimeTool("deno");
+    const missingRequired = runtimeMissingRequiredTools();
+    const parts = [
+      `Runtime ${runtimeStatus.state}`,
+      missingRequired.length > 0
+        ? `Missing ${missingRequired.join(", ")}`
+        : null,
+      runtimeToolBadgeLabel(ytDlp, "yt-dlp"),
+      runtimeToolBadgeLabel(deno, "Deno") ?? "No Deno",
+    ].filter(Boolean);
+    return parts.join(" | ");
+  }
+
+  function runtimeBadgeTitle(): string {
+    if (!runtimeStatus) return runtimeError ?? "";
+
+    const toolLines = runtimeStatus.tools.map((tool) => {
+      const state = tool.available
+        ? (tool.version ?? "available")
+        : `missing${tool.error ? `: ${tool.error}` : ""}`;
+      const source = [tool.source, tool.path].filter(Boolean).join(" ");
+      return `${tool.name}: ${state} (${source})`;
+    });
+
+    return [runtimeStatus.message, ...toolLines].filter(Boolean).join("\n");
+  }
+
+  function getCompatConfigSnapshot(): string | null {
+    const value = compatConfigPath.trim();
+    return value ? value : null;
+  }
+
+  function getPathBasename(path: string): string {
+    return path.split(/[\\/]/).pop() || path;
+  }
+
   // -- State --
   let urlInput = $state("");
   let outputDir = $state("");
@@ -275,13 +417,17 @@
   let globalFormat = $state<OutputFormat>("mp4");
   let queue = $state<QueueItem[]>([]);
   let appVersion = $state<string | null>(null);
-  let ytdlpVersion = $state<string | null>(null);
-  let ffmpegAvailable = $state(false);
+  let runtimeStatus = $state<DownloaderRuntimeStatus | null>(null);
+  let runtimeCheckState = $state<"checking" | "idle">("checking");
+  let runtimeUpdateRunning = $state(false);
+  let runtimeUpdateProgress = $state<DownloaderRuntimeUpdateProgressPayload | null>(null);
+  let runtimeError = $state<string | null>(null);
   let urlError = $state("");
   let useCookies = $state(false);
   let cookieMode = $state<CookieMode>("browser");
   let cookieBrowser = $state<BrowserName>("firefox");
   let cookieFilePath = $state("");
+  let compatConfigPath = $state("");
   let playlistModal = $state<PlaylistModal | null>(null);
   let playlistLoading = $state(false);
   let editingTitleId = $state<string | null>(null);
@@ -305,6 +451,7 @@
   onMount(() => {
     let unlistenProgress: (() => void) | undefined;
     let unlistenUpdateProgress: (() => void) | undefined;
+    let unlistenRuntimeProgress: (() => void) | undefined;
 
     const setup = async () => {
       try {
@@ -313,17 +460,7 @@
         appVersion = null;
       }
 
-      try {
-        ytdlpVersion = await invoke<string>("check_ytdlp");
-      } catch {
-        ytdlpVersion = null;
-      }
-
-      try {
-        ffmpegAvailable = await invoke<boolean>("check_ffmpeg");
-      } catch {
-        ffmpegAvailable = false;
-      }
+      await refreshDownloaderRuntime();
 
       try {
         outputDir = await invoke<string>("default_download_dir");
@@ -382,7 +519,11 @@
               ? ""
               : progress.speed ?? "",
             eta: nextEta,
-            error: progress.error ? normalizeDownloadError(progress.error) : null,
+            error: progress.error
+              ? normalizeDownloadError(progress.error, progress.error_code ?? null)
+              : null,
+            errorCode: progress.error_code ?? null,
+            errorDetail: progress.error_detail ?? null,
             filename: progress.filename ?? item.filename,
           };
 
@@ -407,6 +548,19 @@
         },
       );
 
+      unlistenRuntimeProgress =
+        await listen<DownloaderRuntimeUpdateProgressPayload>(
+          "downloader-runtime-update-progress",
+          (event) => {
+            runtimeUpdateProgress = event.payload;
+            if (event.payload.status === "error") {
+              runtimeUpdateRunning = false;
+              runtimeError =
+                event.payload.message ?? "Downloader runtime update failed.";
+            }
+          },
+        );
+
       void checkForAppUpdate({ openModal: false, showErrors: false });
     };
 
@@ -415,6 +569,7 @@
     return () => {
       unlistenProgress?.();
       unlistenUpdateProgress?.();
+      unlistenRuntimeProgress?.();
     };
   });
 
@@ -584,7 +739,9 @@
     return /[?&]list=/.test(url) || /\/playlist\?/.test(url);
   }
 
-  function normalizeDownloadError(message: string): string {
+  function normalizeDownloadError(message: string, code: string | null = null): string {
+    if (code) return message;
+
     if (
       /(guest token|bad guest token|failed to query api|unauthorized)/i.test(
         message
@@ -600,6 +757,9 @@
       ) ||
       (/Unsupported URL/i.test(message) && /login|auth|sign.?in/i.test(message))
     ) {
+      if (/confirm you'?re not a bot|not a bot/i.test(message)) {
+        return "YouTube requested bot verification for this public video. Update downloader runtime first, then retry.";
+      }
       return "This site requires login. Enable Cookies (use Firefox or a cookies.txt file) and make sure you're logged in.";
     }
 
@@ -616,6 +776,45 @@
     }
 
     return message;
+  }
+
+  async function refreshDownloaderRuntime(): Promise<void> {
+    runtimeCheckState = "checking";
+    runtimeError = null;
+
+    try {
+      runtimeStatus = await invoke<DownloaderRuntimeStatus>(
+        "check_downloader_runtime",
+      );
+    } catch (error) {
+      runtimeStatus = null;
+      runtimeError = normalizeAppError(error);
+    } finally {
+      runtimeCheckState = "idle";
+    }
+  }
+
+  async function updateDownloaderRuntime(): Promise<void> {
+    runtimeUpdateRunning = true;
+    runtimeError = null;
+    runtimeUpdateProgress = {
+      status: "checking",
+      version: runtimeStatus?.latestRuntimeVersion ?? null,
+      downloadedBytes: 0,
+      totalBytes: null,
+      message: "Checking downloader runtime release...",
+    };
+
+    try {
+      runtimeStatus = await invoke<DownloaderRuntimeStatus>(
+        "update_downloader_runtime",
+      );
+    } catch (error) {
+      runtimeError = normalizeAppError(error);
+    } finally {
+      runtimeUpdateRunning = false;
+      await refreshDownloaderRuntime();
+    }
   }
 
   function getCookieConfig(): CookieConfig | null {
@@ -733,6 +932,47 @@
     return item.status === "error" || item.status === "cancelled";
   }
 
+  function toggleDiagnostics(itemId: string): void {
+    queue = queue.map((item) =>
+      item.id === itemId
+        ? { ...item, diagnosticsOpen: !item.diagnosticsOpen }
+        : item,
+    );
+  }
+
+  function buildDiagnostics(item: QueueItem): string {
+    const runtimeLines =
+      runtimeStatus?.tools
+        .map(
+          (tool) =>
+            `${tool.name}: ${tool.available ? tool.version ?? "available" : "missing"} (${tool.source}) ${tool.path ?? ""}`,
+        )
+        .join("\n") ?? "Runtime status unavailable";
+
+    return [
+      `Title: ${getQueueItemDisplayTitle(item)}`,
+      `URL: ${item.url}`,
+      `Format: ${item.format}`,
+      `Quality: ${item.quality}`,
+      `Status: ${item.status}`,
+      `Error code: ${item.errorCode ?? "n/a"}`,
+      `Error: ${item.error ?? "n/a"}`,
+      "",
+      "Detail:",
+      item.errorDetail ?? "No backend detail captured.",
+      "",
+      "Runtime:",
+      runtimeLines,
+      runtimeStatus?.message ? `Runtime message: ${runtimeStatus.message}` : "",
+    ]
+      .filter((line) => line !== "")
+      .join("\n");
+  }
+
+  async function copyDiagnostics(item: QueueItem): Promise<void> {
+    await navigator.clipboard.writeText(buildDiagnostics(item));
+  }
+
   function enqueueItems(itemIds: string[], prioritize = false): void {
     const enqueueIds: string[] = [];
 
@@ -782,6 +1022,7 @@
       output_dir: outputDir,
       cookie_config: cookieConfig,
       filename_override: queue[idx].customFilename,
+      compat_config_path: getCompatConfigSnapshot(),
     };
 
     clearProgressDisplayState(itemId);
@@ -791,6 +1032,9 @@
       cookieConfig,
       status: "downloading",
       error: null,
+      errorCode: null,
+      errorDetail: null,
+      diagnosticsOpen: false,
       progress: 0,
       downloadProgress: 0,
       conversionProgress: null,
@@ -812,6 +1056,9 @@
           speed: "",
           eta: "",
           error: normalizeDownloadError(String(error)),
+          errorCode: "start_failed",
+          errorDetail: String(error),
+          diagnosticsOpen: true,
         };
       }
 
@@ -1000,6 +1247,22 @@
     if (file) cookieFilePath = file;
   }
 
+  async function browseCompatConfigFile(): Promise<void> {
+    const file = pickFirstPath(
+      await open({
+        multiple: false,
+        filters: [
+          {
+            name: "yt-dlp config",
+            extensions: ["conf", "txt"],
+          },
+        ],
+      }),
+    );
+
+    if (file) compatConfigPath = file;
+  }
+
   async function browseOutputDir(): Promise<void> {
     const dir = pickFirstPath(await open({ directory: true }));
     if (dir) outputDir = dir;
@@ -1082,6 +1345,7 @@
         const info = await invoke<PlaylistInfo>("fetch_playlist_info", {
           url,
           cookieConfig: getCookieConfig(),
+          compatConfigPath: getCompatConfigSnapshot(),
         });
 
         playlistModal = {
@@ -1129,6 +1393,9 @@
       speed: "",
       eta: "",
       error: null,
+      errorCode: null,
+      errorDetail: null,
+      diagnosticsOpen: false,
       filename: null,
       selected: false,
     };
@@ -1146,6 +1413,7 @@
       const info = await invoke<VideoInfo>("fetch_video_info", {
         url,
         cookieConfig,
+        compatConfigPath: getCompatConfigSnapshot(),
       });
 
       const idx = queue.findIndex((item) => item.id === itemId);
@@ -1165,6 +1433,9 @@
         quality: resolveQualitySelection(queue[idx].quality, availableQualities),
         status: "ready",
         error: null,
+        errorCode: null,
+        errorDetail: null,
+        diagnosticsOpen: false,
       };
     } catch (error) {
       const idx = queue.findIndex((item) => item.id === itemId);
@@ -1177,6 +1448,9 @@
         cookieConfig,
         status: "error",
         error: normalizeDownloadError(String(error)),
+        errorCode: "fetch_failed",
+        errorDetail: String(error),
+        diagnosticsOpen: true,
       };
     }
   }
@@ -1215,6 +1489,9 @@
           speed: "",
           eta: "",
           error: null,
+          errorCode: null,
+          errorDetail: null,
+          diagnosticsOpen: false,
           filename: null,
           selected: false,
         });
@@ -1313,6 +1590,9 @@
         title: "Fetching info...",
         status: "fetching",
         error: null,
+        errorCode: null,
+        errorDetail: null,
+        diagnosticsOpen: false,
         progress: 0,
         downloadProgress: 0,
         conversionProgress: null,
@@ -1333,6 +1613,9 @@
       ...queue[idx],
       status: "ready",
       error: null,
+      errorCode: null,
+      errorDetail: null,
+      diagnosticsOpen: false,
       progress: 0,
       downloadProgress: 0,
       conversionProgress: null,
@@ -1418,15 +1701,21 @@
         {#if appVersion}
           <span class="badge neutral">v{appVersion}</span>
         {/if}
-        {#if ytdlpVersion}
-          <span class="badge ok">yt-dlp {ytdlpVersion}</span>
-        {:else}
-          <span class="badge err">yt-dlp not found</span>
-        {/if}
-        {#if ffmpegAvailable}
-          <span class="badge ok">FFmpeg</span>
-        {:else}
-          <span class="badge warn">No FFmpeg</span>
+        <span
+          class="badge {runtimeBadgeClass()}"
+          title={runtimeBadgeTitle()}
+        >
+          {runtimeBadgeText()}
+        </span>
+        {#if runtimeStatus?.updateAvailable}
+          <button
+            type="button"
+            class="badge-button"
+            onclick={updateDownloaderRuntime}
+            disabled={runtimeUpdateRunning}
+          >
+            {runtimeUpdateRunning ? "Runtime..." : "Update Runtime"}
+          </button>
         {/if}
         {#if updateInfo?.hasUpdate && updateInfo.latestVersion}
           <button
@@ -1439,6 +1728,13 @@
           </button>
         {/if}
       </div>
+      <button
+        class="small header-action"
+        onclick={refreshDownloaderRuntime}
+        disabled={runtimeCheckState === "checking" || runtimeUpdateRunning}
+      >
+        {runtimeCheckState === "checking" ? "Runtime..." : "Check Runtime"}
+      </button>
       <button
         class="small header-action"
         onclick={handleManualUpdateCheck}
@@ -1464,11 +1760,21 @@
       onkeydown={handleUrlKeydown}
       class:input-error={Boolean(urlError)}
     />
-    <button class="primary" onclick={addToQueue} disabled={!ytdlpVersion || playlistLoading}>
+    <button class="primary" onclick={addToQueue} disabled={!runtimeCanDownload() || playlistLoading}>
       {playlistLoading ? "Loading..." : "Add"}
     </button>
     {#if urlError}
       <span class="error-text">{urlError}</span>
+    {/if}
+    {#if runtimeError}
+      <span class="error-text">{runtimeError}</span>
+    {:else if runtimeStatus?.message && runtimeStatus.state !== "ready"}
+      <span class="error-text">{runtimeStatus.message}</span>
+    {/if}
+    {#if runtimeUpdateProgress}
+      <span class="muted">
+        {runtimeUpdateProgress.message ?? "Runtime update"} {Math.round(getRuntimeUpdatePercent(runtimeUpdateProgress))}%
+      </span>
     {/if}
   </section>
 
@@ -1536,12 +1842,21 @@
         {/if}
       {/if}
     </div>
+    <div class="setting advanced-config">
+      <label for="compat-config">Compat Config</label>
+      <button id="compat-config" class="cookie-browse" onclick={browseCompatConfigFile}>
+        {compatConfigPath ? getPathBasename(compatConfigPath) : "None"}
+      </button>
+      {#if compatConfigPath}
+        <button class="small" onclick={() => (compatConfigPath = "")}>Clear</button>
+      {/if}
+    </div>
   </section>
 
   <!-- Action Buttons -->
   <section class="actions">
-    <button class="primary" onclick={downloadAll} disabled={!queueSummary.hasReady}>Download All</button>
-    <button onclick={downloadSelected} disabled={!queueSummary.hasSelectedReady}>Download Selected</button>
+    <button class="primary" onclick={downloadAll} disabled={!runtimeCanDownload() || !queueSummary.hasReady}>Download All</button>
+    <button onclick={downloadSelected} disabled={!runtimeCanDownload() || !queueSummary.hasSelectedReady}>Download Selected</button>
     <button onclick={removeSelected} disabled={!queueSummary.hasSelected}>Remove Selected</button>
     <button onclick={clearCompleted} disabled={!queueSummary.hasCompleted}>Clear Done</button>
     <button class="danger" onclick={cancelAll} disabled={!queueSummary.hasActive}>Cancel All</button>
@@ -1629,7 +1944,15 @@
                   {item.status === "postprocessing" ? "converting" : item.status}
                 </span>
                 {#if item.error}
-                  <span class="error-tooltip" title={item.error}>!</span>
+                  <button
+                    type="button"
+                    class="error-tooltip"
+                    title="Show diagnostics"
+                    onclick={() => toggleDiagnostics(item.id)}
+                  >
+                    !
+                  </button>
+                  <span class="error-summary" title={item.error}>{item.error}</span>
                 {/if}
               </td>
               <td class="col-quality">
@@ -1709,7 +2032,7 @@
               </td>
               <td class="col-actions">
                 {#if isEditablePendingStatus(item.status)}
-                  <button class="small primary" onclick={() => downloadItem(item)}>DL</button>
+                  <button class="small primary" onclick={() => downloadItem(item)} disabled={!runtimeCanDownload()}>DL</button>
                 {:else if item.status === "downloading" || item.status === "postprocessing"}
                   <button class="small danger" onclick={() => cancelItem(item)}>X</button>
                 {:else if canRetryItem(item)}
@@ -1717,6 +2040,21 @@
                 {/if}
               </td>
             </tr>
+            {#if item.diagnosticsOpen && item.error}
+              <tr class="diagnostics-row">
+                <td colspan="9">
+                  <div class="diagnostics-panel">
+                    <div class="diagnostics-header">
+                      <span>{item.errorCode ?? "download_failed"}</span>
+                      <button class="small" onclick={() => copyDiagnostics(item)}>
+                        Copy Diagnostics
+                      </button>
+                    </div>
+                    <pre>{item.errorDetail ?? item.error}</pre>
+                  </div>
+                </td>
+              </tr>
+            {/if}
           {/each}
         </tbody>
       </table>
@@ -2254,7 +2592,7 @@
 
   .col-check { width: 36px; text-align: center; }
   .col-title { width: auto; }
-  .col-status { width: 90px; }
+  .col-status { width: 180px; }
   .col-quality { width: 80px; }
   .col-format { width: 80px; }
   .col-progress { width: 130px; }
@@ -2361,7 +2699,54 @@
     font-size: 10px;
     font-weight: 700;
     margin-left: 4px;
+    padding: 0;
     cursor: help;
+  }
+
+  .error-summary {
+    display: inline-block;
+    max-width: 110px;
+    margin-left: 4px;
+    color: var(--red);
+    font-size: 11px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .diagnostics-row:hover {
+    background: transparent;
+  }
+
+  .diagnostics-panel {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--mantle);
+    border: 1px solid var(--surface0);
+    border-radius: 6px;
+  }
+
+  .diagnostics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--red);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .diagnostics-panel pre {
+    margin: 0;
+    max-height: 180px;
+    overflow: auto;
+    white-space: pre-wrap;
+    color: var(--subtext1);
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 11px;
+    line-height: 1.45;
   }
 
   /* Progress bar */
@@ -2502,6 +2887,10 @@
   }
   .cookie-browse:hover {
     background: var(--surface1);
+  }
+
+  .advanced-config {
+    min-width: 220px;
   }
 
   .cookie-hint {

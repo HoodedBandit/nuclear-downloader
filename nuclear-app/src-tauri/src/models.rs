@@ -45,6 +45,7 @@ pub struct DownloadRequest {
     pub output_dir: String,
     pub cookie_config: Option<CookieConfig>,
     pub filename_override: Option<String>,
+    pub compat_config_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,7 +62,45 @@ pub struct DownloadProgress {
     pub speed: Option<String>,
     pub eta: Option<String>,
     pub error: Option<String>,
+    pub error_code: Option<String>,
+    pub error_detail: Option<String>,
     pub filename: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloaderToolStatus {
+    pub name: String,
+    pub required: bool,
+    pub available: bool,
+    pub version: Option<String>,
+    pub path: Option<String>,
+    pub source: String,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloaderRuntimeStatus {
+    pub state: String,
+    pub runtime_version: Option<String>,
+    pub source: String,
+    pub update_available: bool,
+    pub latest_runtime_version: Option<String>,
+    pub runtime_dir: Option<String>,
+    pub plugin_dir: String,
+    pub message: Option<String>,
+    pub tools: Vec<DownloaderToolStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloaderRuntimeUpdateProgress {
+    pub status: String,
+    pub version: Option<String>,
+    pub downloaded_bytes: u64,
+    pub total_bytes: Option<u64>,
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

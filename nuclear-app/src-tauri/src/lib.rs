@@ -1,5 +1,6 @@
 mod downloader;
 mod models;
+mod runtime;
 mod updater;
 
 use downloader::{create_active_downloads, ActiveDownloads};
@@ -19,18 +20,28 @@ fn validate_url(url: &str) -> bool {
 async fn fetch_video_info(
     url: String,
     cookie_config: Option<models::CookieConfig>,
+    compat_config_path: Option<String>,
 ) -> Result<models::VideoInfo, String> {
-    downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
-    downloader::fetch_info(&url, cookie_config.as_ref()).await
+    downloader::validate_fetch_request(
+        &url,
+        cookie_config.as_ref(),
+        compat_config_path.as_deref(),
+    )?;
+    downloader::fetch_info(&url, cookie_config.as_ref(), compat_config_path.as_deref()).await
 }
 
 #[tauri::command]
 async fn fetch_playlist_info(
     url: String,
     cookie_config: Option<models::CookieConfig>,
+    compat_config_path: Option<String>,
 ) -> Result<models::PlaylistInfo, String> {
-    downloader::validate_fetch_request(&url, cookie_config.as_ref())?;
-    downloader::fetch_playlist(&url, cookie_config.as_ref()).await
+    downloader::validate_fetch_request(
+        &url,
+        cookie_config.as_ref(),
+        compat_config_path.as_deref(),
+    )?;
+    downloader::fetch_playlist(&url, cookie_config.as_ref(), compat_config_path.as_deref()).await
 }
 
 #[tauri::command]
@@ -54,28 +65,15 @@ async fn cancel_download(state: State<'_, AppState>, download_id: String) -> Res
 }
 
 #[tauri::command]
-async fn check_ytdlp() -> Result<String, String> {
-    let bin = downloader::resolve_bin("yt-dlp");
-    let mut cmd = tokio::process::Command::new(&bin);
-    cmd.arg("--version");
-    #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
-
-    let output = cmd
-        .output()
-        .await
-        .map_err(|_| "yt-dlp not found.".to_string())?;
-
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-    } else {
-        Err("yt-dlp not working properly".into())
-    }
+async fn check_downloader_runtime() -> Result<models::DownloaderRuntimeStatus, String> {
+    Ok(runtime::check_downloader_runtime().await)
 }
 
 #[tauri::command]
-async fn check_ffmpeg() -> Result<bool, String> {
-    Ok(downloader::ffmpeg_available())
+async fn update_downloader_runtime(
+    app: tauri::AppHandle,
+) -> Result<models::DownloaderRuntimeStatus, String> {
+    runtime::update_downloader_runtime(app).await
 }
 
 #[tauri::command]
@@ -113,8 +111,8 @@ pub fn run() {
             fetch_playlist_info,
             start_download,
             cancel_download,
-            check_ytdlp,
-            check_ffmpeg,
+            check_downloader_runtime,
+            update_downloader_runtime,
             default_download_dir,
             check_for_app_update,
             install_app_update,

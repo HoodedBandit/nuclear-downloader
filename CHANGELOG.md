@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.2 - 2026-06-23
+
+- Added a managed downloader runtime layer so release builds resolve `yt-dlp`, FFmpeg, FFprobe, and Deno deterministically from app-controlled locations instead of silently depending on user machine state.
+- Updated the bundled YouTube runtime path to `yt-dlp 2026.06.09` with Deno-backed JavaScript extraction support, deterministic `yt-dlp` config flags, and clearer YouTube failure diagnostics.
+- Fixed the runtime health check so FFmpeg and FFprobe are probed with their supported `-version` flag, preventing false `Runtime missing` states after install.
+- Tightened MP4 format selection to prefer MP4-compatible streams and added copyable diagnostics for downloader/runtime failures.
+
 ## v0.5.0 - 2026-04-18
 
 - Added a Windows auto-update flow that checks the latest stable GitHub Release from inside the app, downloads the published NSIS installer, and relaunches automatically after install.

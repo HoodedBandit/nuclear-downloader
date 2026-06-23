@@ -1,6 +1,6 @@
 [package]
 name = "nuclear"
-version = "0.5.1"
+version = "0.5.2"
 description = "Nuclear Downloader is an easy-to-use Windows desktop downloader for YouTube, X, and other yt-dlp-supported sites."
 authors = ["HoodedBandit"]
 edition = "2021"
@@ -27,3 +27,5 @@ url = "2"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
 semver = "1"
 futures-util = "0.3"
+sha2 = "0.10"
+zip = { version = "2", default-features = false, features = ["deflate"] }
