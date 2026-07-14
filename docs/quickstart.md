@@ -30,7 +30,7 @@ Important directories:
 
 - `nuclear-app/src` for the Svelte UI
 - `nuclear-app/src-tauri` for the Rust/Tauri backend
-- `nuclear-app/src-tauri/binaries` for local `yt-dlp`, `ffmpeg`, and `ffprobe` sidecars used in release bundling
+- `nuclear-app/src-tauri/binaries` for local `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno sidecars used in release bundling
 
 ## Install Dependencies
 
@@ -47,15 +47,22 @@ Rust dependencies are resolved automatically by Cargo during checks and builds.
 
 This repository does not ship third-party binaries.
 
-For development, the app can use `yt-dlp` and `ffmpeg` from your system `PATH`.
+For development, the app can use `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno from your system `PATH`. Deno is optional but recommended for modern YouTube extraction.
 
 For Windows installer or portable release builds, place these Windows binaries in `nuclear-app/src-tauri/binaries` yourself:
 
 - `yt-dlp-x86_64-pc-windows-msvc.exe`
 - `ffmpeg-x86_64-pc-windows-msvc.exe`
 - `ffprobe-x86_64-pc-windows-msvc.exe`
+- `deno-x86_64-pc-windows-msvc.exe`
 
 At build time, Tauri packages them as sidecars for the application. Keep those files local; they are intentionally excluded from Git history.
+
+To build the separately updatable, checksum-pinned runtime bundle used by official releases:
+
+```powershell
+.\scripts\package-runtime.ps1
+```
 
 ## Run in Development
 
@@ -73,6 +80,7 @@ Run these before publishing changes:
 
 ```powershell
 npm run check
+npm test
 npm run build
 cd src-tauri
 cargo check
@@ -104,6 +112,7 @@ cd nuclear-app
 npm install
 npm run tauri dev
 npm run check
+npm test
 npm run build
 cd src-tauri
 cargo check

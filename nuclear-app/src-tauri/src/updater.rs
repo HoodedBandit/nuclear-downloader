@@ -4,6 +4,7 @@ use reqwest::header::ACCEPT;
 use reqwest::Client;
 use semver::Version;
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -16,7 +17,18 @@ const GITHUB_RELEASES_LATEST_URL: &str =
     "https://api.github.com/repos/HoodedBandit/nuclear-downloader/releases/latest";
 const UPDATE_PROGRESS_EVENT: &str = "update-install-progress";
 const UPDATE_TEMP_DIR_NAME: &str = "nuclear-downloader-updater";
+const NETWORK_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+const NETWORK_READ_TIMEOUT: Duration = Duration::from_secs(30);
+const METADATA_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 static UPDATE_INSTALL_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
+
+struct UpdateInstallGuard;
+
+impl Drop for UpdateInstallGuard {
+    fn drop(&mut self) {
+        UPDATE_INSTALL_IN_PROGRESS.store(false, Ordering::SeqCst);
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseAsset {
@@ -63,11 +75,11 @@ pub async fn install_app_update(app: &AppHandle, expected_version: String) -> Re
     {
         return Err("An app update is already in progress.".into());
     }
+    let _guard = UpdateInstallGuard;
 
     install_app_update_inner(app, expected_version.clone())
         .await
         .inspect_err(|error| {
-            UPDATE_INSTALL_IN_PROGRESS.store(false, Ordering::SeqCst);
             emit_install_progress(
                 app,
                 UpdateInstallProgress {
@@ -113,8 +125,17 @@ async fn install_app_update_inner(app: &AppHandle, expected_version: String) -> 
         }
 
         let installer = select_nsis_installer_asset(&release)?;
-        let installer_path =
-            download_installer(app, &client, &latest_semver.to_string(), installer).await?;
+        let checksum_asset = select_checksum_manifest_asset(&release, &latest_semver.to_string())?;
+        let expected_checksum =
+            download_installer_checksum(&client, checksum_asset, &installer.name).await?;
+        let installer_path = download_installer(
+            app,
+            &client,
+            &latest_semver.to_string(),
+            installer,
+            &expected_checksum,
+        )
+        .await?;
 
         emit_install_progress(
             app,
@@ -149,7 +170,8 @@ async fn install_app_update_inner(app: &AppHandle, expected_version: String) -> 
 fn build_client(user_agent: String) -> Result<Client, String> {
     Client::builder()
         .user_agent(user_agent)
-        .connect_timeout(Duration::from_secs(15))
+        .connect_timeout(NETWORK_CONNECT_TIMEOUT)
+        .read_timeout(NETWORK_READ_TIMEOUT)
         .build()
         .map_err(|error| format!("Failed to prepare update client: {}", error))
 }
@@ -158,6 +180,7 @@ async fn fetch_latest_release(client: &Client) -> Result<GitHubRelease, String> 
     let response = client
         .get(GITHUB_RELEASES_LATEST_URL)
         .header(ACCEPT, "application/vnd.github+json")
+        .timeout(METADATA_REQUEST_TIMEOUT)
         .send()
         .await
         .map_err(|error| format!("Failed to reach GitHub Releases: {}", error))?;
@@ -190,6 +213,7 @@ async fn download_installer(
     client: &Client,
     version: &str,
     installer: &GitHubReleaseAsset,
+    expected_checksum: &str,
 ) -> Result<PathBuf, String> {
     validate_installer_download_url(&installer.browser_download_url)?;
 
@@ -199,6 +223,7 @@ async fn download_installer(
         .map_err(|error| format!("Failed to create update temp folder: {}", error))?;
 
     let file_name = sanitize_installer_name(&installer.name)?;
+    cleanup_stale_update_files(&target_dir, &file_name).await;
     let final_path = target_dir.join(&file_name);
     let part_path = target_dir.join(format!("{}.part", file_name));
 
@@ -243,6 +268,7 @@ async fn download_installer(
         .await
         .map_err(|error| format!("Failed to create installer temp file: {}", error))?;
     let mut downloaded_bytes = 0u64;
+    let mut hasher = Sha256::new();
 
     emit_install_progress(
         app,
@@ -273,6 +299,7 @@ async fn download_installer(
         }
 
         downloaded_bytes += chunk.len() as u64;
+        hasher.update(&chunk);
 
         emit_install_progress(
             app,
@@ -302,6 +329,24 @@ async fn download_installer(
         }
     }
 
+    let actual_checksum = format!("{:x}", hasher.finalize());
+    emit_install_progress(
+        app,
+        UpdateInstallProgress {
+            status: "verifying".to_string(),
+            version: version.to_string(),
+            downloaded_bytes,
+            total_bytes,
+            message: Some(format!("Verifying {}...", installer.name)),
+        },
+    );
+    if !actual_checksum.eq_ignore_ascii_case(expected_checksum) {
+        cleanup_file_if_exists(&part_path).await;
+        return Err(format!(
+            "Downloaded installer checksum mismatch: expected {expected_checksum}, got {actual_checksum}."
+        ));
+    }
+
     if fs::try_exists(&final_path).await.unwrap_or(false) {
         fs::remove_file(&final_path)
             .await
@@ -313,6 +358,56 @@ async fn download_installer(
         .map_err(|error| format!("Failed to move installer into place: {}", error))?;
 
     Ok(final_path)
+}
+
+async fn download_installer_checksum(
+    client: &Client,
+    checksum_asset: &GitHubReleaseAsset,
+    installer_name: &str,
+) -> Result<String, String> {
+    validate_installer_download_url(&checksum_asset.browser_download_url)?;
+    if checksum_asset.size > 1024 * 1024 {
+        return Err("Update checksum manifest is unexpectedly large.".into());
+    }
+
+    let response = client
+        .get(&checksum_asset.browser_download_url)
+        .timeout(METADATA_REQUEST_TIMEOUT)
+        .send()
+        .await
+        .map_err(|error| format!("Failed to download update checksum manifest: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("Failed to read update checksum manifest: {error}"))?;
+    if !status.is_success() {
+        return Err(format!(
+            "Failed to download update checksum manifest: HTTP {}.",
+            status.as_u16()
+        ));
+    }
+
+    parse_checksum_for_asset(&body, installer_name).ok_or_else(|| {
+        format!(
+            "Update checksum manifest did not contain a valid SHA-256 entry for {installer_name}."
+        )
+    })
+}
+
+async fn cleanup_stale_update_files(target_dir: &std::path::Path, keep_name: &str) {
+    let Ok(mut entries) = fs::read_dir(target_dir).await else {
+        return;
+    };
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let name = entry.file_name().to_string_lossy().to_string();
+        let lower = name.to_ascii_lowercase();
+        if lower.ends_with(".part")
+            || (lower.ends_with("-setup.exe") && !name.eq_ignore_ascii_case(keep_name))
+        {
+            let _ = fs::remove_file(entry.path()).await;
+        }
+    }
 }
 
 fn validate_installer_download_url(raw: &str) -> Result<(), String> {
@@ -344,6 +439,34 @@ fn select_nsis_installer_asset(release: &GitHubRelease) -> Result<&GitHubRelease
         .max_by_key(|(score, _asset)| *score)
         .map(|(_score, asset)| asset)
         .ok_or_else(|| "Update package not found in the latest GitHub release.".to_string())
+}
+
+fn select_checksum_manifest_asset<'a>(
+    release: &'a GitHubRelease,
+    version: &str,
+) -> Result<&'a GitHubReleaseAsset, String> {
+    let expected = format!("nuclear-downloader-v{version}-sha256.txt");
+    release
+        .assets
+        .iter()
+        .find(|asset| asset.name.eq_ignore_ascii_case(&expected))
+        .ok_or_else(|| format!("Update checksum manifest {expected} was not found."))
+}
+
+fn parse_checksum_for_asset(body: &str, asset_name: &str) -> Option<String> {
+    body.lines().find_map(|line| {
+        let mut parts = line.split_whitespace();
+        let checksum = parts.next()?;
+        let filename = parts.next()?.trim_start_matches('*');
+        if checksum.len() == 64
+            && checksum.chars().all(|ch| ch.is_ascii_hexdigit())
+            && filename.eq_ignore_ascii_case(asset_name)
+        {
+            Some(checksum.to_ascii_lowercase())
+        } else {
+            None
+        }
+    })
 }
 
 fn installer_asset_score(name: &str) -> Option<u8> {
@@ -418,7 +541,8 @@ fn emit_install_progress(app: &AppHandle, payload: UpdateInstallProgress) {
 #[cfg(test)]
 mod tests {
     use super::{
-        installer_asset_score, parse_semver, select_nsis_installer_asset,
+        installer_asset_score, parse_checksum_for_asset, parse_semver,
+        select_checksum_manifest_asset, select_nsis_installer_asset,
         validate_installer_download_url, GitHubRelease, GitHubReleaseAsset,
     };
 
@@ -489,5 +613,37 @@ mod tests {
     fn validate_installer_download_url_requires_https() {
         assert!(validate_installer_download_url("https://github.com/example/setup.exe").is_ok());
         assert!(validate_installer_download_url("http://github.com/example/setup.exe").is_err());
+    }
+
+    #[test]
+    fn selects_only_the_exact_versioned_checksum_manifest() {
+        let release = release_with_assets(
+            "v0.5.3",
+            vec![
+                "nuclear-downloader-v0.5.2-sha256.txt",
+                "nuclear-downloader-v0.5.3-sha256.txt",
+            ],
+        );
+
+        assert_eq!(
+            select_checksum_manifest_asset(&release, "0.5.3")
+                .unwrap()
+                .name,
+            "nuclear-downloader-v0.5.3-sha256.txt"
+        );
+        assert!(select_checksum_manifest_asset(&release, "0.5.4").is_err());
+    }
+
+    #[test]
+    fn checksum_parser_requires_an_exact_installer_filename() {
+        let checksum = "A".repeat(64);
+        let body =
+            format!("{checksum}  Nuclear.Downloader_0.5.3_x64-setup.exe\n{checksum} *nuclear.exe");
+
+        assert_eq!(
+            parse_checksum_for_asset(&body, "Nuclear.Downloader_0.5.3_x64-setup.exe"),
+            Some(checksum.to_ascii_lowercase())
+        );
+        assert!(parse_checksum_for_asset(&body, "other.exe").is_none());
     }
 }

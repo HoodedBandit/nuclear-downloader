@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.3 - 2026-07-13
+
+- Rebuilt download lifecycle management around supervised jobs, idempotent cancellation, Windows Job Objects, coordinated shutdown, and queue-wide cancellation that waits for child processes to exit.
+- Serialized WebM conversions to prevent concurrent FFmpeg transcodes from exhausting memory or CPU, with a visible waiting-for-conversion phase in the queue.
+- Made URL inspection extractor-driven instead of guessing playlists from URL patterns, and fixed non-YouTube playlist entries so valid source URLs are preserved without fabricated YouTube links.
+- Fixed quality caps for MKV and WebM so fallback selectors can no longer silently exceed the requested resolution.
+- Split fast local runtime health checks from GitHub update checks, bounded network and tool probes, and made runtime installs checksum-verified, same-volume, atomic, and rollback-safe.
+- Hardened app updates by requiring the exact release checksum manifest and verifying the NSIS installer SHA-256 before launch; stale partial installers are cleaned automatically.
+- Blocked runtime and app updates while inspections, queued starts, downloads, or conversions are active, and registered progress listeners before startup checks so early events are not lost.
+- Updated bundled extraction tools to `yt-dlp 2026.07.04` and Deno `2.9.2`, added a self-contained portable ZIP and reproducible runtime packager, upgraded supported frontend dependencies, and added Rust and Vitest regression coverage for the new reliability paths.
+
 ## v0.5.2 - 2026-06-23
 
 - Added a managed downloader runtime layer so release builds resolve `yt-dlp`, FFmpeg, FFprobe, and Deno deterministically from app-controlled locations instead of silently depending on user machine state.

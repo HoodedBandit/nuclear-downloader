@@ -1,5 +1,6 @@
 use crate::models::{
-    CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, VideoInfo,
+    CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, UrlInspection,
+    VideoInfo,
 };
 use crate::runtime::{self, YtdlpCommandConfig};
 use regex::Regex;
@@ -8,11 +9,22 @@ use serde_json::Deserializer;
 use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
+use tokio_util::sync::CancellationToken;
 use url::Url;
+
+#[cfg(windows)]
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+#[cfg(windows)]
+use windows_sys::Win32::System::JobObjects::{
+    AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
+    SetInformationJobObject, TerminateJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+    JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+};
 
 const MAX_STDERR_LINES: usize = 32;
 const MAX_STDERR_BYTES: usize = 16 * 1024;
@@ -59,6 +71,9 @@ struct PlaylistLineRecord {
     duration: Option<f64>,
     url: Option<String>,
     webpage_url: Option<String>,
+    original_url: Option<String>,
+    extractor_key: Option<String>,
+    ie_key: Option<String>,
     thumbnail: Option<String>,
     thumbnails: Option<Vec<PlaylistThumbnailRecord>>,
     playlist_title: Option<String>,
@@ -90,7 +105,7 @@ impl PlaylistLineRecord {
             .or(self.thumbnail.as_deref())
     }
 
-    fn into_playlist_entry(self) -> PlaylistEntry {
+    fn into_playlist_entry(self) -> Option<PlaylistEntry> {
         let thumbnail = sanitize_thumbnail_url(self.preferred_thumbnail_url());
         let PlaylistLineRecord {
             id,
@@ -98,21 +113,42 @@ impl PlaylistLineRecord {
             duration,
             url,
             webpage_url,
+            original_url,
+            extractor_key,
+            ie_key,
             ..
         } = self;
-        let id = id.unwrap_or_else(|| "unknown".to_string());
-        let video_url = url
+        let normalized_id = id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(str::to_string);
+        let is_youtube = extractor_key
+            .as_deref()
+            .or(ie_key.as_deref())
+            .map(|key| key.to_ascii_lowercase().contains("youtube"))
+            .unwrap_or(false);
+        let video_url = webpage_url
             .filter(|value| is_allowed_download_url(value))
-            .or_else(|| webpage_url.filter(|value| is_allowed_download_url(value)))
-            .unwrap_or_else(|| format!("https://www.youtube.com/watch?v={id}"));
+            .or_else(|| original_url.filter(|value| is_allowed_download_url(value)))
+            .or_else(|| url.filter(|value| is_allowed_download_url(value)))
+            .or_else(|| {
+                (is_youtube && normalized_id.is_some()).then(|| {
+                    format!(
+                        "https://www.youtube.com/watch?v={}",
+                        normalized_id.as_deref().unwrap_or_default()
+                    )
+                })
+            })?;
+        let id = normalized_id.unwrap_or_else(|| video_url.clone());
 
-        PlaylistEntry {
+        Some(PlaylistEntry {
             id,
             title,
             duration,
             url: video_url,
             thumbnail,
-        }
+        })
     }
 }
 
@@ -188,10 +224,268 @@ fn emit_progress(
     );
 }
 
-pub type ActiveDownloads = Arc<Mutex<HashMap<String, tokio::process::Child>>>;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DownloadManagerMode {
+    Accepting,
+    Paused,
+    ShuttingDown,
+}
 
-pub fn create_active_downloads() -> ActiveDownloads {
-    Arc::new(Mutex::new(HashMap::new()))
+struct DownloadManagerState {
+    mode: DownloadManagerMode,
+    jobs: HashMap<String, DownloadJob>,
+}
+
+struct DownloadManagerInner {
+    state: Mutex<DownloadManagerState>,
+    idle: Notify,
+    conversion_slots: Arc<Semaphore>,
+}
+
+#[derive(Clone)]
+pub struct DownloadManager {
+    inner: Arc<DownloadManagerInner>,
+}
+
+#[derive(Clone)]
+pub struct DownloadJob {
+    cancellation: CancellationToken,
+    #[cfg(windows)]
+    process_job: Arc<WindowsProcessJob>,
+}
+
+#[cfg(windows)]
+struct WindowsProcessJob {
+    handle: HANDLE,
+}
+
+#[cfg(windows)]
+unsafe impl Send for WindowsProcessJob {}
+#[cfg(windows)]
+unsafe impl Sync for WindowsProcessJob {}
+
+#[cfg(windows)]
+impl WindowsProcessJob {
+    fn new() -> Result<Self, String> {
+        let handle = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
+        if handle.is_null() {
+            return Err(format!(
+                "Failed to create Windows process job: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+
+        let mut information = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+        information.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        let configured = unsafe {
+            SetInformationJobObject(
+                handle,
+                JobObjectExtendedLimitInformation,
+                &information as *const _ as *const core::ffi::c_void,
+                std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+            )
+        };
+
+        if configured == 0 {
+            let error = std::io::Error::last_os_error();
+            unsafe {
+                CloseHandle(handle);
+            }
+            return Err(format!("Failed to configure Windows process job: {error}"));
+        }
+
+        Ok(Self { handle })
+    }
+
+    fn assign(&self, child: &tokio::process::Child) -> Result<(), String> {
+        let process_handle = child
+            .raw_handle()
+            .ok_or_else(|| "Downloader process did not expose a Windows handle.".to_string())?;
+        let assigned = unsafe { AssignProcessToJobObject(self.handle, process_handle as HANDLE) };
+        if assigned == 0 {
+            Err(format!(
+                "Failed to attach downloader process to its Windows job: {}",
+                std::io::Error::last_os_error()
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
+    fn terminate(&self) {
+        unsafe {
+            TerminateJobObject(self.handle, 1);
+        }
+    }
+}
+
+#[cfg(windows)]
+impl Drop for WindowsProcessJob {
+    fn drop(&mut self) {
+        unsafe {
+            CloseHandle(self.handle);
+        }
+    }
+}
+
+impl DownloadJob {
+    fn new() -> Result<Self, String> {
+        Ok(Self {
+            cancellation: CancellationToken::new(),
+            #[cfg(windows)]
+            process_job: Arc::new(WindowsProcessJob::new()?),
+        })
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.cancellation.is_cancelled()
+    }
+
+    pub async fn cancelled(&self) {
+        self.cancellation.cancelled().await;
+    }
+
+    fn cancel(&self) {
+        self.cancellation.cancel();
+        #[cfg(windows)]
+        self.process_job.terminate();
+    }
+
+    fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> {
+        #[cfg(windows)]
+        self.process_job.assign(child)?;
+        Ok(!self.is_cancelled())
+    }
+}
+
+impl DownloadManager {
+    pub fn new(max_conversions: usize) -> Self {
+        Self {
+            inner: Arc::new(DownloadManagerInner {
+                state: Mutex::new(DownloadManagerState {
+                    mode: DownloadManagerMode::Accepting,
+                    jobs: HashMap::new(),
+                }),
+                idle: Notify::new(),
+                conversion_slots: Arc::new(Semaphore::new(max_conversions.max(1))),
+            }),
+        }
+    }
+
+    pub async fn register(&self, download_id: &str) -> Result<DownloadJob, String> {
+        let job = DownloadJob::new()?;
+        let mut state = self.inner.state.lock().await;
+        if state.mode != DownloadManagerMode::Accepting {
+            return Err("Downloads are temporarily paused for shutdown or maintenance.".into());
+        }
+        if state.jobs.contains_key(download_id) {
+            return Err("A download with this ID is already active.".into());
+        }
+        state.jobs.insert(download_id.to_string(), job.clone());
+        Ok(job)
+    }
+
+    pub async fn finish(&self, download_id: &str) {
+        let removed = self
+            .inner
+            .state
+            .lock()
+            .await
+            .jobs
+            .remove(download_id)
+            .is_some();
+        if removed {
+            self.inner.idle.notify_waiters();
+        }
+    }
+
+    pub async fn cancel(&self, download_id: &str) {
+        let job = self.inner.state.lock().await.jobs.get(download_id).cloned();
+        if let Some(job) = job {
+            job.cancel();
+        }
+    }
+
+    pub async fn active_count(&self) -> usize {
+        self.inner.state.lock().await.jobs.len()
+    }
+
+    pub async fn begin_maintenance(&self) -> Result<(), String> {
+        let mut state = self.inner.state.lock().await;
+        if state.mode != DownloadManagerMode::Accepting {
+            return Err("Downloader maintenance is already in progress.".into());
+        }
+        if !state.jobs.is_empty() {
+            return Err("Finish or cancel active downloads before installing updates.".into());
+        }
+        state.mode = DownloadManagerMode::Paused;
+        Ok(())
+    }
+
+    pub async fn end_maintenance(&self) {
+        let mut state = self.inner.state.lock().await;
+        if state.mode == DownloadManagerMode::Paused {
+            state.mode = DownloadManagerMode::Accepting;
+        }
+    }
+
+    pub async fn cancel_all_and_wait(&self, timeout: Duration) -> Result<(), String> {
+        let jobs = {
+            let mut state = self.inner.state.lock().await;
+            if state.mode == DownloadManagerMode::ShuttingDown {
+                return Ok(());
+            }
+            state.mode = DownloadManagerMode::Paused;
+            state.jobs.values().cloned().collect::<Vec<_>>()
+        };
+        for job in jobs {
+            job.cancel();
+        }
+        let result = self.wait_for_idle(timeout).await;
+        self.end_maintenance().await;
+        result
+    }
+
+    pub async fn begin_shutdown(&self) {
+        let jobs = {
+            let mut state = self.inner.state.lock().await;
+            state.mode = DownloadManagerMode::ShuttingDown;
+            state.jobs.values().cloned().collect::<Vec<_>>()
+        };
+        for job in jobs {
+            job.cancel();
+        }
+    }
+
+    pub async fn wait_for_idle(&self, timeout: Duration) -> Result<(), String> {
+        let deadline = Instant::now() + timeout;
+        loop {
+            let notified = self.inner.idle.notified();
+            if self.active_count().await == 0 {
+                return Ok(());
+            }
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() || tokio::time::timeout(remaining, notified).await.is_err() {
+                return Err("Timed out while waiting for downloader processes to exit.".into());
+            }
+        }
+    }
+
+    async fn acquire_conversion(
+        &self,
+        job: &DownloadJob,
+    ) -> Result<Option<OwnedSemaphorePermit>, String> {
+        tokio::select! {
+            permit = self.inner.conversion_slots.clone().acquire_owned() => {
+                permit.map(Some).map_err(|_| "WebM conversion scheduler is unavailable.".to_string())
+            }
+            _ = job.cancelled() => Ok(None),
+        }
+    }
+}
+
+pub fn create_download_manager() -> DownloadManager {
+    DownloadManager::new(1)
 }
 
 pub fn is_allowed_download_url(raw: &str) -> bool {
@@ -618,6 +912,17 @@ fn emit_error_progress(app: &AppHandle, download_id: &str, error: DownloadErrorI
     );
 }
 
+pub fn emit_download_task_failure(app: &AppHandle, download_id: &str) {
+    emit_error_progress(
+        app,
+        download_id,
+        simple_error(
+            "internal_task_failed",
+            "The download task stopped unexpectedly. Retry the item and copy diagnostics if it happens again.",
+        ),
+    );
+}
+
 fn parse_first_json_value(stdout: &str) -> Result<serde_json::Value, String> {
     serde_json::from_str(stdout).or_else(|primary_error| {
         let mut stream = Deserializer::from_str(stdout).into_iter::<serde_json::Value>();
@@ -733,14 +1038,14 @@ fn format_selector_for_video(request: &DownloadRequest) -> String {
         ),
         ("mkv", None) => "bestvideo+bestaudio/best".to_string(),
         ("mkv", Some(height)) => {
-            format!("bestvideo[height<={height}]+bestaudio/best[height<={height}]/bestvideo+bestaudio/best")
+            format!("bestvideo[height<={height}]+bestaudio/best[height<={height}]")
         }
         ("webm", None) => {
             "bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]/bestvideo+bestaudio/best"
                 .to_string()
         }
         ("webm", Some(height)) => format!(
-            "bestvideo[height<={height}][ext=webm]+bestaudio[ext=webm]/best[height<={height}][ext=webm]/bestvideo[height<={height}]+bestaudio/best[height<={height}]/bestvideo+bestaudio/best"
+            "bestvideo[height<={height}][ext=webm]+bestaudio[ext=webm]/best[height<={height}][ext=webm]/bestvideo[height<={height}]+bestaudio/best[height<={height}]"
         ),
         _ => "bestvideo+bestaudio/best".to_string(),
     }
@@ -773,6 +1078,8 @@ async fn run_fetch_info_command(
     cookie_config: Option<&CookieConfig>,
     compat_config_path: Option<&str>,
     use_twitter_syndication: bool,
+    allow_playlist: bool,
+    job: &DownloadJob,
 ) -> Result<std::process::Output, String> {
     let bin = ytdlp_bin();
     let runtime_config = runtime::ytdlp_command_config();
@@ -781,8 +1088,12 @@ async fn run_fetch_info_command(
     args.extend([
         "--dump-single-json".to_string(),
         "--no-download".to_string(),
-        "--no-playlist".to_string(),
     ]);
+    if allow_playlist {
+        args.extend(["--playlist-items".to_string(), "1".to_string()]);
+    } else {
+        args.push("--no-playlist".to_string());
+    }
 
     append_twitter_syndication_args(&mut args, url, use_twitter_syndication);
 
@@ -793,39 +1104,35 @@ async fn run_fetch_info_command(
     args.push(url.to_string());
 
     let mut cmd = Command::new(&bin);
+    cmd.kill_on_drop(true);
     cmd.args(&args);
 
     #[cfg(windows)]
     cmd.creation_flags(hidden_process_flags());
 
-    cmd.output()
-        .await
-        .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))
+    cmd.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))?;
+    if !job.attach_process(&child)? {
+        return Err("URL inspection was cancelled.".into());
+    }
+    tokio::select! {
+        output = child.wait_with_output() => output
+            .map_err(|e| format!("Failed to wait for yt-dlp: {e}")),
+        _ = job.cancelled() => Err("URL inspection was cancelled.".into()),
+    }
 }
 
-pub async fn fetch_info(
-    url: &str,
-    cookie_config: Option<&CookieConfig>,
-    compat_config_path: Option<&str>,
-) -> Result<VideoInfo, String> {
-    validate_fetch_request(url, cookie_config, compat_config_path)?;
-
-    let mut output = run_fetch_info_command(url, cookie_config, compat_config_path, false).await?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        if should_retry_with_twitter_syndication(url, &stderr) {
-            output = run_fetch_info_command(url, cookie_config, compat_config_path, true).await?;
-        }
+fn video_info_from_json(url: &str, data: &serde_json::Value) -> Result<VideoInfo, String> {
+    if data
+        .get("_type")
+        .and_then(|value| value.as_str())
+        .is_some_and(|kind| matches!(kind, "playlist" | "multi_video"))
+    {
+        return Err("URL resolved to a playlist instead of a single video.".into());
     }
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(error_for_fetch(&stderr, output.status.code()));
-    }
-
-    let json_str = String::from_utf8_lossy(&output.stdout);
-    let data = parse_first_json_value(&json_str)?;
 
     let mut qualities: Vec<String> = Vec::new();
     if let Some(formats) = data["formats"].as_array() {
@@ -857,10 +1164,50 @@ pub async fn fetch_info(
     })
 }
 
-pub async fn fetch_playlist(
+pub async fn inspect_url(
     url: &str,
     cookie_config: Option<&CookieConfig>,
     compat_config_path: Option<&str>,
+    job: &DownloadJob,
+) -> Result<UrlInspection, String> {
+    validate_fetch_request(url, cookie_config, compat_config_path)?;
+    let mut output =
+        run_fetch_info_command(url, cookie_config, compat_config_path, false, true, job).await?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if should_retry_with_twitter_syndication(url, &stderr) {
+            output =
+                run_fetch_info_command(url, cookie_config, compat_config_path, true, true, job)
+                    .await?;
+        }
+    }
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(error_for_fetch(&stderr, output.status.code()));
+    }
+
+    let json_str = String::from_utf8_lossy(&output.stdout);
+    let data = parse_first_json_value(&json_str)?;
+    let is_playlist = data
+        .get("_type")
+        .and_then(|value| value.as_str())
+        .is_some_and(|kind| matches!(kind, "playlist" | "multi_video"));
+    if is_playlist {
+        Ok(UrlInspection::Playlist {
+            playlist: fetch_playlist(url, cookie_config, compat_config_path, job).await?,
+        })
+    } else {
+        Ok(UrlInspection::Video {
+            video: video_info_from_json(url, &data)?,
+        })
+    }
+}
+
+async fn fetch_playlist(
+    url: &str,
+    cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
+    job: &DownloadJob,
 ) -> Result<PlaylistInfo, String> {
     validate_fetch_request(url, cookie_config, compat_config_path)?;
 
@@ -876,6 +1223,7 @@ pub async fn fetch_playlist(
         url.to_string(),
     ]);
     let mut cmd = Command::new(&bin);
+    cmd.kill_on_drop(true);
     cmd.args(&args);
     configure_cookie_args(&mut cmd, cookie_config);
 
@@ -888,6 +1236,9 @@ pub async fn fetch_playlist(
     let mut child = cmd
         .spawn()
         .map_err(|e| format!("Failed to run yt-dlp: {}", e))?;
+    if !job.attach_process(&child)? {
+        return Err("Playlist inspection was cancelled.".into());
+    }
 
     let stdout = child
         .stdout
@@ -905,7 +1256,14 @@ pub async fn fetch_playlist(
     let mut playlist_title = String::from("Playlist");
     let mut playlist_channel: Option<String> = None;
 
-    while let Ok(Some(line)) = lines.next_line().await {
+    loop {
+        let next_line = tokio::select! {
+            line = lines.next_line() => line,
+            _ = job.cancelled() => return Err("Playlist inspection was cancelled.".into()),
+        };
+        let Ok(Some(line)) = next_line else {
+            break;
+        };
         let Ok(data) = serde_json::from_str::<PlaylistLineRecord>(&line) else {
             continue;
         };
@@ -920,7 +1278,9 @@ pub async fn fetch_playlist(
                 .map(|channel| channel.to_string());
         }
 
-        entries.push(data.into_playlist_entry());
+        if let Some(entry) = data.into_playlist_entry() {
+            entries.push(entry);
+        }
     }
 
     let stderr_output = stderr_handle.await.unwrap_or_default();
@@ -1145,8 +1505,13 @@ fn parse_ffmpeg_progress_percent(line: &str, duration_seconds: f64) -> Option<f6
     Some(((seconds / duration_seconds) * 100.0).clamp(0.0, 100.0))
 }
 
-async fn probe_media_duration_seconds(path: &Path) -> Result<f64, String> {
+async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<f64, String> {
+    if job.is_cancelled() {
+        return Err("Conversion was cancelled.".into());
+    }
+
     let mut cmd = Command::new(ffprobe_bin());
+    cmd.kill_on_drop(true);
     cmd.args([
         "-v",
         "error",
@@ -1160,10 +1525,25 @@ async fn probe_media_duration_seconds(path: &Path) -> Result<f64, String> {
     #[cfg(windows)]
     cmd.creation_flags(hidden_process_flags());
 
-    let output = cmd
-        .output()
-        .await
+    cmd.stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let mut child = cmd
+        .spawn()
         .map_err(|error| format!("Failed to run ffprobe: {error}"))?;
+    if !job.attach_process(&child)? {
+        let _ = child.kill().await;
+        let _ = child.wait().await;
+        return Err("Conversion was cancelled.".into());
+    }
+
+    let output = tokio::select! {
+        output = child.wait_with_output() => {
+            output.map_err(|error| format!("Failed to wait for ffprobe: {error}"))?
+        }
+        _ = job.cancelled() => {
+            return Err("Conversion was cancelled.".into());
+        }
+    };
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1227,13 +1607,18 @@ async fn run_download_attempt(
     app: &AppHandle,
     download_id: &str,
     request: &DownloadRequest,
-    active: ActiveDownloads,
+    job: &DownloadJob,
     use_twitter_syndication: bool,
 ) -> DownloadAttemptResult {
+    if job.is_cancelled() {
+        return DownloadAttemptResult::Cancelled;
+    }
+
     let args = build_download_args(request, use_twitter_syndication);
 
     let bin = ytdlp_bin();
     let mut cmd = Command::new(&bin);
+    cmd.kill_on_drop(true);
     cmd.args(&args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -1251,20 +1636,50 @@ async fn run_download_attempt(
         }
     };
 
+    match job.attach_process(&child) {
+        Ok(true) => {}
+        Ok(false) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            return DownloadAttemptResult::Cancelled;
+        }
+        Err(error) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            return DownloadAttemptResult::Error(simple_error("process_control_failed", error));
+        }
+    }
+
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
-
-    {
-        let mut downloads = active.lock().await;
-        downloads.insert(download_id.to_string(), child);
-    }
 
     let stderr_handle = spawn_stderr_tail_reader(stderr);
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
     let mut last_filename: Option<String> = None;
+    let mut cancelled = false;
+    let mut stdout_error: Option<String> = None;
 
-    while let Ok(Some(line)) = lines.next_line().await {
+    loop {
+        let line = tokio::select! {
+            line = lines.next_line() => match line {
+                Ok(Some(line)) => Some(line),
+                Ok(None) => None,
+                Err(error) => {
+                    stdout_error = Some(format!("Failed to read yt-dlp progress: {error}"));
+                    None
+                }
+            },
+            _ = job.cancelled() => {
+                cancelled = true;
+                let _ = child.kill().await;
+                None
+            }
+        };
+        let Some(line) = line else {
+            break;
+        };
+
         if let Some(caps) = DOWNLOAD_DEST_RE.captures(&line) {
             last_filename = Some(caps[1].trim().to_string());
         } else if let Some(caps) = DOWNLOAD_FINAL_DEST_RE.captures(&line) {
@@ -1306,17 +1721,15 @@ async fn run_download_attempt(
     }
 
     let stderr_output = stderr_handle.await.unwrap_or_default();
+    let status = child.wait().await.ok();
 
-    let maybe_child = {
-        let mut downloads = active.lock().await;
-        downloads.remove(download_id)
-    };
-
-    let status = if let Some(mut child) = maybe_child {
-        child.wait().await.ok()
-    } else {
+    if cancelled || job.is_cancelled() {
         return DownloadAttemptResult::Cancelled;
-    };
+    }
+
+    if let Some(error) = stdout_error {
+        return DownloadAttemptResult::Error(simple_error("process_output_failed", error));
+    }
 
     match status {
         Some(s) if s.success() => DownloadAttemptResult::Completed(last_filename),
@@ -1346,10 +1759,11 @@ async fn run_webm_conversion(
     input_path: &Path,
     staged_output: &Path,
     final_path: &Path,
-    active: ActiveDownloads,
+    job: &DownloadJob,
 ) -> DownloadAttemptResult {
-    let duration_seconds = match probe_media_duration_seconds(input_path).await {
+    let duration_seconds = match probe_media_duration_seconds(input_path, job).await {
         Ok(duration) => duration,
+        Err(_) if job.is_cancelled() => return DownloadAttemptResult::Cancelled,
         Err(error) => {
             return DownloadAttemptResult::Error(simple_error("postprocess_failed", error))
         }
@@ -1370,6 +1784,7 @@ async fn run_webm_conversion(
     );
 
     let mut cmd = Command::new(ffmpeg_bin());
+    cmd.kill_on_drop(true);
     cmd.args([
         "-y",
         "-hide_banner",
@@ -1420,20 +1835,50 @@ async fn run_webm_conversion(
         }
     };
 
+    match job.attach_process(&child) {
+        Ok(true) => {}
+        Ok(false) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            return DownloadAttemptResult::Cancelled;
+        }
+        Err(error) => {
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            return DownloadAttemptResult::Error(simple_error("process_control_failed", error));
+        }
+    }
+
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
-
-    {
-        let mut downloads = active.lock().await;
-        downloads.insert(download_id.to_string(), child);
-    }
 
     let stderr_handle = spawn_stderr_tail_reader(stderr);
     let reader = BufReader::new(stdout);
     let mut lines = reader.lines();
     let mut last_progress: f64 = 0.0;
+    let mut cancelled = false;
+    let mut stdout_error: Option<String> = None;
 
-    while let Ok(Some(line)) = lines.next_line().await {
+    loop {
+        let line = tokio::select! {
+            line = lines.next_line() => match line {
+                Ok(Some(line)) => Some(line),
+                Ok(None) => None,
+                Err(error) => {
+                    stdout_error = Some(format!("Failed to read FFmpeg progress: {error}"));
+                    None
+                }
+            },
+            _ = job.cancelled() => {
+                cancelled = true;
+                let _ = child.kill().await;
+                None
+            }
+        };
+        let Some(line) = line else {
+            break;
+        };
+
         if line.trim() == "progress=end" {
             last_progress = 100.0;
         } else if let Some(progress) = parse_ffmpeg_progress_percent(&line, duration_seconds) {
@@ -1458,17 +1903,15 @@ async fn run_webm_conversion(
     }
 
     let stderr_output = stderr_handle.await.unwrap_or_default();
+    let status = child.wait().await.ok();
 
-    let maybe_child = {
-        let mut downloads = active.lock().await;
-        downloads.remove(download_id)
-    };
-
-    let status = if let Some(mut child) = maybe_child {
-        child.wait().await.ok()
-    } else {
+    if cancelled || job.is_cancelled() {
         return DownloadAttemptResult::Cancelled;
-    };
+    }
+
+    if let Some(error) = stdout_error {
+        return DownloadAttemptResult::Error(simple_error("process_output_failed", error));
+    }
 
     match status {
         Some(status) if status.success() => {
@@ -1494,7 +1937,8 @@ async fn run_webm_download(
     app: &AppHandle,
     download_id: &str,
     request: &DownloadRequest,
-    active: ActiveDownloads,
+    manager: &DownloadManager,
+    job: &DownloadJob,
 ) -> DownloadAttemptResult {
     let staging_dir = build_staging_dir(download_id);
     let mut use_twitter_syndication = false;
@@ -1511,7 +1955,7 @@ async fn run_webm_download(
             app,
             download_id,
             &staged_request,
-            active.clone(),
+            job,
             use_twitter_syndication,
         )
         .await
@@ -1530,13 +1974,40 @@ async fn run_webm_download(
 
                 let final_path = build_webm_final_path(request, &intermediate_path);
                 let staged_output = build_staged_webm_output_path(&staging_dir, &final_path);
+                emit_progress(
+                    app,
+                    download_id,
+                    "postprocessing",
+                    0.0,
+                    ProgressFields {
+                        filename: Some(path_to_string(&final_path)),
+                        phase: Some("waiting_conversion"),
+                        download_progress: Some(100.0),
+                        conversion_progress: Some(0.0),
+                        ..Default::default()
+                    },
+                );
+                let _conversion_permit = match manager.acquire_conversion(job).await {
+                    Ok(Some(permit)) => permit,
+                    Ok(None) => {
+                        cleanup_staging_dir(&staging_dir);
+                        return DownloadAttemptResult::Cancelled;
+                    }
+                    Err(error) => {
+                        cleanup_staging_dir(&staging_dir);
+                        return DownloadAttemptResult::Error(simple_error(
+                            "conversion_scheduler_failed",
+                            error,
+                        ));
+                    }
+                };
                 let result = run_webm_conversion(
                     app,
                     download_id,
                     &intermediate_path,
                     &staged_output,
                     &final_path,
-                    active.clone(),
+                    job,
                 )
                 .await;
 
@@ -1558,8 +2029,20 @@ pub async fn start_download(
     app: AppHandle,
     download_id: String,
     request: DownloadRequest,
-    active: ActiveDownloads,
+    manager: DownloadManager,
+    job: DownloadJob,
 ) {
+    if job.is_cancelled() {
+        emit_progress(
+            &app,
+            &download_id,
+            "cancelled",
+            0.0,
+            ProgressFields::default(),
+        );
+        return;
+    }
+
     if request.output_dir.trim().is_empty() {
         emit_error_progress(
             &app,
@@ -1594,7 +2077,7 @@ pub async fn start_download(
     );
 
     if request.format == "webm" {
-        match run_webm_download(&app, &download_id, &request, active).await {
+        match run_webm_download(&app, &download_id, &request, &manager, &job).await {
             DownloadAttemptResult::Completed(filename) => {
                 emit_progress(
                     &app,
@@ -1639,14 +2122,8 @@ pub async fn start_download(
     let mut use_twitter_syndication = false;
 
     loop {
-        match run_download_attempt(
-            &app,
-            &download_id,
-            &request,
-            active.clone(),
-            use_twitter_syndication,
-        )
-        .await
+        match run_download_attempt(&app, &download_id, &request, &job, use_twitter_syndication)
+            .await
         {
             DownloadAttemptResult::Completed(filename) => {
                 emit_progress(
@@ -1684,6 +2161,15 @@ pub async fn start_download(
     }
 }
 
+pub async fn cancel_download(download_id: &str, manager: DownloadManager) -> Result<(), String> {
+    manager.cancel(download_id).await;
+    Ok(())
+}
+
+pub async fn cancel_all_downloads(manager: DownloadManager) -> Result<(), String> {
+    manager.cancel_all_and_wait(Duration::from_secs(10)).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -1692,11 +2178,12 @@ mod tests {
         is_safe_staging_dir, is_twitter_api_auth_error, is_twitter_missing_video_error,
         is_x_or_twitter_url, parse_ffmpeg_progress_percent, parse_first_json_value,
         sanitize_thumbnail_url, should_retry_with_twitter_syndication, validate_download_request,
-        validate_fetch_request, PlaylistLineRecord,
+        validate_fetch_request, DownloadManager, PlaylistLineRecord,
     };
     use crate::models::{CookieConfig, DownloadRequest};
     use crate::runtime::YtdlpCommandConfig;
     use std::path::{Path, PathBuf};
+    use std::time::Duration;
 
     fn arg_value_after<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
         args.windows(2)
@@ -1858,7 +2345,7 @@ mod tests {
 
         assert_eq!(
             arg_value_after(&args, "-f"),
-            Some("bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best")
+            Some("bestvideo[height<=720]+bestaudio/best[height<=720]")
         );
         assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
         assert_eq!(arg_value_after(&args, "--remux-video"), Some("mkv"));
@@ -1885,7 +2372,7 @@ mod tests {
 
         assert_eq!(
             arg_value_after(&args, "-f"),
-            Some("bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/best[height<=720][ext=webm]/bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best")
+            Some("bestvideo[height<=720][ext=webm]+bestaudio[ext=webm]/best[height<=720][ext=webm]/bestvideo[height<=720]+bestaudio/best[height<=720]")
         );
         assert_eq!(arg_value_after(&args, "--merge-output-format"), Some("mkv"));
         assert!(arg_value_after(&args, "--recode-video").is_none());
@@ -2089,7 +2576,7 @@ mod tests {
         assert_eq!(line.playlist_title_hint(), Some("Example Playlist"));
         assert_eq!(line.playlist_channel_hint(), Some("Example Channel"));
 
-        let entry = line.into_playlist_entry();
+        let entry = line.into_playlist_entry().unwrap();
         assert_eq!(entry.id, "abc123");
         assert_eq!(entry.title.as_deref(), Some("Example Clip"));
         assert_eq!(entry.duration, Some(42.0));
@@ -2101,14 +2588,37 @@ mod tests {
     }
 
     #[test]
-    fn playlist_line_falls_back_to_watch_url_when_missing_urls() {
+    fn youtube_playlist_line_falls_back_to_watch_url_when_missing_urls() {
         let line = serde_json::from_str::<PlaylistLineRecord>(
-            r#"{"id":"fallback-id","title":"Fallback"}"#,
+            r#"{"id":"fallback-id","title":"Fallback","extractor_key":"Youtube"}"#,
         )
         .unwrap();
 
-        let entry = line.into_playlist_entry();
+        let entry = line.into_playlist_entry().unwrap();
         assert_eq!(entry.url, "https://www.youtube.com/watch?v=fallback-id");
+    }
+
+    #[test]
+    fn generic_playlist_line_without_a_url_is_rejected() {
+        let line = serde_json::from_str::<PlaylistLineRecord>(
+            r#"{"id":"opaque-id","title":"Unavailable","extractor_key":"Generic"}"#,
+        )
+        .unwrap();
+
+        assert!(line.into_playlist_entry().is_none());
+    }
+
+    #[test]
+    fn capped_video_selectors_never_contain_an_uncapped_fallback() {
+        for format in ["mp4", "mkv", "webm"] {
+            let request = download_request(format, "720p");
+            let args = build_download_args(&request, false);
+            let selector = arg_value_after(&args, "-f").unwrap();
+
+            assert!(selector
+                .split('/')
+                .all(|branch| branch.contains("height<=720")));
+        }
     }
 
     #[test]
@@ -2183,22 +2693,62 @@ ffmpeg exited with code 1";
             "ERROR: requested format is not available"
         ));
     }
-}
 
-pub async fn cancel_download(download_id: &str, active: ActiveDownloads) -> Result<(), String> {
-    let child = {
-        let mut downloads = active.lock().await;
-        downloads.remove(download_id)
-    };
+    #[tokio::test]
+    async fn download_manager_cancellation_is_idempotent_before_spawn() {
+        let manager = DownloadManager::new(1);
+        let job = manager.register("cancel-before-spawn").await.unwrap();
 
-    if let Some(mut child) = child {
-        child
-            .kill()
+        manager.cancel("cancel-before-spawn").await;
+        manager.cancel("cancel-before-spawn").await;
+        manager.cancel("already-finished").await;
+
+        assert!(job.is_cancelled());
+        manager.finish("cancel-before-spawn").await;
+        assert_eq!(manager.active_count().await, 0);
+    }
+
+    #[tokio::test]
+    async fn download_manager_rejects_duplicate_ids_and_active_maintenance() {
+        let manager = DownloadManager::new(1);
+        manager.register("same-id").await.unwrap();
+
+        assert!(manager.register("same-id").await.is_err());
+        assert!(manager.begin_maintenance().await.is_err());
+
+        manager.finish("same-id").await;
+        manager.begin_maintenance().await.unwrap();
+        assert!(manager.register("paused").await.is_err());
+        manager.end_maintenance().await;
+        assert!(manager.register("resumed").await.is_ok());
+        manager.finish("resumed").await;
+    }
+
+    #[tokio::test]
+    async fn webm_conversion_slots_apply_backpressure() {
+        let manager = DownloadManager::new(1);
+        let first_job = manager.register("first").await.unwrap();
+        let second_job = manager.register("second").await.unwrap();
+        let first_permit = manager
+            .acquire_conversion(&first_job)
             .await
-            .map_err(|e| format!("Failed to cancel: {}", e))?;
-        let _ = child.wait().await;
-        Ok(())
-    } else {
-        Err("Download not found or already finished".into())
+            .unwrap()
+            .unwrap();
+
+        assert!(tokio::time::timeout(
+            Duration::from_millis(25),
+            manager.acquire_conversion(&second_job),
+        )
+        .await
+        .is_err());
+
+        drop(first_permit);
+        assert!(manager
+            .acquire_conversion(&second_job)
+            .await
+            .unwrap()
+            .is_some());
+        manager.finish("first").await;
+        manager.finish("second").await;
     }
 }

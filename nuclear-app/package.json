@@ -1,6 +1,6 @@
 {
   "name": "nuclear",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Nuclear Downloader is an easy-to-use Windows desktop downloader for YouTube, X, and other yt-dlp-supported sites.",
   "type": "module",
   "scripts": {
@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
+    "test": "vitest run",
     "tauri": "tauri"
   },
   "license": "UNLICENSED",
@@ -25,6 +26,7 @@
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "typescript": "~5.6.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

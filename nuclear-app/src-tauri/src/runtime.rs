@@ -1,7 +1,8 @@
 use crate::models::{
-    DownloaderRuntimeStatus, DownloaderRuntimeUpdateProgress, DownloaderToolStatus,
+    DownloaderRuntimeStatus, DownloaderRuntimeUpdateCheck, DownloaderRuntimeUpdateProgress,
+    DownloaderToolStatus,
 };
-use futures_util::StreamExt;
+use futures_util::{future::join_all, StreamExt};
 use reqwest::header::ACCEPT;
 use reqwest::Client;
 use semver::Version;
@@ -10,6 +11,7 @@ use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::fs;
@@ -21,8 +23,12 @@ use zip::ZipArchive;
 const GITHUB_RELEASES_LATEST_URL: &str =
     "https://api.github.com/repos/HoodedBandit/nuclear-downloader/releases/latest";
 const RUNTIME_UPDATE_PROGRESS_EVENT: &str = "downloader-runtime-update-progress";
-const RUNTIME_TEMP_DIR_NAME: &str = "nuclear-downloader-runtime-updater";
-const MIN_RECOMMENDED_YTDLP_VERSION: &str = "2026.06.09";
+const MIN_RECOMMENDED_YTDLP_VERSION: &str = "2026.07.04";
+const NETWORK_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+const NETWORK_READ_TIMEOUT: Duration = Duration::from_secs(30);
+const METADATA_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const TOOL_PROBE_TIMEOUT: Duration = Duration::from_secs(10);
+static RUNTIME_UPDATE_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -140,7 +146,6 @@ pub fn diagnostic_summary() -> String {
 }
 
 pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
-    let latest_runtime = fetch_latest_runtime_asset().await.ok().flatten();
     let mut tools = Vec::new();
     let mut missing_required = false;
     let mut deno_missing = false;
@@ -149,8 +154,8 @@ pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
     let mut source = "missing".to_string();
     let mut runtime_dir: Option<String> = None;
 
-    for spec in REQUIRED_TOOLS {
-        let status = tool_status(*spec).await;
+    let statuses = join_all(REQUIRED_TOOLS.iter().copied().map(tool_status)).await;
+    for (spec, status) in REQUIRED_TOOLS.iter().zip(statuses) {
         if spec.required && !status.available {
             missing_required = true;
         }
@@ -179,12 +184,6 @@ pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
         tools.push(status);
     }
 
-    let update_available = latest_runtime
-        .as_ref()
-        .map(|latest| source != "managed" || runtime_version.as_deref() != Some(&latest.version))
-        .unwrap_or(false);
-    let latest_runtime_version = latest_runtime.map(|latest| latest.version);
-
     let missing_tool_names = missing_required_tool_names(&tools);
     let (state, message) = if missing_required {
         (
@@ -206,11 +205,6 @@ pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
                 "yt-dlp is older than the recommended baseline {MIN_RECOMMENDED_YTDLP_VERSION}."
             )),
         )
-    } else if update_available {
-        (
-            "ready".to_string(),
-            Some("Downloader runtime is ready; a newer runtime bundle is available.".to_string()),
-        )
     } else {
         (
             "ready".to_string(),
@@ -222,8 +216,8 @@ pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
         state,
         runtime_version,
         source,
-        update_available,
-        latest_runtime_version,
+        update_available: false,
+        latest_runtime_version: None,
         runtime_dir,
         plugin_dir: app_plugin_dir().display().to_string(),
         message,
@@ -231,9 +225,65 @@ pub async fn check_downloader_runtime() -> DownloaderRuntimeStatus {
     }
 }
 
+pub async fn check_downloader_runtime_update() -> Result<DownloaderRuntimeUpdateCheck, String> {
+    let latest = fetch_latest_runtime_asset().await?.ok_or_else(|| {
+        "No downloader runtime bundle was found on the latest GitHub Release.".to_string()
+    })?;
+
+    let local_status = check_downloader_runtime().await;
+    let local_version = local_status.runtime_version.clone().or_else(|| {
+        local_status
+            .tools
+            .iter()
+            .find(|tool| tool.name == "yt-dlp" && tool.available)
+            .and_then(|tool| tool.version.clone())
+    });
+    let update_available = local_status.state != "ready"
+        || local_version
+            .as_deref()
+            .map(|version| version_sort_key(version) < version_sort_key(&latest.version))
+            .unwrap_or(true);
+
+    Ok(DownloaderRuntimeUpdateCheck {
+        update_available,
+        latest_runtime_version: Some(latest.version.clone()),
+        message: Some(if update_available {
+            format!("Downloader runtime {} is available.", latest.version)
+        } else {
+            "Downloader runtime is current.".to_string()
+        }),
+    })
+}
+
+struct RuntimeUpdateGuard;
+
+impl Drop for RuntimeUpdateGuard {
+    fn drop(&mut self) {
+        RUNTIME_UPDATE_IN_PROGRESS.store(false, Ordering::SeqCst);
+    }
+}
+
 pub async fn update_downloader_runtime(app: AppHandle) -> Result<DownloaderRuntimeStatus, String> {
+    if RUNTIME_UPDATE_IN_PROGRESS
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return Err("A downloader runtime update is already in progress.".into());
+    }
+    let _guard = RuntimeUpdateGuard;
+
+    let result = update_downloader_runtime_inner(&app).await;
+    if let Err(error) = &result {
+        emit_runtime_progress(&app, "error", None, 0, None, Some(error.clone()));
+    }
+    result
+}
+
+async fn update_downloader_runtime_inner(
+    app: &AppHandle,
+) -> Result<DownloaderRuntimeStatus, String> {
     emit_runtime_progress(
-        &app,
+        app,
         "checking",
         None,
         0,
@@ -247,14 +297,24 @@ pub async fn update_downloader_runtime(app: AppHandle) -> Result<DownloaderRunti
 
     let client = build_client()?;
     let expected_checksum = download_checksum(&client, &selection.checksum_url).await?;
-    let temp_root = std::env::temp_dir().join(RUNTIME_TEMP_DIR_NAME);
-    fs::create_dir_all(&temp_root)
+    let archive_name = Path::new(&selection.archive_name)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| *name == selection.archive_name)
+        .ok_or_else(|| "Runtime release returned an unsafe archive filename.".to_string())?;
+    let managed_root = managed_runtime_root();
+    fs::create_dir_all(&managed_root)
         .await
-        .map_err(|error| format!("Failed to create runtime update temp folder: {error}"))?;
-    let archive_path = temp_root.join(&selection.archive_name);
+        .map_err(|error| format!("Failed to create runtime folder: {error}"))?;
+    let update_id = uuid::Uuid::new_v4().to_string();
+    let work_root = managed_root.join(".updates").join(&update_id);
+    fs::create_dir_all(&work_root)
+        .await
+        .map_err(|error| format!("Failed to create runtime update staging folder: {error}"))?;
+    let archive_path = work_root.join(archive_name);
 
     emit_runtime_progress(
-        &app,
+        app,
         "downloading",
         Some(selection.version.clone()),
         0,
@@ -262,54 +322,95 @@ pub async fn update_downloader_runtime(app: AppHandle) -> Result<DownloaderRunti
         Some(format!("Downloading {}.", selection.archive_name)),
     );
 
-    let actual_checksum = download_archive(&app, &client, &selection, &archive_path).await?;
-    if !actual_checksum.eq_ignore_ascii_case(&expected_checksum) {
-        cleanup_file_if_exists(&archive_path).await;
-        return Err(format!(
-            "Runtime bundle checksum mismatch: expected {expected_checksum}, got {actual_checksum}."
+    let staging_dir = work_root.join("extracted");
+    let install_result = async {
+        let actual_checksum = download_archive(app, &client, &selection, &archive_path).await?;
+        if !actual_checksum.eq_ignore_ascii_case(&expected_checksum) {
+            return Err(format!(
+                "Runtime bundle checksum mismatch: expected {expected_checksum}, got {actual_checksum}."
+            ));
+        }
+
+        emit_runtime_progress(
+            app,
+            "installing",
+            Some(selection.version.clone()),
+            selection.archive_size,
+            Some(selection.archive_size),
+            Some("Verifying and installing runtime bundle.".into()),
+        );
+
+        let manifest_dir = extract_runtime_zip(&archive_path, &staging_dir)?;
+        let manifest = validate_manifest_at(&manifest_dir, true)?;
+        validate_runtime_version(&manifest.runtime_version)?;
+        if version_sort_key(&manifest.runtime_version) != version_sort_key(&selection.version) {
+            return Err(format!(
+                "Runtime manifest version {} does not match release asset version {}.",
+                manifest.runtime_version, selection.version
+            ));
+        }
+
+        let final_dir = managed_root.join(&manifest.runtime_version);
+        let backup_dir = managed_root.join(format!(
+            ".backup-{}-{}",
+            manifest.runtime_version, update_id
         ));
+        promote_runtime_atomically(&manifest_dir, &final_dir, &backup_dir).await?;
+        Ok(manifest.runtime_version)
     }
+    .await;
+
+    cleanup_dir_if_exists(&work_root).await;
+    let installed_version = install_result?;
 
     emit_runtime_progress(
-        &app,
-        "installing",
-        Some(selection.version.clone()),
-        selection.archive_size,
-        Some(selection.archive_size),
-        Some("Verifying and installing runtime bundle.".into()),
-    );
-
-    let staging_dir = temp_root.join(format!("runtime-staging-{}", selection.version));
-    let manifest_dir = extract_runtime_zip(&archive_path, &staging_dir)?;
-    let manifest = validate_manifest_at(&manifest_dir, true)?;
-    let final_dir = managed_runtime_root().join(&manifest.runtime_version);
-    fs::create_dir_all(managed_runtime_root())
-        .await
-        .map_err(|error| format!("Failed to create runtime folder: {error}"))?;
-
-    if fs::try_exists(&final_dir).await.unwrap_or(false) {
-        fs::remove_dir_all(&final_dir)
-            .await
-            .map_err(|error| format!("Failed to replace existing runtime: {error}"))?;
-    }
-
-    fs::rename(&manifest_dir, &final_dir)
-        .await
-        .map_err(|error| format!("Failed to publish runtime bundle: {error}"))?;
-
-    cleanup_file_if_exists(&archive_path).await;
-    cleanup_dir_if_exists(&staging_dir).await;
-
-    emit_runtime_progress(
-        &app,
+        app,
         "complete",
-        Some(manifest.runtime_version),
+        Some(installed_version),
         selection.archive_size,
         Some(selection.archive_size),
         Some("Downloader runtime is updated.".into()),
     );
 
     Ok(check_downloader_runtime().await)
+}
+
+fn validate_runtime_version(version: &str) -> Result<(), String> {
+    let trimmed = version.trim();
+    if trimmed.is_empty()
+        || !trimmed
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_'))
+    {
+        return Err("Runtime manifest contains an unsafe runtime version.".into());
+    }
+    Ok(())
+}
+
+async fn promote_runtime_atomically(
+    candidate_dir: &Path,
+    final_dir: &Path,
+    backup_dir: &Path,
+) -> Result<(), String> {
+    let had_existing = fs::try_exists(final_dir).await.unwrap_or(false);
+    if had_existing {
+        cleanup_dir_if_exists(backup_dir).await;
+        fs::rename(final_dir, backup_dir).await.map_err(|error| {
+            format!("Failed to stage the existing runtime for replacement: {error}")
+        })?;
+    }
+
+    if let Err(error) = fs::rename(candidate_dir, final_dir).await {
+        if had_existing {
+            let _ = fs::rename(backup_dir, final_dir).await;
+        }
+        return Err(format!("Failed to publish runtime bundle: {error}"));
+    }
+
+    if had_existing {
+        cleanup_dir_if_exists(backup_dir).await;
+    }
+    Ok(())
 }
 
 async fn tool_status(spec: ToolSpec) -> DownloaderToolStatus {
@@ -432,9 +533,9 @@ async fn tool_version(name: &str, path: &Path) -> Result<String, String> {
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
 
-    let output = cmd
-        .output()
+    let output = tokio::time::timeout(TOOL_PROBE_TIMEOUT, cmd.output())
         .await
+        .map_err(|_| format!("{} did not respond within 10 seconds", path.display()))?
         .map_err(|error| format!("Failed to run {}: {}", path.display(), error))?;
 
     if !output.status.success() {
@@ -491,7 +592,7 @@ fn validate_manifest_at(dir: &Path, verify_hashes: bool) -> Result<RuntimeManife
         ));
     }
 
-    for required in REQUIRED_TOOLS {
+    for required in REQUIRED_TOOLS.iter().filter(|tool| tool.required) {
         if !manifest.tools.iter().any(|tool| tool.name == required.name) {
             return Err(format!("Runtime manifest is missing {}.", required.name));
         }
@@ -597,7 +698,8 @@ fn build_client() -> Result<Client, String> {
         .user_agent(
             "NuclearDownloaderRuntime/1 (+https://github.com/HoodedBandit/nuclear-downloader)",
         )
-        .connect_timeout(Duration::from_secs(15))
+        .connect_timeout(NETWORK_CONNECT_TIMEOUT)
+        .read_timeout(NETWORK_READ_TIMEOUT)
         .build()
         .map_err(|error| format!("Failed to prepare runtime update client: {error}"))
 }
@@ -606,6 +708,7 @@ async fn fetch_latest_release(client: &Client) -> Result<GitHubRelease, String> 
     let response = client
         .get(GITHUB_RELEASES_LATEST_URL)
         .header(ACCEPT, "application/vnd.github+json")
+        .timeout(METADATA_REQUEST_TIMEOUT)
         .send()
         .await
         .map_err(|error| format!("Failed to reach GitHub Releases: {error}"))?;
@@ -670,6 +773,7 @@ async fn download_checksum(client: &Client, url: &str) -> Result<String, String>
     validate_https_url(url)?;
     let response = client
         .get(url)
+        .timeout(METADATA_REQUEST_TIMEOUT)
         .send()
         .await
         .map_err(|error| format!("Failed to download runtime checksum: {error}"))?;
@@ -835,12 +939,6 @@ fn sha256_file_sync(path: &Path) -> Result<String, String> {
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-async fn cleanup_file_if_exists(path: &Path) {
-    if fs::try_exists(path).await.unwrap_or(false) {
-        let _ = fs::remove_file(path).await;
-    }
-}
-
 async fn cleanup_dir_if_exists(path: &Path) {
     if fs::try_exists(path).await.unwrap_or(false) {
         let _ = fs::remove_dir_all(path).await;
@@ -870,8 +968,8 @@ fn emit_runtime_progress(
 #[cfg(test)]
 mod tests {
     use super::{
-        is_ytdlp_stale, parse_sha256_checksum, select_runtime_assets, tool_version_args,
-        validate_manifest_at, GitHubRelease, GitHubReleaseAsset, REQUIRED_TOOLS,
+        is_ytdlp_stale, parse_sha256_checksum, promote_runtime_atomically, select_runtime_assets,
+        tool_version_args, validate_manifest_at, GitHubRelease, GitHubReleaseAsset, REQUIRED_TOOLS,
     };
     use sha2::{Digest, Sha256};
     use std::fs;
@@ -977,6 +1075,65 @@ mod tests {
         let manifest = validate_manifest_at(&root, true).unwrap();
         assert_eq!(manifest.runtime_version, "2026.06.09");
 
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn runtime_manifest_allows_optional_deno_to_be_absent() {
+        let root = std::env::temp_dir().join(format!(
+            "nuclear-runtime-no-deno-test-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+
+        let mut manifest_tools = Vec::new();
+        for tool in ["yt-dlp", "ffmpeg", "ffprobe"] {
+            let path = root.join(format!("{tool}.exe"));
+            fs::write(&path, tool.as_bytes()).unwrap();
+            let hash = format!("{:x}", Sha256::digest(tool.as_bytes()));
+            manifest_tools.push(format!(
+                r#"{{"name":"{tool}","version":"1.0.0","path":"{tool}.exe","sha256":"{hash}"}}"#
+            ));
+        }
+        fs::write(
+            root.join("runtime-manifest.json"),
+            format!(
+                r#"{{"runtimeVersion":"2026.06.09","platform":"windows-x64","tools":[{}]}}"#,
+                manifest_tools.join(",")
+            ),
+        )
+        .unwrap();
+
+        assert!(validate_manifest_at(&root, true).is_ok());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn atomic_runtime_promotion_rolls_back_on_publish_failure() {
+        let root = std::env::temp_dir().join(format!(
+            "nuclear-runtime-promote-test-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let final_dir = root.join("current");
+        let candidate_dir = root.join("missing-candidate");
+        let backup_dir = root.join("backup");
+        fs::create_dir_all(&final_dir).unwrap();
+        fs::write(final_dir.join("marker.txt"), "original").unwrap();
+
+        let result = promote_runtime_atomically(&candidate_dir, &final_dir, &backup_dir).await;
+
+        assert!(result.is_err());
+        assert_eq!(
+            fs::read_to_string(final_dir.join("marker.txt")).unwrap(),
+            "original"
+        );
+        assert!(!backup_dir.exists());
         let _ = fs::remove_dir_all(root);
     }
 }

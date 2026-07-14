@@ -38,6 +38,13 @@ pub struct PlaylistInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum UrlInspection {
+    Video { video: VideoInfo },
+    Playlist { playlist: PlaylistInfo },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadRequest {
     pub url: String,
     pub quality: String,
@@ -91,6 +98,14 @@ pub struct DownloaderRuntimeStatus {
     pub plugin_dir: String,
     pub message: Option<String>,
     pub tools: Vec<DownloaderToolStatus>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloaderRuntimeUpdateCheck {
+    pub update_available: bool,
+    pub latest_runtime_version: Option<String>,
+    pub message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

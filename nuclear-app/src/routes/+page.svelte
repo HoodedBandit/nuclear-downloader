@@ -4,6 +4,7 @@
   import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount, tick } from "svelte";
+  import { isUpdateBlockingStatus } from "$lib/queue-logic";
 
   type DownloadStatus =
     | "fetching"
@@ -15,7 +16,12 @@
     | "error"
     | "cancelled";
 
-  type DownloadPhase = "download" | "postprocess" | "conversion" | "complete";
+  type DownloadPhase =
+    | "download"
+    | "postprocess"
+    | "waiting_conversion"
+    | "conversion"
+    | "complete";
   type CookieMode = "browser" | "file";
   type RuntimeState = "ready" | "degraded" | "missing";
 
@@ -84,6 +90,10 @@
     entries: PlaylistEntry[];
   }
 
+  type UrlInspection =
+    | { kind: "video"; video: VideoInfo }
+    | { kind: "playlist"; playlist: PlaylistInfo };
+
   interface PlaylistModal {
     info: PlaylistInfo;
     url: string;
@@ -108,6 +118,7 @@
     progress: number;
     downloadProgress: number;
     conversionProgress: number | null;
+    phase: DownloadPhase | null;
     speed: string;
     eta: string;
     error: string | null;
@@ -173,6 +184,12 @@
     message: string | null;
   }
 
+  interface DownloaderRuntimeUpdateCheck {
+    updateAvailable: boolean;
+    latestRuntimeVersion: string | null;
+    message: string | null;
+  }
+
   interface UpdateCheckResult {
     currentVersion: string;
     hasUpdate: boolean;
@@ -183,7 +200,7 @@
   }
 
   interface UpdateInstallProgressPayload {
-    status: "downloading" | "launching" | "error";
+    status: "downloading" | "verifying" | "launching" | "error";
     version: string;
     downloadedBytes: number;
     totalBytes: number | null;
@@ -418,6 +435,7 @@
   let queue = $state<QueueItem[]>([]);
   let appVersion = $state<string | null>(null);
   let runtimeStatus = $state<DownloaderRuntimeStatus | null>(null);
+  let runtimeUpdateCheck = $state<DownloaderRuntimeUpdateCheck | null>(null);
   let runtimeCheckState = $state<"checking" | "idle">("checking");
   let runtimeUpdateRunning = $state(false);
   let runtimeUpdateProgress = $state<DownloaderRuntimeUpdateProgressPayload | null>(null);
@@ -454,20 +472,6 @@
     let unlistenRuntimeProgress: (() => void) | undefined;
 
     const setup = async () => {
-      try {
-        appVersion = await getVersion();
-      } catch {
-        appVersion = null;
-      }
-
-      await refreshDownloaderRuntime();
-
-      try {
-        outputDir = await invoke<string>("default_download_dir");
-      } catch {
-        outputDir = "";
-      }
-
       unlistenProgress = await listen<DownloadProgressPayload>(
         "download-progress",
         (event) => {
@@ -515,6 +519,7 @@
             progress: nextProgress,
             downloadProgress: nextDownloadProgress,
             conversionProgress: nextConversionProgress,
+            phase: progress.phase ?? item.phase,
             speed: isTerminal
               ? ""
               : progress.speed ?? "",
@@ -560,6 +565,21 @@
             }
           },
         );
+
+      try {
+        appVersion = await getVersion();
+      } catch {
+        appVersion = null;
+      }
+
+      await refreshDownloaderRuntime();
+      void checkDownloaderRuntimeUpdate();
+
+      try {
+        outputDir = await invoke<string>("default_download_dir");
+      } catch {
+        outputDir = "";
+      }
 
       void checkForAppUpdate({ openModal: false, showErrors: false });
     };
@@ -717,6 +737,12 @@
     );
   }
 
+  function getStatusLabel(item: QueueItem): string {
+    if (item.phase === "waiting_conversion") return "waiting to convert";
+    if (item.status === "postprocessing") return "converting";
+    return item.status;
+  }
+
   function roundedProgress(value: number | null): number {
     return Math.round(clampProgressValue(value ?? 0));
   }
@@ -733,10 +759,6 @@
     }
 
     return `${m}:${String(s).padStart(2, "0")}`;
-  }
-
-  function isPlaylistUrl(url: string): boolean {
-    return /[?&]list=/.test(url) || /\/playlist\?/.test(url);
   }
 
   function normalizeDownloadError(message: string, code: string | null = null): string {
@@ -794,12 +816,36 @@
     }
   }
 
+  async function checkDownloaderRuntimeUpdate(): Promise<void> {
+    try {
+      runtimeUpdateCheck = await invoke<DownloaderRuntimeUpdateCheck>(
+        "check_downloader_runtime_update",
+      );
+    } catch {
+      // Runtime availability is local and remains usable when GitHub is offline.
+      runtimeUpdateCheck = null;
+    }
+  }
+
+  function hasUpdateBlockingWork(): boolean {
+    return (
+      pendingDownloadIds.length > 0 ||
+      pendingPlaylistQueueItems.length > 0 ||
+      queue.some((item) => isUpdateBlockingStatus(item.status))
+    );
+  }
+
   async function updateDownloaderRuntime(): Promise<void> {
+    if (hasUpdateBlockingWork()) {
+      runtimeError = "Finish or cancel queued downloads before updating the runtime.";
+      return;
+    }
+
     runtimeUpdateRunning = true;
     runtimeError = null;
     runtimeUpdateProgress = {
       status: "checking",
-      version: runtimeStatus?.latestRuntimeVersion ?? null,
+      version: runtimeUpdateCheck?.latestRuntimeVersion ?? null,
       downloadedBytes: 0,
       totalBytes: null,
       message: "Checking downloader runtime release...",
@@ -814,6 +860,7 @@
     } finally {
       runtimeUpdateRunning = false;
       await refreshDownloaderRuntime();
+      await checkDownloaderRuntimeUpdate();
     }
   }
 
@@ -955,6 +1002,7 @@
       `Format: ${item.format}`,
       `Quality: ${item.quality}`,
       `Status: ${item.status}`,
+      `Phase: ${item.phase ?? "n/a"}`,
       `Error code: ${item.errorCode ?? "n/a"}`,
       `Error: ${item.error ?? "n/a"}`,
       "",
@@ -1038,6 +1086,7 @@
       progress: 0,
       downloadProgress: 0,
       conversionProgress: null,
+      phase: "download",
       speed: "",
       eta: "",
     };
@@ -1303,6 +1352,12 @@
     const targetVersion = updateInfo?.latestVersion;
     if (!targetVersion || !updateInfo?.hasUpdate || updateInstallRunning) return;
 
+    if (hasUpdateBlockingWork()) {
+      updateError = "Finish or cancel queued downloads before installing the app update.";
+      updateModalOpen = true;
+      return;
+    }
+
     updateError = null;
     updateModalOpen = true;
     updateInstallRunning = true;
@@ -1337,59 +1392,64 @@
       return;
     }
 
-    if (isPlaylistUrl(url)) {
-      urlInput = "";
-      playlistLoading = true;
-
-      try {
-        const info = await invoke<PlaylistInfo>("fetch_playlist_info", {
-          url,
-          cookieConfig: getCookieConfig(),
-          compatConfigPath: getCompatConfigSnapshot(),
-        });
-
-        playlistModal = {
-          info,
-          url,
-          entries: info.entries.map((entry) => ({ ...entry, selected: true })),
-        };
-      } catch (error) {
-        urlError = "Failed to load playlist: " + String(error);
-      } finally {
-        playlistLoading = false;
-      }
-
-      return;
-    }
-
     if (getQueueUrls().has(url)) {
       urlError = "URL already in queue";
       return;
     }
 
-    addSingleVideo(url);
+    const cookieConfig = getCookieConfigSnapshot();
+    playlistLoading = true;
+
+    try {
+      const inspection = await invoke<UrlInspection>("inspect_url", {
+        url,
+        cookieConfig,
+        compatConfigPath: getCompatConfigSnapshot(),
+      });
+
+      urlInput = "";
+      if (inspection.kind === "playlist") {
+        const info = inspection.playlist;
+        playlistModal = {
+          info,
+          url,
+          entries: info.entries.map((entry) => ({ ...entry, selected: true })),
+        };
+        return;
+      }
+
+      addInspectedVideo(inspection.video, cookieConfig);
+    } catch (error) {
+      urlError = "Failed to inspect URL: " + normalizeDownloadError(String(error));
+    } finally {
+      playlistLoading = false;
+    }
   }
 
-  function addSingleVideo(url: string): void {
-    const cookieConfig = getCookieConfigSnapshot();
+  function addInspectedVideo(
+    info: VideoInfo,
+    cookieConfig: CookieConfig | null,
+  ): void {
+    const availableQualities = ["best", ...info.available_qualities];
     const item: QueueItem = {
       id: genId(),
       downloadId: null,
-      url,
-      title: "Fetching info...",
+      url: info.url,
+      title: info.title,
       customFilename: null,
-      duration: null,
-      channel: null,
-      thumbnail: null,
-      infoLoaded: false,
-      status: "fetching",
-      quality: globalQuality,
+      duration: info.duration,
+      channel: info.channel,
+      thumbnail: info.thumbnail,
+      infoLoaded: true,
+      status: "ready",
+      quality: resolveQualitySelection(globalQuality, availableQualities),
       format: globalFormat,
       cookieConfig,
-      availableQualities: [],
+      availableQualities,
       progress: 0,
       downloadProgress: 0,
       conversionProgress: null,
+      phase: null,
       speed: "",
       eta: "",
       error: null,
@@ -1401,7 +1461,6 @@
     };
 
     queue = [...queue, item];
-    void fetchVideoInfoForItem(item.id, url, cookieConfig);
   }
 
   async function fetchVideoInfoForItem(
@@ -1410,11 +1469,15 @@
     cookieConfig: CookieConfig | null
   ): Promise<void> {
     try {
-      const info = await invoke<VideoInfo>("fetch_video_info", {
+      const inspection = await invoke<UrlInspection>("inspect_url", {
         url,
         cookieConfig,
         compatConfigPath: getCompatConfigSnapshot(),
       });
+      if (inspection.kind !== "video") {
+        throw new Error("This URL now resolves to a playlist. Add it again to choose entries.");
+      }
+      const info = inspection.video;
 
       const idx = queue.findIndex((item) => item.id === itemId);
       if (idx === -1) return;
@@ -1486,6 +1549,7 @@
           progress: 0,
           downloadProgress: 0,
           conversionProgress: null,
+          phase: null,
           speed: "",
           eta: "",
           error: null,
@@ -1564,15 +1628,8 @@
     schedulerPaused = true;
     clearPendingQueue();
 
-    const active = queue.filter(
-      (item) =>
-        item.status === "downloading" || item.status === "postprocessing"
-    );
-
     try {
-      for (const item of active) {
-        await cancelItem(item);
-      }
+      await invoke("cancel_all_downloads");
     } finally {
       schedulerPaused = false;
       void pumpDownloadQueue();
@@ -1596,6 +1653,7 @@
         progress: 0,
         downloadProgress: 0,
         conversionProgress: null,
+        phase: null,
         speed: "",
         eta: "",
         downloadId: null,
@@ -1619,6 +1677,7 @@
       progress: 0,
       downloadProgress: 0,
       conversionProgress: null,
+      phase: null,
       speed: "",
       eta: "",
       downloadId: null,
@@ -1707,12 +1766,13 @@
         >
           {runtimeBadgeText()}
         </span>
-        {#if runtimeStatus?.updateAvailable}
+        {#if runtimeUpdateCheck?.updateAvailable}
           <button
             type="button"
             class="badge-button"
             onclick={updateDownloaderRuntime}
-            disabled={runtimeUpdateRunning}
+            disabled={runtimeUpdateRunning || hasUpdateBlockingWork()}
+            title={hasUpdateBlockingWork() ? "Finish or cancel queued downloads first" : runtimeUpdateCheck.message ?? ""}
           >
             {runtimeUpdateRunning ? "Runtime..." : "Update Runtime"}
           </button>
@@ -1829,7 +1889,6 @@
             {/each}
           </select>
           {#if cookieBrowser === "chrome" || cookieBrowser === "edge" || cookieBrowser === "brave" || cookieBrowser === "chromium"}
-            <span class="cookie-warn-clean">Chromium browsers block cookie access; use Firefox or a cookie file instead</span>
             <span class="cookie-warn">Chromium browsers block cookie access — use Firefox or a cookie file instead</span>
           {:else}
             <span class="cookie-hint">Close {cookieBrowser} first if errors occur</span>
@@ -1941,7 +2000,7 @@
               </td>
               <td class="col-status">
                 <span class="status-pill {item.status}">
-                  {item.status === "postprocessing" ? "converting" : item.status}
+                  {getStatusLabel(item)}
                 </span>
                 {#if item.error}
                   <button
@@ -2261,7 +2320,8 @@
           <button
             class="primary"
             onclick={installAppUpdate}
-            disabled={updateInstallRunning || updateCheckState === "checking"}
+            disabled={updateInstallRunning || updateCheckState === "checking" || hasUpdateBlockingWork()}
+            title={hasUpdateBlockingWork() ? "Finish or cancel queued downloads first" : ""}
           >
             {#if updateInstallRunning}
               Installing...

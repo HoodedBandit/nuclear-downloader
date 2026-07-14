@@ -17,7 +17,7 @@ Installed Windows builds can also check the latest stable GitHub Release from in
 - Extract audio-only downloads in common formats
 - Use browser cookies or a `cookies.txt` file when a supported site requires login
 - Track progress, speed, ETA, and per-download status in the desktop UI
-- Build Windows releases that can package `yt-dlp`, `ffmpeg`, and `ffprobe` when you provide the sidecar binaries locally
+- Build Windows releases that can package `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno when you provide the sidecar binaries locally
 
 ## Windows Support
 
@@ -37,10 +37,11 @@ Required downloader/media tools:
 - `yt-dlp`
 - `ffmpeg`
 - `ffprobe`
+- Deno is recommended for modern YouTube extraction and is included in official release bundles
 
 This source repository intentionally does not include third-party binary dependencies.
 
-- For development, the app can use `yt-dlp`, `ffmpeg`, and `ffprobe` from your system `PATH`
+- For development, the app can use `yt-dlp`, `ffmpeg`, `ffprobe`, and optionally Deno from your system `PATH`
 - For Windows release bundling, place local copies in `nuclear-app/src-tauri/binaries`
 
 ## Download and Run
@@ -48,6 +49,8 @@ This source repository intentionally does not include third-party binary depende
 Prebuilt downloads are published on the GitHub Releases page:
 
 - [GitHub Releases](https://github.com/HoodedBandit/nuclear-downloader/releases)
+
+Use the NSIS setup executable for a normal installation. The self-contained Windows portable ZIP includes the app plus all downloader sidecars; the raw `nuclear.exe` expects a managed runtime or adjacent sidecars.
 
 This source repository does not store release `.exe` files. If you want a ready-to-run installer or portable build, download it from Releases.
 
@@ -78,6 +81,7 @@ Run checks:
 
 ```powershell
 npm run check
+npm test
 npm run build
 cd src-tauri
 cargo check
@@ -96,7 +100,7 @@ Release outputs:
 - Portable app in `nuclear-app/src-tauri/target/release`
 - NSIS installer in `nuclear-app/src-tauri/target/release/bundle/nsis`
 
-For installer or portable bundling with sidecars, provide local copies of `yt-dlp`, `ffmpeg`, and `ffprobe` in `nuclear-app/src-tauri/binaries` first.
+For installer or portable bundling with sidecars, provide local copies of `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno in `nuclear-app/src-tauri/binaries` first.
 
 ## More Detail
 

@@ -3,12 +3,17 @@ mod models;
 mod runtime;
 mod updater;
 
-use downloader::{create_active_downloads, ActiveDownloads};
+use downloader::{create_download_manager, DownloadManager};
+use futures_util::FutureExt;
 use models::DownloadRequest;
+use std::panic::AssertUnwindSafe;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 use tauri::State;
 
 struct AppState {
-    active_downloads: ActiveDownloads,
+    download_manager: DownloadManager,
 }
 
 #[tauri::command]
@@ -17,31 +22,23 @@ fn validate_url(url: &str) -> bool {
 }
 
 #[tauri::command]
-async fn fetch_video_info(
+async fn inspect_url(
+    state: State<'_, AppState>,
     url: String,
     cookie_config: Option<models::CookieConfig>,
     compat_config_path: Option<String>,
-) -> Result<models::VideoInfo, String> {
-    downloader::validate_fetch_request(
+) -> Result<models::UrlInspection, String> {
+    let operation_id = format!("inspect-{}", uuid::Uuid::new_v4());
+    let job = state.download_manager.register(&operation_id).await?;
+    let result = downloader::inspect_url(
         &url,
         cookie_config.as_ref(),
         compat_config_path.as_deref(),
-    )?;
-    downloader::fetch_info(&url, cookie_config.as_ref(), compat_config_path.as_deref()).await
-}
-
-#[tauri::command]
-async fn fetch_playlist_info(
-    url: String,
-    cookie_config: Option<models::CookieConfig>,
-    compat_config_path: Option<String>,
-) -> Result<models::PlaylistInfo, String> {
-    downloader::validate_fetch_request(
-        &url,
-        cookie_config.as_ref(),
-        compat_config_path.as_deref(),
-    )?;
-    downloader::fetch_playlist(&url, cookie_config.as_ref(), compat_config_path.as_deref()).await
+        &job,
+    )
+    .await;
+    state.download_manager.finish(&operation_id).await;
+    result
 }
 
 #[tauri::command]
@@ -52,16 +49,36 @@ async fn start_download(
     request: DownloadRequest,
 ) -> Result<(), String> {
     downloader::validate_download_request(&request)?;
-    let active = state.active_downloads.clone();
+    let manager = state.download_manager.clone();
+    let job = manager.register(&download_id).await?;
     tauri::async_runtime::spawn(async move {
-        downloader::start_download(app, download_id, request, active).await;
+        let task_app = app.clone();
+        let task_download_id = download_id.clone();
+        let result = AssertUnwindSafe(downloader::start_download(
+            app,
+            download_id.clone(),
+            request,
+            manager.clone(),
+            job,
+        ))
+        .catch_unwind()
+        .await;
+        if result.is_err() {
+            downloader::emit_download_task_failure(&task_app, &task_download_id);
+        }
+        manager.finish(&download_id).await;
     });
     Ok(())
 }
 
 #[tauri::command]
 async fn cancel_download(state: State<'_, AppState>, download_id: String) -> Result<(), String> {
-    downloader::cancel_download(&download_id, state.active_downloads.clone()).await
+    downloader::cancel_download(&download_id, state.download_manager.clone()).await
+}
+
+#[tauri::command]
+async fn cancel_all_downloads(state: State<'_, AppState>) -> Result<(), String> {
+    downloader::cancel_all_downloads(state.download_manager.clone()).await
 }
 
 #[tauri::command]
@@ -70,10 +87,19 @@ async fn check_downloader_runtime() -> Result<models::DownloaderRuntimeStatus, S
 }
 
 #[tauri::command]
+async fn check_downloader_runtime_update() -> Result<models::DownloaderRuntimeUpdateCheck, String> {
+    runtime::check_downloader_runtime_update().await
+}
+
+#[tauri::command]
 async fn update_downloader_runtime(
     app: tauri::AppHandle,
+    state: State<'_, AppState>,
 ) -> Result<models::DownloaderRuntimeStatus, String> {
-    runtime::update_downloader_runtime(app).await
+    state.download_manager.begin_maintenance().await?;
+    let result = runtime::update_downloader_runtime(app).await;
+    state.download_manager.end_maintenance().await;
+    result
 }
 
 #[tauri::command]
@@ -93,46 +119,65 @@ async fn check_for_app_update(app: tauri::AppHandle) -> Result<models::UpdateChe
 }
 
 #[tauri::command]
-async fn install_app_update(app: tauri::AppHandle, expected_version: String) -> Result<(), String> {
-    updater::install_app_update(&app, expected_version).await
+async fn install_app_update(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    expected_version: String,
+) -> Result<(), String> {
+    state.download_manager.begin_maintenance().await?;
+    let result = updater::install_app_update(&app, expected_version).await;
+    if result.is_err() {
+        state.download_manager.end_maintenance().await;
+    }
+    result
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let active_downloads = create_active_downloads();
-    let cleanup_downloads = active_downloads.clone();
+    let download_manager = create_download_manager();
+    let shutdown_manager = download_manager.clone();
+    let shutdown_started = Arc::new(AtomicBool::new(false));
+    let shutdown_complete = Arc::new(AtomicBool::new(false));
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState { active_downloads })
+        .manage(AppState { download_manager })
         .invoke_handler(tauri::generate_handler![
             validate_url,
-            fetch_video_info,
-            fetch_playlist_info,
+            inspect_url,
             start_download,
             cancel_download,
+            cancel_all_downloads,
             check_downloader_runtime,
+            check_downloader_runtime_update,
             update_downloader_runtime,
             default_download_dir,
             check_for_app_update,
             install_app_update,
         ])
-        .on_window_event(move |_window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                let downloads = cleanup_downloads.clone();
-                tauri::async_runtime::spawn(async move {
-                    let children = {
-                        let mut map = downloads.lock().await;
-                        map.drain().map(|(_, child)| child).collect::<Vec<_>>()
-                    };
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
 
-                    for mut child in children {
-                        let _ = child.kill().await;
-                        let _ = child.wait().await;
-                    }
-                });
+    app.run(move |app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
+            if shutdown_complete.load(Ordering::SeqCst) {
+                return;
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+
+            api.prevent_exit();
+            if shutdown_started.swap(true, Ordering::SeqCst) {
+                return;
+            }
+
+            let manager = shutdown_manager.clone();
+            let handle = app_handle.clone();
+            let complete = shutdown_complete.clone();
+            tauri::async_runtime::spawn(async move {
+                manager.begin_shutdown().await;
+                let _ = manager.wait_for_idle(Duration::from_secs(10)).await;
+                complete.store(true, Ordering::SeqCst);
+                handle.exit(code.unwrap_or(0));
+            });
+        }
+    });
 }

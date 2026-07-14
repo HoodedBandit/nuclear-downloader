@@ -9,4 +9,4 @@ If you want to build a Windows release that bundles its downloader sidecars, pla
 - `ffprobe-x86_64-pc-windows-msvc.exe`
 - `deno-x86_64-pc-windows-msvc.exe`
 
-Development can also use `yt-dlp` and `ffmpeg` from your system `PATH`.
+Development can also use `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno from your system `PATH`.
