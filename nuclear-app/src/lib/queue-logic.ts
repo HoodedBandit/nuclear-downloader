@@ -16,3 +16,19 @@ export function isUpdateBlockingStatus(status: QueueLifecycleStatus): boolean {
     status === "postprocessing"
   );
 }
+
+export function findNextRunnablePendingId(
+  pendingIds: string[],
+  priorityId: string | null,
+  editingId: string | null,
+): string | null {
+  const candidates = priorityId ? [priorityId, ...pendingIds] : pendingIds;
+  return candidates.find((itemId) => itemId !== editingId) ?? null;
+}
+
+export function resolveAvailableQuality(
+  requestedQuality: string,
+  availableQualities: string[],
+): string {
+  return availableQualities.includes(requestedQuality) ? requestedQuality : "best";
+}

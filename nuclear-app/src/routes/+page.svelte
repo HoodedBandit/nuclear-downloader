@@ -4,7 +4,11 @@
   import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount, tick } from "svelte";
-  import { isUpdateBlockingStatus } from "$lib/queue-logic";
+  import {
+    findNextRunnablePendingId,
+    isUpdateBlockingStatus,
+    resolveAvailableQuality,
+  } from "$lib/queue-logic";
 
   type DownloadStatus =
     | "fetching"
@@ -51,7 +55,17 @@
   type OutputFormat = VideoFormat | AudioFormat;
   const MAX_PARALLEL_DOWNLOADS = 5;
   const PLAYLIST_INSERT_BATCH_SIZE = 25;
+  const PLAYLIST_PAGE_SIZE = 100;
   const DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS = 500;
+  const MAX_CUSTOM_FILENAME_UTF16_UNITS = 180;
+  const WINDOWS_RESERVED_FILENAME_STEMS = new Set([
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    ...Array.from({ length: 9 }, (_, index) => `COM${index + 1}`),
+    ...Array.from({ length: 9 }, (_, index) => `LPT${index + 1}`),
+  ]);
 
   interface CookieConfig {
     enabled: boolean;
@@ -87,6 +101,7 @@
     title: string;
     channel: string | null;
     entry_count: number;
+    truncated: boolean;
     entries: PlaylistEntry[];
   }
 
@@ -448,8 +463,12 @@
   let compatConfigPath = $state("");
   let playlistModal = $state<PlaylistModal | null>(null);
   let playlistLoading = $state(false);
+  let activeInspectionId = $state<string | null>(null);
+  let inspectionCancelRequested = false;
+  let playlistPage = $state(0);
   let editingTitleId = $state<string | null>(null);
   let editingTitleDraft = $state("");
+  let filenameEditError = $state("");
   let titleEditorInput = $state<HTMLInputElement | null>(null);
   let pendingDownloadIds = $state<string[]>([]);
   let priorityDownloadId = $state<string | null>(null);
@@ -954,7 +973,11 @@
       priorityDownloadId = null;
     }
 
-    return prioritizedItemStillQueued ?? pendingDownloadIds[0] ?? null;
+    return findNextRunnablePendingId(
+      pendingDownloadIds,
+      prioritizedItemStillQueued,
+      editingTitleId,
+    );
   }
 
   function clearPendingQueue(resetQueuedToReady = true): void {
@@ -1130,10 +1153,6 @@
           break;
         }
 
-        if (nextId === editingTitleId) {
-          break;
-        }
-
         pendingDownloadIds = pendingDownloadIds.filter((itemId) => itemId !== nextId);
         if (priorityDownloadId === nextId) {
           priorityDownloadId = null;
@@ -1161,9 +1180,7 @@
     requestedQuality: string,
     availableQualities: string[]
   ): string {
-    return availableQualities.includes(requestedQuality)
-      ? requestedQuality
-      : "best";
+    return resolveAvailableQuality(requestedQuality, availableQualities);
   }
 
   function getQueueItemDisplayTitle(item: QueueItem): string {
@@ -1185,7 +1202,26 @@
     }
 
     cleaned = cleaned.trim().replace(/[. ]+$/g, "");
-    return cleaned;
+    if (!cleaned) return "";
+
+    const dotIndex = cleaned.indexOf(".");
+    const deviceStem = (dotIndex === -1 ? cleaned : cleaned.slice(0, dotIndex)).toUpperCase();
+    if (WINDOWS_RESERVED_FILENAME_STEMS.has(deviceStem)) {
+      cleaned =
+        dotIndex === -1
+          ? `${cleaned}_`
+          : `${cleaned.slice(0, dotIndex)}_${cleaned.slice(dotIndex)}`;
+    }
+
+    let bounded = "";
+    let utf16Units = 0;
+    for (const character of cleaned) {
+      if (utf16Units + character.length > MAX_CUSTOM_FILENAME_UTF16_UNITS) break;
+      bounded += character;
+      utf16Units += character.length;
+    }
+
+    return bounded.trim().replace(/[. ]+$/g, "");
   }
 
   function canEditFilename(item: QueueItem): boolean {
@@ -1197,10 +1233,12 @@
 
     if (editingTitleId && editingTitleId !== item.id) {
       commitFilenameEdit(editingTitleId);
+      if (editingTitleId) return;
     }
 
     editingTitleId = item.id;
     editingTitleDraft = getQueueItemDisplayTitle(item);
+    filenameEditError = "";
 
     await tick();
     titleEditorInput?.focus();
@@ -1214,11 +1252,16 @@
     if (idx === -1) {
       editingTitleId = null;
       editingTitleDraft = "";
+      filenameEditError = "";
       titleEditorInput = null;
       return;
     }
 
     const cleaned = sanitizeFilenameDraft(editingTitleDraft);
+    if (!cleaned) {
+      filenameEditError = "Filename must contain at least one valid character.";
+      return;
+    }
     const customFilename =
       cleaned && cleaned !== queue[idx].title ? cleaned : null;
 
@@ -1229,6 +1272,7 @@
 
     editingTitleId = null;
     editingTitleDraft = "";
+    filenameEditError = "";
     titleEditorInput = null;
     void pumpDownloadQueue();
   }
@@ -1236,6 +1280,7 @@
   function cancelFilenameEdit(): void {
     editingTitleId = null;
     editingTitleDraft = "";
+    filenameEditError = "";
     titleEditorInput = null;
     void pumpDownloadQueue();
   }
@@ -1252,6 +1297,32 @@
 
   function closePlaylistModal(): void {
     playlistModal = null;
+    playlistPage = 0;
+  }
+
+  function getPlaylistPageCount(): number {
+    return Math.max(
+      1,
+      Math.ceil((playlistModal?.entries.length ?? 0) / PLAYLIST_PAGE_SIZE),
+    );
+  }
+
+  function getVisiblePlaylistEntries(): Array<{
+    entry: PlaylistModalEntry;
+    index: number;
+  }> {
+    if (!playlistModal) return [];
+    const start = playlistPage * PLAYLIST_PAGE_SIZE;
+    return playlistModal.entries
+      .slice(start, start + PLAYLIST_PAGE_SIZE)
+      .map((entry, offset) => ({ entry, index: start + offset }));
+  }
+
+  function changePlaylistPage(delta: number): void {
+    playlistPage = Math.min(
+      getPlaylistPageCount() - 1,
+      Math.max(0, playlistPage + delta),
+    );
   }
 
   function openUpdateModal(): void {
@@ -1382,12 +1453,25 @@
 
   // -- Actions --
   async function addToQueue(): Promise<void> {
+    if (playlistLoading) return;
+
     urlError = "";
     const url = urlInput.trim();
     if (!url) return;
 
-    const valid = await invoke<boolean>("validate_url", { url });
-    if (!valid) {
+    if (!runtimeCanDownload()) {
+      urlError = "Downloader runtime is not ready.";
+      return;
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      urlError = "Please enter a valid URL (must start with http:// or https://)";
+      return;
+    }
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
       urlError = "Please enter a valid URL (must start with http:// or https://)";
       return;
     }
@@ -1398,18 +1482,25 @@
     }
 
     const cookieConfig = getCookieConfigSnapshot();
+    const inspectionId = genId();
+    activeInspectionId = inspectionId;
+    inspectionCancelRequested = false;
     playlistLoading = true;
 
     try {
       const inspection = await invoke<UrlInspection>("inspect_url", {
+        inspectionId,
         url,
         cookieConfig,
         compatConfigPath: getCompatConfigSnapshot(),
       });
 
+      if (inspectionCancelRequested || activeInspectionId !== inspectionId) return;
+
       urlInput = "";
       if (inspection.kind === "playlist") {
         const info = inspection.playlist;
+        playlistPage = 0;
         playlistModal = {
           info,
           url,
@@ -1420,9 +1511,28 @@
 
       addInspectedVideo(inspection.video, cookieConfig);
     } catch (error) {
-      urlError = "Failed to inspect URL: " + normalizeDownloadError(String(error));
+      const message = normalizeDownloadError(String(error));
+      if (!inspectionCancelRequested && !message.toLowerCase().includes("cancelled")) {
+        urlError = "Failed to inspect URL: " + message;
+      }
     } finally {
-      playlistLoading = false;
+      if (activeInspectionId === inspectionId) {
+        activeInspectionId = null;
+        playlistLoading = false;
+        inspectionCancelRequested = false;
+      }
+    }
+  }
+
+  async function cancelInspection(): Promise<void> {
+    const inspectionId = activeInspectionId;
+    if (!inspectionId) return;
+
+    inspectionCancelRequested = true;
+    try {
+      await invoke("cancel_inspection", { inspectionId });
+    } catch (error) {
+      urlError = "Failed to cancel inspection: " + normalizeDownloadError(String(error));
     }
   }
 
@@ -1470,6 +1580,7 @@
   ): Promise<void> {
     try {
       const inspection = await invoke<UrlInspection>("inspect_url", {
+        inspectionId: genId(),
         url,
         cookieConfig,
         compatConfigPath: getCompatConfigSnapshot(),
@@ -1638,7 +1749,7 @@
 
   async function retryItem(item: QueueItem): Promise<void> {
     const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
-    if (idx === -1 || isActiveStatus(queue[idx].status)) return;
+    if (idx === -1 || !canRetryItem(queue[idx])) return;
 
     clearProgressDisplayState(item.id);
     if (!queue[idx].infoLoaded) {
@@ -1726,7 +1837,10 @@
   function applyGlobalQuality(): void {
     queue = queue.map((item) =>
       isEditablePendingStatus(item.status)
-        ? { ...item, quality: globalQuality }
+        ? {
+            ...item,
+            quality: resolveQualitySelection(globalQuality, item.availableQualities),
+          }
         : item
     );
   }
@@ -1740,7 +1854,8 @@
   }
 
   function handleUrlKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !event.repeat) {
+      event.preventDefault();
       void addToQueue();
     }
   }
@@ -1818,11 +1933,15 @@
       placeholder="Paste a video URL..."
       bind:value={urlInput}
       onkeydown={handleUrlKeydown}
+      disabled={playlistLoading}
       class:input-error={Boolean(urlError)}
     />
     <button class="primary" onclick={addToQueue} disabled={!runtimeCanDownload() || playlistLoading}>
       {playlistLoading ? "Loading..." : "Add"}
     </button>
+    {#if playlistLoading}
+      <button onclick={cancelInspection}>Cancel</button>
+    {/if}
     {#if urlError}
       <span class="error-text">{urlError}</span>
     {/if}
@@ -1977,6 +2096,9 @@
                         onkeydown={handleFilenameEditorKeydown}
                         onclick={(event) => event.stopPropagation()}
                       />
+                      {#if filenameEditError}
+                        <span class="filename-error">{filenameEditError}</span>
+                      {/if}
                     {:else if canEditFilename(item)}
                       <button
                         type="button"
@@ -2157,7 +2279,11 @@
           {#if playlistModal.info.channel}
             <span class="modal-channel">{playlistModal.info.channel}</span>
           {/if}
-          <span class="modal-count">{playlistModal.info.entry_count} videos</span>
+          <span class="modal-count">
+            {playlistModal.info.truncated
+              ? `Showing first ${playlistModal.info.entry_count} videos`
+              : `${playlistModal.info.entry_count} videos`}
+          </span>
         </div>
         <button class="small" onclick={closePlaylistModal}>Close</button>
       </div>
@@ -2175,11 +2301,12 @@
         </span>
       </div>
       <div class="modal-list">
-        {#each playlistModal.entries as entry, i (entry.id)}
+        {#each getVisiblePlaylistEntries() as row (row.entry.url)}
+          {@const entry = row.entry}
           <label class="playlist-entry" class:entry-selected={entry.selected}>
             <input
               type="checkbox"
-              bind:checked={playlistModal.entries[i].selected}
+              bind:checked={playlistModal.entries[row.index].selected}
             />
             {#if entry.thumbnail}
               <img
@@ -2200,6 +2327,21 @@
           </label>
         {/each}
       </div>
+      {#if getPlaylistPageCount() > 1}
+        <div class="modal-pagination">
+          <button
+            class="small"
+            onclick={() => changePlaylistPage(-1)}
+            disabled={playlistPage === 0}
+          >Previous</button>
+          <span class="muted">Page {playlistPage + 1} of {getPlaylistPageCount()}</span>
+          <button
+            class="small"
+            onclick={() => changePlaylistPage(1)}
+            disabled={playlistPage >= getPlaylistPageCount() - 1}
+          >Next</button>
+        </div>
+      {/if}
       <div class="modal-footer">
         <button class="primary" onclick={addPlaylistSelection}
           disabled={!playlistModal.entries.some((entry) => entry.selected)}>
@@ -2719,6 +2861,12 @@
     box-sizing: border-box;
   }
 
+  .filename-error {
+    color: var(--red);
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
   .channel {
     font-size: 11px;
     color: var(--subtext0);
@@ -3055,6 +3203,15 @@
     flex: 1;
     overflow-y: auto;
     padding: 4px 0;
+  }
+
+  .modal-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 20px;
+    border-top: 1px solid var(--surface0);
   }
 
   .playlist-entry {

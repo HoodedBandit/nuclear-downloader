@@ -1,3 +1,6 @@
+#[cfg(test)]
+#[path = "../build_config.rs"]
+mod build_config;
 mod downloader;
 mod models;
 mod runtime;
@@ -24,11 +27,12 @@ fn validate_url(url: &str) -> bool {
 #[tauri::command]
 async fn inspect_url(
     state: State<'_, AppState>,
+    inspection_id: String,
     url: String,
     cookie_config: Option<models::CookieConfig>,
     compat_config_path: Option<String>,
 ) -> Result<models::UrlInspection, String> {
-    let operation_id = format!("inspect-{}", uuid::Uuid::new_v4());
+    let operation_id = inspection_operation_id(&inspection_id)?;
     let job = state.download_manager.register(&operation_id).await?;
     let result = downloader::inspect_url(
         &url,
@@ -39,6 +43,22 @@ async fn inspect_url(
     .await;
     state.download_manager.finish(&operation_id).await;
     result
+}
+
+fn inspection_operation_id(inspection_id: &str) -> Result<String, String> {
+    let id = uuid::Uuid::parse_str(inspection_id.trim())
+        .map_err(|_| "Invalid inspection ID.".to_string())?;
+    Ok(format!("inspect-{id}"))
+}
+
+#[tauri::command]
+async fn cancel_inspection(
+    state: State<'_, AppState>,
+    inspection_id: String,
+) -> Result<(), String> {
+    let operation_id = inspection_operation_id(&inspection_id)?;
+    state.download_manager.cancel(&operation_id).await;
+    Ok(())
 }
 
 #[tauri::command]
@@ -145,6 +165,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             validate_url,
             inspect_url,
+            cancel_inspection,
             start_download,
             cancel_download,
             cancel_all_downloads,

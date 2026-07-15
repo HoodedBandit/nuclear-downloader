@@ -1,5 +1,7 @@
 use std::{env, path::PathBuf};
 
+mod build_config;
+
 fn main() {
     let target = env::var("TARGET").expect("TARGET should be set by cargo");
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
@@ -36,13 +38,12 @@ fn main() {
         }
     }
 
-    let merged_config = serde_json::json!({
-        "bundle": {
-            "externalBin": available_sidecars,
-        }
-    });
+    let inherited_config = env::var("TAURI_CONFIG").ok();
+    let merged_config =
+        build_config::merge_external_bins(inherited_config.as_deref(), &available_sidecars)
+            .unwrap_or_else(|error| panic!("Failed to merge Tauri build configuration: {error}"));
 
-    env::set_var("TAURI_CONFIG", merged_config.to_string());
+    env::set_var("TAURI_CONFIG", merged_config);
 
     tauri_build::build()
 }

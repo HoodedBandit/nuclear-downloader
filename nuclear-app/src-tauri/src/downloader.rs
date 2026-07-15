@@ -6,7 +6,7 @@ use crate::runtime::{self, YtdlpCommandConfig};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Deserializer;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
@@ -28,6 +28,9 @@ use windows_sys::Win32::System::JobObjects::{
 
 const MAX_STDERR_LINES: usize = 32;
 const MAX_STDERR_BYTES: usize = 16 * 1024;
+const MAX_PLAYLIST_ENTRIES: usize = 1_000;
+const MAX_CUSTOM_FILENAME_UTF16_UNITS: usize = 180;
+const MAX_OUTPUT_SUFFIX: usize = 9_999;
 const VIDEO_FORMATS: &[&str] = &["mp4", "mkv", "webm"];
 const AUDIO_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "opus"];
 const COOKIE_BROWSERS: &[&str] = &["firefox", "chrome", "edge", "brave", "opera", "chromium"];
@@ -45,7 +48,7 @@ static DOWNLOAD_DEST_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[download\] Destination:\s+(.+)").unwrap());
 static DOWNLOAD_FINAL_DEST_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)\[(?:Merger|VideoConvertor|VideoRemuxer)\].*(?:into|Destination:)\s+"?(.+?)"?\s*$"#,
+        r#"(?i)\[(?:Merger|VideoConvertor|VideoRemuxer|ExtractAudio)\].*(?:into|Destination:)\s+"?(.+?)"?\s*$"#,
     )
     .unwrap()
 });
@@ -53,6 +56,7 @@ static DOWNLOAD_MERGE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[Merger\]|\[VideoConvertor\]|\[VideoRemuxer\]|\[ExtractAudio\]|post-?process|converting|remuxing").unwrap()
 });
 static QUALITY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{3,4}p$").unwrap());
+static OUTPUT_PUBLISH_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 struct TailBuffer {
     lines: VecDeque<String>,
@@ -531,6 +535,14 @@ pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String
         return Err("Output folder is not set.".into());
     }
 
+    if request
+        .filename_override
+        .as_deref()
+        .is_some_and(|value| normalize_filename_override(value).is_none())
+    {
+        return Err("Custom filename must contain at least one valid character.".into());
+    }
+
     Ok(())
 }
 
@@ -949,6 +961,50 @@ fn spawn_stderr_tail_reader(
     })
 }
 
+fn is_windows_reserved_filename_stem(value: &str) -> bool {
+    matches!(
+        value.to_ascii_uppercase().as_str(),
+        "CON"
+            | "PRN"
+            | "AUX"
+            | "NUL"
+            | "COM1"
+            | "COM2"
+            | "COM3"
+            | "COM4"
+            | "COM5"
+            | "COM6"
+            | "COM7"
+            | "COM8"
+            | "COM9"
+            | "LPT1"
+            | "LPT2"
+            | "LPT3"
+            | "LPT4"
+            | "LPT5"
+            | "LPT6"
+            | "LPT7"
+            | "LPT8"
+            | "LPT9"
+    )
+}
+
+fn truncate_utf16(value: &str, max_units: usize) -> String {
+    let mut used_units = 0usize;
+    value
+        .chars()
+        .take_while(|character| {
+            let character_units = character.len_utf16();
+            if used_units + character_units > max_units {
+                false
+            } else {
+                used_units += character_units;
+                true
+            }
+        })
+        .collect()
+}
+
 fn sanitize_filename_component(raw: &str) -> Option<String> {
     let mut cleaned: String = raw
         .trim()
@@ -972,36 +1028,35 @@ fn sanitize_filename_component(raw: &str) -> Option<String> {
         return None;
     }
 
-    let reserved_name = cleaned.to_ascii_uppercase();
-    if matches!(
-        reserved_name.as_str(),
-        "CON"
-            | "PRN"
-            | "AUX"
-            | "NUL"
-            | "COM1"
-            | "COM2"
-            | "COM3"
-            | "COM4"
-            | "COM5"
-            | "COM6"
-            | "COM7"
-            | "COM8"
-            | "COM9"
-            | "LPT1"
-            | "LPT2"
-            | "LPT3"
-            | "LPT4"
-            | "LPT5"
-            | "LPT6"
-            | "LPT7"
-            | "LPT8"
-            | "LPT9"
-    ) {
-        cleaned.push('_');
+    let stem_end = cleaned.find('.').unwrap_or(cleaned.len());
+    if is_windows_reserved_filename_stem(&cleaned[..stem_end]) {
+        cleaned.insert(stem_end, '_');
+    }
+
+    cleaned = truncate_utf16(&cleaned, MAX_CUSTOM_FILENAME_UTF16_UNITS);
+    cleaned = cleaned
+        .trim_matches(|ch: char| ch == ' ' || ch == '.')
+        .to_string();
+
+    if cleaned.is_empty() {
+        return None;
     }
 
     Some(cleaned)
+}
+
+fn normalize_filename_override(raw: &str) -> Option<String> {
+    let mut value = raw.trim().to_string();
+    let lower = value.to_ascii_lowercase();
+    if let Some(extension) = VIDEO_FORMATS
+        .iter()
+        .chain(AUDIO_FORMATS.iter())
+        .find(|extension| lower.ends_with(&format!(".{extension}")))
+    {
+        value.truncate(value.len().saturating_sub(extension.len() + 1));
+    }
+
+    sanitize_filename_component(&value)
 }
 
 fn escape_output_template_literal(value: &str) -> String {
@@ -1014,7 +1069,7 @@ fn build_output_template(request: &DownloadRequest) -> String {
     if let Some(filename_override) = request
         .filename_override
         .as_deref()
-        .and_then(sanitize_filename_component)
+        .and_then(normalize_filename_override)
     {
         return format!(
             "{}/{}.%(ext)s",
@@ -1219,6 +1274,8 @@ async fn fetch_playlist(
         "--flat-playlist".to_string(),
         "--dump-json".to_string(),
         "--lazy-playlist".to_string(),
+        "--playlist-end".to_string(),
+        (MAX_PLAYLIST_ENTRIES + 1).to_string(),
         "--no-download".to_string(),
         url.to_string(),
     ]);
@@ -1253,6 +1310,9 @@ async fn fetch_playlist(
     let mut lines = reader.lines();
 
     let mut entries: Vec<PlaylistEntry> = Vec::new();
+    let mut seen_urls: HashSet<String> = HashSet::new();
+    let mut parsed_entry_count = 0usize;
+    let mut truncated = false;
     let mut playlist_title = String::from("Playlist");
     let mut playlist_channel: Option<String> = None;
 
@@ -1279,7 +1339,13 @@ async fn fetch_playlist(
         }
 
         if let Some(entry) = data.into_playlist_entry() {
-            entries.push(entry);
+            push_bounded_playlist_entry(
+                &mut entries,
+                &mut seen_urls,
+                &mut parsed_entry_count,
+                &mut truncated,
+                entry,
+            );
         }
     }
 
@@ -1301,8 +1367,27 @@ async fn fetch_playlist(
         title: playlist_title,
         channel: playlist_channel,
         entry_count: entries.len(),
+        truncated,
         entries,
     })
+}
+
+fn push_bounded_playlist_entry(
+    entries: &mut Vec<PlaylistEntry>,
+    seen_urls: &mut HashSet<String>,
+    parsed_entry_count: &mut usize,
+    truncated: &mut bool,
+    entry: PlaylistEntry,
+) {
+    *parsed_entry_count += 1;
+    if *parsed_entry_count > MAX_PLAYLIST_ENTRIES {
+        *truncated = true;
+        return;
+    }
+
+    if seen_urls.insert(entry.url.clone()) {
+        entries.push(entry);
+    }
 }
 
 fn build_download_args_with_runtime(
@@ -1400,7 +1485,7 @@ fn build_webm_final_path(request: &DownloadRequest, intermediate_path: &Path) ->
     let filename = request
         .filename_override
         .as_deref()
-        .and_then(sanitize_filename_component)
+        .and_then(normalize_filename_override)
         .or_else(|| {
             intermediate_path
                 .file_stem()
@@ -1428,12 +1513,175 @@ fn build_publish_temp_path(final_path: &Path) -> PathBuf {
         .and_then(|stem| stem.to_str())
         .and_then(sanitize_filename_component)
         .unwrap_or_else(|| "download".to_string());
-    let unique = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_nanos())
-        .unwrap_or(0);
+    let unique = uuid::Uuid::new_v4();
 
-    final_path.with_file_name(format!(".{stem}.nuclear-publish-{unique}.webm"))
+    final_path.with_file_name(format!(".{stem}.nuclear-publish-{unique}.tmp"))
+}
+
+fn build_final_output_path(
+    request: &DownloadRequest,
+    staged_path: &Path,
+) -> Result<PathBuf, String> {
+    let file_name = if let Some(filename) = request
+        .filename_override
+        .as_deref()
+        .and_then(normalize_filename_override)
+    {
+        let extension = staged_path
+            .extension()
+            .and_then(|value| value.to_str())
+            .filter(|value| !value.is_empty())
+            .unwrap_or(request.format.as_str());
+        format!("{filename}.{extension}").into()
+    } else {
+        staged_path
+            .file_name()
+            .ok_or_else(|| "Downloaded file did not have a valid filename.".to_string())?
+            .to_os_string()
+    };
+
+    Ok(PathBuf::from(&request.output_dir).join(file_name))
+}
+
+fn suffixed_output_path(base_path: &Path, suffix: usize) -> PathBuf {
+    if suffix <= 1 {
+        return base_path.to_path_buf();
+    }
+
+    let stem = base_path
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .and_then(sanitize_filename_component)
+        .unwrap_or_else(|| "download".to_string());
+    let extension = base_path.extension().and_then(|value| value.to_str());
+    let filename = match extension {
+        Some(extension) if !extension.is_empty() => format!("{stem} ({suffix}).{extension}"),
+        _ => format!("{stem} ({suffix})"),
+    };
+
+    base_path.with_file_name(filename)
+}
+
+async fn copy_file_create_new(
+    source: &Path,
+    destination: &Path,
+    job: Option<&DownloadJob>,
+) -> std::io::Result<()> {
+    let mut source_file = tokio::fs::File::open(source).await?;
+    let mut destination_file = tokio::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(destination)
+        .await?;
+
+    let copy_result = match job {
+        Some(job) => {
+            tokio::select! {
+                biased;
+                _ = job.cancelled() => Err(std::io::Error::new(
+                    std::io::ErrorKind::Interrupted,
+                    "Publishing was cancelled.",
+                )),
+                result = tokio::io::copy(&mut source_file, &mut destination_file) => result,
+            }
+        }
+        None => tokio::io::copy(&mut source_file, &mut destination_file).await,
+    };
+
+    if let Err(error) = copy_result {
+        drop(destination_file);
+        let _ = tokio::fs::remove_file(destination).await;
+        return Err(error);
+    }
+
+    if let Err(error) = destination_file.sync_all().await {
+        drop(destination_file);
+        let _ = tokio::fs::remove_file(destination).await;
+        return Err(error);
+    }
+
+    Ok(())
+}
+
+async fn publish_staged_output(
+    staged_output: &Path,
+    desired_path: &Path,
+    job: Option<&DownloadJob>,
+) -> Result<PathBuf, String> {
+    if let Some(parent) = desired_path.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|error| format!("Failed to create output folder: {error}"))?;
+    }
+
+    let _publish_guard = OUTPUT_PUBLISH_LOCK.lock().await;
+    let mut destination_temp: Option<PathBuf> = None;
+
+    for suffix in 1..=MAX_OUTPUT_SUFFIX {
+        if job.is_some_and(DownloadJob::is_cancelled) {
+            if let Some(temp) = destination_temp.take() {
+                let _ = tokio::fs::remove_file(temp).await;
+            }
+            return Err("Publishing was cancelled.".into());
+        }
+
+        let candidate = suffixed_output_path(desired_path, suffix);
+        if candidate.exists() {
+            continue;
+        }
+
+        match tokio::fs::hard_link(staged_output, &candidate).await {
+            Ok(()) => {
+                let _ = tokio::fs::remove_file(staged_output).await;
+                return Ok(candidate);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(_) => {}
+        }
+
+        if destination_temp.is_none() {
+            let publish_temp = build_publish_temp_path(desired_path);
+            copy_file_create_new(staged_output, &publish_temp, job)
+                .await
+                .map_err(|error| format!("Failed to stage output for publishing: {error}"))?;
+            destination_temp = Some(publish_temp);
+        }
+
+        let publish_source = destination_temp.as_deref().unwrap_or(staged_output);
+        match tokio::fs::hard_link(publish_source, &candidate).await {
+            Ok(()) => {
+                if let Some(temp) = destination_temp.take() {
+                    let _ = tokio::fs::remove_file(temp).await;
+                }
+                let _ = tokio::fs::remove_file(staged_output).await;
+                return Ok(candidate);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(_) => {}
+        }
+
+        match copy_file_create_new(publish_source, &candidate, job).await {
+            Ok(()) => {
+                if let Some(temp) = destination_temp.take() {
+                    let _ = tokio::fs::remove_file(temp).await;
+                }
+                let _ = tokio::fs::remove_file(staged_output).await;
+                return Ok(candidate);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                if let Some(temp) = destination_temp.take() {
+                    let _ = tokio::fs::remove_file(temp).await;
+                }
+                return Err(format!("Failed to publish output: {error}"));
+            }
+        }
+    }
+
+    if let Some(temp) = destination_temp {
+        let _ = tokio::fs::remove_file(temp).await;
+    }
+    Err("Could not allocate a unique output filename.".into())
 }
 
 fn find_latest_media_file(dir: &Path) -> Option<PathBuf> {
@@ -1451,7 +1699,21 @@ fn find_latest_media_file(dir: &Path) -> Option<PathBuf> {
             .unwrap_or_default()
             .to_ascii_lowercase();
 
-        if matches!(extension.as_str(), "part" | "ytdl" | "temp") {
+        if !matches!(
+            extension.as_str(),
+            "mp4"
+                | "mkv"
+                | "webm"
+                | "mov"
+                | "m4a"
+                | "mp3"
+                | "flac"
+                | "wav"
+                | "aac"
+                | "opus"
+                | "ogg"
+                | "ts"
+        ) {
             continue;
         }
 
@@ -1563,37 +1825,12 @@ async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<
     }
 }
 
-async fn publish_converted_output(staged_output: &Path, final_path: &Path) -> Result<(), String> {
-    if let Some(parent) = final_path.parent() {
-        tokio::fs::create_dir_all(parent)
-            .await
-            .map_err(|error| format!("Failed to create output folder: {error}"))?;
-    }
-
-    match tokio::fs::rename(staged_output, final_path).await {
-        Ok(()) => Ok(()),
-        Err(_) => {
-            let publish_temp = build_publish_temp_path(final_path);
-            tokio::fs::copy(staged_output, &publish_temp)
-                .await
-                .map_err(|error| format!("Failed to stage converted output: {error}"))?;
-
-            if final_path.exists() {
-                if let Err(error) = tokio::fs::remove_file(final_path).await {
-                    let _ = tokio::fs::remove_file(&publish_temp).await;
-                    return Err(format!("Failed to replace existing output file: {error}"));
-                }
-            }
-
-            if let Err(error) = tokio::fs::rename(&publish_temp, final_path).await {
-                let _ = tokio::fs::remove_file(&publish_temp).await;
-                return Err(format!("Failed to publish converted output: {error}"));
-            }
-
-            let _ = tokio::fs::remove_file(staged_output).await;
-            Ok(())
-        }
-    }
+async fn publish_converted_output(
+    staged_output: &Path,
+    final_path: &Path,
+    job: &DownloadJob,
+) -> Result<PathBuf, String> {
+    publish_staged_output(staged_output, final_path, Some(job)).await
 }
 
 enum DownloadAttemptResult {
@@ -1698,7 +1935,7 @@ async fn run_download_attempt(
                 ProgressFields {
                     speed,
                     eta,
-                    filename: last_filename.clone(),
+                    filename: None,
                     phase: Some("download"),
                     download_progress: Some(pct),
                     ..Default::default()
@@ -1711,7 +1948,7 @@ async fn run_download_attempt(
                 "postprocessing",
                 100.0,
                 ProgressFields {
-                    filename: last_filename.clone(),
+                    filename: None,
                     phase: Some("postprocess"),
                     download_progress: Some(100.0),
                     ..Default::default()
@@ -1775,7 +2012,7 @@ async fn run_webm_conversion(
         "postprocessing",
         0.0,
         ProgressFields {
-            filename: Some(path_to_string(final_path)),
+            filename: None,
             phase: Some("conversion"),
             download_progress: Some(100.0),
             conversion_progress: Some(0.0),
@@ -1893,7 +2130,7 @@ async fn run_webm_conversion(
             "postprocessing",
             last_progress,
             ProgressFields {
-                filename: Some(path_to_string(final_path)),
+                filename: None,
                 phase: Some("conversion"),
                 download_progress: Some(100.0),
                 conversion_progress: Some(last_progress),
@@ -1915,10 +2152,14 @@ async fn run_webm_conversion(
 
     match status {
         Some(status) if status.success() => {
-            if let Err(error) = publish_converted_output(staged_output, final_path).await {
-                DownloadAttemptResult::Error(simple_error("postprocess_failed", error))
-            } else {
-                DownloadAttemptResult::Completed(Some(path_to_string(final_path)))
+            match publish_converted_output(staged_output, final_path, job).await {
+                Ok(published_path) => {
+                    DownloadAttemptResult::Completed(Some(path_to_string(&published_path)))
+                }
+                Err(_) if job.is_cancelled() => DownloadAttemptResult::Cancelled,
+                Err(error) => {
+                    DownloadAttemptResult::Error(simple_error("postprocess_failed", error))
+                }
             }
         }
         Some(status) => DownloadAttemptResult::Error(classify_process_error(
@@ -1980,7 +2221,7 @@ async fn run_webm_download(
                     "postprocessing",
                     0.0,
                     ProgressFields {
-                        filename: Some(path_to_string(&final_path)),
+                        filename: None,
                         phase: Some("waiting_conversion"),
                         download_progress: Some(100.0),
                         conversion_progress: Some(0.0),
@@ -2119,28 +2360,102 @@ pub async fn start_download(
         return;
     }
 
+    let staging_dir = build_staging_dir(&download_id);
     let mut use_twitter_syndication = false;
 
     loop {
-        match run_download_attempt(&app, &download_id, &request, &job, use_twitter_syndication)
-            .await
+        if let Err(error) = reset_staging_dir(&staging_dir) {
+            emit_error_progress(&app, &download_id, simple_error("staging_failed", error));
+            return;
+        }
+
+        let mut staged_request = request.clone();
+        staged_request.output_dir = path_to_string(&staging_dir);
+
+        match run_download_attempt(
+            &app,
+            &download_id,
+            &staged_request,
+            &job,
+            use_twitter_syndication,
+        )
+        .await
         {
             DownloadAttemptResult::Completed(filename) => {
+                let staged_path = filename
+                    .map(PathBuf::from)
+                    .filter(|path| path.is_file())
+                    .or_else(|| find_latest_media_file(&staging_dir));
+                let Some(staged_path) = staged_path else {
+                    cleanup_staging_dir(&staging_dir);
+                    emit_error_progress(
+                        &app,
+                        &download_id,
+                        simple_error(
+                            "staging_failed",
+                            "Download completed but no staged media file was found.",
+                        ),
+                    );
+                    return;
+                };
+
+                let desired_path = match build_final_output_path(&request, &staged_path) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        cleanup_staging_dir(&staging_dir);
+                        emit_error_progress(
+                            &app,
+                            &download_id,
+                            simple_error("invalid_filename", error),
+                        );
+                        return;
+                    }
+                };
+
                 emit_progress(
                     &app,
                     &download_id,
-                    "completed",
+                    "postprocessing",
                     100.0,
                     ProgressFields {
-                        filename,
-                        phase: Some("complete"),
+                        filename: None,
+                        phase: Some("postprocess"),
                         download_progress: Some(100.0),
                         ..Default::default()
                     },
                 );
+
+                match publish_staged_output(&staged_path, &desired_path, Some(&job)).await {
+                    Ok(published_path) => emit_progress(
+                        &app,
+                        &download_id,
+                        "completed",
+                        100.0,
+                        ProgressFields {
+                            filename: Some(path_to_string(&published_path)),
+                            phase: Some("complete"),
+                            download_progress: Some(100.0),
+                            ..Default::default()
+                        },
+                    ),
+                    Err(_) if job.is_cancelled() => emit_progress(
+                        &app,
+                        &download_id,
+                        "cancelled",
+                        0.0,
+                        ProgressFields::default(),
+                    ),
+                    Err(error) => emit_error_progress(
+                        &app,
+                        &download_id,
+                        simple_error("publish_failed", error),
+                    ),
+                }
+                cleanup_staging_dir(&staging_dir);
                 return;
             }
             DownloadAttemptResult::Cancelled => {
+                cleanup_staging_dir(&staging_dir);
                 emit_progress(
                     &app,
                     &download_id,
@@ -2151,9 +2466,11 @@ pub async fn start_download(
                 return;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
+                cleanup_staging_dir(&staging_dir);
                 use_twitter_syndication = true;
             }
             DownloadAttemptResult::Error(error) => {
+                cleanup_staging_dir(&staging_dir);
                 emit_error_progress(&app, &download_id, error);
                 return;
             }
@@ -2176,12 +2493,14 @@ mod tests {
         build_download_args, build_download_args_with_runtime, build_error_message,
         build_output_template, build_staging_dir, build_webm_final_path, classify_process_error,
         is_safe_staging_dir, is_twitter_api_auth_error, is_twitter_missing_video_error,
-        is_x_or_twitter_url, parse_ffmpeg_progress_percent, parse_first_json_value,
+        is_x_or_twitter_url, normalize_filename_override, parse_ffmpeg_progress_percent,
+        parse_first_json_value, publish_staged_output, push_bounded_playlist_entry,
         sanitize_thumbnail_url, should_retry_with_twitter_syndication, validate_download_request,
-        validate_fetch_request, DownloadManager, PlaylistLineRecord,
+        validate_fetch_request, DownloadManager, PlaylistLineRecord, MAX_PLAYLIST_ENTRIES,
     };
-    use crate::models::{CookieConfig, DownloadRequest};
+    use crate::models::{CookieConfig, DownloadRequest, PlaylistEntry};
     use crate::runtime::YtdlpCommandConfig;
+    use std::collections::HashSet;
     use std::path::{Path, PathBuf};
     use std::time::Duration;
 
@@ -2208,6 +2527,16 @@ mod tests {
             ffmpeg_dir: Some(PathBuf::from("C:\\NuclearRuntime")),
             deno_path: Some(PathBuf::from("C:\\NuclearRuntime\\deno.exe")),
             plugin_dir: Some(PathBuf::from("C:\\NuclearRuntime\\plugins")),
+        }
+    }
+
+    fn playlist_entry(index: usize, url: String) -> PlaylistEntry {
+        PlaylistEntry {
+            id: format!("video-{index}"),
+            title: Some(format!("Video {index}")),
+            duration: None,
+            url,
+            thumbnail: None,
         }
     }
 
@@ -2263,6 +2592,115 @@ mod tests {
             build_output_template(&request),
             "C:/Users/Mr.W/100%%Downloads/CON_ 100%%_.%(ext)s"
         );
+    }
+
+    #[test]
+    fn normalizes_reserved_extensions_and_utf16_length() {
+        assert_eq!(
+            normalize_filename_override("NUL.txt"),
+            Some("NUL_.txt".into())
+        );
+        assert_eq!(normalize_filename_override("clip.MP4"), Some("clip".into()));
+
+        let long_name = format!("{}😀", "a".repeat(179));
+        let normalized = normalize_filename_override(&long_name).expect("name should remain valid");
+        assert_eq!(normalized.encode_utf16().count(), 179);
+    }
+
+    #[test]
+    fn playlist_entries_are_deduplicated_and_bounded() {
+        let mut entries = Vec::new();
+        let mut seen_urls = HashSet::new();
+        let mut parsed_count = 0;
+        let mut truncated = false;
+
+        push_bounded_playlist_entry(
+            &mut entries,
+            &mut seen_urls,
+            &mut parsed_count,
+            &mut truncated,
+            playlist_entry(0, "https://example.com/video/0".into()),
+        );
+        push_bounded_playlist_entry(
+            &mut entries,
+            &mut seen_urls,
+            &mut parsed_count,
+            &mut truncated,
+            playlist_entry(1, "https://example.com/video/0".into()),
+        );
+        assert_eq!(entries.len(), 1);
+
+        entries.clear();
+        seen_urls.clear();
+        parsed_count = 0;
+        truncated = false;
+        for index in 0..=MAX_PLAYLIST_ENTRIES {
+            push_bounded_playlist_entry(
+                &mut entries,
+                &mut seen_urls,
+                &mut parsed_count,
+                &mut truncated,
+                playlist_entry(index, format!("https://example.com/video/{index}")),
+            );
+        }
+
+        assert_eq!(entries.len(), MAX_PLAYLIST_ENTRIES);
+        assert!(truncated);
+    }
+
+    #[tokio::test]
+    async fn publishing_never_overwrites_and_adds_a_suffix() {
+        let root =
+            std::env::temp_dir().join(format!("nuclear-publish-test-{}", uuid::Uuid::new_v4()));
+        let staging_dir = root.join("staging");
+        let output_dir = root.join("output");
+        std::fs::create_dir_all(&staging_dir).unwrap();
+        std::fs::create_dir_all(&output_dir).unwrap();
+
+        let staged = staging_dir.join("Clip.mp4");
+        let desired = output_dir.join("Clip.mp4");
+        std::fs::write(&staged, b"new bytes").unwrap();
+        std::fs::write(&desired, b"old bytes").unwrap();
+
+        let published = publish_staged_output(&staged, &desired, None)
+            .await
+            .unwrap();
+        assert_eq!(published, output_dir.join("Clip (2).mp4"));
+        assert_eq!(std::fs::read(&desired).unwrap(), b"old bytes");
+        assert_eq!(std::fs::read(&published).unwrap(), b"new bytes");
+
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn concurrent_publication_allocates_distinct_names() {
+        let root = std::env::temp_dir().join(format!(
+            "nuclear-concurrent-publish-test-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let staging_dir = root.join("staging");
+        let output_dir = root.join("output");
+        std::fs::create_dir_all(&staging_dir).unwrap();
+        std::fs::create_dir_all(&output_dir).unwrap();
+
+        let first_staged = staging_dir.join("first.mp4");
+        let second_staged = staging_dir.join("second.mp4");
+        let desired = output_dir.join("Clip.mp4");
+        std::fs::write(&first_staged, b"first").unwrap();
+        std::fs::write(&second_staged, b"second").unwrap();
+
+        let (first, second) = tokio::join!(
+            publish_staged_output(&first_staged, &desired, None),
+            publish_staged_output(&second_staged, &desired, None),
+        );
+        let mut published = vec![first.unwrap(), second.unwrap()];
+        published.sort();
+
+        assert_eq!(
+            published,
+            vec![output_dir.join("Clip (2).mp4"), output_dir.join("Clip.mp4")]
+        );
+        let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]

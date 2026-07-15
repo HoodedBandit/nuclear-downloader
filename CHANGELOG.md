@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.5.4 - 2026-07-15
+
+This release focuses on predictable behavior under concurrent use, safer Windows file handling, and a more reproducible release pipeline.
+
+- Prevented stale inspection results when URLs are replaced or cancelled quickly by making inspection single-flight and cancellation-aware.
+- Made large playlists safer to import by deduplicating entries by source URL, enforcing a 1,000-entry inspection limit, and paging the selector in groups of 100 without unstable row identities.
+- Fixed queued downloads so filename, format, directory, cookie, and other edits made before launch are honored; queued jobs now resolve the current global quality setting when they actually start.
+- Protected completed downloads from accidental replacement across every output format with isolated staging, cancellation cleanup, atomic no-overwrite publishing, and automatic `(2)`, `(3)`, and later suffixes when names collide—even across concurrent jobs.
+- Hardened filename generation for Windows reserved device names, reserved extensions, invalid characters, trailing dots or spaces, and UTF-16 path-length constraints.
+- Stopped the development server from terminating unrelated processes that already own its port, made Tauri build-configuration overlays merge safely, and added CI gates for frontend checks, regression tests, formatting, Rust tests, and Clippy.
+
 ## v0.5.3 - 2026-07-13
 
 - Rebuilt download lifecycle management around supervised jobs, idempotent cancellation, Windows Job Objects, coordinated shutdown, and queue-wide cancellation that waits for child processes to exit.

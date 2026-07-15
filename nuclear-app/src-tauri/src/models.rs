@@ -34,6 +34,7 @@ pub struct PlaylistInfo {
     pub title: String,
     pub channel: Option<String>,
     pub entry_count: usize,
+    pub truncated: bool,
     pub entries: Vec<PlaylistEntry>,
 }
 
