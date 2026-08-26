@@ -4559,7 +4559,8 @@ ffmpeg exited with code 1";
         .unwrap_err();
 
         assert!(error.starts_with("process_output_limit:"), "{error}");
-        assert!(started.elapsed() < Duration::from_secs(3));
+        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        assert!(started.elapsed() < Duration::from_secs(15));
     }
 
     #[cfg(windows)]
@@ -4585,6 +4586,7 @@ ffmpeg exited with code 1";
         .unwrap_err();
 
         assert!(error.starts_with("process_drain_timeout:"), "{error}");
-        assert!(started.elapsed() < Duration::from_secs(3));
+        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        assert!(started.elapsed() < Duration::from_secs(15));
     }
 }
