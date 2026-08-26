@@ -90,6 +90,9 @@ jobs:
       - name: Enforce dependency, advisory, source, and license policy
         run: cargo deny --manifest-path src-tauri/Cargo.toml check
 
+      - name: Fetch locked Cargo sources for offline packaging verification
+        run: cargo fetch --manifest-path src-tauri/Cargo.toml --locked
+
       - name: Test PowerShell packaging contracts
         run: pwsh -NoProfile -File ..\scripts\test-packaging.ps1
 

@@ -107,6 +107,10 @@ jobs:
           cargo install cargo-deny --version 0.20.2 --locked
           cargo deny --manifest-path src-tauri/Cargo.toml check
 
+      - name: Fetch locked Cargo sources for offline packaging verification
+        shell: pwsh
+        run: cargo fetch --manifest-path nuclear-app/src-tauri/Cargo.toml --locked
+
       - name: Test release packaging contracts
         shell: pwsh
         run: |

@@ -63,8 +63,10 @@ try {
 
     $candidateWorkflowPath = Join-Path $repositoryRoot '.github\workflows\release-candidate.yml'
     $publishWorkflowPath = Join-Path $repositoryRoot '.github\workflows\publish-release.yml'
+    $ciWorkflowPath = Join-Path $repositoryRoot '.github\workflows\ci.yml'
     $candidateWorkflow = Get-Content -Raw -LiteralPath $candidateWorkflowPath
     $publishWorkflow = Get-Content -Raw -LiteralPath $publishWorkflowPath
+    $ciWorkflow = Get-Content -Raw -LiteralPath $ciWorkflowPath
     foreach ($workflow in @($candidateWorkflow, $publishWorkflow)) {
         Assert-True -Condition ($workflow -match '(?m)^\s*workflow_dispatch:') -Message 'Release workflows must be manual workflow_dispatch jobs.'
         Assert-True -Condition ($workflow -notmatch 'uses:\s+[^\s]+@v\d') -Message 'Release workflows must not use mutable action version tags.'
@@ -97,6 +99,8 @@ try {
     Assert-True -Condition ($candidateWorkflow.Contains('secrets.TAURI_SIGNING_PRIVATE_KEY')) -Message 'Candidate workflow must read the private signing key from a protected secret.'
     Assert-True -Condition ($candidateWorkflow.Contains('secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD')) -Message 'Candidate workflow must read the signing password from a protected secret.'
     Assert-True -Condition ($candidateWorkflow -notmatch 'secrets\.NUCLEAR_UPDATE_(?:NEXT_)?PUBLIC_KEY') -Message 'Public trust anchors belong in GitHub variables, not secret slots.'
+    Assert-True -Condition ($ciWorkflow.Contains('cargo fetch --manifest-path src-tauri/Cargo.toml --locked')) -Message 'CI must fetch Cargo.lock-pinned sources before offline packaging verification.'
+    Assert-True -Condition ($candidateWorkflow.Contains('cargo fetch --manifest-path nuclear-app/src-tauri/Cargo.toml --locked')) -Message 'Candidate verification must fetch Cargo.lock-pinned sources before offline packaging verification.'
     Assert-True -Condition ($publishWorkflow.Contains('cargo fetch --manifest-path nuclear-app/src-tauri/Cargo.toml --locked')) -Message 'Publish verification must fetch only Cargo.lock-pinned verifier source.'
 
     $buildScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\build-release-candidate.ps1')

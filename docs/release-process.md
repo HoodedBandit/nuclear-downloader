@@ -88,6 +88,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-features
 cargo deny --manifest-path src-tauri/Cargo.toml check
+cargo fetch --manifest-path src-tauri/Cargo.toml --locked
 cd ..
 pwsh -NoProfile -File scripts/test-packaging.ps1
 pwsh -NoProfile -File scripts/test-e2e-contracts.ps1
