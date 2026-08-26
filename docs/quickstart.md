@@ -8,8 +8,8 @@ This guide shows how to run Nuclear Downloader in development and build a Window
 
 Install these first:
 
-- Node.js 20+ and npm
-- Rust stable via `rustup`
+- Node.js 22.23.1 and npm 10.9.9
+- Rust 1.94.1 via `rustup`
 - Microsoft Visual Studio Build Tools with C++ workload
 - Microsoft Edge WebView2 runtime
 
@@ -38,7 +38,7 @@ From `nuclear-app`:
 
 ```powershell
 cd nuclear-app
-npm install
+npm ci
 ```
 
 Rust dependencies are resolved automatically by Cargo during checks and builds.
@@ -49,14 +49,24 @@ This repository does not ship third-party binaries.
 
 For development, the app can use `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno from your system `PATH`. Deno is optional but recommended for modern YouTube extraction.
 
-For Windows installer or portable release builds, place these Windows binaries in `nuclear-app/src-tauri/binaries` yourself:
+Nuclear Downloader 0.6.0 supports Windows x64 only. ARM64 is unsupported. For
+installer or portable release builds, use the exact Windows x64 binaries pinned
+in `nuclear-app/src-tauri/sidecars.lock.json`:
 
 - `yt-dlp-x86_64-pc-windows-msvc.exe`
 - `ffmpeg-x86_64-pc-windows-msvc.exe`
 - `ffprobe-x86_64-pc-windows-msvc.exe`
 - `deno-x86_64-pc-windows-msvc.exe`
 
-At build time, Tauri packages them as sidecars for the application. Keep those files local; they are intentionally excluded from Git history.
+Fetch and verify them with:
+
+```powershell
+pwsh -NoProfile -File .\scripts\fetch-sidecars.ps1
+```
+
+At build time, the Rust build script verifies each file's source metadata,
+version, license, architecture, filename, and SHA-256 before Tauri packages it.
+Keep the binaries local; they are intentionally excluded from Git history.
 
 To build the separately updatable, checksum-pinned runtime bundle used by official releases:
 
@@ -76,32 +86,40 @@ This starts the Svelte frontend and launches the desktop app shell.
 
 ## Quality Checks
 
-Run these before publishing changes:
+Install `cargo-deny` 0.20.2, then run the same local gates as CI before asking
+for a candidate build:
 
 ```powershell
+npm run format:check
+npm run lint
 npm run check
 npm test
+npm run test:e2e:renderer
 npm run build
+npm run test:e2e:production-bundle
+npm run audit:production
 cd src-tauri
-cargo check
-cargo clippy -- -D warnings
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+cargo deny check
+cd ..\..
+pwsh -NoProfile -File .\scripts\test-packaging.ps1
+pwsh -NoProfile -File .\scripts\test-e2e-contracts.ps1
 ```
 
 ## Build a Release
 
-From `nuclear-app`:
+Do not publish an ad-hoc local build. The protected release-candidate workflow
+requires explicit maintainer approval, locked x64 sidecars, and the configured
+manifest-signing key. It builds and tests the NSIS installer, portable ZIP,
+runtime bundle, signed manifests, checksums, and candidate inventory. A separate
+protected publish workflow verifies and publishes those exact bytes without a
+rebuild. See [release-process.md](release-process.md).
 
-```powershell
-cd nuclear-app
-npm run tauri build -- --no-sign -b nsis
-```
-
-Useful outputs:
-
-- Portable app binary in `src-tauri/target/release`
-- NSIS installer in `src-tauri/target/release/bundle/nsis`
-
-Installed Windows builds can later use the in-app update check to download the latest GitHub Release NSIS installer and reinstall automatically. The updater uses the published installer rather than patching the existing files in place.
+Installed Windows builds verify the signed release manifest and exact installer
+size/SHA-256 before handing the NSIS installer off. The updater never patches
+application files in place.
 
 ## Compile Summary
 
@@ -109,16 +127,24 @@ Common commands:
 
 ```powershell
 cd nuclear-app
-npm install
+npm ci
 npm run tauri dev
+npm run format:check
+npm run lint
 npm run check
 npm test
+npm run test:e2e:renderer
 npm run build
+npm run test:e2e:production-bundle
+npm run audit:production
 cd src-tauri
-cargo check
-cargo clippy -- -D warnings
-cd ..
-npm run tauri build -- --no-sign -b nsis
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+cargo deny check
+cd ..\..
+pwsh -NoProfile -File .\scripts\test-packaging.ps1
+pwsh -NoProfile -File .\scripts\test-e2e-contracts.ps1
 ```
 
 ## Using the App

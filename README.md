@@ -6,6 +6,8 @@ Nuclear Downloader is an easy-to-use Windows desktop app for downloading videos 
 
 It is built for people who want a simple desktop interface instead of memorizing command-line flags. Paste a URL, choose format and quality, optionally provide cookies for login-required downloads, and download to your chosen folder.
 
+Production UI assets are embedded in the Windows executable and run inside its native app window. Nuclear Downloader does not host a website or require a browser; localhost is used only by the development server.
+
 Installed Windows builds can also check the latest stable GitHub Release from inside the app and reinstall automatically through the published NSIS installer.
 
 ## Features
@@ -21,14 +23,16 @@ Installed Windows builds can also check the latest stable GitHub Release from in
 
 ## Windows Support
 
-This repository currently targets Windows desktop builds.
+Nuclear Downloader 0.6.0 supports 64-bit Windows on x64 processors. Windows on
+ARM64 is not supported; the app, installer, portable bundle, managed runtime,
+and checked sidecars are all built for `windows-x86_64`.
 
 ## Dependencies
 
 Required system dependencies on Windows:
 
-- Node.js 20+ and npm
-- Rust stable via `rustup`
+- Node.js 22.23.1 and npm 10.9.9
+- Rust 1.94.1 via `rustup`
 - Microsoft Visual Studio Build Tools with the C++ workload
 - Microsoft Edge WebView2 runtime
 
@@ -42,7 +46,9 @@ Required downloader/media tools:
 This source repository intentionally does not include third-party binary dependencies.
 
 - For development, the app can use `yt-dlp`, `ffmpeg`, `ffprobe`, and optionally Deno from your system `PATH`
-- For Windows release bundling, place local copies in `nuclear-app/src-tauri/binaries`
+- For Windows release bundling, fetch the exact x64 inputs recorded in
+  `nuclear-app/src-tauri/sidecars.lock.json`; the build rejects missing,
+  wrong-hash, or wrong-architecture sidecars
 
 ## Download and Run
 
@@ -64,11 +70,11 @@ The JavaScript and Rust package dependencies are declared in the repo. Install t
 
 ## Compile From Source
 
-Install the app dependencies:
+Install the app dependencies exactly as locked:
 
 ```powershell
 cd nuclear-app
-npm install
+npm ci
 ```
 
 Run in development:
@@ -77,30 +83,39 @@ Run in development:
 npm run tauri dev
 ```
 
-Run checks:
+Run the local quality gate:
 
 ```powershell
+npm run format:check
+npm run lint
 npm run check
 npm test
+npm run test:e2e:renderer
 npm run build
+npm run test:e2e:production-bundle
+npm run audit:production
 cd src-tauri
-cargo check
-cargo clippy -- -D warnings
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+cargo deny check
+cd ..\..
+pwsh -NoProfile -File .\scripts\test-packaging.ps1
+pwsh -NoProfile -File .\scripts\test-e2e-contracts.ps1
 ```
 
-Build a Windows release:
+Official release candidates are built only by the protected, manually
+dispatched workflow described in [docs/release-process.md](docs/release-process.md).
+It verifies locked sidecars, builds the x64 NSIS and portable artifacts, signs
+the exact app/runtime manifests, and records an immutable candidate inventory.
+Publication is a separate maintainer-approved workflow that reuses those exact
+bytes without rebuilding them.
+
+For local sidecar preparation:
 
 ```powershell
-cd ..
-npm run tauri build -- --no-sign -b nsis
+pwsh -NoProfile -File .\scripts\fetch-sidecars.ps1
 ```
-
-Release outputs:
-
-- Portable app in `nuclear-app/src-tauri/target/release`
-- NSIS installer in `nuclear-app/src-tauri/target/release/bundle/nsis`
-
-For installer or portable bundling with sidecars, provide local copies of `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno in `nuclear-app/src-tauri/binaries` first.
 
 ## More Detail
 

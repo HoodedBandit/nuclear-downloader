@@ -1,0 +1,207 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run_id:
+        description: Successful Release Candidate workflow run ID
+        required: true
+        type: string
+      release_version:
+        description: Exact application version (this workflow is pinned to 0.6.0)
+        required: true
+        default: 0.6.0
+        type: string
+      confirmation:
+        description: Type PUBLISH v0.6.0
+        required: true
+        type: string
+      manual_acceptance_confirmation:
+        description: Type COOKIE AND RUNTIME ACCEPTED v0.6.0 after completing both protected manual tests
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: nuclear-downloader-production-release
+  cancel-in-progress: false
+
+jobs:
+  verify-and-publish:
+    name: Verify candidate bytes and publish without rebuilding
+    runs-on: windows-latest
+    timeout-minutes: 30
+    environment: production-release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Validate protected publish approval and candidate run
+        id: candidate
+        shell: pwsh
+        env:
+          INPUT_RELEASE_VERSION: ${{ inputs.release_version }}
+          INPUT_CONFIRMATION: ${{ inputs.confirmation }}
+          INPUT_CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          INPUT_MANUAL_ACCEPTANCE: ${{ inputs.manual_acceptance_confirmation }}
+        run: |
+          if ($env:INPUT_RELEASE_VERSION -cne '0.6.0') {
+            throw 'This workflow is pinned to application version 0.6.0.'
+          }
+          if ($env:INPUT_CONFIRMATION -cne 'PUBLISH v0.6.0') {
+            throw 'The publish confirmation text is not exact.'
+          }
+          if ($env:INPUT_MANUAL_ACCEPTANCE -cne 'COOKIE AND RUNTIME ACCEPTED v0.6.0') {
+            throw 'The dedicated-account cookie and protected signed-runtime acceptance must be explicitly confirmed.'
+          }
+          if ($env:INPUT_CANDIDATE_RUN_ID -cnotmatch '^[1-9][0-9]*$') {
+            throw 'candidate_run_id must be a positive Actions run ID.'
+          }
+
+          $run = gh api "repos/$env:GH_REPO/actions/runs/$env:INPUT_CANDIDATE_RUN_ID" | ConvertFrom-Json
+          if ([string]$run.name -cne 'Release Candidate' -or
+              [string]$run.path -cne '.github/workflows/release-candidate.yml' -or
+              [string]$run.event -cne 'workflow_dispatch' -or
+              [string]$run.status -cne 'completed' -or
+              [string]$run.conclusion -cne 'success' -or
+              [string]$run.head_repository.full_name -cne $env:GH_REPO -or
+              [string]$run.head_sha -cnotmatch '^[0-9a-f]{40}$') {
+            throw 'The selected run is not a successful first-party Release Candidate run.'
+          }
+          "head_sha=$([string]$run.head_sha)" >> $env:GITHUB_OUTPUT
+
+      - name: Check out the exact candidate commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ steps.candidate.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Install Rust 1.94.1 for locked signature verification
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: 1.94.1
+
+      - name: Fetch the locked zero-dependency signature verifier
+        shell: pwsh
+        run: cargo fetch --manifest-path nuclear-app/src-tauri/Cargo.toml --locked
+
+      - name: Download the private candidate by run ID
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: nuclear-downloader-0.6.0-candidate
+          path: candidate
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+
+      - name: Download exact-run acceptance evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: nuclear-downloader-0.6.0-acceptance
+          path: acceptance
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.candidate_run_id }}
+
+      - name: Verify downloaded bytes and source identity
+        shell: pwsh
+        env:
+          EXPECTED_RELEASE_VERSION: ${{ inputs.release_version }}
+          EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
+          NUCLEAR_UPDATE_KEY_ID: ${{ vars.NUCLEAR_UPDATE_KEY_ID }}
+          NUCLEAR_UPDATE_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_PUBLIC_KEY }}
+          NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
+          NUCLEAR_UPDATE_NEXT_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY }}
+        run: |
+          & scripts/verify-release-candidate.ps1 `
+            -CandidateDirectory candidate `
+            -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
+            -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA
+          & scripts/verify-acceptance-evidence.ps1 `
+            -EvidenceDirectory acceptance `
+            -CandidateDirectory candidate `
+            -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
+            -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
+            -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}'
+
+      - name: Create and independently verify a draft release
+        id: draft
+        shell: pwsh
+        env:
+          EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
+        run: |
+          $tag = 'v0.6.0'
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Release $tag already exists. Published releases are immutable."
+          }
+          gh api "repos/$env:GH_REPO/git/ref/tags/$tag" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            throw "Tag $tag already exists. This workflow only creates a release and tag together for the verified commit."
+          }
+
+          $inventory = Get-Content -Raw -LiteralPath candidate/release-candidate-inventory.json | ConvertFrom-Json
+          $assetPaths = @(
+            $inventory.assets |
+              ForEach-Object { Join-Path (Resolve-Path candidate).Path ([string]$_.fileName) }
+          )
+          if ($assetPaths.Count -ne 10) {
+            throw 'The public release must contain exactly ten inventoried assets.'
+          }
+
+          $releaseNotes = @(
+            'Nuclear Downloader 0.6.0 is a quiet kind of big release. The app should feel familiar, but the machinery behind it is now far more dependable.'
+            ''
+            '### Highlights'
+            ''
+            '- Reliable link inspection and queue recovery, even when a window event is missed.'
+            '- No more browser-style URL history suggestions in the link box.'
+            '- Safer cancellation, process-tree cleanup, staging, and collision-proof file publication.'
+            '- Signed app and runtime manifests with strict size, hash, platform, and rollback checks.'
+            '- Clearer diagnostics, stronger accessibility, and a much broader automated test suite.'
+            ''
+            'This is still the Nuclear Downloader you know, just with a much stronger foundation. Thank you for using it and for helping make the rough edges visible.'
+            ''
+            'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
+          ) -join "`n"
+
+          & gh release create $tag @assetPaths `
+            --repo $env:GH_REPO `
+            --target $env:EXPECTED_COMMIT_SHA `
+            --title 'Nuclear Downloader 0.6.0' `
+            --notes $releaseNotes `
+            --draft
+          if ($LASTEXITCODE -ne 0) {
+            throw 'GitHub failed to create the draft release.'
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+          $release = gh api "repos/$env:GH_REPO/releases/tags/$tag" | ConvertFrom-Json
+          if (-not [bool]$release.draft -or @($release.assets).Count -ne $assetPaths.Count) {
+            throw 'The draft release asset count is not exact.'
+          }
+          foreach ($expected in $inventory.assets) {
+            $matches = @($release.assets | Where-Object { [string]$_.name -ceq [string]$expected.fileName })
+            if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.size) {
+              throw "The draft release does not exactly match $([string]$expected.fileName)."
+            }
+            if ($matches[0].PSObject.Properties.Name -contains 'digest' -and
+                -not [string]::IsNullOrWhiteSpace([string]$matches[0].digest) -and
+                [string]$matches[0].digest -cne "sha256:$([string]$expected.sha256)") {
+              throw "GitHub reported a digest mismatch for $([string]$expected.fileName)."
+            }
+          }
+
+      - name: Publish the exact verified draft
+        shell: pwsh
+        env:
+          VERIFIED_RELEASE_TAG: ${{ steps.draft.outputs.tag }}
+        run: |
+          gh release edit $env:VERIFIED_RELEASE_TAG `
+            --repo $env:GH_REPO `
+            --draft=false `
+            --latest
