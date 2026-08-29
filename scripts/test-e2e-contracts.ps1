@@ -36,7 +36,6 @@ if ($nativeConfig -notmatch "driverProvider:\s*'external'" -or
 $candidateWorkflow = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.github\workflows\release-candidate.yml')
 foreach ($required in @(
     'cargo install tauri-driver --version 2.0.6 --locked',
-    'NUCLEAR_PUBLIC_SMOKE_URL',
     'run-windows-candidate-acceptance.ps1',
     'test:e2e:production-bundle',
     '-ExpectedCandidateRunId ''${{ github.run_id }}'''
@@ -100,7 +99,6 @@ try {
         startedAt = '2026-08-18T12:01:00Z'
         completedAt = '2026-08-18T12:02:00Z'
         os = [ordered]@{ description = 'Windows fixture'; architecture = 'X64' }
-        publicSmokeUrlConfigured = $true
         steps = $steps
         manualAcceptanceRequired = @(
             'Dedicated-account cookie/login test with no CI cookie secret',

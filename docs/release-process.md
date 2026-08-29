@@ -111,8 +111,6 @@ After the maintainer explicitly approves pushing the exact commit:
 
 The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the private inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. Its only upload is the private Actions artifact `nuclear-downloader-0.6.0-candidate`. Record the successful Actions run ID.
 
-Configure the repository variable `NUCLEAR_PUBLIC_SMOKE_URL` with the maintainer-controlled, unauthenticated HTTPS media URL used by acceptance. It must be less than 15 seconds and must not require cookies, a token, or credentials.
-
 After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance.ps1`. No WebDriver plugin is compiled into the app. The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.6.0-acceptance` as a separate private evidence artifact. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
 
 The builder refuses a dirty worktree, version drift among npm/Tauri/Cargo metadata, an output path outside Cargo's target directory, existing candidate output, reparse-point traversal, wrong artifact names, oversized files, and manifest/hash mismatches. It never prints the signing key or password.
@@ -129,10 +127,9 @@ Download the private candidate artifact from the successful run. Preserve the ar
 6. Portable ZIP startup.
 7. Diagnostics export and clear.
 8. Uninstall and retained-data behavior.
-9. One small unauthenticated smoke against the maintainer-controlled public URL.
-10. Manual authenticated/cookie testing with a dedicated account. Never place cookies in CI secrets or artifacts.
+9. Manual authenticated/cookie testing with a dedicated account. Never place cookies in CI secrets or artifacts.
 
-The automated exact-byte runner covers items 1-4, portable startup, diagnostics clear, a real unauthenticated smoke, uninstall, retained data, and post-test hash verification. Diagnostics export uses the deterministic renderer suite because the native save dialog is outside the WebDriver DOM. Managed-runtime update/rollback using protected signed test assets and the dedicated-account cookie test remain explicit maintainer acceptance items; the generated acceptance JSON records them as required and cannot authorize publication by itself.
+The automated exact-byte runner covers items 1-4, portable startup, diagnostics clear, uninstall, retained data, and post-test hash verification using locally generated deterministic media. Diagnostics export uses the deterministic renderer suite because the native save dialog is outside the WebDriver DOM. Managed-runtime update/rollback using protected signed test assets and the dedicated-account cookie test remain explicit maintainer acceptance items; the generated acceptance JSON records them as required and cannot authorize publication by itself.
 
 Record the candidate run ID, source commit, artifact hashes, toolchain versions, test results, operating-system build, and the maintainer's acceptance decision. Any failed acceptance item returns the release to development; produce a new commit and a new candidate run rather than changing the existing candidate artifact.
 

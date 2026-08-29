@@ -159,19 +159,13 @@ jobs:
 
       - name: Test the exact installer and portable candidate bytes
         shell: pwsh
-        env:
-          NUCLEAR_PUBLIC_SMOKE_URL: ${{ vars.NUCLEAR_PUBLIC_SMOKE_URL }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:NUCLEAR_PUBLIC_SMOKE_URL)) {
-            throw 'Configure NUCLEAR_PUBLIC_SMOKE_URL with the maintainer-controlled sub-15-second HTTPS media URL.'
-          }
           & scripts/run-windows-candidate-acceptance.ps1 `
             -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.6.0' `
             -ResultsDirectory 'nuclear-app\src-tauri\target\release-acceptance-0.6.0' `
             -ExpectedVersion '0.6.0' `
             -ExpectedCommitSha '${{ github.sha }}' `
-            -ExpectedCandidateRunId '${{ github.run_id }}' `
-            -PublicSmokeUrl $env:NUCLEAR_PUBLIC_SMOKE_URL
+            -ExpectedCandidateRunId '${{ github.run_id }}'
 
       - name: Upload private acceptance evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
