@@ -1,118 +1,116 @@
 <script lang="ts">
-  import { getVersion } from "@tauri-apps/api/app";
-  import { invoke } from "@tauri-apps/api/core";
-  import { listen } from "@tauri-apps/api/event";
-  import { open } from "@tauri-apps/plugin-dialog";
-  import { onMount, tick } from "svelte";
+  import { getVersion } from '@tauri-apps/api/app';
+  import { open, save } from '@tauri-apps/plugin-dialog';
+  import { onMount, tick } from 'svelte';
+  import { SvelteMap } from 'svelte/reactivity';
+  import { accessibleDialog } from '$lib/accessible-dialog';
+  import { AppStateController } from '$lib/app-state-controller';
+  import { isTerminalOperation, latestOperationForItem } from '$lib/backend-state';
+  import type { AppSnapshot } from '$lib/bindings/AppSnapshot';
+  import type { CookieConfig as BackendCookieConfig } from '$lib/bindings/CookieConfig';
+  import type { DownloaderRuntimeStatus } from '$lib/bindings/DownloaderRuntimeStatus';
+  import type { DownloaderRuntimeUpdateCheck } from '$lib/bindings/DownloaderRuntimeUpdateCheck';
+  import type { DownloaderToolStatus } from '$lib/bindings/DownloaderToolStatus';
+  import type { OperationSnapshot } from '$lib/bindings/OperationSnapshot';
+  import type { PlaylistEntry } from '$lib/bindings/PlaylistEntry';
+  import type { PlaylistInfo } from '$lib/bindings/PlaylistInfo';
+  import type { QueueItemRecord } from '$lib/bindings/QueueItemRecord';
+  import type { StateDelta } from '$lib/bindings/StateDelta';
+  import type { UpdateCheckResult } from '$lib/bindings/UpdateCheckResult';
+  import type { UrlInspection } from '$lib/bindings/UrlInspection';
+  import type { VideoInfo } from '$lib/bindings/VideoInfo';
+  import { invokeCommand as invoke, listenEvent as listen, type EventMap } from '$lib/ipc-client';
+  import { reduceOperationProgress } from '$lib/operation-reducer';
+  import { OperationWaitRegistry } from '$lib/operation-wait-registry';
   import {
-    findNextRunnablePendingId,
+    canStartWork,
+    deriveSelectionState,
+    isAudioOnlyFormat,
     isUpdateBlockingStatus,
-    resolveAvailableQuality,
-  } from "$lib/queue-logic";
+    redactDiagnosticText,
+    resolveAvailableFormat,
+    resolveAvailableQuality
+  } from '$lib/queue-logic';
+  import {
+    createStartupSubsystems,
+    deriveStartupState,
+    runtimeAllowsDownloads,
+    runtimeStartupSubsystemState,
+    type StartupSubsystem,
+    type StartupSubsystemState
+  } from '$lib/startup-state';
 
   type DownloadStatus =
-    | "fetching"
-    | "ready"
-    | "queued"
-    | "downloading"
-    | "postprocessing"
-    | "completed"
-    | "error"
-    | "cancelled";
+    | 'fetching'
+    | 'ready'
+    | 'queued'
+    | 'downloading'
+    | 'postprocessing'
+    | 'cancelling'
+    | 'completed'
+    | 'error'
+    | 'cancelled';
 
   type DownloadPhase =
-    | "download"
-    | "postprocess"
-    | "waiting_conversion"
-    | "conversion"
-    | "complete";
-  type CookieMode = "browser" | "file";
-  type RuntimeState = "ready" | "degraded" | "missing";
+    'download' | 'postprocess' | 'waiting_conversion' | 'conversion' | 'complete';
+  type CookieMode = 'browser' | 'file';
 
-  const supportedBrowsers = [
-    "firefox",
-    "chrome",
-    "edge",
-    "brave",
-    "opera",
-    "chromium",
-  ] as const;
+  const supportedBrowsers = ['firefox', 'chrome', 'edge', 'brave', 'opera', 'chromium'] as const;
   type BrowserName = (typeof supportedBrowsers)[number];
 
-  const videoFormats = ["mp4", "mkv", "webm"] as const;
-  const audioFormats = ["mp3", "flac", "wav", "aac", "opus"] as const;
-  const defaultQualityOptions = [
-    "best",
-    "2160p",
-    "1440p",
-    "1080p",
-    "720p",
-    "480p",
-    "360p",
-  ] as const;
+  const videoFormats = ['mp4', 'mkv', 'webm'] as const;
+  const audioFormats = ['mp3', 'flac', 'wav', 'aac', 'opus'] as const;
   type VideoFormat = (typeof videoFormats)[number];
   type AudioFormat = (typeof audioFormats)[number];
   type OutputFormat = VideoFormat | AudioFormat;
-  const MAX_PARALLEL_DOWNLOADS = 5;
-  const PLAYLIST_INSERT_BATCH_SIZE = 25;
   const PLAYLIST_PAGE_SIZE = 100;
   const DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS = 500;
+  const QUEUE_ROW_HEIGHT_PX = 53;
+  const QUEUE_ROW_OVERSCAN = 8;
   const MAX_CUSTOM_FILENAME_UTF16_UNITS = 180;
+  const WINDOWS_INVALID_FILENAME_CHARS = '<>:"/\\|?*';
   const WINDOWS_RESERVED_FILENAME_STEMS = new Set([
-    "CON",
-    "PRN",
-    "AUX",
-    "NUL",
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
     ...Array.from({ length: 9 }, (_, index) => `COM${index + 1}`),
-    ...Array.from({ length: 9 }, (_, index) => `LPT${index + 1}`),
+    ...Array.from({ length: 9 }, (_, index) => `LPT${index + 1}`)
   ]);
+  const OPERATION_PROJECTION_FIELDS = [
+    'downloadId',
+    'status',
+    'progress',
+    'downloadProgress',
+    'conversionProgress',
+    'phase',
+    'speed',
+    'eta',
+    'error',
+    'errorCode',
+    'errorDetail'
+  ] as const satisfies readonly (keyof QueueItem)[];
 
-  interface CookieConfig {
-    enabled: boolean;
+  type CookieConfig = Omit<BackendCookieConfig, 'mode' | 'browser'> & {
     mode: CookieMode;
     browser: BrowserName;
-    cookie_file: string | null;
-  }
-
-  interface VideoInfo {
-    id: string;
-    title: string;
-    duration: number | null;
-    channel: string | null;
-    thumbnail: string | null;
-    url: string;
-    available_qualities: string[];
-    has_audio: boolean;
-  }
-
-  interface PlaylistEntry {
-    id: string;
-    title: string | null;
-    duration: number | null;
-    url: string;
-    thumbnail: string | null;
-  }
+  };
 
   interface PlaylistModalEntry extends PlaylistEntry {
     selected: boolean;
   }
 
-  interface PlaylistInfo {
-    title: string;
-    channel: string | null;
-    entry_count: number;
-    truncated: boolean;
-    entries: PlaylistEntry[];
-  }
-
-  type UrlInspection =
-    | { kind: "video"; video: VideoInfo }
-    | { kind: "playlist"; playlist: PlaylistInfo };
-
   interface PlaylistModal {
     info: PlaylistInfo;
+    inspectionOperationId: string;
     url: string;
+    cookieConfig: CookieConfig | null;
     entries: PlaylistModalEntry[];
+  }
+
+  interface CompletedInspection {
+    operationId: string;
+    inspection: UrlInspection;
   }
 
   interface QueueItem {
@@ -125,6 +123,7 @@
     channel: string | null;
     thumbnail: string | null;
     infoLoaded: boolean;
+    hasAudio: boolean | null;
     status: DownloadStatus;
     quality: string;
     format: OutputFormat;
@@ -144,96 +143,20 @@
     selected: boolean;
   }
 
-  interface DownloadRequest {
-    url: string;
-    quality: string;
-    format: OutputFormat;
-    output_dir: string;
-    cookie_config: CookieConfig | null;
-    filename_override: string | null;
-    compat_config_path: string | null;
-  }
-
-  interface DownloadProgressPayload {
-    download_id: string;
-    status: DownloadStatus;
-    progress: number;
-    phase?: DownloadPhase | null;
-    download_progress?: number | null;
-    conversion_progress?: number | null;
-    speed: string | null;
-    eta: string | null;
-    error: string | null;
-    error_code?: string | null;
-    error_detail?: string | null;
-    filename: string | null;
-  }
-
-  interface DownloaderToolStatus {
-    name: string;
-    required: boolean;
-    available: boolean;
-    version: string | null;
-    path: string | null;
-    source: string;
-    error: string | null;
-  }
-
-  interface DownloaderRuntimeStatus {
-    state: RuntimeState;
-    runtimeVersion: string | null;
-    source: string;
-    updateAvailable: boolean;
-    latestRuntimeVersion: string | null;
-    runtimeDir: string | null;
-    pluginDir: string;
-    message: string | null;
-    tools: DownloaderToolStatus[];
-  }
-
-  interface DownloaderRuntimeUpdateProgressPayload {
-    status: "checking" | "downloading" | "installing" | "complete" | "error";
-    version: string | null;
-    downloadedBytes: number;
-    totalBytes: number | null;
-    message: string | null;
-  }
-
-  interface DownloaderRuntimeUpdateCheck {
-    updateAvailable: boolean;
-    latestRuntimeVersion: string | null;
-    message: string | null;
-  }
-
-  interface UpdateCheckResult {
-    currentVersion: string;
-    hasUpdate: boolean;
-    latestVersion: string | null;
-    notes: string | null;
-    publishedAt: string | null;
-    installerName: string | null;
-  }
-
-  interface UpdateInstallProgressPayload {
-    status: "downloading" | "verifying" | "launching" | "error";
-    version: string;
-    downloadedBytes: number;
-    totalBytes: number | null;
-    message: string | null;
-  }
+  type DownloadProgressPayload = EventMap['download-progress'];
+  type DownloaderRuntimeUpdateProgressPayload = EventMap['downloader-runtime-update-progress'];
+  type UpdateInstallProgressPayload = EventMap['update-install-progress'];
 
   function isActiveStatus(status: DownloadStatus): boolean {
-    return status === "downloading" || status === "postprocessing";
+    return status === 'downloading' || status === 'postprocessing' || status === 'cancelling';
   }
 
   function isTerminalStatus(status: DownloadStatus): boolean {
-    return (
-      status === "completed" || status === "error" || status === "cancelled"
-    );
+    return status === 'completed' || status === 'error' || status === 'cancelled';
   }
 
   function isEditablePendingStatus(status: DownloadStatus): boolean {
-    return status === "ready" || status === "queued";
+    return status === 'ready';
   }
 
   function buildQueueSummary(items: QueueItem[]) {
@@ -242,7 +165,7 @@
       ready: 0,
       downloading: 0,
       completed: 0,
-      failed: 0,
+      failed: 0
     };
 
     let hasReady = false;
@@ -252,7 +175,7 @@
     let hasSelected = false;
 
     for (const item of items) {
-      if (item.status === "ready") {
+      if (item.status === 'ready') {
         counts.ready += 1;
         hasReady = true;
         if (item.selected) {
@@ -265,12 +188,12 @@
         hasActive = true;
       }
 
-      if (item.status === "completed") {
+      if (item.status === 'completed') {
         counts.completed += 1;
         hasCompleted = true;
-      } else if (item.status === "cancelled") {
+      } else if (item.status === 'cancelled') {
         hasCompleted = true;
-      } else if (item.status === "error") {
+      } else if (item.status === 'error') {
         counts.failed += 1;
       }
 
@@ -285,18 +208,43 @@
       hasSelectedReady,
       hasActive,
       hasCompleted,
-      hasSelected,
+      hasSelected
     };
   }
 
   function normalizeAppError(error: unknown): string {
-    const message = String(error ?? "Unknown error");
-    return message.startsWith("Error: ") ? message.slice(7) : message;
+    if (error && typeof error === 'object') {
+      const typed = error as {
+        safe_summary?: unknown;
+        safeSummary?: unknown;
+        summary?: unknown;
+        message?: unknown;
+        code?: unknown;
+      };
+      const summary = typed.safe_summary ?? typed.safeSummary ?? typed.summary ?? typed.message;
+      if (typeof summary === 'string' && summary.trim()) {
+        const code = typeof typed.code === 'string' ? ` (${typed.code})` : '';
+        return `${summary}${code}`;
+      }
+    }
+    const message = String(error ?? 'Unknown error');
+    return message.startsWith('Error: ') ? message.slice(7) : message;
+  }
+
+  function appErrorDetail(error: unknown): string {
+    if (error && typeof error === 'object') {
+      try {
+        return JSON.stringify(error);
+      } catch {
+        return normalizeAppError(error);
+      }
+    }
+    return String(error ?? 'Unknown error');
   }
 
   function formatByteCount(bytes: number): string {
-    if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
-    const units = ["B", "KB", "MB", "GB", "TB"];
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let value = bytes;
     let unitIndex = 0;
 
@@ -310,44 +258,36 @@
   }
 
   function formatPublishedAt(value: string | null): string {
-    if (!value) return "Unknown";
+    if (!value) return 'Unknown';
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
 
     return new Intl.DateTimeFormat(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
     }).format(date);
   }
 
-  function getUpdateDownloadPercent(
-    progress: UpdateInstallProgressPayload | null,
-  ): number {
+  function getUpdateDownloadPercent(progress: UpdateInstallProgressPayload | null): number {
     if (!progress) return 0;
-    if (progress.status === "launching") return 100;
+    if (progress.status === 'launching') return 100;
     if (!progress.totalBytes || progress.totalBytes <= 0) return 0;
 
-    return Math.max(
-      0,
-      Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100),
-    );
+    return Math.max(0, Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100));
   }
 
   function getRuntimeUpdatePercent(
-    progress: DownloaderRuntimeUpdateProgressPayload | null,
+    progress: DownloaderRuntimeUpdateProgressPayload | null
   ): number {
     if (!progress) return 0;
-    if (progress.status === "complete") return 100;
+    if (progress.status === 'complete') return 100;
     if (!progress.totalBytes || progress.totalBytes <= 0) return 0;
 
-    return Math.max(
-      0,
-      Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100),
-    );
+    return Math.max(0, Math.min(100, (progress.downloadedBytes / progress.totalBytes) * 100));
   }
 
   function getRuntimeTool(name: string): DownloaderToolStatus | null {
@@ -355,14 +295,17 @@
   }
 
   function runtimeCanDownload(): boolean {
-    return runtimeStatus !== null && runtimeStatus.state !== "missing";
+    return runtimeAllowsDownloads(
+      runtimeStatus?.state ?? null,
+      backendSnapshot?.runtimeReadiness ?? null
+    );
   }
 
   function runtimeBadgeClass(): string {
-    if (!runtimeStatus || runtimeCheckState === "checking") return "neutral";
-    if (runtimeStatus.state === "ready") return "ok";
-    if (runtimeStatus.state === "degraded") return "warn";
-    return "err";
+    if (!runtimeStatus || runtimeCheckState === 'checking') return 'neutral';
+    if (runtimeStatus.state === 'ready') return 'ok';
+    if (runtimeStatus.state === 'ready_with_warnings') return 'warn';
+    return 'err';
   }
 
   function runtimeMissingRequiredTools(): string[] {
@@ -376,18 +319,18 @@
   function compactRuntimeToolVersion(tool: DownloaderToolStatus): string | null {
     const version = tool.version?.trim();
     if (!version) return null;
-    const firstLine = version.split(/\r?\n/)[0]?.trim() ?? "";
+    const firstLine = version.split(/\r?\n/)[0]?.trim() ?? '';
     if (!firstLine) return null;
 
-    if (tool.name === "deno") {
+    if (tool.name === 'deno') {
       return firstLine.match(/^deno\s+([^\s]+)/i)?.[1] ?? firstLine;
     }
 
-    if (tool.name === "ffmpeg") {
+    if (tool.name === 'ffmpeg') {
       return firstLine.match(/^ffmpeg version\s+([^\s]+)/i)?.[1] ?? firstLine;
     }
 
-    if (tool.name === "ffprobe") {
+    if (tool.name === 'ffprobe') {
       return firstLine.match(/^ffprobe version\s+([^\s]+)/i)?.[1] ?? firstLine;
     }
 
@@ -396,7 +339,7 @@
 
   function runtimeToolBadgeLabel(
     tool: DownloaderToolStatus | null,
-    displayName: string,
+    displayName: string
   ): string | null {
     if (!tool || !tool.available) return null;
     const version = compactRuntimeToolVersion(tool);
@@ -404,33 +347,31 @@
   }
 
   function runtimeBadgeText(): string {
-    if (!runtimeStatus || runtimeCheckState === "checking") return "Runtime checking";
-    const ytDlp = getRuntimeTool("yt-dlp");
-    const deno = getRuntimeTool("deno");
+    if (!runtimeStatus || runtimeCheckState === 'checking') return 'Runtime checking';
+    const ytDlp = getRuntimeTool('yt-dlp');
+    const deno = getRuntimeTool('deno');
     const missingRequired = runtimeMissingRequiredTools();
     const parts = [
       `Runtime ${runtimeStatus.state}`,
-      missingRequired.length > 0
-        ? `Missing ${missingRequired.join(", ")}`
-        : null,
-      runtimeToolBadgeLabel(ytDlp, "yt-dlp"),
-      runtimeToolBadgeLabel(deno, "Deno") ?? "No Deno",
+      missingRequired.length > 0 ? `Missing ${missingRequired.join(', ')}` : null,
+      runtimeToolBadgeLabel(ytDlp, 'yt-dlp'),
+      runtimeToolBadgeLabel(deno, 'Deno') ?? 'No Deno'
     ].filter(Boolean);
-    return parts.join(" | ");
+    return parts.join(' | ');
   }
 
   function runtimeBadgeTitle(): string {
-    if (!runtimeStatus) return runtimeError ?? "";
+    if (!runtimeStatus) return runtimeError ?? '';
 
     const toolLines = runtimeStatus.tools.map((tool) => {
       const state = tool.available
-        ? (tool.version ?? "available")
-        : `missing${tool.error ? `: ${tool.error}` : ""}`;
-      const source = [tool.source, tool.path].filter(Boolean).join(" ");
+        ? (tool.version ?? 'available')
+        : `missing${tool.error ? `: ${tool.error}` : ''}`;
+      const source = [tool.source, tool.path].filter(Boolean).join(' ');
       return `${tool.name}: ${state} (${source})`;
     });
 
-    return [runtimeStatus.message, ...toolLines].filter(Boolean).join("\n");
+    return [runtimeStatus.message, ...toolLines].filter(Boolean).join('\n');
   }
 
   function getCompatConfigSnapshot(): string | null {
@@ -443,178 +384,565 @@
   }
 
   // -- State --
-  let urlInput = $state("");
-  let outputDir = $state("");
-  let globalQuality = $state("best");
-  let globalFormat = $state<OutputFormat>("mp4");
+  let urlInput = $state('');
+  let outputDir = $state('');
+  let outputDirValidated = $state(false);
+  let outputDirError = $state<string | null>(null);
+  let globalQuality = $state('best');
+  let globalFormat = $state<OutputFormat>('mp4');
   let queue = $state<QueueItem[]>([]);
   let appVersion = $state<string | null>(null);
   let runtimeStatus = $state<DownloaderRuntimeStatus | null>(null);
   let runtimeUpdateCheck = $state<DownloaderRuntimeUpdateCheck | null>(null);
-  let runtimeCheckState = $state<"checking" | "idle">("checking");
+  let runtimeCheckState = $state<'checking' | 'idle'>('checking');
   let runtimeUpdateRunning = $state(false);
   let runtimeUpdateProgress = $state<DownloaderRuntimeUpdateProgressPayload | null>(null);
   let runtimeError = $state<string | null>(null);
-  let urlError = $state("");
+  let urlError = $state('');
   let useCookies = $state(false);
-  let cookieMode = $state<CookieMode>("browser");
-  let cookieBrowser = $state<BrowserName>("firefox");
-  let cookieFilePath = $state("");
-  let compatConfigPath = $state("");
+  let cookieMode = $state<CookieMode>('browser');
+  let cookieBrowser = $state<BrowserName>('firefox');
+  let cookieFilePath = $state('');
+  let compatConfigPath = $state('');
   let playlistModal = $state<PlaylistModal | null>(null);
   let playlistLoading = $state(false);
   let activeInspectionId = $state<string | null>(null);
   let inspectionCancelRequested = false;
   let playlistPage = $state(0);
   let editingTitleId = $state<string | null>(null);
-  let editingTitleDraft = $state("");
-  let filenameEditError = $state("");
+  let editingTitleDraft = $state('');
+  let filenameEditError = $state('');
   let titleEditorInput = $state<HTMLInputElement | null>(null);
-  let pendingDownloadIds = $state<string[]>([]);
-  let priorityDownloadId = $state<string | null>(null);
-  let schedulerRunning = false;
-  let schedulerPaused = false;
-  let pendingPlaylistQueueItems: QueueItem[] = [];
-  let playlistInsertFramePending = false;
-  const downloadDisplayUpdatedAt = new Map<string, number>();
-  let updateCheckState = $state<"idle" | "checking">("idle");
+  const downloadDisplayUpdatedAt = new SvelteMap<string, number>();
+  let updateCheckState = $state<'idle' | 'checking'>('idle');
   let updateInfo = $state<UpdateCheckResult | null>(null);
   let updateModalOpen = $state(false);
   let updateError = $state<string | null>(null);
   let updateInstallProgress = $state<UpdateInstallProgressPayload | null>(null);
   let updateInstallRunning = $state(false);
+  let cancelAllError = $state<string | null>(null);
+  let queueActionError = $state<string | null>(null);
+  let startupSubsystems = $state(createStartupSubsystems());
+  let startupIssues = $state<string[]>([]);
+  let queueSelectAll = $state<HTMLInputElement | null>(null);
+  let playlistSelectAll = $state<HTMLInputElement | null>(null);
+  let queueViewport = $state<HTMLElement | null>(null);
+  let queueScrollTop = $state(0);
+  let queueViewportHeight = $state(600);
+  let backendSnapshot = $state<AppSnapshot | null>(null);
+  let backendStateError = $state<string | null>(null);
+  let diagnosticsMessage = $state<string | null>(null);
+  let diagnosticsError = $state<string | null>(null);
+  const metadataByUrl = new SvelteMap<
+    string,
+    Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
+  >();
+  const operationWaiters = new OperationWaitRegistry();
+  const appStateController = new AppStateController(
+    () => invoke('get_app_snapshot'),
+    applyBackendSnapshot,
+    handleBackendStateError
+  );
 
   // -- Lifecycle --
   onMount(() => {
+    let unlistenState: (() => void) | undefined;
     let unlistenProgress: (() => void) | undefined;
     let unlistenUpdateProgress: (() => void) | undefined;
     let unlistenRuntimeProgress: (() => void) | undefined;
+    const queueResizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? undefined
+        : new ResizeObserver(([entry]) => {
+            if (entry) queueViewportHeight = entry.contentRect.height;
+          });
+    if (queueViewport) {
+      queueViewportHeight = queueViewport.clientHeight || queueViewportHeight;
+      queueResizeObserver?.observe(queueViewport);
+    }
 
     const setup = async () => {
-      unlistenProgress = await listen<DownloadProgressPayload>(
-        "download-progress",
-        (event) => {
-          const progress = event.payload;
-          const idx = queue.findIndex(
-            (item) => item.downloadId === progress.download_id
-          );
+      const listenerErrors: string[] = [];
 
+      try {
+        await appStateController.start((handler) =>
+          listen('app-state-changed', (event) => handler(event.payload))
+        );
+        unlistenState = () => appStateController.stop();
+      } catch (error) {
+        listenerErrors.push(`App state: ${normalizeAppError(error)}`);
+      }
+
+      try {
+        unlistenProgress = await listen('download-progress', (event) => {
+          const progress = event.payload;
+          const idx = queue.findIndex((item) => item.downloadId === progress.download_id);
           if (idx === -1) return;
 
           const item = queue[idx];
           const statusChanged = item.status !== progress.status;
-          const isTerminal = isTerminalStatus(progress.status);
-          const shouldRefreshDisplay = shouldRefreshDownloadDisplay(
-            item,
-            progress,
-            statusChanged
-          );
-          const nextProgress = getDisplayProgress(
-            item,
-            progress,
-            shouldRefreshDisplay
-          );
-          const nextDownloadProgress = getDisplayDownloadProgress(
-            item,
-            progress,
-            shouldRefreshDisplay
-          );
-          const nextConversionProgress = getDisplayConversionProgress(
-            item,
-            progress,
-            shouldRefreshDisplay
-          );
-          const nextEta = getDisplayEta(
-            item,
-            progress,
-            shouldRefreshDisplay
-          );
-
-          queue[idx] = {
-            ...item,
-            status: progress.status,
-            downloadId:
-              isTerminal ? null : item.downloadId,
-            progress: nextProgress,
-            downloadProgress: nextDownloadProgress,
-            conversionProgress: nextConversionProgress,
-            phase: progress.phase ?? item.phase,
-            speed: isTerminal
-              ? ""
-              : progress.speed ?? "",
-            eta: nextEta,
+          const terminal = isTerminalStatus(progress.status);
+          const shouldRefreshDisplay = shouldRefreshDownloadDisplay(item, progress, statusChanged);
+          if (
+            !shouldRefreshDisplay &&
+            !statusChanged &&
+            !terminal &&
+            !progress.error &&
+            !progress.filename
+          ) {
+            return;
+          }
+          const reduced = reduceOperationProgress(item, progress);
+          const next = {
+            ...reduced,
+            progress: getDisplayProgress(item, progress, shouldRefreshDisplay),
+            downloadProgress: terminal
+              ? reduced.downloadProgress
+              : getDisplayDownloadProgress(item, progress, shouldRefreshDisplay),
+            conversionProgress: terminal
+              ? reduced.conversionProgress
+              : getDisplayConversionProgress(item, progress, shouldRefreshDisplay),
+            eta: terminal ? reduced.eta : getDisplayEta(item, progress, shouldRefreshDisplay),
             error: progress.error
               ? normalizeDownloadError(progress.error, progress.error_code ?? null)
               : null,
             errorCode: progress.error_code ?? null,
             errorDetail: progress.error_detail ?? null,
-            filename: progress.filename ?? item.filename,
+            filename: progress.filename ?? item.filename
           };
+          assignChangedQueueFields(queue[idx], next, [...OPERATION_PROJECTION_FIELDS, 'filename']);
 
-          if (isTerminal) {
+          if (terminal) {
             clearProgressDisplayState(item.id);
-            void pumpDownloadQueue();
           } else if (shouldRefreshDisplay && isActiveStatus(progress.status)) {
             downloadDisplayUpdatedAt.set(item.id, Date.now());
           }
-        }
-      );
+        });
+      } catch (error) {
+        listenerErrors.push(`Download progress: ${normalizeAppError(error)}`);
+      }
 
-      unlistenUpdateProgress = await listen<UpdateInstallProgressPayload>(
-        "update-install-progress",
-        (event) => {
+      try {
+        unlistenUpdateProgress = await listen('update-install-progress', (event) => {
           updateInstallProgress = event.payload;
-
-          if (event.payload.status === "error") {
+          if (event.payload.status === 'error') {
             updateInstallRunning = false;
-            updateError = event.payload.message ?? "Update installation failed.";
+            updateError = event.payload.message ?? 'Update installation failed.';
           }
-        },
-      );
-
-      unlistenRuntimeProgress =
-        await listen<DownloaderRuntimeUpdateProgressPayload>(
-          "downloader-runtime-update-progress",
-          (event) => {
-            runtimeUpdateProgress = event.payload;
-            if (event.payload.status === "error") {
-              runtimeUpdateRunning = false;
-              runtimeError =
-                event.payload.message ?? "Downloader runtime update failed.";
-            }
-          },
-        );
-
-      try {
-        appVersion = await getVersion();
-      } catch {
-        appVersion = null;
+        });
+      } catch (error) {
+        listenerErrors.push(`App update progress: ${normalizeAppError(error)}`);
       }
 
-      await refreshDownloaderRuntime();
-      void checkDownloaderRuntimeUpdate();
-
       try {
-        outputDir = await invoke<string>("default_download_dir");
-      } catch {
-        outputDir = "";
+        unlistenRuntimeProgress = await listen('downloader-runtime-update-progress', (event) => {
+          runtimeUpdateProgress = event.payload;
+          if (event.payload.status === 'error') {
+            runtimeUpdateRunning = false;
+            runtimeError = event.payload.message ?? 'Downloader runtime update failed.';
+          }
+        });
+      } catch (error) {
+        listenerErrors.push(`Runtime update progress: ${normalizeAppError(error)}`);
       }
 
-      void checkForAppUpdate({ openModal: false, showErrors: false });
+      if (!unlistenState || backendStateError) {
+        startupIssues = [...startupIssues, ...listenerErrors];
+        setStartupSubsystem('listeners', 'error');
+      } else if (listenerErrors.length > 0) {
+        startupIssues = [...startupIssues, ...listenerErrors];
+        setStartupSubsystem('listeners', 'degraded');
+      } else {
+        setStartupSubsystem('listeners', 'ready');
+      }
+
+      await Promise.all([
+        initializeAppVersion(),
+        initializeRuntime(),
+        initializeOutputDirectory(),
+        initializeUpdateCheck()
+      ]);
     };
 
     void setup();
 
     return () => {
+      unlistenState?.();
       unlistenProgress?.();
       unlistenUpdateProgress?.();
       unlistenRuntimeProgress?.();
+      queueResizeObserver?.disconnect();
+      operationWaiters.rejectAll(
+        new Error('Renderer was unloaded before the operation completed.')
+      );
     };
   });
 
   // -- Helpers --
-  function genId(): string {
-    return crypto.randomUUID();
+  function setStartupSubsystem(subsystem: StartupSubsystem, state: StartupSubsystemState): void {
+    startupSubsystems = { ...startupSubsystems, [subsystem]: state };
+  }
+
+  function reportStartupIssue(subsystem: string, error: unknown): void {
+    startupIssues = [...startupIssues, `${subsystem}: ${normalizeAppError(error)}`];
+  }
+
+  function handleBackendStateError(error: unknown): void {
+    backendStateError = normalizeAppError(error);
+    reportStartupIssue('App state event', error);
+    setStartupSubsystem('listeners', 'error');
+    operationWaiters.rejectAll(
+      new Error(`The app state stream failed: ${normalizeAppError(error)}`)
+    );
+  }
+
+  async function reloadAppSnapshot(): Promise<void> {
+    try {
+      await appStateController.reload();
+    } catch (error) {
+      handleBackendStateError(error);
+      throw error;
+    }
+  }
+
+  function applyBackendSnapshot(snapshot: AppSnapshot, delta?: StateDelta): void {
+    const previousSnapshot = backendSnapshot;
+    backendSnapshot = snapshot;
+    backendStateError = null;
+    projectBackendQueue(snapshot, previousSnapshot, delta);
+    operationWaiters.settle(snapshot.operations);
+
+    runtimeUpdateRunning = snapshot.operations.some(
+      (operation) => operation.kind === 'runtime_update' && !isTerminalOperation(operation)
+    );
+    updateInstallRunning = snapshot.operations.some(
+      (operation) => operation.kind === 'app_update' && !isTerminalOperation(operation)
+    );
+  }
+
+  function queueStatus(
+    record: QueueItemRecord,
+    operation: OperationSnapshot | null
+  ): DownloadStatus {
+    if (operation) {
+      if (operation.state === 'completed') return 'completed';
+      if (operation.state === 'failed' || operation.state === 'interrupted') return 'error';
+      if (operation.state === 'cancelled') return 'cancelled';
+      if (operation.state === 'cancelling') return 'cancelling';
+      if (operation.state === 'queued' || operation.state === 'starting') return 'queued';
+      if (operation.state === 'running') {
+        return operation.phase === 'conversion' || operation.phase === 'postprocess'
+          ? 'postprocessing'
+          : 'downloading';
+      }
+    }
+
+    switch (record.state) {
+      case 'inert':
+        return 'ready';
+      case 'queued':
+        return 'queued';
+      case 'running':
+        return 'downloading';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      case 'failed':
+      case 'interrupted':
+        return 'error';
+    }
+  }
+
+  function operationPhase(operation: OperationSnapshot | null): DownloadPhase | null {
+    const phase = operation?.phase;
+    return phase === 'download' ||
+      phase === 'postprocess' ||
+      phase === 'waiting_conversion' ||
+      phase === 'conversion' ||
+      phase === 'complete'
+      ? phase
+      : null;
+  }
+
+  function operationErrorDetail(operation: OperationSnapshot | null): string | null {
+    if (!operation?.error) return null;
+    return [operation.error.detail, `Correlation ID: ${operation.error.correlationId}`]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  function projectBackendRecord(
+    snapshot: AppSnapshot,
+    record: QueueItemRecord,
+    existing: QueueItem | undefined
+  ): QueueItem {
+    const metadata = metadataByUrl.get(record.sourceUrl);
+    const operation = latestOperationForItem(snapshot, record.id, record.latestOperationId);
+    const status = queueStatus(record, operation);
+    const terminal = isTerminalStatus(status);
+    const operationProgress = Math.max(0, Math.min(100, operation?.progress ?? 0));
+    const sameOperation = existing?.downloadId === operation?.id;
+    const progress =
+      sameOperation && isActiveStatus(status)
+        ? Math.max(existing?.progress ?? 0, operationProgress)
+        : status === 'completed'
+          ? 100
+          : operationProgress;
+    const downloadProgress =
+      status === 'postprocessing' || status === 'completed'
+        ? 100
+        : sameOperation && status === 'downloading'
+          ? Math.max(existing?.downloadProgress ?? 0, operationProgress)
+          : operationProgress;
+    const phase = terminal ? null : operationPhase(operation);
+    const conversionProgress =
+      status === 'completed' && record.format === 'webm'
+        ? 100
+        : phase === 'conversion'
+          ? operationProgress
+          : terminal
+            ? null
+            : (existing?.conversionProgress ?? null);
+    const cookie = record.cookieConfig;
+    const browser = supportedBrowsers.includes(cookie?.browser as BrowserName)
+      ? (cookie?.browser as BrowserName)
+      : 'firefox';
+    const format = [...videoFormats, ...audioFormats].includes(record.format as OutputFormat)
+      ? (record.format as OutputFormat)
+      : 'mp4';
+    const interrupted = record.state === 'interrupted';
+
+    return {
+      id: record.id,
+      downloadId: operation && !isTerminalOperation(operation) ? operation.id : null,
+      url: record.sourceUrl,
+      title: record.title,
+      customFilename: record.filenameOverride,
+      duration: existing?.duration ?? metadata?.duration ?? null,
+      channel: existing?.channel ?? metadata?.channel ?? null,
+      thumbnail: existing?.thumbnail ?? metadata?.thumbnail ?? null,
+      infoLoaded: true,
+      hasAudio: record.hasAudio,
+      status,
+      quality: record.quality,
+      format,
+      cookieConfig: cookie
+        ? {
+            enabled: cookie.enabled,
+            mode: cookie.mode === 'file' ? 'file' : 'browser',
+            browser,
+            cookie_file: cookie.cookie_file
+          }
+        : null,
+      availableQualities: [
+        'best',
+        ...record.availableQualities.filter((quality) => quality !== 'best')
+      ],
+      progress,
+      downloadProgress,
+      conversionProgress,
+      phase,
+      speed: terminal ? '' : (existing?.speed ?? ''),
+      eta: terminal ? '' : (existing?.eta ?? ''),
+      error:
+        operation?.error?.summary ??
+        (interrupted ? 'The previous app session ended before this attempt completed.' : null),
+      errorCode: operation?.error?.code ?? (interrupted ? 'interrupted' : null),
+      errorDetail: operationErrorDetail(operation),
+      diagnosticsOpen: existing?.diagnosticsOpen ?? false,
+      filename: existing?.filename ?? null,
+      selected: existing?.selected ?? false
+    } satisfies QueueItem;
+  }
+
+  function upsertProjectedRecord(snapshot: AppSnapshot, record: QueueItemRecord): void {
+    const index = queue.findIndex((item) => item.id === record.id);
+    if (index === -1) {
+      queue.push(projectBackendRecord(snapshot, record, undefined));
+      return;
+    }
+    queue[index] = projectBackendRecord(snapshot, record, queue[index]);
+  }
+
+  function assignChangedQueueFields<K extends keyof QueueItem>(
+    target: QueueItem,
+    source: QueueItem,
+    fields: readonly K[]
+  ): void {
+    const writable = target as Record<keyof QueueItem, unknown>;
+    const incoming = source as Record<keyof QueueItem, unknown>;
+    for (const field of fields) {
+      if (!Object.is(writable[field], incoming[field])) writable[field] = incoming[field];
+    }
+  }
+
+  function projectOperationForRecord(snapshot: AppSnapshot, record: QueueItemRecord): void {
+    const index = queue.findIndex((item) => item.id === record.id);
+    if (index === -1) {
+      queue.push(projectBackendRecord(snapshot, record, undefined));
+      return;
+    }
+    const projected = projectBackendRecord(snapshot, record, queue[index]);
+    assignChangedQueueFields(queue[index], projected, OPERATION_PROJECTION_FIELDS);
+  }
+
+  function projectionRelevantQueueRecordChanged(
+    previous: QueueItemRecord | undefined,
+    next: QueueItemRecord
+  ): boolean {
+    if (!previous) return true;
+    return (
+      previous.sourceUrl !== next.sourceUrl ||
+      previous.title !== next.title ||
+      previous.hasAudio !== next.hasAudio ||
+      previous.format !== next.format ||
+      previous.quality !== next.quality ||
+      previous.outputDir !== next.outputDir ||
+      previous.filenameOverride !== next.filenameOverride ||
+      previous.compatConfigPath !== next.compatConfigPath ||
+      previous.state !== next.state ||
+      previous.latestOperationId !== next.latestOperationId ||
+      previous.availableQualities.length !== next.availableQualities.length ||
+      previous.availableQualities.some(
+        (quality, index) => quality !== next.availableQualities[index]
+      ) ||
+      JSON.stringify(previous.cookieConfig) !== JSON.stringify(next.cookieConfig)
+    );
+  }
+
+  function projectBackendQueue(
+    snapshot: AppSnapshot,
+    previousSnapshot: AppSnapshot | null,
+    delta?: StateDelta
+  ): void {
+    if (!previousSnapshot || !delta) {
+      const existingById = new Map(queue.map((item) => [item.id, item]));
+      queue = snapshot.queue.map((record) =>
+        projectBackendRecord(snapshot, record, existingById.get(record.id))
+      );
+      return;
+    }
+
+    switch (delta.kind) {
+      case 'queue_item_upserted':
+        if (
+          !projectionRelevantQueueRecordChanged(
+            previousSnapshot.queue.find((item) => item.id === delta.value.id),
+            delta.value
+          )
+        ) {
+          return;
+        }
+        upsertProjectedRecord(snapshot, delta.value);
+        return;
+      case 'queue_items_removed': {
+        const removed = new Set(delta.value);
+        queue = queue.filter((item) => !removed.has(item.id));
+        return;
+      }
+      case 'operation_upserted': {
+        if (!delta.value.queueItemId) return;
+        const record = snapshot.queue.find((item) => item.id === delta.value.queueItemId);
+        if (record) projectOperationForRecord(snapshot, record);
+        return;
+      }
+      case 'operation_removed': {
+        const previousOperation = previousSnapshot.operations.find(
+          (operation) => operation.id === delta.value
+        );
+        if (!previousOperation?.queueItemId) return;
+        const record = snapshot.queue.find((item) => item.id === previousOperation.queueItemId);
+        if (record) projectOperationForRecord(snapshot, record);
+        return;
+      }
+      case 'runtime_readiness_changed':
+      case 'maintenance_changed':
+        return;
+    }
+  }
+
+  function waitForOperation(
+    operationId: string,
+    timeoutMs = 35 * 60 * 1000
+  ): Promise<OperationSnapshot> {
+    return operationWaiters.waitWithRefresh(
+      operationId,
+      () => backendSnapshot?.operations ?? [],
+      timeoutMs,
+      reloadAppSnapshot
+    );
+  }
+
+  async function initializeAppVersion(): Promise<void> {
+    try {
+      appVersion = await getVersion();
+      setStartupSubsystem('appVersion', 'ready');
+    } catch (error) {
+      appVersion = null;
+      reportStartupIssue('App version', error);
+      setStartupSubsystem('appVersion', 'degraded');
+    }
+  }
+
+  async function initializeRuntime(): Promise<void> {
+    await refreshDownloaderRuntime();
+    if (!runtimeStatus) {
+      reportStartupIssue('Downloader runtime', runtimeError ?? 'Unavailable');
+    }
+    void checkDownloaderRuntimeUpdate();
+  }
+
+  async function validateOutputDirectory(candidate: string): Promise<boolean> {
+    outputDirError = null;
+    if (!candidate.trim()) {
+      outputDirValidated = false;
+      outputDirError = 'Choose a writable output folder before downloading.';
+      return false;
+    }
+
+    try {
+      outputDir = await invoke('validate_output_directory', { path: candidate });
+      outputDirValidated = true;
+      return true;
+    } catch (error) {
+      outputDirValidated = false;
+      outputDirError = normalizeAppError(error);
+      return false;
+    }
+  }
+
+  async function initializeOutputDirectory(): Promise<void> {
+    try {
+      const candidate = await invoke('default_download_dir');
+      outputDir = candidate;
+      if (await validateOutputDirectory(candidate)) {
+        setStartupSubsystem('outputDirectory', 'ready');
+      } else {
+        reportStartupIssue('Output folder', outputDirError ?? 'Invalid folder');
+        setStartupSubsystem('outputDirectory', 'error');
+      }
+    } catch (error) {
+      outputDir = '';
+      outputDirValidated = false;
+      outputDirError = 'Choose a writable output folder before downloading.';
+      reportStartupIssue('Output folder discovery', error);
+      setStartupSubsystem('outputDirectory', 'error');
+    }
+  }
+
+  async function initializeUpdateCheck(): Promise<void> {
+    const succeeded = await checkForAppUpdate({
+      openModal: false,
+      showErrors: false
+    });
+    if (!succeeded) {
+      startupIssues = [
+        ...startupIssues,
+        'App update check was unavailable; downloads remain usable.'
+      ];
+    }
+    setStartupSubsystem('updateCheck', succeeded ? 'ready' : 'degraded');
   }
 
   function clearProgressDisplayState(itemId: string): void {
@@ -630,23 +958,23 @@
     payload: DownloadProgressPayload,
     shouldRefreshDisplay: boolean
   ): number {
-    if (payload.status === "completed") {
+    if (payload.status === 'completed') {
       return 100;
     }
 
-    if (payload.status === "postprocessing") {
+    if (payload.status === 'postprocessing') {
       const isConversionPhase =
-        payload.phase === "conversion" || payload.conversion_progress != null;
+        payload.phase === 'conversion' || payload.conversion_progress != null;
       const conversionProgress =
         payload.conversion_progress ?? (isConversionPhase ? payload.progress : null);
-      if (item.format === "webm" && isConversionPhase && conversionProgress !== null) {
+      if (item.format === 'webm' && isConversionPhase && conversionProgress !== null) {
         if (!shouldRefreshDisplay) return item.progress;
         return Math.max(item.progress, clampProgressValue(conversionProgress));
       }
       return 100;
     }
 
-    if (payload.status !== "downloading") {
+    if (payload.status !== 'downloading') {
       return clampProgressValue(payload.progress);
     }
 
@@ -662,11 +990,11 @@
     payload: DownloadProgressPayload,
     shouldRefreshDisplay: boolean
   ): number {
-    if (payload.status === "completed" || payload.status === "postprocessing") {
+    if (payload.status === 'completed' || payload.status === 'postprocessing') {
       return 100;
     }
 
-    if (payload.status !== "downloading") {
+    if (payload.status !== 'downloading') {
       return item.downloadProgress;
     }
 
@@ -683,18 +1011,17 @@
     payload: DownloadProgressPayload,
     shouldRefreshDisplay: boolean
   ): number | null {
-    if (payload.status === "completed" && item.format === "webm") {
+    if (payload.status === 'completed' && item.format === 'webm') {
       return 100;
     }
 
-    if (payload.status !== "postprocessing") {
+    if (payload.status !== 'postprocessing') {
       return item.conversionProgress;
     }
 
-    const isConversionPhase =
-      payload.phase === "conversion" || payload.conversion_progress != null;
+    const isConversionPhase = payload.phase === 'conversion' || payload.conversion_progress != null;
 
-    if (!isConversionPhase || (item.format !== "webm" && payload.conversion_progress == null)) {
+    if (!isConversionPhase || (item.format !== 'webm' && payload.conversion_progress == null)) {
       return item.conversionProgress;
     }
 
@@ -719,13 +1046,11 @@
     const now = Date.now();
     const lastUpdatedAt = downloadDisplayUpdatedAt.get(item.id) ?? 0;
     const currentProgress =
-      payload.status === "postprocessing"
-        ? item.conversionProgress ?? 0
-        : item.downloadProgress;
+      payload.status === 'postprocessing' ? (item.conversionProgress ?? 0) : item.downloadProgress;
     return (
       statusChanged ||
       currentProgress === 0 ||
-      (payload.status === "downloading" && item.eta === "") ||
+      (payload.status === 'downloading' && item.eta === '') ||
       now - lastUpdatedAt >= DOWNLOAD_DISPLAY_UPDATE_INTERVAL_MS
     );
   }
@@ -735,12 +1060,12 @@
     payload: DownloadProgressPayload,
     shouldRefreshDisplay: boolean
   ): string {
-    if (payload.status !== "downloading") {
-      return "";
+    if (payload.status !== 'downloading') {
+      return '';
     }
 
-    const nextEta = payload.eta ?? "";
-    if (nextEta === "" || !shouldRefreshDisplay) {
+    const nextEta = payload.eta ?? '';
+    if (nextEta === '' || !shouldRefreshDisplay) {
       return item.eta;
     }
 
@@ -749,16 +1074,19 @@
 
   function shouldShowConversionProgress(item: QueueItem): boolean {
     return (
-      item.format === "webm" &&
-      (item.status === "postprocessing" ||
+      item.format === 'webm' &&
+      (item.status === 'postprocessing' ||
         item.conversionProgress !== null ||
-        item.status === "completed")
+        item.status === 'completed')
     );
   }
 
   function getStatusLabel(item: QueueItem): string {
-    if (item.phase === "waiting_conversion") return "waiting to convert";
-    if (item.status === "postprocessing") return "converting";
+    if (isTerminalStatus(item.status) || item.status === 'cancelling') {
+      return item.status;
+    }
+    if (item.phase === 'waiting_conversion') return 'waiting to convert';
+    if (item.status === 'postprocessing') return 'converting';
     return item.status;
   }
 
@@ -767,26 +1095,24 @@
   }
 
   function formatDuration(seconds: number | null | undefined): string {
-    if (!seconds) return "--:--";
+    if (!seconds) return '--:--';
 
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
 
     if (h > 0) {
-      return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
 
-    return `${m}:${String(s).padStart(2, "0")}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
   }
 
   function normalizeDownloadError(message: string, code: string | null = null): string {
     if (code) return message;
 
     if (
-      /(guest token|bad guest token|failed to query api|unauthorized)/i.test(
-        message
-      ) &&
+      /(guest token|bad guest token|failed to query api|unauthorized)/i.test(message) &&
       /(twitter|x\.com|\[twitter\])/i.test(message)
     ) {
       return "X blocked anonymous access. Enable Cookies and make sure you're logged in, then retry.";
@@ -799,7 +1125,7 @@
       (/Unsupported URL/i.test(message) && /login|auth|sign.?in/i.test(message))
     ) {
       if (/confirm you'?re not a bot|not a bot/i.test(message)) {
-        return "YouTube requested bot verification for this public video. Update downloader runtime first, then retry.";
+        return 'YouTube requested bot verification for this public video. Update downloader runtime first, then retry.';
       }
       return "This site requires login. Enable Cookies (use Firefox or a cookies.txt file) and make sure you're logged in.";
     }
@@ -809,37 +1135,35 @@
         message
       )
     ) {
-      return "Browser cookie database is locked. Close your browser first, or switch to Firefox/cookie file mode.";
+      return 'Browser cookie database is locked. Close your browser first, or switch to Firefox/cookie file mode.';
     }
 
     if (/cookie.*expired|cookies? are no longer valid|session expired/i.test(message)) {
-      return "Your login cookies were rejected. Refresh them from Firefox or export a new cookies.txt file and retry.";
+      return 'Your login cookies were rejected. Refresh them from Firefox or export a new cookies.txt file and retry.';
     }
 
     return message;
   }
 
   async function refreshDownloaderRuntime(): Promise<void> {
-    runtimeCheckState = "checking";
+    runtimeCheckState = 'checking';
     runtimeError = null;
 
     try {
-      runtimeStatus = await invoke<DownloaderRuntimeStatus>(
-        "check_downloader_runtime",
-      );
+      runtimeStatus = await invoke('check_downloader_runtime');
+      setStartupSubsystem('runtime', runtimeStartupSubsystemState(runtimeStatus.state));
     } catch (error) {
       runtimeStatus = null;
       runtimeError = normalizeAppError(error);
+      setStartupSubsystem('runtime', runtimeStartupSubsystemState(null));
     } finally {
-      runtimeCheckState = "idle";
+      runtimeCheckState = 'idle';
     }
   }
 
   async function checkDownloaderRuntimeUpdate(): Promise<void> {
     try {
-      runtimeUpdateCheck = await invoke<DownloaderRuntimeUpdateCheck>(
-        "check_downloader_runtime_update",
-      );
+      runtimeUpdateCheck = await invoke('check_runtime_update');
     } catch {
       // Runtime availability is local and remains usable when GitHub is offline.
       runtimeUpdateCheck = null;
@@ -847,33 +1171,36 @@
   }
 
   function hasUpdateBlockingWork(): boolean {
-    return (
-      pendingDownloadIds.length > 0 ||
-      pendingPlaylistQueueItems.length > 0 ||
-      queue.some((item) => isUpdateBlockingStatus(item.status))
-    );
+    return queue.some((item) => isUpdateBlockingStatus(item.status));
   }
 
   async function updateDownloaderRuntime(): Promise<void> {
+    if (updateInstallRunning) {
+      runtimeError = 'Wait for the app update operation to finish.';
+      return;
+    }
+
     if (hasUpdateBlockingWork()) {
-      runtimeError = "Finish or cancel queued downloads before updating the runtime.";
+      runtimeError = 'Finish or cancel queued downloads before updating the runtime.';
       return;
     }
 
     runtimeUpdateRunning = true;
     runtimeError = null;
     runtimeUpdateProgress = {
-      status: "checking",
+      status: 'checking',
       version: runtimeUpdateCheck?.latestRuntimeVersion ?? null,
       downloadedBytes: 0,
       totalBytes: null,
-      message: "Checking downloader runtime release...",
+      message: 'Checking downloader runtime release...'
     };
 
     try {
-      runtimeStatus = await invoke<DownloaderRuntimeStatus>(
-        "update_downloader_runtime",
-      );
+      const result = await invoke('begin_runtime_update');
+      const operation = await waitForOperation(result.operationId);
+      if (operation.state === 'failed') {
+        throw operation.error ?? new Error('Downloader runtime update failed.');
+      }
     } catch (error) {
       runtimeError = normalizeAppError(error);
     } finally {
@@ -890,7 +1217,7 @@
       enabled: true,
       mode: cookieMode,
       browser: cookieBrowser,
-      cookie_file: cookieMode === "file" ? cookieFilePath || null : null,
+      cookie_file: cookieMode === 'file' ? cookieFilePath || null : null
     };
   }
 
@@ -899,114 +1226,23 @@
     return config ? { ...config } : null;
   }
 
-  function createDefaultQualityOptions(): string[] {
-    return [...defaultQualityOptions];
-  }
-
   function pickFirstPath(selection: string | string[] | null): string | null {
-    if (typeof selection === "string") return selection;
+    if (typeof selection === 'string') return selection;
     if (Array.isArray(selection)) return selection[0] ?? null;
     return null;
   }
 
   function getQueueUrls(): Set<string> {
-    return new Set([
-      ...queue.map((item) => item.url),
-      ...pendingPlaylistQueueItems.map((item) => item.url),
-    ]);
-  }
-
-  function flushAllPendingPlaylistQueueItems(): void {
-    if (pendingPlaylistQueueItems.length === 0) return;
-
-    playlistInsertFramePending = false;
-    queue = [...queue, ...pendingPlaylistQueueItems];
-    pendingPlaylistQueueItems = [];
-  }
-
-  function flushPendingPlaylistQueueItems(): void {
-    playlistInsertFramePending = false;
-    if (pendingPlaylistQueueItems.length === 0) return;
-
-    const batch = pendingPlaylistQueueItems.slice(0, PLAYLIST_INSERT_BATCH_SIZE);
-    pendingPlaylistQueueItems = pendingPlaylistQueueItems.slice(batch.length);
-    queue = [...queue, ...batch];
-
-    if (pendingPlaylistQueueItems.length > 0) {
-      playlistInsertFramePending = true;
-      requestAnimationFrame(flushPendingPlaylistQueueItems);
-    }
-  }
-
-  function appendQueueItemsInBatches(items: QueueItem[]): void {
-    if (items.length === 0) return;
-
-    pendingPlaylistQueueItems = [...pendingPlaylistQueueItems, ...items];
-    if (!playlistInsertFramePending) {
-      playlistInsertFramePending = true;
-      requestAnimationFrame(flushPendingPlaylistQueueItems);
-    }
-  }
-
-  function getActiveDownloadCount(): number {
-    let activeCount = 0;
-    for (const item of queue) {
-      if (isActiveStatus(item.status)) {
-        activeCount += 1;
-      }
-    }
-    return activeCount;
-  }
-
-  function getNextPendingDownloadId(): string | null {
-    const prioritizedItemStillQueued =
-      priorityDownloadId &&
-      pendingDownloadIds.includes(priorityDownloadId) &&
-      queue.some(
-        (item) =>
-          item.id === priorityDownloadId && isEditablePendingStatus(item.status)
-      )
-        ? priorityDownloadId
-        : null;
-
-    if (priorityDownloadId && !prioritizedItemStillQueued) {
-      priorityDownloadId = null;
-    }
-
-    return findNextRunnablePendingId(
-      pendingDownloadIds,
-      prioritizedItemStillQueued,
-      editingTitleId,
-    );
-  }
-
-  function clearPendingQueue(resetQueuedToReady = true): void {
-    const pendingIds = new Set(pendingDownloadIds);
-    if (priorityDownloadId) {
-      pendingIds.add(priorityDownloadId);
-    }
-
-    pendingDownloadIds = [];
-    priorityDownloadId = null;
-
-    if (!resetQueuedToReady || pendingIds.size === 0) return;
-
-    queue = queue.map((item) =>
-      pendingIds.has(item.id) && item.status === "queued"
-        ? { ...item, status: "ready" }
-        : item
-    );
+    return new Set(queue.map((item) => item.url));
   }
 
   function canRetryItem(item: QueueItem): boolean {
-    return item.status === "error" || item.status === "cancelled";
+    return item.status === 'error' || item.status === 'cancelled';
   }
 
   function toggleDiagnostics(itemId: string): void {
     queue = queue.map((item) =>
-      item.id === itemId
-        ? { ...item, diagnosticsOpen: !item.diagnosticsOpen }
-        : item,
+      item.id === itemId ? { ...item, diagnosticsOpen: !item.diagnosticsOpen } : item
     );
   }
 
@@ -1015,171 +1251,51 @@
       runtimeStatus?.tools
         .map(
           (tool) =>
-            `${tool.name}: ${tool.available ? tool.version ?? "available" : "missing"} (${tool.source}) ${tool.path ?? ""}`,
+            `${tool.name}: ${tool.available ? (tool.version ?? 'available') : 'missing'} (${tool.source})`
         )
-        .join("\n") ?? "Runtime status unavailable";
+        .join('\n') ?? 'Runtime status unavailable';
 
-    return [
-      `Title: ${getQueueItemDisplayTitle(item)}`,
-      `URL: ${item.url}`,
-      `Format: ${item.format}`,
-      `Quality: ${item.quality}`,
-      `Status: ${item.status}`,
-      `Phase: ${item.phase ?? "n/a"}`,
-      `Error code: ${item.errorCode ?? "n/a"}`,
-      `Error: ${item.error ?? "n/a"}`,
-      "",
-      "Detail:",
-      item.errorDetail ?? "No backend detail captured.",
-      "",
-      "Runtime:",
-      runtimeLines,
-      runtimeStatus?.message ? `Runtime message: ${runtimeStatus.message}` : "",
-    ]
-      .filter((line) => line !== "")
-      .join("\n");
+    return redactDiagnosticText(
+      [
+        `Title: ${getQueueItemDisplayTitle(item)}`,
+        `Format: ${item.format}`,
+        `Quality: ${item.quality}`,
+        `Status: ${item.status}`,
+        `Phase: ${item.phase ?? 'n/a'}`,
+        `Error code: ${item.errorCode ?? 'n/a'}`,
+        `Error: ${item.error ?? 'n/a'}`,
+        '',
+        'Detail:',
+        redactDiagnosticText(item.errorDetail ?? 'No backend detail captured.'),
+        '',
+        'Runtime:',
+        runtimeLines,
+        runtimeStatus?.message ? `Runtime message: ${runtimeStatus.message}` : ''
+      ]
+        .filter((line) => line !== '')
+        .join('\n')
+    );
   }
 
   async function copyDiagnostics(item: QueueItem): Promise<void> {
     await navigator.clipboard.writeText(buildDiagnostics(item));
   }
 
-  function enqueueItems(itemIds: string[], prioritize = false): void {
-    const enqueueIds: string[] = [];
-
-    for (const itemId of itemIds) {
-      const item = queue.find((queueItem) => queueItem.id === itemId);
-      if (!item || !isEditablePendingStatus(item.status) || enqueueIds.includes(itemId)) {
-        continue;
-      }
-
-      enqueueIds.push(itemId);
-    }
-
-    if (enqueueIds.length === 0) return;
-
-    const queuedIds = new Set(enqueueIds);
-    queue = queue.map((item) =>
-      queuedIds.has(item.id) && item.status === "ready"
-        ? { ...item, status: "queued" }
-        : item
-    );
-
-    const knownPendingIds = new Set(pendingDownloadIds);
-    pendingDownloadIds = [
-      ...pendingDownloadIds,
-      ...enqueueIds.filter((itemId) => !knownPendingIds.has(itemId)),
-    ];
-
-    if (prioritize) {
-      priorityDownloadId = enqueueIds[0] ?? priorityDownloadId;
-    }
-
-    void pumpDownloadQueue();
-  }
-
-  async function startDownloadForItemId(itemId: string): Promise<boolean> {
-    const idx = queue.findIndex((queueItem) => queueItem.id === itemId);
-    if (idx === -1 || !isEditablePendingStatus(queue[idx].status)) {
-      return false;
-    }
-
-    const downloadId = genId();
-    const cookieConfig = getCookieConfigSnapshot();
-    const request: DownloadRequest = {
-      url: queue[idx].url,
-      quality: queue[idx].quality,
-      format: queue[idx].format,
-      output_dir: outputDir,
-      cookie_config: cookieConfig,
-      filename_override: queue[idx].customFilename,
-      compat_config_path: getCompatConfigSnapshot(),
-    };
-
-    clearProgressDisplayState(itemId);
-    queue[idx] = {
-      ...queue[idx],
-      downloadId,
-      cookieConfig,
-      status: "downloading",
-      error: null,
-      errorCode: null,
-      errorDetail: null,
-      diagnosticsOpen: false,
-      progress: 0,
-      downloadProgress: 0,
-      conversionProgress: null,
-      phase: "download",
-      speed: "",
-      eta: "",
-    };
-
+  async function enqueueItems(itemIds: string[], prioritize = false): Promise<void> {
+    const uniqueIds = [...new Set(itemIds)];
+    if (uniqueIds.length === 0 || !canStartDownloads) return;
+    queueActionError = null;
     try {
-      await invoke("start_download", { downloadId, request });
-      return true;
+      await invoke('enqueue_queue_items', {
+        itemIds: uniqueIds,
+        priority: prioritize ? 'front' : 'normal'
+      });
     } catch (error) {
-      clearProgressDisplayState(itemId);
-      const currentIdx = queue.findIndex((queueItem) => queueItem.id === itemId);
-      if (currentIdx !== -1) {
-        queue[currentIdx] = {
-          ...queue[currentIdx],
-          downloadId: null,
-          status: "error",
-          speed: "",
-          eta: "",
-          error: normalizeDownloadError(String(error)),
-          errorCode: "start_failed",
-          errorDetail: String(error),
-          diagnosticsOpen: true,
-        };
-      }
-
-      return false;
+      queueActionError = normalizeAppError(error);
     }
   }
 
-  async function pumpDownloadQueue(): Promise<void> {
-    if (schedulerRunning || schedulerPaused) return;
-
-    schedulerRunning = true;
-
-    try {
-      while (
-        pendingDownloadIds.length > 0 &&
-        getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS
-      ) {
-        const nextId = getNextPendingDownloadId();
-        if (!nextId) {
-          break;
-        }
-
-        pendingDownloadIds = pendingDownloadIds.filter((itemId) => itemId !== nextId);
-        if (priorityDownloadId === nextId) {
-          priorityDownloadId = null;
-        }
-        await startDownloadForItemId(nextId);
-      }
-    } finally {
-      schedulerRunning = false;
-      const nextPendingId = getNextPendingDownloadId();
-
-      if (
-        !schedulerPaused &&
-        nextPendingId &&
-        getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
-        nextPendingId !== editingTitleId
-      ) {
-        queueMicrotask(() => {
-          void pumpDownloadQueue();
-        });
-      }
-    }
-  }
-
-  function resolveQualitySelection(
-    requestedQuality: string,
-    availableQualities: string[]
-  ): string {
+  function resolveQualitySelection(requestedQuality: string, availableQualities: string[]): string {
     return resolveAvailableQuality(requestedQuality, availableQualities);
   }
 
@@ -1189,9 +1305,13 @@
 
   function sanitizeFilenameDraft(value: string): string {
     let cleaned = value.trim();
-    if (!cleaned) return "";
+    if (!cleaned) return '';
 
-    cleaned = cleaned.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_");
+    cleaned = Array.from(cleaned, (character) =>
+      character.charCodeAt(0) <= 0x1f || WINDOWS_INVALID_FILENAME_CHARS.includes(character)
+        ? '_'
+        : character
+    ).join('');
 
     for (const extension of [...videoFormats, ...audioFormats]) {
       const suffix = `.${extension}`;
@@ -1201,10 +1321,10 @@
       }
     }
 
-    cleaned = cleaned.trim().replace(/[. ]+$/g, "");
-    if (!cleaned) return "";
+    cleaned = cleaned.trim().replace(/[. ]+$/g, '');
+    if (!cleaned) return '';
 
-    const dotIndex = cleaned.indexOf(".");
+    const dotIndex = cleaned.indexOf('.');
     const deviceStem = (dotIndex === -1 ? cleaned : cleaned.slice(0, dotIndex)).toUpperCase();
     if (WINDOWS_RESERVED_FILENAME_STEMS.has(deviceStem)) {
       cleaned =
@@ -1213,7 +1333,7 @@
           : `${cleaned.slice(0, dotIndex)}_${cleaned.slice(dotIndex)}`;
     }
 
-    let bounded = "";
+    let bounded = '';
     let utf16Units = 0;
     for (const character of cleaned) {
       if (utf16Units + character.length > MAX_CUSTOM_FILENAME_UTF16_UNITS) break;
@@ -1221,7 +1341,7 @@
       utf16Units += character.length;
     }
 
-    return bounded.trim().replace(/[. ]+$/g, "");
+    return bounded.trim().replace(/[. ]+$/g, '');
   }
 
   function canEditFilename(item: QueueItem): boolean {
@@ -1232,79 +1352,82 @@
     if (!canEditFilename(item)) return;
 
     if (editingTitleId && editingTitleId !== item.id) {
-      commitFilenameEdit(editingTitleId);
+      await commitFilenameEdit(editingTitleId);
       if (editingTitleId) return;
     }
 
     editingTitleId = item.id;
     editingTitleDraft = getQueueItemDisplayTitle(item);
-    filenameEditError = "";
+    filenameEditError = '';
 
     await tick();
     titleEditorInput?.focus();
     titleEditorInput?.select();
   }
 
-  function commitFilenameEdit(itemId: string | null = editingTitleId): void {
+  async function commitFilenameEdit(itemId: string | null = editingTitleId): Promise<void> {
     if (!itemId) return;
 
     const idx = queue.findIndex((item) => item.id === itemId);
     if (idx === -1) {
       editingTitleId = null;
-      editingTitleDraft = "";
-      filenameEditError = "";
+      editingTitleDraft = '';
+      filenameEditError = '';
       titleEditorInput = null;
       return;
     }
 
     const cleaned = sanitizeFilenameDraft(editingTitleDraft);
     if (!cleaned) {
-      filenameEditError = "Filename must contain at least one valid character.";
+      filenameEditError = 'Filename must contain at least one valid character.';
       return;
     }
-    const customFilename =
-      cleaned && cleaned !== queue[idx].title ? cleaned : null;
+    const customFilename = cleaned && cleaned !== queue[idx].title ? cleaned : null;
 
-    queue[idx] = {
-      ...queue[idx],
-      customFilename,
-    };
-
-    editingTitleId = null;
-    editingTitleDraft = "";
-    filenameEditError = "";
-    titleEditorInput = null;
-    void pumpDownloadQueue();
+    try {
+      await invoke('update_queue_item', {
+        itemId,
+        input: { filenameOverride: customFilename }
+      });
+      editingTitleId = null;
+      editingTitleDraft = '';
+      filenameEditError = '';
+      titleEditorInput = null;
+    } catch (error) {
+      filenameEditError = normalizeAppError(error);
+    }
   }
 
   function cancelFilenameEdit(): void {
     editingTitleId = null;
-    editingTitleDraft = "";
-    filenameEditError = "";
+    editingTitleDraft = '';
+    filenameEditError = '';
     titleEditorInput = null;
-    void pumpDownloadQueue();
   }
 
   function handleFilenameEditorKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       event.preventDefault();
-      commitFilenameEdit();
-    } else if (event.key === "Escape") {
+      void commitFilenameEdit();
+    } else if (event.key === 'Escape') {
       event.preventDefault();
       cancelFilenameEdit();
     }
   }
 
   function closePlaylistModal(): void {
+    const inspectionOperationId = playlistModal?.inspectionOperationId;
     playlistModal = null;
     playlistPage = 0;
+    if (inspectionOperationId) {
+      void invoke('dismiss_operation', { operationId: inspectionOperationId }).catch((error) => {
+        queueActionError = `Could not dismiss completed inspection: ${normalizeAppError(error)}`;
+      });
+    }
   }
 
   function getPlaylistPageCount(): number {
-    return Math.max(
-      1,
-      Math.ceil((playlistModal?.entries.length ?? 0) / PLAYLIST_PAGE_SIZE),
-    );
+    return Math.max(1, Math.ceil((playlistModal?.entries.length ?? 0) / PLAYLIST_PAGE_SIZE));
   }
 
   function getVisiblePlaylistEntries(): Array<{
@@ -1319,10 +1442,7 @@
   }
 
   function changePlaylistPage(delta: number): void {
-    playlistPage = Math.min(
-      getPlaylistPageCount() - 1,
-      Math.max(0, playlistPage + delta),
-    );
+    playlistPage = Math.min(getPlaylistPageCount() - 1, Math.max(0, playlistPage + delta));
   }
 
   function openUpdateModal(): void {
@@ -1334,22 +1454,13 @@
     updateModalOpen = false;
   }
 
-  function handleWindowKeydown(event: KeyboardEvent): void {
-    if (event.key !== "Escape") return;
-
-    if (updateModalOpen && !updateInstallRunning) {
-      closeUpdateModal();
-      return;
-    }
-
-    if (playlistModal) {
-      closePlaylistModal();
-    }
-  }
-
   function handleQueueSelectionChange(event: Event): void {
     const checked = (event.currentTarget as HTMLInputElement).checked;
     queue = queue.map((item) => ({ ...item, selected: checked }));
+  }
+
+  function handleQueueScroll(event: Event): void {
+    queueScrollTop = (event.currentTarget as HTMLElement).scrollTop;
   }
 
   function handlePlaylistSelectionToggle(event: Event): void {
@@ -1360,7 +1471,7 @@
   async function browseCookieFile(): Promise<void> {
     const file = pickFirstPath(
       await open({
-        filters: [{ name: "Cookie Files", extensions: ["txt"] }],
+        filters: [{ name: 'Cookie Files', extensions: ['txt'] }]
       })
     );
 
@@ -1373,11 +1484,11 @@
         multiple: false,
         filters: [
           {
-            name: "yt-dlp config",
-            extensions: ["conf", "txt"],
-          },
-        ],
-      }),
+            name: 'yt-dlp config',
+            extensions: ['conf', 'txt']
+          }
+        ]
+      })
     );
 
     if (file) compatConfigPath = file;
@@ -1385,33 +1496,76 @@
 
   async function browseOutputDir(): Promise<void> {
     const dir = pickFirstPath(await open({ directory: true }));
-    if (dir) outputDir = dir;
+    if (!dir) return;
+
+    outputDir = dir;
+    if (await validateOutputDirectory(dir)) {
+      setStartupSubsystem('outputDirectory', 'ready');
+      await Promise.all(
+        queue
+          .filter((item) => isEditablePendingStatus(item.status))
+          .map((item) => updateQueueItemSettings(item, { outputDir }))
+      );
+    } else {
+      setStartupSubsystem('outputDirectory', 'error');
+    }
+  }
+
+  async function exportDiagnostics(): Promise<void> {
+    diagnosticsError = null;
+    diagnosticsMessage = null;
+    const destination = await save({
+      defaultPath: 'nuclear-downloader-diagnostics.jsonl',
+      filters: [{ name: 'JSON Lines', extensions: ['jsonl'] }]
+    });
+    if (!destination) return;
+
+    try {
+      await invoke('export_diagnostics', { destination });
+      diagnosticsMessage = 'Diagnostics exported successfully.';
+    } catch (error) {
+      diagnosticsError = normalizeAppError(error);
+    }
+  }
+
+  async function clearDiagnostics(): Promise<void> {
+    diagnosticsError = null;
+    diagnosticsMessage = null;
+    if (!window.confirm('Clear all local Nuclear Downloader diagnostics logs?')) return;
+    try {
+      await invoke('clear_diagnostics');
+      diagnosticsMessage = 'Local diagnostics were cleared.';
+    } catch (error) {
+      diagnosticsError = normalizeAppError(error);
+    }
   }
 
   async function checkForAppUpdate(options: {
     openModal: boolean;
     showErrors: boolean;
-  }): Promise<void> {
-    if (updateCheckState === "checking") {
+  }): Promise<boolean> {
+    if (updateCheckState === 'checking') {
       if (options.openModal) updateModalOpen = true;
-      return;
+      return false;
     }
 
-    updateCheckState = "checking";
+    updateCheckState = 'checking';
     if (options.openModal) updateModalOpen = true;
     if (options.showErrors) updateError = null;
     if (!updateInstallRunning) updateInstallProgress = null;
 
     try {
-      const result = await invoke<UpdateCheckResult>("check_for_app_update");
+      const result = await invoke('check_app_update');
       updateInfo = result;
       appVersion = result.currentVersion;
+      return true;
     } catch (error) {
       if (options.showErrors) {
         updateError = normalizeAppError(error);
       }
+      return false;
     } finally {
-      updateCheckState = "idle";
+      updateCheckState = 'idle';
     }
   }
 
@@ -1423,8 +1577,14 @@
     const targetVersion = updateInfo?.latestVersion;
     if (!targetVersion || !updateInfo?.hasUpdate || updateInstallRunning) return;
 
+    if (runtimeUpdateRunning) {
+      updateError = 'Wait for the downloader runtime update to finish.';
+      updateModalOpen = true;
+      return;
+    }
+
     if (hasUpdateBlockingWork()) {
-      updateError = "Finish or cancel queued downloads before installing the app update.";
+      updateError = 'Finish or cancel queued downloads before installing the app update.';
       updateModalOpen = true;
       return;
     }
@@ -1433,17 +1593,21 @@
     updateModalOpen = true;
     updateInstallRunning = true;
     updateInstallProgress = {
-      status: "downloading",
+      status: 'downloading',
       version: targetVersion,
       downloadedBytes: 0,
       totalBytes: null,
-      message: "Preparing update download...",
+      message: 'Preparing update download...'
     };
 
     try {
-      await invoke("install_app_update", {
-        expectedVersion: targetVersion,
+      const result = await invoke('begin_app_update', {
+        expectedVersion: targetVersion
       });
+      const operation = await waitForOperation(result.operationId);
+      if (operation.state === 'failed') {
+        throw operation.error ?? new Error('Application update failed.');
+      }
     } catch (error) {
       updateError = normalizeAppError(error);
     } finally {
@@ -1452,15 +1616,77 @@
   }
 
   // -- Actions --
+  async function inspectWithBackend(
+    url: string,
+    cookieConfig: CookieConfig | null
+  ): Promise<CompletedInspection> {
+    const result = await invoke('begin_inspection', {
+      input: {
+        url,
+        cookieConfig,
+        compatConfigPath: getCompatConfigSnapshot()
+      }
+    });
+    activeInspectionId = result.operationId;
+    const operation = await waitForOperation(result.operationId, 5 * 60 * 1000);
+    if (operation.state === 'cancelled') throw new Error('URL inspection was cancelled.');
+    if (operation.state !== 'completed' || !operation.inspectionResult) {
+      throw operation.error ?? new Error('URL inspection did not produce a result.');
+    }
+    return {
+      operationId: result.operationId,
+      inspection: operation.inspectionResult as UrlInspection
+    };
+  }
+
+  async function addInspectedVideo(
+    info: VideoInfo,
+    inspectionOperationId: string,
+    cookieConfig: CookieConfig | null
+  ): Promise<QueueItemRecord> {
+    metadataByUrl.set(info.url, {
+      duration: info.duration,
+      channel: info.channel,
+      thumbnail: info.thumbnail
+    });
+    const availableQualities = ['best', ...info.available_qualities];
+    try {
+      return await invoke('add_inspection_result_to_queue', {
+        input: {
+          inspectionOperationId,
+          format: resolveAvailableFormat(globalFormat, info.has_audio, 'mp4'),
+          quality: resolveQualitySelection(globalQuality, availableQualities),
+          outputDir,
+          cookieConfig,
+          filenameOverride: null,
+          compatConfigPath: getCompatConfigSnapshot()
+        }
+      });
+    } catch (error) {
+      // The authoritative inspection is single-use. If queue admission fails,
+      // release its potentially large transient metadata before surfacing the
+      // original error.
+      await invoke('dismiss_operation', { operationId: inspectionOperationId }).catch(
+        () => undefined
+      );
+      throw error;
+    }
+  }
+
   async function addToQueue(): Promise<void> {
     if (playlistLoading) return;
 
-    urlError = "";
+    urlError = '';
     const url = urlInput.trim();
     if (!url) return;
 
-    if (!runtimeCanDownload()) {
-      urlError = "Downloader runtime is not ready.";
+    if (!canStartDownloads) {
+      urlError =
+        startupState === 'error'
+          ? 'Work is disabled because renderer event delivery could not be initialized. Restart the app.'
+          : !runtimeCanDownload()
+            ? 'Downloader runtime is not ready.'
+            : (outputDirError ?? 'Choose a validated output folder before adding work.');
       return;
     }
 
@@ -1468,59 +1694,56 @@
     try {
       parsedUrl = new URL(url);
     } catch {
-      urlError = "Please enter a valid URL (must start with http:// or https://)";
+      urlError = 'Please enter a valid URL (must start with http:// or https://)';
       return;
     }
-    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-      urlError = "Please enter a valid URL (must start with http:// or https://)";
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      urlError = 'Please enter a valid URL (must start with http:// or https://)';
       return;
     }
 
     if (getQueueUrls().has(url)) {
-      urlError = "URL already in queue";
+      urlError = 'URL already in queue';
       return;
     }
 
     const cookieConfig = getCookieConfigSnapshot();
-    const inspectionId = genId();
-    activeInspectionId = inspectionId;
     inspectionCancelRequested = false;
     playlistLoading = true;
 
     try {
-      const inspection = await invoke<UrlInspection>("inspect_url", {
-        inspectionId,
-        url,
-        cookieConfig,
-        compatConfigPath: getCompatConfigSnapshot(),
-      });
+      const completedInspection = await inspectWithBackend(url, cookieConfig);
+      const inspection = completedInspection.inspection;
 
-      if (inspectionCancelRequested || activeInspectionId !== inspectionId) return;
+      if (inspectionCancelRequested) {
+        await invoke('dismiss_operation', { operationId: completedInspection.operationId });
+        return;
+      }
 
-      urlInput = "";
-      if (inspection.kind === "playlist") {
+      urlInput = '';
+      if (inspection.kind === 'playlist') {
         const info = inspection.playlist;
         playlistPage = 0;
         playlistModal = {
           info,
+          inspectionOperationId: completedInspection.operationId,
           url,
-          entries: info.entries.map((entry) => ({ ...entry, selected: true })),
+          cookieConfig: cookieConfig ? { ...cookieConfig } : null,
+          entries: info.entries.map((entry) => ({ ...entry, selected: true }))
         };
         return;
       }
 
-      addInspectedVideo(inspection.video, cookieConfig);
+      await addInspectedVideo(inspection.video, completedInspection.operationId, cookieConfig);
     } catch (error) {
-      const message = normalizeDownloadError(String(error));
-      if (!inspectionCancelRequested && !message.toLowerCase().includes("cancelled")) {
-        urlError = "Failed to inspect URL: " + message;
+      const message = normalizeDownloadError(normalizeAppError(error));
+      if (!inspectionCancelRequested && !message.toLowerCase().includes('cancelled')) {
+        urlError = 'Failed to inspect URL: ' + message;
       }
     } finally {
-      if (activeInspectionId === inspectionId) {
-        activeInspectionId = null;
-        playlistLoading = false;
-        inspectionCancelRequested = false;
-      }
+      activeInspectionId = null;
+      playlistLoading = false;
+      inspectionCancelRequested = false;
     }
   }
 
@@ -1530,151 +1753,52 @@
 
     inspectionCancelRequested = true;
     try {
-      await invoke("cancel_inspection", { inspectionId });
+      await invoke('cancel_operation', { operationId: inspectionId });
     } catch (error) {
-      urlError = "Failed to cancel inspection: " + normalizeDownloadError(String(error));
+      urlError = 'Failed to cancel inspection: ' + normalizeDownloadError(normalizeAppError(error));
     }
   }
 
-  function addInspectedVideo(
-    info: VideoInfo,
-    cookieConfig: CookieConfig | null,
-  ): void {
-    const availableQualities = ["best", ...info.available_qualities];
-    const item: QueueItem = {
-      id: genId(),
-      downloadId: null,
-      url: info.url,
-      title: info.title,
-      customFilename: null,
-      duration: info.duration,
-      channel: info.channel,
-      thumbnail: info.thumbnail,
-      infoLoaded: true,
-      status: "ready",
-      quality: resolveQualitySelection(globalQuality, availableQualities),
-      format: globalFormat,
-      cookieConfig,
-      availableQualities,
-      progress: 0,
-      downloadProgress: 0,
-      conversionProgress: null,
-      phase: null,
-      speed: "",
-      eta: "",
-      error: null,
-      errorCode: null,
-      errorDetail: null,
-      diagnosticsOpen: false,
-      filename: null,
-      selected: false,
-    };
-
-    queue = [...queue, item];
-  }
-
-  async function fetchVideoInfoForItem(
-    itemId: string,
-    url: string,
-    cookieConfig: CookieConfig | null
-  ): Promise<void> {
-    try {
-      const inspection = await invoke<UrlInspection>("inspect_url", {
-        inspectionId: genId(),
-        url,
-        cookieConfig,
-        compatConfigPath: getCompatConfigSnapshot(),
-      });
-      if (inspection.kind !== "video") {
-        throw new Error("This URL now resolves to a playlist. Add it again to choose entries.");
-      }
-      const info = inspection.video;
-
-      const idx = queue.findIndex((item) => item.id === itemId);
-      if (idx === -1) return;
-
-      const availableQualities = ["best", ...info.available_qualities];
-
-      queue[idx] = {
-        ...queue[idx],
-        title: info.title,
-        duration: info.duration,
-        channel: info.channel,
-        thumbnail: info.thumbnail,
-        infoLoaded: true,
-        cookieConfig,
-        availableQualities,
-        quality: resolveQualitySelection(queue[idx].quality, availableQualities),
-        status: "ready",
-        error: null,
-        errorCode: null,
-        errorDetail: null,
-        diagnosticsOpen: false,
-      };
-    } catch (error) {
-      const idx = queue.findIndex((item) => item.id === itemId);
-      if (idx === -1) return;
-
-      queue[idx] = {
-        ...queue[idx],
-        title: "Error",
-        infoLoaded: false,
-        cookieConfig,
-        status: "error",
-        error: normalizeDownloadError(String(error)),
-        errorCode: "fetch_failed",
-        errorDetail: String(error),
-        diagnosticsOpen: true,
-      };
-    }
-  }
-
-  function addPlaylistSelection(): void {
+  async function addPlaylistSelection(): Promise<void> {
     const modal = playlistModal;
     if (!modal) return;
 
     const selectedEntries = modal.entries.filter((entry) => entry.selected);
     const queuedUrls = getQueueUrls();
-    const cookieConfig = getCookieConfigSnapshot();
-    const newItems: QueueItem[] = [];
-    urlInput = "";
+    const cookieConfig = modal.cookieConfig ? { ...modal.cookieConfig } : null;
+    urlInput = '';
     closePlaylistModal();
+    playlistLoading = true;
+    inspectionCancelRequested = false;
+    const failures: string[] = [];
 
-    for (const entry of selectedEntries) {
-      if (!queuedUrls.has(entry.url)) {
-        newItems.push({
-          id: genId(),
-          downloadId: null,
-          url: entry.url,
-          title: entry.title || entry.id,
-          customFilename: null,
-          duration: entry.duration,
-          channel: modal.info.channel,
-          thumbnail: entry.thumbnail,
-          infoLoaded: true,
-          status: "ready",
-          quality: globalQuality,
-          format: globalFormat,
-          cookieConfig,
-          availableQualities: createDefaultQualityOptions(),
-          progress: 0,
-          downloadProgress: 0,
-          conversionProgress: null,
-          phase: null,
-          speed: "",
-          eta: "",
-          error: null,
-          errorCode: null,
-          errorDetail: null,
-          diagnosticsOpen: false,
-          filename: null,
-          selected: false,
-        });
-        queuedUrls.add(entry.url);
+    try {
+      for (const entry of selectedEntries) {
+        if (inspectionCancelRequested) break;
+        if (queuedUrls.has(entry.url)) continue;
+        try {
+          const completedInspection = await inspectWithBackend(entry.url, cookieConfig);
+          const inspection = completedInspection.inspection;
+          if (inspection.kind !== 'video') {
+            await invoke('dismiss_operation', { operationId: completedInspection.operationId });
+            throw new Error('A selected playlist entry unexpectedly resolved to another playlist.');
+          }
+          await addInspectedVideo(inspection.video, completedInspection.operationId, cookieConfig);
+          queuedUrls.add(entry.url);
+        } catch (error) {
+          if (inspectionCancelRequested) break;
+          failures.push(`${entry.title ?? entry.id}: ${normalizeAppError(error)}`);
+        }
       }
+    } finally {
+      activeInspectionId = null;
+      playlistLoading = false;
+      inspectionCancelRequested = false;
     }
 
-    appendQueueItemsInBatches(newItems);
+    if (failures.length > 0) {
+      urlError = `Some playlist entries could not be added. ${failures.slice(0, 3).join(' ')}`;
+    }
   }
 
   function toggleAllPlaylist(checked: boolean): void {
@@ -1685,186 +1809,223 @@
       ...modal,
       entries: modal.entries.map((entry) => ({
         ...entry,
-        selected: checked,
-      })),
+        selected: checked
+      }))
     };
   }
 
   async function downloadItem(item: QueueItem): Promise<void> {
-    const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
-    if (idx === -1 || !isEditablePendingStatus(queue[idx].status)) return;
-
-    if (
-      !schedulerPaused &&
-      pendingDownloadIds.length === 0 &&
-      getActiveDownloadCount() < MAX_PARALLEL_DOWNLOADS &&
-      !schedulerRunning
-    ) {
-      await startDownloadForItemId(item.id);
-      return;
-    }
-
-    enqueueItems([item.id], true);
+    if (!canStartDownloads) return;
+    if (!isEditablePendingStatus(item.status)) return;
+    await enqueueItems([item.id], true);
   }
 
   async function downloadAll(): Promise<void> {
-    flushAllPendingPlaylistQueueItems();
-    const readyIds = queue
-      .filter((item) => item.status === "ready")
-      .map((item) => item.id);
-    enqueueItems(readyIds);
+    if (!canStartDownloads) return;
+    const readyIds = queue.filter((item) => item.status === 'ready').map((item) => item.id);
+    await enqueueItems(readyIds);
   }
 
   async function downloadSelected(): Promise<void> {
-    flushAllPendingPlaylistQueueItems();
+    if (!canStartDownloads) return;
     const selectedIds = queue
-      .filter(
-      (item) => item.selected && item.status === "ready"
-    )
+      .filter((item) => item.selected && item.status === 'ready')
       .map((item) => item.id);
-    enqueueItems(selectedIds);
+    await enqueueItems(selectedIds);
   }
 
   async function cancelItem(item: QueueItem): Promise<void> {
     if (!item.downloadId) return;
 
+    const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
+    if (idx === -1) return;
+    const previousStatus = queue[idx].status;
+    queue[idx] = {
+      ...queue[idx],
+      status: 'cancelling',
+      error: null,
+      errorCode: null,
+      errorDetail: null
+    };
+
     try {
-      await invoke("cancel_download", { downloadId: item.downloadId });
-    } catch {
-      // already done
+      await invoke('cancel_operation', { operationId: item.downloadId });
+    } catch (error) {
+      const currentIdx = queue.findIndex((queueItem) => queueItem.id === item.id);
+      if (currentIdx !== -1 && queue[currentIdx].status === 'cancelling') {
+        queue[currentIdx] = {
+          ...queue[currentIdx],
+          status: previousStatus,
+          error: `Cancellation failed: ${normalizeAppError(error)}`,
+          errorCode: 'cancel_failed',
+          errorDetail: appErrorDetail(error),
+          diagnosticsOpen: true
+        };
+      }
     }
   }
 
   async function cancelAll(): Promise<void> {
-    schedulerPaused = true;
-    clearPendingQueue();
+    cancelAllError = null;
 
     try {
-      await invoke("cancel_all_downloads");
-    } finally {
-      schedulerPaused = false;
-      void pumpDownloadQueue();
+      const result = await invoke('cancel_all_downloads');
+      if (!result.idle) {
+        const count = result.remainingOperationIds.length;
+        cancelAllError = `Cancellation timed out with ${count} operation${count === 1 ? '' : 's'} still stopping. New work remains paused.`;
+      }
+    } catch (error) {
+      cancelAllError = `Cancel all did not drain cleanly: ${normalizeAppError(error)}`;
     }
   }
 
   async function retryItem(item: QueueItem): Promise<void> {
-    const idx = queue.findIndex((queueItem) => queueItem.id === item.id);
-    if (idx === -1 || !canRetryItem(queue[idx])) return;
-
+    if (!canRetryItem(item)) return;
     clearProgressDisplayState(item.id);
-    if (!queue[idx].infoLoaded) {
-      queue[idx] = {
-        ...queue[idx],
-        title: "Fetching info...",
-        status: "fetching",
-        error: null,
-        errorCode: null,
-        errorDetail: null,
-        diagnosticsOpen: false,
-        progress: 0,
-        downloadProgress: 0,
-        conversionProgress: null,
-        phase: null,
-        speed: "",
-        eta: "",
-        downloadId: null,
-        filename: null,
-      };
-      await fetchVideoInfoForItem(
-        queue[idx].id,
-        queue[idx].url,
-        getCookieConfigSnapshot()
-      );
-      return;
-    }
-
-    queue[idx] = {
-      ...queue[idx],
-      status: "ready",
-      error: null,
-      errorCode: null,
-      errorDetail: null,
-      diagnosticsOpen: false,
-      progress: 0,
-      downloadProgress: 0,
-      conversionProgress: null,
-      phase: null,
-      speed: "",
-      eta: "",
-      downloadId: null,
-      filename: null,
-    };
-
-    await downloadItem(queue[idx]);
+    await enqueueItems([item.id], true);
   }
 
-  function removeSelected(): void {
-    const removableIds = new Set(
+  async function removeSelected(): Promise<void> {
+    const removableIds = queue
+      .filter((item) => item.selected && !isActiveStatus(item.status))
+      .map((item) => item.id);
+    if (removableIds.length === 0) return;
+    queueActionError = null;
+    try {
+      await invoke('remove_queue_items', { itemIds: removableIds });
+      if (editingTitleId && removableIds.includes(editingTitleId)) cancelFilenameEdit();
+    } catch (error) {
+      queueActionError = normalizeAppError(error);
+    }
+  }
+
+  async function clearCompleted(): Promise<void> {
+    const itemIds = queue
+      .filter((item) => item.status === 'completed' || item.status === 'cancelled')
+      .map((item) => item.id);
+    if (itemIds.length === 0) return;
+    try {
+      await invoke('remove_queue_items', { itemIds });
+    } catch (error) {
+      queueActionError = normalizeAppError(error);
+    }
+  }
+
+  async function updateQueueItemSettings(
+    item: QueueItem,
+    input: {
+      format?: OutputFormat;
+      quality?: string;
+      outputDir?: string;
+      filenameOverride?: string | null;
+    }
+  ): Promise<void> {
+    queueActionError = null;
+    try {
+      await invoke('update_queue_item', { itemId: item.id, input });
+    } catch (error) {
+      queueActionError = normalizeAppError(error);
+      await reloadAppSnapshot().catch(() => undefined);
+    }
+  }
+
+  async function applyGlobalQuality(): Promise<void> {
+    await Promise.all(
       queue
-        .filter((item) => item.selected && !isActiveStatus(item.status))
-        .map((item) => item.id)
-    );
-
-    if (removableIds.size === 0) return;
-
-    for (const itemId of removableIds) {
-      clearProgressDisplayState(itemId);
-    }
-
-    queue = queue.filter((item) => !removableIds.has(item.id));
-    pendingDownloadIds = pendingDownloadIds.filter((itemId) => !removableIds.has(itemId));
-    if (priorityDownloadId && removableIds.has(priorityDownloadId)) {
-      priorityDownloadId = null;
-    }
-
-    if (editingTitleId && removableIds.has(editingTitleId)) {
-      cancelFilenameEdit();
-    }
-  }
-
-  function clearCompleted(): void {
-    for (const item of queue) {
-      if (item.status === "completed" || item.status === "cancelled") {
-        clearProgressDisplayState(item.id);
-      }
-    }
-
-    queue = queue.filter(
-      (item) => item.status !== "completed" && item.status !== "cancelled"
+        .filter((item) => isEditablePendingStatus(item.status))
+        .map((item) =>
+          updateQueueItemSettings(item, {
+            quality: resolveQualitySelection(globalQuality, item.availableQualities)
+          })
+        )
     );
   }
 
-  function applyGlobalQuality(): void {
-    queue = queue.map((item) =>
-      isEditablePendingStatus(item.status)
-        ? {
-            ...item,
-            quality: resolveQualitySelection(globalQuality, item.availableQualities),
-          }
-        : item
+  async function applyGlobalFormat(): Promise<void> {
+    await Promise.all(
+      queue
+        .filter((item) => isEditablePendingStatus(item.status))
+        .map((item) =>
+          updateQueueItemSettings(item, {
+            format: resolveAvailableFormat(globalFormat, item.hasAudio, 'mp4')
+          })
+        )
     );
   }
 
-  function applyGlobalFormat(): void {
-    queue = queue.map((item) =>
-      isEditablePendingStatus(item.status)
-        ? { ...item, format: globalFormat }
-        : item
-    );
+  async function handleItemQualityChange(item: QueueItem, event: Event): Promise<void> {
+    const quality = (event.currentTarget as HTMLSelectElement).value;
+    await updateQueueItemSettings(item, { quality });
   }
 
-  function handleUrlKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter" && !event.repeat) {
-      event.preventDefault();
-      void addToQueue();
-    }
+  async function handleItemFormatChange(item: QueueItem, event: Event): Promise<void> {
+    const requested = (event.currentTarget as HTMLSelectElement).value as OutputFormat;
+    await updateQueueItemSettings(item, {
+      format: resolveAvailableFormat(requested, item.hasAudio, 'mp4')
+    });
+  }
+
+  function handleUrlSubmit(event: SubmitEvent): void {
+    event.preventDefault();
+    void addToQueue();
   }
 
   // -- Derived --
   let queueSummary = $derived(buildQueueSummary(queue));
-</script>
+  let startupState = $derived(deriveStartupState(startupSubsystems));
+  let maintenanceActive = $derived(
+    backendSnapshot?.maintenanceActive ?? (runtimeUpdateRunning || updateInstallRunning)
+  );
+  let canStartDownloads = $derived(
+    canStartWork({
+      runtimeReady:
+        runtimeCanDownload() &&
+        startupState !== 'error' &&
+        backendSnapshot !== null &&
+        !backendSnapshot.draining,
+      outputDirectoryReady: outputDirValidated,
+      maintenanceActive
+    })
+  );
+  let queueSelectionState = $derived(deriveSelectionState(queue));
+  let queueWindowStart = $derived(
+    Math.max(0, Math.floor(queueScrollTop / QUEUE_ROW_HEIGHT_PX) - QUEUE_ROW_OVERSCAN)
+  );
+  let queueWindowEnd = $derived(
+    Math.min(
+      queue.length,
+      Math.ceil((queueScrollTop + queueViewportHeight) / QUEUE_ROW_HEIGHT_PX) + QUEUE_ROW_OVERSCAN
+    )
+  );
+  let visibleQueueRows = $derived(
+    queue.slice(queueWindowStart, queueWindowEnd).map((item, offset) => ({
+      item,
+      index: queueWindowStart + offset
+    }))
+  );
+  let queueTopSpacerHeight = $derived(queueWindowStart * QUEUE_ROW_HEIGHT_PX);
+  let queueBottomSpacerHeight = $derived(
+    Math.max(0, (queue.length - queueWindowEnd) * QUEUE_ROW_HEIGHT_PX)
+  );
+  let playlistSelectionState = $derived(deriveSelectionState(playlistModal?.entries ?? []));
 
-<svelte:window onkeydown={handleWindowKeydown} />
+  $effect(() => {
+    const maxScrollTop = Math.max(0, queue.length * QUEUE_ROW_HEIGHT_PX - queueViewportHeight);
+    if (queueScrollTop > maxScrollTop) {
+      queueScrollTop = maxScrollTop;
+      if (queueViewport) queueViewport.scrollTop = maxScrollTop;
+    }
+  });
+
+  $effect(() => {
+    if (queueSelectAll) {
+      queueSelectAll.indeterminate = queueSelectionState === 'some';
+    }
+    if (playlistSelectAll) {
+      playlistSelectAll.indeterminate = playlistSelectionState === 'some';
+    }
+  });
+</script>
 
 <main>
   <!-- Header -->
@@ -1878,18 +2039,26 @@
         <span
           class="badge {runtimeBadgeClass()}"
           title={runtimeBadgeTitle()}
+          data-testid="runtime-status"
         >
           {runtimeBadgeText()}
         </span>
+        {#if maintenanceActive}
+          <span class="badge warn" role="status" aria-live="polite">
+            {backendSnapshot?.draining ? 'Cancelling work…' : 'Maintenance active'}
+          </span>
+        {/if}
         {#if runtimeUpdateCheck?.updateAvailable}
           <button
             type="button"
             class="badge-button"
             onclick={updateDownloaderRuntime}
-            disabled={runtimeUpdateRunning || hasUpdateBlockingWork()}
-            title={hasUpdateBlockingWork() ? "Finish or cancel queued downloads first" : runtimeUpdateCheck.message ?? ""}
+            disabled={maintenanceActive || hasUpdateBlockingWork()}
+            title={hasUpdateBlockingWork()
+              ? 'Finish or cancel queued downloads first'
+              : (runtimeUpdateCheck.message ?? '')}
           >
-            {runtimeUpdateRunning ? "Runtime..." : "Update Runtime"}
+            {runtimeUpdateRunning ? 'Runtime...' : 'Update Runtime'}
           </button>
         {/if}
         {#if updateInfo?.hasUpdate && updateInfo.latestVersion}
@@ -1897,7 +2066,7 @@
             type="button"
             class="badge-button"
             onclick={openUpdateModal}
-            disabled={updateCheckState === "checking" || updateInstallRunning}
+            disabled={updateCheckState === 'checking' || maintenanceActive}
           >
             Update v{updateInfo.latestVersion}
           </button>
@@ -1906,18 +2075,18 @@
       <button
         class="small header-action"
         onclick={refreshDownloaderRuntime}
-        disabled={runtimeCheckState === "checking" || runtimeUpdateRunning}
+        disabled={runtimeCheckState === 'checking' || maintenanceActive}
       >
-        {runtimeCheckState === "checking" ? "Runtime..." : "Check Runtime"}
+        {runtimeCheckState === 'checking' ? 'Runtime...' : 'Check Runtime'}
       </button>
       <button
         class="small header-action"
         onclick={handleManualUpdateCheck}
-        disabled={updateCheckState === "checking" || updateInstallRunning}
+        disabled={updateCheckState === 'checking' || maintenanceActive}
       >
         {#if updateInstallRunning}
           Installing...
-        {:else if updateCheckState === "checking"}
+        {:else if updateCheckState === 'checking'}
           Checking...
         {:else}
           Check for Updates
@@ -1926,36 +2095,62 @@
     </div>
   </header>
 
+  {#if startupState === 'error' || startupState === 'degraded'}
+    <section
+      class="startup-status {startupState}"
+      role={startupState === 'error' ? 'alert' : 'status'}
+      aria-live={startupState === 'error' ? 'assertive' : 'polite'}
+    >
+      <strong>
+        {startupState === 'error'
+          ? 'Startup requires attention.'
+          : 'Started with limited functionality.'}
+      </strong>
+      {#if startupIssues.length > 0}
+        <span>{startupIssues.join(' ')}</span>
+      {/if}
+    </section>
+  {/if}
+
   <!-- URL Input -->
-  <section class="url-bar">
+  <form class="url-bar" autocomplete="off" onsubmit={handleUrlSubmit}>
+    <label class="sr-only" for="video-url">Video or playlist URL</label>
     <input
+      id="video-url"
       type="text"
+      name="nuclear-source-url"
       placeholder="Paste a video URL..."
       bind:value={urlInput}
-      onkeydown={handleUrlKeydown}
-      disabled={playlistLoading}
+      autocomplete="off"
+      autocapitalize="none"
+      spellcheck={false}
+      inputmode="url"
+      aria-autocomplete="none"
+      disabled={playlistLoading || maintenanceActive}
       class:input-error={Boolean(urlError)}
+      aria-describedby={urlError ? 'url-error' : undefined}
     />
-    <button class="primary" onclick={addToQueue} disabled={!runtimeCanDownload() || playlistLoading}>
-      {playlistLoading ? "Loading..." : "Add"}
+    <button type="submit" class="primary" disabled={!canStartDownloads || playlistLoading}>
+      {playlistLoading ? 'Loading...' : 'Add'}
     </button>
     {#if playlistLoading}
       <button onclick={cancelInspection}>Cancel</button>
     {/if}
     {#if urlError}
-      <span class="error-text">{urlError}</span>
+      <span id="url-error" class="error-text" role="alert" aria-live="assertive">{urlError}</span>
     {/if}
     {#if runtimeError}
-      <span class="error-text">{runtimeError}</span>
-    {:else if runtimeStatus?.message && runtimeStatus.state !== "ready"}
+      <span class="error-text" role="alert" aria-live="assertive">{runtimeError}</span>
+    {:else if runtimeStatus?.message && runtimeStatus.state !== 'ready'}
       <span class="error-text">{runtimeStatus.message}</span>
     {/if}
     {#if runtimeUpdateProgress}
-      <span class="muted">
-        {runtimeUpdateProgress.message ?? "Runtime update"} {Math.round(getRuntimeUpdatePercent(runtimeUpdateProgress))}%
+      <span class="muted" role="status" aria-live="polite">
+        {runtimeUpdateProgress.message ?? 'Runtime update'}
+        {Math.round(getRuntimeUpdatePercent(runtimeUpdateProgress))}%
       </span>
     {/if}
-  </section>
+  </form>
 
   <!-- Settings Row -->
   <section class="settings-row">
@@ -1975,12 +2170,12 @@
       <label for="format">Format</label>
       <select id="format" bind:value={globalFormat} onchange={applyGlobalFormat}>
         <optgroup label="Video">
-          {#each videoFormats as fmt}
+          {#each videoFormats as fmt (fmt)}
             <option value={fmt}>{fmt.toUpperCase()}</option>
           {/each}
         </optgroup>
         <optgroup label="Audio Only">
-          {#each audioFormats as fmt}
+          {#each audioFormats as fmt (fmt)}
             <option value={fmt}>{fmt.toUpperCase()}</option>
           {/each}
         </optgroup>
@@ -1990,6 +2185,9 @@
       <label for="outdir">Output</label>
       <input id="outdir" type="text" bind:value={outputDir} readonly />
       <button onclick={browseOutputDir}>Browse</button>
+      {#if outputDirError}
+        <span class="error-text" role="alert">{outputDirError}</span>
+      {/if}
     </div>
     <div class="setting cookie-setting">
       <label>
@@ -1997,63 +2195,98 @@
         Cookies
       </label>
       {#if useCookies}
-        <select bind:value={cookieMode} class="cookie-mode-select">
+        <label class="sr-only" for="cookie-mode">Cookie source</label>
+        <select id="cookie-mode" bind:value={cookieMode} class="cookie-mode-select">
           <option value="browser">From Browser</option>
           <option value="file">From File</option>
         </select>
-        {#if cookieMode === "browser"}
-          <select bind:value={cookieBrowser}>
-            {#each supportedBrowsers as b}
+        {#if cookieMode === 'browser'}
+          <label class="sr-only" for="cookie-browser">Cookie browser</label>
+          <select id="cookie-browser" bind:value={cookieBrowser}>
+            {#each supportedBrowsers as b (b)}
               <option value={b}>{b.charAt(0).toUpperCase() + b.slice(1)}</option>
             {/each}
           </select>
-          {#if cookieBrowser === "chrome" || cookieBrowser === "edge" || cookieBrowser === "brave" || cookieBrowser === "chromium"}
-            <span class="cookie-warn">Chromium browsers block cookie access — use Firefox or a cookie file instead</span>
+          {#if cookieBrowser === 'chrome' || cookieBrowser === 'edge' || cookieBrowser === 'brave' || cookieBrowser === 'chromium'}
+            <span class="cookie-warn"
+              >Chromium browsers block cookie access — use Firefox or a cookie file instead</span
+            >
           {:else}
             <span class="cookie-hint">Close {cookieBrowser} first if errors occur</span>
           {/if}
         {:else}
           <button class="cookie-browse" onclick={browseCookieFile}>
-            {cookieFilePath ? cookieFilePath.split(/[\\/]/).pop() : "Select cookies.txt"}
+            {cookieFilePath ? cookieFilePath.split(/[\\/]/).pop() : 'Select cookies.txt'}
           </button>
-          <span class="cookie-hint">Export via browser extension (e.g. "Get cookies.txt LOCALLY")</span>
+          <span class="cookie-hint"
+            >Export via browser extension (e.g. "Get cookies.txt LOCALLY")</span
+          >
         {/if}
       {/if}
     </div>
     <div class="setting advanced-config">
       <label for="compat-config">Compat Config</label>
       <button id="compat-config" class="cookie-browse" onclick={browseCompatConfigFile}>
-        {compatConfigPath ? getPathBasename(compatConfigPath) : "None"}
+        {compatConfigPath ? getPathBasename(compatConfigPath) : 'None'}
       </button>
       {#if compatConfigPath}
-        <button class="small" onclick={() => (compatConfigPath = "")}>Clear</button>
+        <button class="small" onclick={() => (compatConfigPath = '')}>Clear</button>
       {/if}
     </div>
   </section>
 
   <!-- Action Buttons -->
   <section class="actions">
-    <button class="primary" onclick={downloadAll} disabled={!runtimeCanDownload() || !queueSummary.hasReady}>Download All</button>
-    <button onclick={downloadSelected} disabled={!runtimeCanDownload() || !queueSummary.hasSelectedReady}>Download Selected</button>
+    <button
+      class="primary"
+      onclick={downloadAll}
+      disabled={!canStartDownloads || !queueSummary.hasReady}>Download All</button
+    >
+    <button
+      onclick={downloadSelected}
+      disabled={!canStartDownloads || !queueSummary.hasSelectedReady}>Download Selected</button
+    >
     <button onclick={removeSelected} disabled={!queueSummary.hasSelected}>Remove Selected</button>
     <button onclick={clearCompleted} disabled={!queueSummary.hasCompleted}>Clear Done</button>
-    <button class="danger" onclick={cancelAll} disabled={!queueSummary.hasActive}>Cancel All</button>
+    <button class="danger" onclick={cancelAll} disabled={!queueSummary.hasActive}>Cancel All</button
+    >
+    <button onclick={exportDiagnostics}>Export Diagnostics</button>
+    <button onclick={clearDiagnostics}>Clear Diagnostics</button>
+    {#if cancelAllError}
+      <span class="error-text" role="alert" aria-live="assertive">{cancelAllError}</span>
+    {/if}
+    {#if queueActionError}
+      <span class="error-text" role="alert" aria-live="assertive">{queueActionError}</span>
+    {/if}
+    {#if diagnosticsError}
+      <span class="error-text" role="alert" aria-live="assertive">{diagnosticsError}</span>
+    {:else if diagnosticsMessage}
+      <span class="muted" role="status" aria-live="polite">{diagnosticsMessage}</span>
+    {/if}
   </section>
 
   <!-- Queue Table -->
-  <section class="queue">
+  <section
+    class="queue"
+    bind:this={queueViewport}
+    onscroll={handleQueueScroll}
+    data-queue-count={queue.length}
+  >
     {#if queue.length === 0}
       <div class="empty-state">
         <p>No videos in queue. Paste a video URL above to get started.</p>
       </div>
     {:else}
-      <table>
+      <table aria-rowcount={queue.length + 1}>
         <thead>
           <tr>
             <th class="col-check">
               <input
+                bind:this={queueSelectAll}
                 type="checkbox"
+                checked={queueSelectionState === 'all'}
                 onchange={handleQueueSelectionChange}
+                aria-label="Select all queue items"
               />
             </th>
             <th class="col-title">Title</th>
@@ -2067,10 +2300,25 @@
           </tr>
         </thead>
         <tbody>
-          {#each queue as item, i (item.id)}
-            <tr class="queue-item" class:downloading={item.status === "downloading"}>
+          {#if queueTopSpacerHeight > 0}
+            <tr class="virtual-spacer" aria-hidden="true">
+              <td colspan="9" style={`height: ${queueTopSpacerHeight}px`}></td>
+            </tr>
+          {/if}
+          {#each visibleQueueRows as row (row.item.id)}
+            {@const item = row.item}
+            {@const i = row.index}
+            <tr
+              class="queue-item"
+              class:downloading={item.status === 'downloading'}
+              aria-rowindex={i + 2}
+            >
               <td class="col-check">
-                <input type="checkbox" bind:checked={queue[i].selected} />
+                <input
+                  type="checkbox"
+                  bind:checked={queue[i].selected}
+                  aria-label={`Select ${getQueueItemDisplayTitle(item)}`}
+                />
               </td>
               <td class="col-title" title={item.url}>
                 <div class="title-cell">
@@ -2097,7 +2345,7 @@
                         onclick={(event) => event.stopPropagation()}
                       />
                       {#if filenameEditError}
-                        <span class="filename-error">{filenameEditError}</span>
+                        <span class="filename-error" role="alert">{filenameEditError}</span>
                       {/if}
                     {:else if canEditFilename(item)}
                       <button
@@ -2133,14 +2381,20 @@
                   >
                     !
                   </button>
-                  <span class="error-summary" title={item.error}>{item.error}</span>
+                  <span class="error-summary" title={item.error} role="alert">
+                    {item.error}
+                  </span>
                 {/if}
               </td>
               <td class="col-quality">
                 {#if isEditablePendingStatus(item.status)}
-                  <select bind:value={queue[i].quality}>
-                    {#each item.availableQualities as q}
-                      <option value={q}>{q === "best" ? "Best" : q}</option>
+                  <select
+                    value={item.quality}
+                    onchange={(event) => handleItemQualityChange(item, event)}
+                    aria-label={`Quality for ${getQueueItemDisplayTitle(item)}`}
+                  >
+                    {#each item.availableQualities as q (q)}
+                      <option value={q}>{q === 'best' ? 'Best' : q}</option>
                     {/each}
                   </select>
                 {:else}
@@ -2149,15 +2403,24 @@
               </td>
               <td class="col-format">
                 {#if isEditablePendingStatus(item.status)}
-                  <select bind:value={queue[i].format}>
+                  <select
+                    value={item.format}
+                    onchange={(event) => handleItemFormatChange(item, event)}
+                    aria-label={`Format for ${getQueueItemDisplayTitle(item)}`}
+                  >
                     <optgroup label="Video">
-                      {#each videoFormats as fmt}
+                      {#each videoFormats as fmt (fmt)}
                         <option value={fmt}>{fmt.toUpperCase()}</option>
                       {/each}
                     </optgroup>
                     <optgroup label="Audio">
-                      {#each audioFormats as fmt}
-                        <option value={fmt}>{fmt.toUpperCase()}</option>
+                      {#each audioFormats as fmt (fmt)}
+                        <option
+                          value={fmt}
+                          disabled={item.hasAudio === false && isAudioOnlyFormat(fmt)}
+                        >
+                          {fmt.toUpperCase()}
+                        </option>
                       {/each}
                     </optgroup>
                   </select>
@@ -2174,7 +2437,7 @@
                         <div
                           class="progress-fill"
                           class:complete={item.downloadProgress >= 100}
-                          class:error={item.status === "error" && item.conversionProgress === null}
+                          class:error={item.status === 'error' && item.conversionProgress === null}
                           style="width: {item.downloadProgress}%"
                         ></div>
                         <span class="progress-text">{roundedProgress(item.downloadProgress)}%</span>
@@ -2185,11 +2448,13 @@
                       <div class="progress-bar">
                         <div
                           class="progress-fill convert"
-                          class:complete={item.status === "completed"}
-                          class:error={item.status === "error" && item.conversionProgress !== null}
+                          class:complete={item.status === 'completed'}
+                          class:error={item.status === 'error' && item.conversionProgress !== null}
                           style="width: {item.conversionProgress ?? 0}%"
                         ></div>
-                        <span class="progress-text">{roundedProgress(item.conversionProgress)}%</span>
+                        <span class="progress-text"
+                          >{roundedProgress(item.conversionProgress)}%</span
+                        >
                       </div>
                     </div>
                   </div>
@@ -2197,8 +2462,8 @@
                   <div class="progress-bar">
                     <div
                       class="progress-fill"
-                      class:complete={item.status === "completed"}
-                      class:error={item.status === "error"}
+                      class:complete={item.status === 'completed'}
+                      class:error={item.status === 'error'}
                       style="width: {item.progress}%"
                     ></div>
                     <span class="progress-text">{roundedProgress(item.progress)}%</span>
@@ -2213,9 +2478,20 @@
               </td>
               <td class="col-actions">
                 {#if isEditablePendingStatus(item.status)}
-                  <button class="small primary" onclick={() => downloadItem(item)} disabled={!runtimeCanDownload()}>DL</button>
-                {:else if item.status === "downloading" || item.status === "postprocessing"}
-                  <button class="small danger" onclick={() => cancelItem(item)}>X</button>
+                  <button
+                    class="small primary"
+                    onclick={() => downloadItem(item)}
+                    disabled={!canStartDownloads}
+                    aria-label={`Download ${getQueueItemDisplayTitle(item)}`}>DL</button
+                  >
+                {:else if item.status === 'downloading' || item.status === 'postprocessing' || item.status === 'cancelling'}
+                  <button
+                    class="small danger"
+                    onclick={() => cancelItem(item)}
+                    disabled={item.status === 'cancelling'}
+                    aria-label={`Cancel ${getQueueItemDisplayTitle(item)}`}
+                    >{item.status === 'cancelling' ? '...' : 'X'}</button
+                  >
                 {:else if canRetryItem(item)}
                   <button class="small" onclick={() => retryItem(item)}>Retry</button>
                 {/if}
@@ -2226,24 +2502,29 @@
                 <td colspan="9">
                   <div class="diagnostics-panel">
                     <div class="diagnostics-header">
-                      <span>{item.errorCode ?? "download_failed"}</span>
+                      <span>{item.errorCode ?? 'download_failed'}</span>
                       <button class="small" onclick={() => copyDiagnostics(item)}>
                         Copy Diagnostics
                       </button>
                     </div>
-                    <pre>{item.errorDetail ?? item.error}</pre>
+                    <pre>{redactDiagnosticText(item.errorDetail ?? item.error)}</pre>
                   </div>
                 </td>
               </tr>
             {/if}
           {/each}
+          {#if queueBottomSpacerHeight > 0}
+            <tr class="virtual-spacer" aria-hidden="true">
+              <td colspan="9" style={`height: ${queueBottomSpacerHeight}px`}></td>
+            </tr>
+          {/if}
         </tbody>
       </table>
     {/if}
   </section>
 
   <!-- Status Bar -->
-  <footer>
+  <footer role="status" aria-live="polite">
     <span>{queueSummary.counts.total} items</span>
     <span class="sep">|</span>
     <span>{queueSummary.counts.ready} ready</span>
@@ -2272,6 +2553,8 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="playlist-modal-title"
+      tabindex="-1"
+      use:accessibleDialog={{ onClose: closePlaylistModal }}
     >
       <div class="modal-header">
         <div>
@@ -2285,29 +2568,30 @@
               : `${playlistModal.info.entry_count} videos`}
           </span>
         </div>
-        <button class="small" onclick={closePlaylistModal}>Close</button>
+        <button class="small" onclick={closePlaylistModal} data-dialog-initial-focus
+          >Close playlist picker</button
+        >
       </div>
       <div class="modal-controls">
         <label class="select-all-label">
           <input
+            bind:this={playlistSelectAll}
             type="checkbox"
-            checked={playlistModal.entries.every((entry) => entry.selected)}
+            checked={playlistSelectionState === 'all'}
             onchange={handlePlaylistSelectionToggle}
           />
           Select All
         </label>
         <span class="muted">
-          {playlistModal.entries.filter((entry) => entry.selected).length} of {playlistModal.entries.length} selected
+          {playlistModal.entries.filter((entry) => entry.selected).length} of {playlistModal.entries
+            .length} selected
         </span>
       </div>
       <div class="modal-list">
         {#each getVisiblePlaylistEntries() as row (row.entry.url)}
           {@const entry = row.entry}
           <label class="playlist-entry" class:entry-selected={entry.selected}>
-            <input
-              type="checkbox"
-              bind:checked={playlistModal.entries[row.index].selected}
-            />
+            <input type="checkbox" bind:checked={playlistModal.entries[row.index].selected} />
             {#if entry.thumbnail}
               <img
                 src={entry.thumbnail}
@@ -2329,22 +2613,23 @@
       </div>
       {#if getPlaylistPageCount() > 1}
         <div class="modal-pagination">
-          <button
-            class="small"
-            onclick={() => changePlaylistPage(-1)}
-            disabled={playlistPage === 0}
-          >Previous</button>
+          <button class="small" onclick={() => changePlaylistPage(-1)} disabled={playlistPage === 0}
+            >Previous</button
+          >
           <span class="muted">Page {playlistPage + 1} of {getPlaylistPageCount()}</span>
           <button
             class="small"
             onclick={() => changePlaylistPage(1)}
-            disabled={playlistPage >= getPlaylistPageCount() - 1}
-          >Next</button>
+            disabled={playlistPage >= getPlaylistPageCount() - 1}>Next</button
+          >
         </div>
       {/if}
       <div class="modal-footer">
-        <button class="primary" onclick={addPlaylistSelection}
-          disabled={!playlistModal.entries.some((entry) => entry.selected)}>
+        <button
+          class="primary"
+          onclick={addPlaylistSelection}
+          disabled={!playlistModal.entries.some((entry) => entry.selected)}
+        >
           Add {playlistModal.entries.filter((entry) => entry.selected).length} Videos to Queue
         </button>
         <button onclick={closePlaylistModal}>Cancel</button>
@@ -2368,24 +2653,33 @@
       role="dialog"
       aria-modal="true"
       aria-labelledby="update-modal-title"
+      tabindex="-1"
+      use:accessibleDialog={{ onClose: closeUpdateModal, locked: updateInstallRunning }}
     >
       <div class="modal-header">
         <div>
           <h2 id="update-modal-title">App Updates</h2>
           <span class="modal-count">GitHub Releases installer update</span>
         </div>
-        <button class="small" onclick={closeUpdateModal} disabled={updateInstallRunning}>
+        <button
+          class="small"
+          onclick={closeUpdateModal}
+          disabled={updateInstallRunning}
+          data-dialog-initial-focus
+        >
           Close
         </button>
       </div>
       <div class="update-body">
-        {#if updateCheckState === "checking" && !updateInfo}
+        {#if updateCheckState === 'checking' && !updateInfo}
           <p class="update-summary">Checking the latest stable GitHub Release...</p>
         {:else}
           <div class="update-meta">
             <div class="update-meta-row">
               <span class="update-meta-label">Current</span>
-              <span class="update-meta-value">v{appVersion ?? updateInfo?.currentVersion ?? "Unknown"}</span>
+              <span class="update-meta-value"
+                >v{appVersion ?? updateInfo?.currentVersion ?? 'Unknown'}</span
+              >
             </div>
             <div class="update-meta-row">
               <span class="update-meta-label">Latest</span>
@@ -2406,7 +2700,7 @@
             <div class="update-meta-row">
               <span class="update-meta-label">Installer</span>
               <span class="update-meta-value">
-                {updateInfo?.installerName ?? "Checked during install"}
+                {updateInfo?.installerName ?? 'Checked during install'}
               </span>
             </div>
           </div>
@@ -2417,18 +2711,18 @@
               installer, closes the app, and relaunches Nuclear Downloader automatically.
             </p>
           {:else if updateInfo}
-            <p class="update-summary">
-              You are already on the latest stable release.
-            </p>
+            <p class="update-summary">You are already on the latest stable release.</p>
           {/if}
 
           {#if updateInstallProgress}
             <div class="update-progress-panel">
               <div class="update-progress-header">
-                <span>{updateInstallProgress.message ?? "Working..."}</span>
+                <span>{updateInstallProgress.message ?? 'Working...'}</span>
                 <span>
                   {#if updateInstallProgress.totalBytes}
-                    {formatByteCount(updateInstallProgress.downloadedBytes)} / {formatByteCount(updateInstallProgress.totalBytes)}
+                    {formatByteCount(updateInstallProgress.downloadedBytes)} / {formatByteCount(
+                      updateInstallProgress.totalBytes
+                    )}
                   {:else if updateInstallProgress.downloadedBytes > 0}
                     {formatByteCount(updateInstallProgress.downloadedBytes)}
                   {:else}
@@ -2446,13 +2740,13 @@
           {/if}
 
           {#if updateError}
-            <p class="update-error">{updateError}</p>
+            <p class="update-error" role="alert" aria-live="assertive">{updateError}</p>
           {/if}
 
           <div class="update-notes-block">
             <h3>Release Notes</h3>
             <div class="update-notes">
-              {updateInfo?.notes ?? "No release notes were provided for this release."}
+              {updateInfo?.notes ?? 'No release notes were provided for this release.'}
             </div>
           </div>
         {/if}
@@ -2462,8 +2756,10 @@
           <button
             class="primary"
             onclick={installAppUpdate}
-            disabled={updateInstallRunning || updateCheckState === "checking" || hasUpdateBlockingWork()}
-            title={hasUpdateBlockingWork() ? "Finish or cancel queued downloads first" : ""}
+            disabled={maintenanceActive ||
+              updateCheckState === 'checking' ||
+              hasUpdateBlockingWork()}
+            title={hasUpdateBlockingWork() ? 'Finish or cancel queued downloads first' : ''}
           >
             {#if updateInstallRunning}
               Installing...
@@ -2474,9 +2770,9 @@
         {/if}
         <button
           onclick={handleManualUpdateCheck}
-          disabled={updateCheckState === "checking" || updateInstallRunning}
+          disabled={updateCheckState === 'checking' || maintenanceActive}
         >
-          {updateCheckState === "checking" ? "Checking..." : "Refresh Check"}
+          {updateCheckState === 'checking' ? 'Checking...' : 'Refresh Check'}
         </button>
       </div>
     </div>
@@ -2509,7 +2805,11 @@
     padding: 0;
     background: var(--base);
     color: var(--text);
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family:
+      'Segoe UI',
+      system-ui,
+      -apple-system,
+      sans-serif;
     font-size: 14px;
     overflow: hidden;
     height: 100vh;
@@ -2597,6 +2897,34 @@
     white-space: nowrap;
   }
 
+  .startup-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--surface0);
+    background: color-mix(in srgb, var(--yellow) 10%, var(--base));
+    color: var(--yellow);
+    font-size: 12px;
+  }
+
+  .startup-status.error {
+    background: color-mix(in srgb, var(--red) 10%, var(--base));
+    color: var(--red);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* URL Bar */
   .url-bar {
     display: flex;
@@ -2618,7 +2946,7 @@
   }
 
   /* Inputs */
-  input[type="text"],
+  input[type='text'],
   select {
     background: var(--surface0);
     border: 1px solid var(--surface1);
@@ -2630,8 +2958,16 @@
     transition: border-color 0.15s;
   }
 
-  input[type="text"]:focus {
+  input[type='text']:focus {
     border-color: var(--blue);
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
   }
 
   input.input-error {
@@ -2784,6 +3120,20 @@
     text-overflow: ellipsis;
   }
 
+  .queue-item {
+    height: 53px;
+  }
+
+  .virtual-spacer,
+  .virtual-spacer:hover {
+    background: transparent;
+  }
+
+  .virtual-spacer td {
+    padding: 0;
+    border: 0;
+  }
+
   tr:hover {
     background: color-mix(in srgb, var(--surface0) 40%, transparent);
   }
@@ -2792,15 +3142,34 @@
     background: color-mix(in srgb, var(--blue) 5%, transparent);
   }
 
-  .col-check { width: 36px; text-align: center; }
-  .col-title { width: auto; }
-  .col-status { width: 180px; }
-  .col-quality { width: 80px; }
-  .col-format { width: 80px; }
-  .col-progress { width: 130px; }
-  .col-speed { width: 85px; }
-  .col-eta { width: 65px; }
-  .col-actions { width: 64px; }
+  .col-check {
+    width: 36px;
+    text-align: center;
+  }
+  .col-title {
+    width: auto;
+  }
+  .col-status {
+    width: 180px;
+  }
+  .col-quality {
+    width: 80px;
+  }
+  .col-format {
+    width: 80px;
+  }
+  .col-progress {
+    width: 130px;
+  }
+  .col-speed {
+    width: 85px;
+  }
+  .col-eta {
+    width: 65px;
+  }
+  .col-actions {
+    width: 64px;
+  }
 
   /* Title cell */
   .title-cell {
@@ -2886,14 +3255,38 @@
     font-weight: 500;
     text-transform: capitalize;
   }
-  .status-pill.fetching { background: color-mix(in srgb, var(--mauve) 20%, transparent); color: var(--mauve); }
-  .status-pill.ready { background: color-mix(in srgb, var(--blue) 20%, transparent); color: var(--blue); }
-  .status-pill.queued { background: color-mix(in srgb, var(--teal) 14%, transparent); color: var(--teal); }
-  .status-pill.downloading { background: color-mix(in srgb, var(--teal) 20%, transparent); color: var(--teal); }
-  .status-pill.postprocessing { background: color-mix(in srgb, var(--yellow) 20%, transparent); color: var(--yellow); }
-  .status-pill.completed { background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }
-  .status-pill.error { background: color-mix(in srgb, var(--red) 20%, transparent); color: var(--red); }
-  .status-pill.cancelled { background: color-mix(in srgb, var(--overlay0) 20%, transparent); color: var(--overlay0); }
+  .status-pill.fetching {
+    background: color-mix(in srgb, var(--mauve) 20%, transparent);
+    color: var(--mauve);
+  }
+  .status-pill.ready {
+    background: color-mix(in srgb, var(--blue) 20%, transparent);
+    color: var(--blue);
+  }
+  .status-pill.queued {
+    background: color-mix(in srgb, var(--teal) 14%, transparent);
+    color: var(--teal);
+  }
+  .status-pill.downloading {
+    background: color-mix(in srgb, var(--teal) 20%, transparent);
+    color: var(--teal);
+  }
+  .status-pill.postprocessing {
+    background: color-mix(in srgb, var(--yellow) 20%, transparent);
+    color: var(--yellow);
+  }
+  .status-pill.completed {
+    background: color-mix(in srgb, var(--green) 20%, transparent);
+    color: var(--green);
+  }
+  .status-pill.error {
+    background: color-mix(in srgb, var(--red) 20%, transparent);
+    color: var(--red);
+  }
+  .status-pill.cancelled {
+    background: color-mix(in srgb, var(--overlay0) 20%, transparent);
+    color: var(--overlay0);
+  }
 
   .error-tooltip {
     display: inline-flex;
@@ -2952,7 +3345,7 @@
     overflow: auto;
     white-space: pre-wrap;
     color: var(--subtext1);
-    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
     font-size: 11px;
     line-height: 1.45;
   }
@@ -3037,7 +3430,7 @@
     font-size: 12px;
   }
 
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     accent-color: var(--blue);
     cursor: pointer;
   }

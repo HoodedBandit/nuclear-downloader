@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.6.0 - 2026-08-25
+
+Nuclear Downloader 0.6.0 is a quiet kind of big release. The app should still
+feel familiar, but almost everything behind the window has been rebuilt to be
+steadier, safer, and much easier to trust when a download goes sideways.
+
+### A smoother everyday experience
+
+- Adding a link is reliable even if the window misses a backend event, and the
+  URL box no longer brings up old browser-style history suggestions.
+- Queue state, progress, retries, cancellation, and recovery now come from one
+  authoritative Rust state model, so the interface stays honest after a reload
+  or interrupted session.
+- Cookie choices are captured per item, audio-only formats are disabled when a
+  video has no audio stream, and startup problems are shown clearly without
+  taking unrelated parts of the app down with them.
+- Dialogs, labels, keyboard navigation, focus handling, and status messages have
+  all had a careful accessibility pass.
+
+### Much stronger under the hood
+
+- Every downloader and conversion process is supervised as a Windows process
+  tree, with bounded output, dependable cancellation, awaited cleanup, and
+  useful redacted diagnostics when something fails.
+- Downloads are staged beside their destination and published atomically without
+  overwriting an existing file. Crash cleanup only touches directories the app
+  can prove it owns.
+- Queue settings and recent attempts survive restarts in a versioned,
+  DPAPI-encrypted journal. Corrupt state is quarantined instead of being trusted
+  or silently discarded.
+- App and runtime updates now use exact signed manifests, bounded streaming,
+  strict size and hash checks, safe rollback behavior, and a planned key-rotation
+  path.
+
+### A release process we can stand behind
+
+- Windows x64 sidecars are locked to known hashes and verified before release
+  builds. ARM64 is not supported in this release, and the documentation now says
+  so plainly.
+- The private candidate and public release workflows build once, test those exact
+  bytes, inventory every artifact, and publish without rebuilding.
+- CI now covers formatting, linting, Svelte checks, frontend and Rust tests,
+  strict Clippy, dependency and license policy, production audits, packaging
+  contracts, and a sustained 1,000-row renderer performance test.
+
+Thank you for using Nuclear Downloader—and especially for reporting the small,
+annoying things. Those reports are what turned this from a cleanup pass into a
+release that feels genuinely solid.
+
 ## v0.5.4 - 2026-07-15
 
 This release focuses on predictable behavior under concurrent use, safer Windows file handling, and a more reproducible release pipeline.

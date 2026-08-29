@@ -19,14 +19,29 @@ pub fn merge_external_bins(
         .as_object_mut()
         .ok_or_else(|| "TAURI_CONFIG.bundle must be a JSON object.".to_string())?;
 
+    let mut merged_bins = match bundle.remove("externalBin") {
+        Some(Value::Array(values)) => values
+            .into_iter()
+            .map(|value| match value {
+                Value::String(value) => Ok(value),
+                _ => Err("TAURI_CONFIG.bundle.externalBin entries must be strings.".to_string()),
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+        Some(_) => {
+            return Err("TAURI_CONFIG.bundle.externalBin must be an array.".to_string());
+        }
+        None => Vec::new(),
+    };
+
+    for external_bin in external_bins {
+        if !merged_bins.iter().any(|value| value == external_bin) {
+            merged_bins.push((*external_bin).to_string());
+        }
+    }
+
     bundle.insert(
         "externalBin".to_string(),
-        Value::Array(
-            external_bins
-                .iter()
-                .map(|value| Value::String((*value).to_string()))
-                .collect(),
-        ),
+        Value::Array(merged_bins.into_iter().map(Value::String).collect()),
     );
 
     serde_json::to_string(&config)
@@ -57,5 +72,31 @@ mod tests {
         let error = merge_external_bins(Some("[]"), &["binaries/yt-dlp"])
             .expect_err("array overlay should fail");
         assert!(error.contains("JSON object"));
+    }
+
+    #[test]
+    fn preserves_and_deduplicates_existing_external_bins() {
+        let merged = merge_external_bins(
+            Some(r#"{"bundle":{"externalBin":["binaries/custom","binaries/yt-dlp"]}}"#),
+            &["binaries/yt-dlp", "binaries/ffmpeg"],
+        )
+        .expect("external bins should merge");
+        let value: Value = serde_json::from_str(&merged).expect("merged config should be JSON");
+
+        assert_eq!(
+            value["bundle"]["externalBin"],
+            serde_json::json!(["binaries/custom", "binaries/yt-dlp", "binaries/ffmpeg"])
+        );
+    }
+
+    #[test]
+    fn rejects_non_array_external_bins() {
+        let error = merge_external_bins(
+            Some(r#"{"bundle":{"externalBin":"binaries/yt-dlp"}}"#),
+            &["binaries/ffmpeg"],
+        )
+        .expect_err("non-array externalBin should fail");
+
+        assert!(error.contains("externalBin must be an array"));
     }
 }

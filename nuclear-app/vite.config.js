@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
-import { defineConfig } from "vite";
-import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from 'vite';
+import { sveltekit } from '@sveltejs/kit/vite';
 
 const DEV_PORT = 1420;
 
@@ -20,14 +20,14 @@ export default defineConfig(() => {
       host: host || false,
       hmr: host
         ? {
-            protocol: "ws",
+            protocol: 'ws',
             host,
-            port: 1421,
+            port: 1421
           }
         : undefined,
       watch: {
-        ignored: ["**/src-tauri/**"],
-      },
-    },
+        ignored: ['**/src-tauri/**']
+      }
+    }
   };
 });

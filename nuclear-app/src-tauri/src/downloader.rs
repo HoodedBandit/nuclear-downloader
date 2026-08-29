@@ -1,3 +1,4 @@
+use crate::app_error::AppError;
 use crate::models::{
     CookieConfig, DownloadProgress, DownloadRequest, PlaylistEntry, PlaylistInfo, UrlInspection,
     VideoInfo,
@@ -7,27 +8,38 @@ use regex::Regex;
 use serde::Deserialize;
 use serde_json::Deserializer;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::{Mutex, Notify, OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
 #[cfg(windows)]
-use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+use windows_sys::Win32::Foundation::{CloseHandle, HANDLE, INVALID_HANDLE_VALUE};
+#[cfg(windows)]
+use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+    CreateToolhelp32Snapshot, Thread32First, Thread32Next, TH32CS_SNAPTHREAD, THREADENTRY32,
+};
 #[cfg(windows)]
 use windows_sys::Win32::System::JobObjects::{
     AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
     SetInformationJobObject, TerminateJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
     JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 };
+#[cfg(windows)]
+use windows_sys::Win32::System::Threading::{OpenThread, ResumeThread, THREAD_SUSPEND_RESUME};
 
-const MAX_STDERR_LINES: usize = 32;
-const MAX_STDERR_BYTES: usize = 16 * 1024;
+const MAX_STDERR_LINES: usize = 256;
+const MAX_STDERR_BYTES: usize = 64 * 1024;
+const MAX_PROCESS_LINE_BYTES: usize = 64 * 1024;
+const MAX_INSPECTION_OUTPUT_BYTES: usize = 8 * 1024 * 1024;
+const INSPECTION_TIMEOUT: Duration = Duration::from_secs(120);
+const PROCESS_DRAIN_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_PLAYLIST_ENTRIES: usize = 1_000;
 const MAX_CUSTOM_FILENAME_UTF16_UNITS: usize = 180;
 const MAX_OUTPUT_SUFFIX: usize = 9_999;
@@ -36,6 +48,8 @@ const AUDIO_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "opus"];
 const COOKIE_BROWSERS: &[&str] = &["firefox", "chrome", "edge", "brave", "opera", "chromium"];
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+#[cfg(windows)]
+const CREATE_SUSPENDED: u32 = 0x00000004;
 #[cfg(windows)]
 const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x00004000;
 
@@ -56,7 +70,9 @@ static DOWNLOAD_MERGE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[Merger\]|\[VideoConvertor\]|\[VideoRemuxer\]|\[ExtractAudio\]|post-?process|converting|remuxing").unwrap()
 });
 static QUALITY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\d{3,4}p$").unwrap());
-static OUTPUT_PUBLISH_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+const STAGING_ROOT_NAME: &str = ".nuclear-downloader-staging";
+const STAGING_MARKER_NAME: &str = ".nuclear-downloader-owner-v1.json";
+const STAGING_CLEANUP_PREFIX: &str = ".cleanup-";
 
 struct TailBuffer {
     lines: VecDeque<String>,
@@ -209,29 +225,31 @@ fn emit_progress(
     progress: f64,
     fields: ProgressFields,
 ) {
-    let _ = app.emit(
-        "download-progress",
-        DownloadProgress {
-            download_id: download_id.to_string(),
-            status: status.to_string(),
-            progress,
-            phase: fields.phase.map(str::to_string),
-            download_progress: fields.download_progress,
-            conversion_progress: fields.conversion_progress,
-            speed: fields.speed,
-            eta: fields.eta,
-            error: fields.error,
-            error_code: fields.error_code,
-            error_detail: fields.error_detail,
-            filename: fields.filename,
-        },
-    );
+    let event = DownloadProgress {
+        download_id: download_id.to_string(),
+        status: status.to_string(),
+        progress,
+        phase: fields.phase.map(str::to_string),
+        download_progress: fields.download_progress,
+        conversion_progress: fields.conversion_progress,
+        speed: fields.speed,
+        eta: fields.eta,
+        error: fields.error,
+        error_code: fields.error_code,
+        error_detail: fields.error_detail,
+        filename: fields.filename,
+    };
+    crate::record_download_progress(app, &event);
+    if let Err(error) = app.emit("download-progress", &event) {
+        crate::record_event_delivery_failure(app, "download-progress", &error.to_string());
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum DownloadManagerMode {
     Accepting,
     Paused,
+    Draining,
     ShuttingDown,
 }
 
@@ -243,6 +261,8 @@ struct DownloadManagerState {
 struct DownloadManagerInner {
     state: Mutex<DownloadManagerState>,
     idle: Notify,
+    download_slots: Arc<Semaphore>,
+    inspection_slots: Arc<Semaphore>,
     conversion_slots: Arc<Semaphore>,
 }
 
@@ -253,9 +273,38 @@ pub struct DownloadManager {
 
 #[derive(Clone)]
 pub struct DownloadJob {
+    supervisor: Arc<ProcessSupervisor>,
+}
+
+struct ProcessSupervisor {
     cancellation: CancellationToken,
+    runtime_tools: std::sync::Mutex<HashMap<String, runtime::RuntimeToolLease>>,
     #[cfg(windows)]
     process_job: Arc<WindowsProcessJob>,
+}
+
+pub struct MaintenanceLease {
+    manager: DownloadManager,
+    active: bool,
+}
+
+impl MaintenanceLease {
+    pub async fn release(mut self) {
+        self.manager.end_maintenance().await;
+        self.active = false;
+    }
+}
+
+impl Drop for MaintenanceLease {
+    fn drop(&mut self) {
+        if !self.active {
+            return;
+        }
+        let manager = self.manager.clone();
+        tauri::async_runtime::spawn(async move {
+            manager.end_maintenance().await;
+        });
+    }
 }
 
 #[cfg(windows)]
@@ -316,6 +365,54 @@ impl WindowsProcessJob {
         }
     }
 
+    fn resume(&self, child: &tokio::process::Child) -> Result<(), String> {
+        let process_id = child
+            .id()
+            .ok_or_else(|| "Downloader process did not expose a process ID.".to_string())?;
+        let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) };
+        if snapshot == INVALID_HANDLE_VALUE {
+            return Err(format!(
+                "Failed to enumerate the suspended downloader process: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+        let mut entry = THREADENTRY32 {
+            dwSize: std::mem::size_of::<THREADENTRY32>() as u32,
+            ..Default::default()
+        };
+        let mut found = false;
+        let mut next = unsafe { Thread32First(snapshot, &mut entry) };
+        while next != 0 {
+            if entry.th32OwnerProcessID == process_id {
+                found = true;
+                let thread = unsafe { OpenThread(THREAD_SUSPEND_RESUME, 0, entry.th32ThreadID) };
+                if thread.is_null() {
+                    unsafe { CloseHandle(snapshot) };
+                    return Err(format!(
+                        "Failed to open the suspended downloader thread: {}",
+                        std::io::Error::last_os_error()
+                    ));
+                }
+                let previous_count = unsafe { ResumeThread(thread) };
+                unsafe { CloseHandle(thread) };
+                if previous_count == u32::MAX {
+                    unsafe { CloseHandle(snapshot) };
+                    return Err(format!(
+                        "Failed to resume the supervised downloader process: {}",
+                        std::io::Error::last_os_error()
+                    ));
+                }
+            }
+            next = unsafe { Thread32Next(snapshot, &mut entry) };
+        }
+        unsafe { CloseHandle(snapshot) };
+        if found {
+            Ok(())
+        } else {
+            Err("The suspended downloader process exposed no resumable thread.".into())
+        }
+    }
+
     fn terminate(&self) {
         unsafe {
             TerminateJobObject(self.handle, 1);
@@ -335,35 +432,107 @@ impl Drop for WindowsProcessJob {
 impl DownloadJob {
     fn new() -> Result<Self, String> {
         Ok(Self {
-            cancellation: CancellationToken::new(),
-            #[cfg(windows)]
-            process_job: Arc::new(WindowsProcessJob::new()?),
+            supervisor: Arc::new(ProcessSupervisor {
+                cancellation: CancellationToken::new(),
+                runtime_tools: std::sync::Mutex::new(HashMap::new()),
+                #[cfg(windows)]
+                process_job: Arc::new(WindowsProcessJob::new()?),
+            }),
         })
     }
 
     pub fn is_cancelled(&self) -> bool {
-        self.cancellation.is_cancelled()
+        self.supervisor.cancellation.is_cancelled()
     }
 
     pub async fn cancelled(&self) {
-        self.cancellation.cancelled().await;
+        self.supervisor.cancellation.cancelled().await;
     }
 
-    fn cancel(&self) {
-        self.cancellation.cancel();
+    pub(crate) fn cancel(&self) {
+        self.supervisor.cancellation.cancel();
         #[cfg(windows)]
-        self.process_job.terminate();
+        self.supervisor.process_job.terminate();
+    }
+
+    fn runtime_tool(&self, name: &str, required: bool) -> Result<Option<PathBuf>, String> {
+        let mut leases = self
+            .supervisor
+            .runtime_tools
+            .lock()
+            .map_err(|_| "Runtime executable lease registry was poisoned.".to_string())?;
+        if let Some(lease) = leases.get(name) {
+            return Ok(Some(lease.path().to_path_buf()));
+        }
+        match runtime::resolve_tool_lease(name)? {
+            Some(lease) => {
+                let path = lease.path().to_path_buf();
+                leases.insert(name.to_string(), lease);
+                Ok(Some(path))
+            }
+            None if required => Err(format!("Required runtime executable {name} was not found.")),
+            None => Ok(None),
+        }
+    }
+
+    fn required_runtime_tool(&self, name: &str) -> Result<PathBuf, String> {
+        self.runtime_tool(name, true)?
+            .ok_or_else(|| format!("Required runtime executable {name} was not found."))
+    }
+
+    fn ytdlp_runtime_config(&self) -> Result<YtdlpCommandConfig, String> {
+        let ffmpeg = self.runtime_tool("ffmpeg", true)?;
+        let deno = self.runtime_tool("deno", false)?;
+        Ok(YtdlpCommandConfig {
+            ffmpeg_dir: ffmpeg.and_then(|path| path.parent().map(Path::to_path_buf)),
+            deno_path: deno,
+            plugin_dir: runtime::plugin_dir(),
+        })
     }
 
     fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> {
         #[cfg(windows)]
-        self.process_job.assign(child)?;
+        {
+            self.supervisor.process_job.assign(child)?;
+            if self.is_cancelled() {
+                return Ok(false);
+            }
+            self.supervisor.process_job.resume(child)?;
+        }
         Ok(!self.is_cancelled())
+    }
+
+    async fn spawn(
+        &self,
+        command: &mut Command,
+        process_name: &str,
+        below_normal_priority: bool,
+    ) -> Result<tokio::process::Child, String> {
+        #[cfg(windows)]
+        command.creation_flags(supervised_process_flags(below_normal_priority));
+        #[cfg(not(windows))]
+        let _ = below_normal_priority;
+        let mut child = command
+            .spawn()
+            .map_err(|error| format!("Failed to start {process_name}: {error}"))?;
+        match self.attach_process(&child) {
+            Ok(true) => Ok(child),
+            Ok(false) => {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                Err(format!("{process_name} operation was cancelled."))
+            }
+            Err(error) => {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+                Err(error)
+            }
+        }
     }
 }
 
 impl DownloadManager {
-    pub fn new(max_conversions: usize) -> Self {
+    pub fn new(max_downloads: usize, max_inspections: usize, max_conversions: usize) -> Self {
         Self {
             inner: Arc::new(DownloadManagerInner {
                 state: Mutex::new(DownloadManagerState {
@@ -371,6 +540,8 @@ impl DownloadManager {
                     jobs: HashMap::new(),
                 }),
                 idle: Notify::new(),
+                download_slots: Arc::new(Semaphore::new(max_downloads.max(1))),
+                inspection_slots: Arc::new(Semaphore::new(max_inspections.max(1))),
                 conversion_slots: Arc::new(Semaphore::new(max_conversions.max(1))),
             }),
         }
@@ -384,6 +555,9 @@ impl DownloadManager {
         }
         if state.jobs.contains_key(download_id) {
             return Err("A download with this ID is already active.".into());
+        }
+        if state.jobs.len() >= MAX_PLAYLIST_ENTRIES {
+            return Err("The operation queue is limited to 1,000 items.".into());
         }
         state.jobs.insert(download_id.to_string(), job.clone());
         Ok(job)
@@ -403,27 +577,41 @@ impl DownloadManager {
         }
     }
 
-    pub async fn cancel(&self, download_id: &str) {
+    pub async fn cancel(&self, download_id: &str) -> Result<(), AppError> {
         let job = self.inner.state.lock().await.jobs.get(download_id).cloned();
         if let Some(job) = job {
             job.cancel();
+            Ok(())
+        } else {
+            Err(AppError::not_found("operation"))
         }
+    }
+
+    pub async fn active_ids(&self) -> Vec<String> {
+        self.inner.state.lock().await.jobs.keys().cloned().collect()
     }
 
     pub async fn active_count(&self) -> usize {
         self.inner.state.lock().await.jobs.len()
     }
 
-    pub async fn begin_maintenance(&self) -> Result<(), String> {
+    pub async fn acquire_maintenance(&self) -> Result<MaintenanceLease, AppError> {
         let mut state = self.inner.state.lock().await;
         if state.mode != DownloadManagerMode::Accepting {
-            return Err("Downloader maintenance is already in progress.".into());
+            return Err(AppError::busy(
+                "Downloader maintenance is already in progress.",
+            ));
         }
         if !state.jobs.is_empty() {
-            return Err("Finish or cancel active downloads before installing updates.".into());
+            return Err(AppError::busy(
+                "Finish or cancel active operations before installing updates.",
+            ));
         }
         state.mode = DownloadManagerMode::Paused;
-        Ok(())
+        Ok(MaintenanceLease {
+            manager: self.clone(),
+            active: true,
+        })
     }
 
     pub async fn end_maintenance(&self) {
@@ -433,20 +621,34 @@ impl DownloadManager {
         }
     }
 
-    pub async fn cancel_all_and_wait(&self, timeout: Duration) -> Result<(), String> {
+    pub async fn begin_cancel_all(&self) -> Result<(), AppError> {
         let jobs = {
             let mut state = self.inner.state.lock().await;
             if state.mode == DownloadManagerMode::ShuttingDown {
-                return Ok(());
+                return Err(AppError::busy("The application is shutting down."));
             }
-            state.mode = DownloadManagerMode::Paused;
+            if state.mode == DownloadManagerMode::Paused {
+                return Err(AppError::busy(
+                    "Cancellation cannot start while update maintenance is active.",
+                ));
+            }
+            state.mode = DownloadManagerMode::Draining;
             state.jobs.values().cloned().collect::<Vec<_>>()
         };
         for job in jobs {
             job.cancel();
         }
+        Ok(())
+    }
+
+    pub async fn finish_cancel_all(&self, timeout: Duration) -> Result<(), String> {
         let result = self.wait_for_idle(timeout).await;
-        self.end_maintenance().await;
+        if result.is_ok() {
+            let mut state = self.inner.state.lock().await;
+            if state.mode == DownloadManagerMode::Draining {
+                state.mode = DownloadManagerMode::Accepting;
+            }
+        }
         result
     }
 
@@ -486,10 +688,31 @@ impl DownloadManager {
             _ = job.cancelled() => Ok(None),
         }
     }
+
+    pub async fn acquire_download_slot(&self) -> Result<OwnedSemaphorePermit, String> {
+        self.inner
+            .download_slots
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| "Download scheduler is unavailable.".to_string())
+    }
+
+    pub async fn acquire_inspection(
+        &self,
+        job: &DownloadJob,
+    ) -> Result<Option<OwnedSemaphorePermit>, String> {
+        tokio::select! {
+            permit = self.inner.inspection_slots.clone().acquire_owned() => {
+                permit.map(Some).map_err(|_| "Inspection scheduler is unavailable.".to_string())
+            }
+            _ = job.cancelled() => Ok(None),
+        }
+    }
 }
 
 pub fn create_download_manager() -> DownloadManager {
-    DownloadManager::new(1)
+    DownloadManager::new(5, 1, 1)
 }
 
 pub fn is_allowed_download_url(raw: &str) -> bool {
@@ -546,22 +769,169 @@ pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String
     Ok(())
 }
 
-/// Resolve a binary name to the bundled sidecar path if it exists,
-/// otherwise fall back to system PATH (for dev mode).
-pub fn resolve_bin(name: &str) -> PathBuf {
-    runtime::resolve_bin(name)
+pub fn validate_output_directory(path: &str) -> Result<String, AppError> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::invalid("Output folder is not set."));
+    }
+    let path = PathBuf::from(trimmed);
+    std::fs::create_dir_all(&path).map_err(|error| {
+        AppError::new(
+            "output_directory_unavailable",
+            "The selected output folder could not be created.",
+        )
+        .with_detail(error.kind().to_string())
+    })?;
+    let input_metadata = std::fs::symlink_metadata(&path).map_err(|error| {
+        AppError::new(
+            "output_directory_unavailable",
+            "The selected output folder could not be inspected.",
+        )
+        .with_detail(error.kind().to_string())
+    })?;
+    if !input_metadata.is_dir() || input_metadata.file_type().is_symlink() {
+        return Err(AppError::new(
+            "output_directory_unsafe",
+            "The selected output folder must be a regular local directory.",
+        ));
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if input_metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err(AppError::new(
+                "output_directory_unsafe",
+                "The selected output folder cannot be a reparse point.",
+            ));
+        }
+    }
+    let canonical = path.canonicalize().map_err(|error| {
+        AppError::new(
+            "output_directory_unavailable",
+            "The selected output folder could not be resolved.",
+        )
+        .with_detail(error.kind().to_string())
+    })?;
+    let metadata = std::fs::symlink_metadata(&canonical).map_err(|error| {
+        AppError::new(
+            "output_directory_unavailable",
+            "The selected output folder could not be inspected.",
+        )
+        .with_detail(error.kind().to_string())
+    })?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err(AppError::new(
+            "output_directory_unsafe",
+            "The selected output folder must be a regular local directory.",
+        ));
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err(AppError::new(
+                "output_directory_unsafe",
+                "The selected output folder cannot be a reparse point.",
+            ));
+        }
+    }
+
+    let probe = canonical.join(format!(".nuclear-write-probe-{}", uuid::Uuid::new_v4()));
+    let mut probe_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&probe)
+        .map_err(|error| {
+            AppError::new(
+                "output_directory_read_only",
+                "The selected output folder is not writable.",
+            )
+            .with_detail(error.kind().to_string())
+        })?;
+    let probe_result = probe_file.write_all(b"nuclear-downloader-write-probe");
+    let sync_result = probe_file.sync_all();
+    drop(probe_file);
+    let _ = std::fs::remove_file(&probe);
+    probe_result.and(sync_result).map_err(|error| {
+        AppError::new(
+            "output_directory_read_only",
+            "The selected output folder is not writable.",
+        )
+        .with_detail(error.kind().to_string())
+    })?;
+
+    #[cfg(windows)]
+    if free_space_bytes(&canonical)? == 0 {
+        return Err(AppError::new(
+            "output_directory_full",
+            "The selected output volume has no available space.",
+        ));
+    }
+
+    Ok(canonical.to_string_lossy().into_owned())
 }
 
-fn ytdlp_bin() -> PathBuf {
-    resolve_bin("yt-dlp")
+#[cfg(windows)]
+fn free_space_bytes(path: &Path) -> Result<u64, AppError> {
+    use std::os::windows::ffi::OsStrExt;
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn GetDiskFreeSpaceExW(
+            directory: *const u16,
+            available: *mut u64,
+            total: *mut u64,
+            free: *mut u64,
+        ) -> i32;
+    }
+    let wide = path
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<_>>();
+    let mut available = 0_u64;
+    let result = unsafe {
+        GetDiskFreeSpaceExW(
+            wide.as_ptr(),
+            &mut available,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        )
+    };
+    if result == 0 {
+        Err(AppError::new(
+            "output_directory_unavailable",
+            "Available output disk space could not be determined.",
+        ))
+    } else {
+        Ok(available)
+    }
 }
 
-fn ffmpeg_bin() -> PathBuf {
-    resolve_bin("ffmpeg")
-}
-
-fn ffprobe_bin() -> PathBuf {
-    resolve_bin("ffprobe")
+pub async fn run_supervised_probe(
+    binary: &Path,
+    arguments: &[&str],
+    timeout: Duration,
+    stdout_limit: usize,
+    stderr_limit: usize,
+) -> Result<std::process::Output, String> {
+    let job = DownloadJob::new()?;
+    let mut command = Command::new(binary);
+    command
+        .kill_on_drop(true)
+        .args(arguments)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    let child = job.spawn(&mut command, "runtime probe", false).await?;
+    wait_with_bounded_output(
+        child,
+        &job,
+        stdout_limit.min(MAX_PROCESS_LINE_BYTES),
+        stderr_limit.min(MAX_PROCESS_LINE_BYTES),
+        timeout,
+    )
+    .await
 }
 
 fn validate_cookie_config(config: &CookieConfig) -> Result<(), String> {
@@ -679,13 +1049,14 @@ fn is_allowed_quality(quality: &str) -> bool {
 }
 
 #[cfg(windows)]
-fn hidden_process_flags() -> u32 {
+fn supervised_process_flags(below_normal_priority: bool) -> u32 {
     CREATE_NO_WINDOW
-}
-
-#[cfg(windows)]
-fn download_process_flags() -> u32 {
-    CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS
+        | CREATE_SUSPENDED
+        | if below_normal_priority {
+            BELOW_NORMAL_PRIORITY_CLASS
+        } else {
+            0
+        }
 }
 
 fn is_x_or_twitter_url(raw: &str) -> bool {
@@ -946,18 +1317,378 @@ fn parse_first_json_value(stdout: &str) -> Result<serde_json::Value, String> {
 }
 
 fn spawn_stderr_tail_reader(
-    stderr: tokio::process::ChildStderr,
-) -> tokio::task::JoinHandle<String> {
+    mut stderr: tokio::process::ChildStderr,
+) -> tokio::task::JoinHandle<Result<String, String>> {
     tokio::spawn(async move {
-        let reader = BufReader::new(stderr);
-        let mut lines = reader.lines();
         let mut tail = TailBuffer::new();
-
-        while let Ok(Some(line)) = lines.next_line().await {
-            tail.push(line);
+        let mut buffer = [0_u8; 8 * 1024];
+        let mut line = Vec::new();
+        loop {
+            let read = stderr.read(&mut buffer).await.map_err(|error| {
+                format!("process_output_failed: could not read stderr: {error}")
+            })?;
+            if read == 0 {
+                break;
+            }
+            for byte in &buffer[..read] {
+                if *byte == b'\n' {
+                    if line.last() == Some(&b'\r') {
+                        line.pop();
+                    }
+                    tail.push(String::from_utf8_lossy(&line).into_owned());
+                    line.clear();
+                } else if line.len() < MAX_PROCESS_LINE_BYTES {
+                    line.push(*byte);
+                } else {
+                    return Err(
+                        "process_output_limit: stderr contained a line larger than 64 KiB"
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        if !line.is_empty() {
+            tail.push(String::from_utf8_lossy(&line).into_owned());
         }
 
-        tail.into_string()
+        Ok(tail.into_string())
+    })
+}
+
+fn flatten_stderr_result(
+    result: Result<Result<String, String>, tokio::task::JoinError>,
+) -> Result<String, String> {
+    result.map_err(|_| "process_output_failed: stderr reader stopped unexpectedly".to_string())?
+}
+
+async fn wait_child_monitor_stderr(
+    child: &mut tokio::process::Child,
+    job: &DownloadJob,
+    stderr_handle: &mut tokio::task::JoinHandle<Result<String, String>>,
+    stderr_output: &mut Option<String>,
+    process_name: &str,
+) -> Result<(std::process::ExitStatus, bool), String> {
+    loop {
+        tokio::select! {
+            status = child.wait() => {
+                return status
+                    .map(|status| (status, false))
+                    .map_err(|error| format!("process_wait_failed: failed to wait for {process_name}: {error}"));
+            }
+            result = &mut *stderr_handle, if stderr_output.is_none() => {
+                match flatten_stderr_result(result) {
+                    Ok(output) => *stderr_output = Some(output),
+                    Err(error) => {
+                        job.cancel();
+                        let _ = child.kill().await;
+                        let _ = child.wait().await;
+                        return Err(error);
+                    }
+                }
+            }
+            _ = job.cancelled() => {
+                job.cancel();
+                let _ = child.kill().await;
+                let status = child.wait().await
+                    .map_err(|error| format!("process_reap_failed: failed to reap {process_name}: {error}"))?;
+                return Ok((status, true));
+            }
+        }
+    }
+}
+
+async fn await_stderr_tail_bounded(
+    stderr_handle: &mut tokio::task::JoinHandle<Result<String, String>>,
+    job: &DownloadJob,
+    timeout: Duration,
+) -> Result<String, String> {
+    tokio::select! {
+        result = &mut *stderr_handle => flatten_stderr_result(result),
+        _ = job.cancelled() => {
+            job.cancel();
+            match tokio::time::timeout(timeout, &mut *stderr_handle).await {
+                Ok(result) => flatten_stderr_result(result),
+                Err(_) => {
+                    stderr_handle.abort();
+                    Err("process_drain_timeout: stderr remained open after cancellation".to_string())
+                }
+            }
+        }
+        _ = tokio::time::sleep(timeout) => {
+            job.cancel();
+            if tokio::time::timeout(Duration::from_secs(1), &mut *stderr_handle).await.is_err() {
+                stderr_handle.abort();
+            }
+            Err("process_drain_timeout: a descendant kept stderr open".to_string())
+        }
+    }
+}
+
+async fn read_bounded_line<R>(reader: &mut R, max_bytes: usize) -> std::io::Result<Option<String>>
+where
+    R: AsyncBufRead + Unpin,
+{
+    let mut bytes = Vec::new();
+    loop {
+        let available = reader.fill_buf().await?;
+        if available.is_empty() {
+            return if bytes.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(String::from_utf8_lossy(&bytes).into_owned()))
+            };
+        }
+        let take = available
+            .iter()
+            .position(|byte| *byte == b'\n')
+            .map(|position| position + 1)
+            .unwrap_or(available.len());
+        if bytes.len().saturating_add(take) > max_bytes {
+            reader.consume(take);
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "process output line exceeded 64 KiB",
+            ));
+        }
+        bytes.extend_from_slice(&available[..take]);
+        let ended = available[take - 1] == b'\n';
+        reader.consume(take);
+        if ended {
+            if bytes.last() == Some(&b'\n') {
+                bytes.pop();
+            }
+            if bytes.last() == Some(&b'\r') {
+                bytes.pop();
+            }
+            return Ok(Some(String::from_utf8_lossy(&bytes).into_owned()));
+        }
+    }
+}
+
+fn record_streamed_output_bytes(
+    total: &mut usize,
+    line_bytes: usize,
+    limit: usize,
+) -> Result<(), String> {
+    *total = total.saturating_add(line_bytes.saturating_add(1));
+    if *total > limit {
+        Err(format!(
+            "process_output_limit: inspection output exceeded the {limit}-byte limit"
+        ))
+    } else {
+        Ok(())
+    }
+}
+
+async fn read_stream_bounded<R>(mut reader: R, max_bytes: usize) -> Result<Vec<u8>, String>
+where
+    R: AsyncRead + Unpin,
+{
+    let mut retained = Vec::new();
+    let mut buffer = [0_u8; 8 * 1024];
+    let mut total = 0usize;
+    let mut current_line = 0usize;
+    loop {
+        let read = reader
+            .read(&mut buffer)
+            .await
+            .map_err(|error| format!("Failed to read process output: {error}"))?;
+        if read == 0 {
+            break;
+        }
+        total = total.saturating_add(read);
+        if total > max_bytes {
+            return Err(format!(
+                "process_output_limit: output exceeded the {max_bytes}-byte limit"
+            ));
+        }
+        for byte in &buffer[..read] {
+            if *byte == b'\n' {
+                current_line = 0;
+            } else {
+                current_line = current_line.saturating_add(1);
+                if current_line > MAX_PROCESS_LINE_BYTES {
+                    return Err(
+                        "process_output_limit: output contained a line larger than 64 KiB"
+                            .to_string(),
+                    );
+                }
+            }
+        }
+        retained.extend_from_slice(&buffer[..read]);
+    }
+    Ok(retained)
+}
+
+async fn wait_with_bounded_output(
+    child: tokio::process::Child,
+    job: &DownloadJob,
+    stdout_limit: usize,
+    stderr_limit: usize,
+    timeout: Duration,
+) -> Result<std::process::Output, String> {
+    wait_with_bounded_output_and_drain(
+        child,
+        job,
+        stdout_limit,
+        stderr_limit,
+        timeout,
+        PROCESS_DRAIN_TIMEOUT,
+    )
+    .await
+}
+
+async fn wait_with_bounded_output_and_drain(
+    mut child: tokio::process::Child,
+    job: &DownloadJob,
+    stdout_limit: usize,
+    stderr_limit: usize,
+    timeout: Duration,
+    drain_timeout: Duration,
+) -> Result<std::process::Output, String> {
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| "Failed to capture process output.".to_string())?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| "Failed to capture process errors.".to_string())?;
+    let mut stdout_reader = tokio::spawn(read_stream_bounded(stdout, stdout_limit));
+    let mut stderr_reader = tokio::spawn(read_stream_bounded(stderr, stderr_limit));
+    let mut stdout_result: Option<Vec<u8>> = None;
+    let mut stderr_result: Option<Vec<u8>> = None;
+    let mut terminal_error: Option<String> = None;
+    let deadline = tokio::time::Instant::now() + timeout;
+
+    let status = loop {
+        tokio::select! {
+            status = child.wait() => {
+                match status {
+                    Ok(status) => break status,
+                    Err(error) => {
+                        job.cancel();
+                        stdout_reader.abort();
+                        stderr_reader.abort();
+                        return Err(format!("process_wait_failed: {error}"));
+                    }
+                }
+            }
+            result = &mut stdout_reader, if stdout_result.is_none() => {
+                match result {
+                    Ok(Ok(output)) => stdout_result = Some(output),
+                    Ok(Err(error)) => {
+                        stdout_result = Some(Vec::new());
+                        terminal_error = Some(error);
+                        job.cancel();
+                        let _ = child.kill().await;
+                        break child.wait().await
+                            .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+                    }
+                    Err(_) => {
+                        stdout_result = Some(Vec::new());
+                        terminal_error = Some("process_output_failed: stdout reader stopped unexpectedly".to_string());
+                        job.cancel();
+                        let _ = child.kill().await;
+                        break child.wait().await
+                            .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+                    }
+                }
+            }
+            result = &mut stderr_reader, if stderr_result.is_none() => {
+                match result {
+                    Ok(Ok(output)) => stderr_result = Some(output),
+                    Ok(Err(error)) => {
+                        stderr_result = Some(Vec::new());
+                        terminal_error = Some(error);
+                        job.cancel();
+                        let _ = child.kill().await;
+                        break child.wait().await
+                            .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+                    }
+                    Err(_) => {
+                        stderr_result = Some(Vec::new());
+                        terminal_error = Some("process_output_failed: stderr reader stopped unexpectedly".to_string());
+                        job.cancel();
+                        let _ = child.kill().await;
+                        break child.wait().await
+                            .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+                    }
+                }
+            }
+            _ = job.cancelled() => {
+                terminal_error = Some("process_cancelled: operation was cancelled".to_string());
+                job.cancel();
+                let _ = child.kill().await;
+                break child.wait().await
+                    .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+            }
+            _ = tokio::time::sleep_until(deadline) => {
+                terminal_error = Some("process_timeout: operation timed out".to_string());
+                job.cancel();
+                let _ = child.kill().await;
+                break child.wait().await
+                    .map_err(|wait_error| format!("process_reap_failed: {wait_error}"))?;
+            }
+        }
+    };
+
+    let drain_deadline = tokio::time::Instant::now() + drain_timeout;
+    while stdout_result.is_none() || stderr_result.is_none() {
+        tokio::select! {
+            result = &mut stdout_reader, if stdout_result.is_none() => {
+                stdout_result = Some(match result {
+                    Ok(Ok(output)) => output,
+                    Ok(Err(error)) => {
+                        terminal_error.get_or_insert(error);
+                        job.cancel();
+                        Vec::new()
+                    }
+                    Err(_) => {
+                        terminal_error.get_or_insert_with(|| "process_output_failed: stdout reader stopped unexpectedly".to_string());
+                        job.cancel();
+                        Vec::new()
+                    }
+                });
+            }
+            result = &mut stderr_reader, if stderr_result.is_none() => {
+                stderr_result = Some(match result {
+                    Ok(Ok(output)) => output,
+                    Ok(Err(error)) => {
+                        terminal_error.get_or_insert(error);
+                        job.cancel();
+                        Vec::new()
+                    }
+                    Err(_) => {
+                        terminal_error.get_or_insert_with(|| "process_output_failed: stderr reader stopped unexpectedly".to_string());
+                        job.cancel();
+                        Vec::new()
+                    }
+                });
+            }
+            _ = job.cancelled(), if terminal_error.is_none() => {
+                terminal_error = Some("process_cancelled: operation was cancelled during output drain".to_string());
+                job.cancel();
+            }
+            _ = tokio::time::sleep_until(drain_deadline) => {
+                job.cancel();
+                if stdout_result.is_none() {
+                    stdout_reader.abort();
+                }
+                if stderr_result.is_none() {
+                    stderr_reader.abort();
+                }
+                return Err("process_drain_timeout: a descendant kept a process output pipe open".to_string());
+            }
+        }
+    }
+    if let Some(error) = terminal_error {
+        return Err(error);
+    }
+    Ok(std::process::Output {
+        status,
+        stdout: stdout_result.unwrap_or_default(),
+        stderr: stderr_result.unwrap_or_default(),
     })
 }
 
@@ -1136,8 +1867,8 @@ async fn run_fetch_info_command(
     allow_playlist: bool,
     job: &DownloadJob,
 ) -> Result<std::process::Output, String> {
-    let bin = ytdlp_bin();
-    let runtime_config = runtime::ytdlp_command_config();
+    let bin = job.required_runtime_tool("yt-dlp")?;
+    let runtime_config = job.ytdlp_runtime_config()?;
     let mut args = Vec::new();
     append_ytdlp_runtime_args(&mut args, &runtime_config, compat_config_path);
     args.extend([
@@ -1162,22 +1893,17 @@ async fn run_fetch_info_command(
     cmd.kill_on_drop(true);
     cmd.args(&args);
 
-    #[cfg(windows)]
-    cmd.creation_flags(hidden_process_flags());
-
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = cmd
-        .spawn()
-        .map_err(|e| format!("Failed to run yt-dlp: {}. Is yt-dlp installed?", e))?;
-    if !job.attach_process(&child)? {
-        return Err("URL inspection was cancelled.".into());
-    }
-    tokio::select! {
-        output = child.wait_with_output() => output
-            .map_err(|e| format!("Failed to wait for yt-dlp: {e}")),
-        _ = job.cancelled() => Err("URL inspection was cancelled.".into()),
-    }
+    let child = job.spawn(&mut cmd, "yt-dlp", false).await?;
+    wait_with_bounded_output(
+        child,
+        job,
+        MAX_INSPECTION_OUTPUT_BYTES,
+        MAX_STDERR_BYTES,
+        INSPECTION_TIMEOUT,
+    )
+    .await
 }
 
 fn video_info_from_json(url: &str, data: &serde_json::Value) -> Result<VideoInfo, String> {
@@ -1266,8 +1992,8 @@ async fn fetch_playlist(
 ) -> Result<PlaylistInfo, String> {
     validate_fetch_request(url, cookie_config, compat_config_path)?;
 
-    let bin = ytdlp_bin();
-    let runtime_config = runtime::ytdlp_command_config();
+    let bin = job.required_runtime_tool("yt-dlp")?;
+    let runtime_config = job.ytdlp_runtime_config()?;
     let mut args = Vec::new();
     append_ytdlp_runtime_args(&mut args, &runtime_config, compat_config_path);
     args.extend([
@@ -1284,18 +2010,10 @@ async fn fetch_playlist(
     cmd.args(&args);
     configure_cookie_args(&mut cmd, cookie_config);
 
-    #[cfg(windows)]
-    cmd.creation_flags(hidden_process_flags());
-
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| format!("Failed to run yt-dlp: {}", e))?;
-    if !job.attach_process(&child)? {
-        return Err("Playlist inspection was cancelled.".into());
-    }
+    let mut child = job.spawn(&mut cmd, "yt-dlp", false).await?;
 
     let stdout = child
         .stdout
@@ -1305,9 +2023,9 @@ async fn fetch_playlist(
         .stderr
         .take()
         .ok_or_else(|| "Failed to capture yt-dlp playlist errors.".to_string())?;
-    let stderr_handle = spawn_stderr_tail_reader(stderr);
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut stderr_handle = spawn_stderr_tail_reader(stderr);
+    let mut stderr_output: Option<String> = None;
+    let mut reader = BufReader::new(stdout);
 
     let mut entries: Vec<PlaylistEntry> = Vec::new();
     let mut seen_urls: HashSet<String> = HashSet::new();
@@ -1315,15 +2033,51 @@ async fn fetch_playlist(
     let mut truncated = false;
     let mut playlist_title = String::from("Playlist");
     let mut playlist_channel: Option<String> = None;
+    let mut cancelled = false;
+    let mut output_error: Option<String> = None;
+    let mut stdout_bytes = 0usize;
 
     loop {
         let next_line = tokio::select! {
-            line = lines.next_line() => line,
-            _ = job.cancelled() => return Err("Playlist inspection was cancelled.".into()),
+            line = read_bounded_line(&mut reader, MAX_PROCESS_LINE_BYTES) => line,
+            result = &mut stderr_handle, if stderr_output.is_none() => {
+                match flatten_stderr_result(result) {
+                    Ok(output) => {
+                        stderr_output = Some(output);
+                        continue;
+                    }
+                    Err(error) => {
+                        output_error = Some(error);
+                        job.cancel();
+                        let _ = child.kill().await;
+                        break;
+                    }
+                }
+            }
+            _ = job.cancelled() => {
+                cancelled = true;
+                let _ = child.kill().await;
+                break;
+            },
         };
-        let Ok(Some(line)) = next_line else {
+        let line = match next_line {
+            Ok(Some(line)) => line,
+            Ok(None) => break,
+            Err(error) => {
+                output_error = Some(format!("Playlist output limit was exceeded: {error}"));
+                job.cancel();
+                let _ = child.kill().await;
+                break;
+            }
+        };
+        if let Err(error) =
+            record_streamed_output_bytes(&mut stdout_bytes, line.len(), MAX_INSPECTION_OUTPUT_BYTES)
+        {
+            output_error = Some(error);
+            job.cancel();
+            let _ = child.kill().await;
             break;
-        };
+        }
         let Ok(data) = serde_json::from_str::<PlaylistLineRecord>(&line) else {
             continue;
         };
@@ -1349,11 +2103,34 @@ async fn fetch_playlist(
         }
     }
 
-    let stderr_output = stderr_handle.await.unwrap_or_default();
-    let status = child
-        .wait()
-        .await
-        .map_err(|e| format!("Failed to wait for yt-dlp: {}", e))?;
+    let (status, wait_cancelled) = wait_child_monitor_stderr(
+        &mut child,
+        job,
+        &mut stderr_handle,
+        &mut stderr_output,
+        "yt-dlp",
+    )
+    .await?;
+    cancelled |= wait_cancelled;
+    let stderr_output = match stderr_output {
+        Some(output) => output,
+        None => {
+            match await_stderr_tail_bounded(&mut stderr_handle, job, PROCESS_DRAIN_TIMEOUT).await {
+                Ok(output) => output,
+                Err(error) => {
+                    output_error.get_or_insert(error);
+                    String::new()
+                }
+            }
+        }
+    };
+
+    if (cancelled || job.is_cancelled()) && output_error.is_none() {
+        return Err("Playlist inspection was cancelled.".into());
+    }
+    if let Some(error) = output_error {
+        return Err(error);
+    }
 
     if !status.success() {
         return Err(error_for_fetch(&stderr_output, status.code()));
@@ -1436,45 +2213,373 @@ fn build_download_args_with_runtime(
     args
 }
 
+#[cfg(test)]
 fn build_download_args(request: &DownloadRequest, use_twitter_syndication: bool) -> Vec<String> {
-    let runtime_config = runtime::ytdlp_command_config();
+    let runtime_config = YtdlpCommandConfig {
+        ffmpeg_dir: None,
+        deno_path: None,
+        plugin_dir: None,
+    };
     build_download_args_with_runtime(request, use_twitter_syndication, &runtime_config)
 }
 
-fn staging_root() -> PathBuf {
-    std::env::temp_dir()
-        .join("nuclear-downloader")
-        .join("downloads")
+fn staging_root(output_dir: &Path) -> PathBuf {
+    output_dir.join(STAGING_ROOT_NAME)
 }
 
-fn build_staging_dir(download_id: &str) -> PathBuf {
-    let safe_id =
-        sanitize_filename_component(download_id).unwrap_or_else(|| "download".to_string());
-    staging_root().join(safe_id)
+fn build_staging_dir(output_dir: &Path, download_id: &str) -> PathBuf {
+    // Operation IDs are generated by the backend, but retain a strict UUID
+    // fallback for legacy renderer-generated IDs during the 0.6.0 bridge.
+    let safe_id = uuid::Uuid::parse_str(download_id.trim())
+        .map(|id| id.to_string())
+        .unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
+    staging_root(output_dir).join(safe_id)
 }
 
-fn is_safe_staging_dir(path: &Path) -> bool {
-    path.starts_with(staging_root())
-}
-
-fn reset_staging_dir(path: &Path) -> Result<(), String> {
-    if !is_safe_staging_dir(path) {
-        return Err("Refusing to use unsafe staging folder.".into());
-    }
-
-    if path.exists() {
-        std::fs::remove_dir_all(path)
+fn reset_staging_dir(path: &Path, output_dir: &Path, operation_id: &str) -> Result<(), String> {
+    let (root, operation_path, normalized_id) =
+        validate_staging_layout(path, output_dir, operation_id, false)?;
+    if operation_path.exists() {
+        quarantine_and_remove_staging_dir(&root, &operation_path, &normalized_id, true)
             .map_err(|error| format!("Failed to reset staging folder: {error}"))?;
     }
 
-    std::fs::create_dir_all(path)
-        .map_err(|error| format!("Failed to create staging folder: {error}"))
+    mark_hidden(&root)?;
+    std::fs::create_dir(&operation_path)
+        .map_err(|error| format!("Failed to create staging folder: {error}"))?;
+    let marker = serde_json::json!({
+        "schemaVersion": 1,
+        "owner": "nuclear-downloader",
+        "operationId": normalized_id,
+    });
+    let marker_bytes = serde_json::to_vec(&marker).map_err(|error| error.to_string())?;
+    let mut marker_file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(operation_path.join(STAGING_MARKER_NAME))
+        .map_err(|error| format!("Failed to create staging ownership marker: {error}"))?;
+    marker_file
+        .write_all(&marker_bytes)
+        .and_then(|()| marker_file.sync_all())
+        .map_err(|error| format!("Failed to write staging ownership marker: {error}"))?;
+    drop(marker_file);
+    verify_staging_marker(&operation_path, &normalized_id)
 }
 
-fn cleanup_staging_dir(path: &Path) {
-    if is_safe_staging_dir(path) {
-        let _ = std::fs::remove_dir_all(path);
+fn cleanup_staging_dir(path: &Path, output_dir: &Path, operation_id: &str) -> Result<(), String> {
+    let (root, operation_path, normalized_id) =
+        validate_staging_layout(path, output_dir, operation_id, true)?;
+    quarantine_and_remove_staging_dir(&root, &operation_path, &normalized_id, true)
+        .map_err(|error| format!("Failed to clean staging folder: {error}"))
+}
+
+fn quarantine_and_remove_staging_dir(
+    root: &Path,
+    source: &Path,
+    operation_id: &str,
+    require_operation_name: bool,
+) -> Result<(), String> {
+    validate_owned_staging_directory(root, source, operation_id, require_operation_name)?;
+    let quarantine = root.join(format!(
+        "{STAGING_CLEANUP_PREFIX}{operation_id}.{}",
+        uuid::Uuid::new_v4()
+    ));
+    if quarantine.exists() {
+        return Err("A staging quarantine destination unexpectedly already exists.".into());
     }
+    std::fs::rename(source, &quarantine)
+        .map_err(|error| format!("Could not atomically quarantine staging data: {error}"))?;
+    validate_owned_staging_directory(root, &quarantine, operation_id, false)?;
+    // Rust's recursive removal does not traverse directory symlinks. Combined
+    // with the same-volume quarantine rename and the second identity check,
+    // a replaced source path can never redirect deletion outside this root.
+    std::fs::remove_dir_all(&quarantine)
+        .map_err(|error| format!("Could not remove quarantined staging data: {error}"))
+}
+
+fn validate_owned_staging_directory(
+    root: &Path,
+    path: &Path,
+    operation_id: &str,
+    require_operation_name: bool,
+) -> Result<(), String> {
+    let root_metadata = std::fs::symlink_metadata(root)
+        .map_err(|error| format!("Failed to inspect staging root: {error}"))?;
+    let metadata = std::fs::symlink_metadata(path)
+        .map_err(|error| format!("Failed to inspect staging operation: {error}"))?;
+    if !root_metadata.is_dir()
+        || is_reparse_metadata(&root_metadata)
+        || !metadata.is_dir()
+        || is_reparse_metadata(&metadata)
+    {
+        return Err("Staging cleanup requires regular non-reparse directories.".into());
+    }
+    let canonical_root = root
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve staging root: {error}"))?;
+    let canonical_path = path
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve staging operation: {error}"))?;
+    if canonical_path.parent() != Some(canonical_root.as_path()) {
+        return Err("Staging cleanup target escaped its staging root.".into());
+    }
+    verify_staging_marker_with_name_policy(path, operation_id, require_operation_name)
+}
+
+fn validate_staging_layout(
+    path: &Path,
+    output_dir: &Path,
+    operation_id: &str,
+    require_operation: bool,
+) -> Result<(PathBuf, PathBuf, String), String> {
+    let normalized_id = uuid::Uuid::parse_str(operation_id.trim())
+        .map_err(|_| "Staging operation ID was not a UUID.".to_string())?
+        .to_string();
+    let expected_lexical = staging_root(output_dir).join(&normalized_id);
+    if path != expected_lexical {
+        return Err("Refusing to use a staging folder outside the expected operation path.".into());
+    }
+    let output_metadata = std::fs::symlink_metadata(output_dir)
+        .map_err(|error| format!("Failed to inspect output folder: {error}"))?;
+    if !output_metadata.is_dir() || is_reparse_metadata(&output_metadata) {
+        return Err("Output folder was not a regular non-reparse directory.".into());
+    }
+    let canonical_output = output_dir
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve output folder: {error}"))?;
+    let root = staging_root(&canonical_output);
+    match std::fs::symlink_metadata(&root) {
+        Ok(metadata) => {
+            if !metadata.is_dir() || is_reparse_metadata(&metadata) {
+                return Err("Staging root was not a regular non-reparse directory.".into());
+            }
+            let canonical_root = root
+                .canonicalize()
+                .map_err(|error| format!("Failed to resolve staging root: {error}"))?;
+            if canonical_root.parent() != Some(canonical_output.as_path()) {
+                return Err("Staging root escaped the output folder.".into());
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound && !require_operation => {
+            std::fs::create_dir(&root)
+                .map_err(|error| format!("Failed to create staging root: {error}"))?;
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Err("Staging root did not exist.".into());
+        }
+        Err(error) => return Err(format!("Failed to inspect staging root: {error}")),
+    }
+    let operation_path = root.join(&normalized_id);
+    match std::fs::symlink_metadata(&operation_path) {
+        Ok(metadata) => {
+            if !metadata.is_dir() || is_reparse_metadata(&metadata) {
+                return Err("Staging operation was not a regular non-reparse directory.".into());
+            }
+            let canonical_operation = operation_path
+                .canonicalize()
+                .map_err(|error| format!("Failed to resolve staging operation: {error}"))?;
+            if canonical_operation.parent() != Some(root.as_path()) {
+                return Err("Staging operation escaped the staging root.".into());
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound && !require_operation => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Err("Staging operation did not exist.".into());
+        }
+        Err(error) => return Err(format!("Failed to inspect staging operation: {error}")),
+    }
+    Ok((root, operation_path, normalized_id))
+}
+
+fn verify_staging_marker(path: &Path, expected_operation_id: &str) -> Result<(), String> {
+    verify_staging_marker_with_name_policy(path, expected_operation_id, true)
+}
+
+fn verify_staging_marker_with_name_policy(
+    path: &Path,
+    expected_operation_id: &str,
+    require_operation_name: bool,
+) -> Result<(), String> {
+    let marker_path = path.join(STAGING_MARKER_NAME);
+    let marker_metadata = std::fs::symlink_metadata(&marker_path)
+        .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?;
+    if !marker_metadata.is_file() || is_reparse_metadata(&marker_metadata) {
+        return Err("Staging ownership marker was not a regular non-reparse file.".into());
+    }
+    let marker: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(&marker_path)
+            .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?,
+    )
+    .map_err(|_| "Staging ownership marker was invalid.".to_string())?;
+    let directory_id = path.file_name().and_then(|name| name.to_str());
+    if marker["schemaVersion"] != 1
+        || marker["owner"] != "nuclear-downloader"
+        || marker["operationId"] != expected_operation_id
+        || (require_operation_name && directory_id != Some(expected_operation_id))
+    {
+        return Err("Staging ownership marker was not recognized.".to_string());
+    }
+    Ok(())
+}
+
+pub fn cleanup_abandoned_download_stages(output_roots: &[String]) -> Vec<String> {
+    let mut failures = Vec::new();
+    for (root_index, output_root) in output_roots.iter().enumerate() {
+        if let Err(error) = cleanup_abandoned_download_stages_at(Path::new(output_root)) {
+            failures.push(format!("Output root {root_index}: {error}"));
+        }
+    }
+    failures
+}
+
+fn cleanup_abandoned_download_stages_at(output_root: &Path) -> Result<(), String> {
+    let output_metadata = match std::fs::symlink_metadata(output_root) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("could not inspect output root ({})", error.kind())),
+    };
+    if !output_metadata.is_dir() || is_reparse_metadata(&output_metadata) {
+        return Err("output root is not a regular non-reparse directory".to_string());
+    }
+    let output_root = output_root
+        .canonicalize()
+        .map_err(|error| format!("could not resolve output root ({})", error.kind()))?;
+    let staging_root = staging_root(&output_root);
+    let staging_metadata = match std::fs::symlink_metadata(&staging_root) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("could not inspect staging root ({})", error.kind())),
+    };
+    if !staging_metadata.is_dir() || is_reparse_metadata(&staging_metadata) {
+        return Err("staging root is not a regular non-reparse directory".to_string());
+    }
+
+    let entries = std::fs::read_dir(&staging_root)
+        .map_err(|error| format!("could not enumerate staging root ({})", error.kind()))?;
+    for entry in entries {
+        let entry =
+            entry.map_err(|error| format!("could not inspect staging entry ({})", error.kind()))?;
+        let path = entry.path();
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        let operation_id = if uuid::Uuid::parse_str(name).is_ok() {
+            name.to_string()
+        } else if let Some(rest) = name.strip_prefix(STAGING_CLEANUP_PREFIX) {
+            let Some((operation_id, quarantine_id)) = rest.split_once('.') else {
+                continue;
+            };
+            if uuid::Uuid::parse_str(operation_id).is_err()
+                || uuid::Uuid::parse_str(quarantine_id).is_err()
+            {
+                continue;
+            }
+            operation_id.to_string()
+        } else {
+            continue;
+        };
+        let metadata = std::fs::symlink_metadata(&path)
+            .map_err(|error| format!("could not inspect staging operation ({})", error.kind()))?;
+        if !metadata.is_dir() || is_reparse_metadata(&metadata) {
+            continue;
+        }
+        if verify_staging_marker_with_name_policy(
+            &path,
+            &operation_id,
+            uuid::Uuid::parse_str(name).is_ok(),
+        )
+        .is_err()
+        {
+            continue;
+        }
+        quarantine_and_remove_staging_dir(&staging_root, &path, &operation_id, false)?;
+    }
+    Ok(())
+}
+
+fn is_reparse_metadata(metadata: &std::fs::Metadata) -> bool {
+    if metadata.file_type().is_symlink() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+    }
+    #[cfg(not(windows))]
+    false
+}
+
+#[cfg(windows)]
+fn mark_hidden(path: &Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    const FILE_ATTRIBUTE_HIDDEN: u32 = 0x2;
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn GetFileAttributesW(path: *const u16) -> u32;
+        fn SetFileAttributesW(path: *const u16, attributes: u32) -> i32;
+    }
+    let wide = path
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<_>>();
+    let attributes = unsafe { GetFileAttributesW(wide.as_ptr()) };
+    if attributes == u32::MAX
+        || unsafe { SetFileAttributesW(wide.as_ptr(), attributes | FILE_ATTRIBUTE_HIDDEN) } == 0
+    {
+        return Err(format!(
+            "Failed to hide staging root: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn mark_hidden(_path: &Path) -> Result<(), String> {
+    Ok(())
+}
+
+fn validate_staged_file(path: &Path, staging_dir: &Path) -> Result<PathBuf, String> {
+    let reported_metadata = std::fs::symlink_metadata(path)
+        .map_err(|error| format!("Failed to inspect reported output: {error}"))?;
+    if !reported_metadata.file_type().is_file() || reported_metadata.file_type().is_symlink() {
+        return Err("Downloader output was not a regular non-reparse file.".to_string());
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if reported_metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err("Downloader output was a reparse point.".to_string());
+        }
+    }
+    let canonical_stage = staging_dir
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve staging folder: {error}"))?;
+    let canonical_path = path
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve staged output: {error}"))?;
+    if canonical_path == canonical_stage || !canonical_path.starts_with(&canonical_stage) {
+        return Err("Downloader reported a path outside its staging folder.".to_string());
+    }
+    let metadata = std::fs::symlink_metadata(&canonical_path)
+        .map_err(|error| format!("Failed to inspect staged output: {error}"))?;
+    if !metadata.file_type().is_file() || metadata.file_type().is_symlink() {
+        return Err("Downloader output was not a regular non-reparse file.".to_string());
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err("Downloader output was a reparse point.".to_string());
+        }
+    }
+    Ok(canonical_path)
 }
 
 fn path_to_string(path: &Path) -> String {
@@ -1505,17 +2610,6 @@ fn build_staged_webm_output_path(staging_dir: &Path, final_path: &Path) -> PathB
         .unwrap_or_else(|| "download".to_string());
 
     staging_dir.join(format!("{stem}.converted.webm"))
-}
-
-fn build_publish_temp_path(final_path: &Path) -> PathBuf {
-    let stem = final_path
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .and_then(sanitize_filename_component)
-        .unwrap_or_else(|| "download".to_string());
-    let unique = uuid::Uuid::new_v4();
-
-    final_path.with_file_name(format!(".{stem}.nuclear-publish-{unique}.tmp"))
 }
 
 fn build_final_output_path(
@@ -1562,47 +2656,6 @@ fn suffixed_output_path(base_path: &Path, suffix: usize) -> PathBuf {
     base_path.with_file_name(filename)
 }
 
-async fn copy_file_create_new(
-    source: &Path,
-    destination: &Path,
-    job: Option<&DownloadJob>,
-) -> std::io::Result<()> {
-    let mut source_file = tokio::fs::File::open(source).await?;
-    let mut destination_file = tokio::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(destination)
-        .await?;
-
-    let copy_result = match job {
-        Some(job) => {
-            tokio::select! {
-                biased;
-                _ = job.cancelled() => Err(std::io::Error::new(
-                    std::io::ErrorKind::Interrupted,
-                    "Publishing was cancelled.",
-                )),
-                result = tokio::io::copy(&mut source_file, &mut destination_file) => result,
-            }
-        }
-        None => tokio::io::copy(&mut source_file, &mut destination_file).await,
-    };
-
-    if let Err(error) = copy_result {
-        drop(destination_file);
-        let _ = tokio::fs::remove_file(destination).await;
-        return Err(error);
-    }
-
-    if let Err(error) = destination_file.sync_all().await {
-        drop(destination_file);
-        let _ = tokio::fs::remove_file(destination).await;
-        return Err(error);
-    }
-
-    Ok(())
-}
-
 async fn publish_staged_output(
     staged_output: &Path,
     desired_path: &Path,
@@ -1614,14 +2667,20 @@ async fn publish_staged_output(
             .map_err(|error| format!("Failed to create output folder: {error}"))?;
     }
 
-    let _publish_guard = OUTPUT_PUBLISH_LOCK.lock().await;
-    let mut destination_temp: Option<PathBuf> = None;
+    let staged_file = tokio::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(staged_output)
+        .await
+        .map_err(|error| format!("Failed to open staged output: {error}"))?;
+    staged_file
+        .sync_all()
+        .await
+        .map_err(|error| format!("Failed to flush staged output: {error}"))?;
+    drop(staged_file);
 
     for suffix in 1..=MAX_OUTPUT_SUFFIX {
         if job.is_some_and(DownloadJob::is_cancelled) {
-            if let Some(temp) = destination_temp.take() {
-                let _ = tokio::fs::remove_file(temp).await;
-            }
             return Err("Publishing was cancelled.".into());
         }
 
@@ -1630,58 +2689,60 @@ async fn publish_staged_output(
             continue;
         }
 
-        match tokio::fs::hard_link(staged_output, &candidate).await {
+        match atomic_move_no_replace(staged_output, &candidate).await {
             Ok(()) => {
-                let _ = tokio::fs::remove_file(staged_output).await;
                 return Ok(candidate);
             }
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(_) => {}
-        }
-
-        if destination_temp.is_none() {
-            let publish_temp = build_publish_temp_path(desired_path);
-            copy_file_create_new(staged_output, &publish_temp, job)
-                .await
-                .map_err(|error| format!("Failed to stage output for publishing: {error}"))?;
-            destination_temp = Some(publish_temp);
-        }
-
-        let publish_source = destination_temp.as_deref().unwrap_or(staged_output);
-        match tokio::fs::hard_link(publish_source, &candidate).await {
-            Ok(()) => {
-                if let Some(temp) = destination_temp.take() {
-                    let _ = tokio::fs::remove_file(temp).await;
-                }
-                let _ = tokio::fs::remove_file(staged_output).await;
-                return Ok(candidate);
+            Err(error)
+                if error.kind() == std::io::ErrorKind::AlreadyExists || candidate.exists() =>
+            {
+                continue
             }
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(_) => {}
-        }
-
-        match copy_file_create_new(publish_source, &candidate, job).await {
-            Ok(()) => {
-                if let Some(temp) = destination_temp.take() {
-                    let _ = tokio::fs::remove_file(temp).await;
-                }
-                let _ = tokio::fs::remove_file(staged_output).await;
-                return Ok(candidate);
-            }
-            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
             Err(error) => {
-                if let Some(temp) = destination_temp.take() {
-                    let _ = tokio::fs::remove_file(temp).await;
-                }
                 return Err(format!("Failed to publish output: {error}"));
             }
         }
     }
 
-    if let Some(temp) = destination_temp {
-        let _ = tokio::fs::remove_file(temp).await;
-    }
     Err("Could not allocate a unique output filename.".into())
+}
+
+#[cfg(windows)]
+async fn atomic_move_no_replace(source: &Path, destination: &Path) -> std::io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn MoveFileExW(existing: *const u16, new: *const u16, flags: u32) -> i32;
+    }
+    let source = source
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<_>>();
+    let destination = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(Some(0))
+        .collect::<Vec<_>>();
+    let moved = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if moved == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(not(windows))]
+async fn atomic_move_no_replace(source: &Path, destination: &Path) -> std::io::Result<()> {
+    tokio::fs::hard_link(source, destination).await?;
+    tokio::fs::remove_file(source).await
 }
 
 fn find_latest_media_file(dir: &Path) -> Option<PathBuf> {
@@ -1772,7 +2833,8 @@ async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<
         return Err("Conversion was cancelled.".into());
     }
 
-    let mut cmd = Command::new(ffprobe_bin());
+    let ffprobe = job.required_runtime_tool("ffprobe")?;
+    let mut cmd = Command::new(ffprobe);
     cmd.kill_on_drop(true);
     cmd.args([
         "-v",
@@ -1784,28 +2846,18 @@ async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<
     ]);
     cmd.arg(path);
 
-    #[cfg(windows)]
-    cmd.creation_flags(hidden_process_flags());
-
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let mut child = cmd
-        .spawn()
-        .map_err(|error| format!("Failed to run ffprobe: {error}"))?;
-    if !job.attach_process(&child)? {
-        let _ = child.kill().await;
-        let _ = child.wait().await;
-        return Err("Conversion was cancelled.".into());
-    }
+    let child = job.spawn(&mut cmd, "ffprobe", false).await?;
 
-    let output = tokio::select! {
-        output = child.wait_with_output() => {
-            output.map_err(|error| format!("Failed to wait for ffprobe: {error}"))?
-        }
-        _ = job.cancelled() => {
-            return Err("Conversion was cancelled.".into());
-        }
-    };
+    let output = wait_with_bounded_output(
+        child,
+        job,
+        MAX_PROCESS_LINE_BYTES,
+        MAX_STDERR_BYTES,
+        Duration::from_secs(30),
+    )
+    .await?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
@@ -1851,19 +2903,27 @@ async fn run_download_attempt(
         return DownloadAttemptResult::Cancelled;
     }
 
-    let args = build_download_args(request, use_twitter_syndication);
+    let runtime_config = match job.ytdlp_runtime_config() {
+        Ok(config) => config,
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("runtime_missing", error));
+        }
+    };
+    let args = build_download_args_with_runtime(request, use_twitter_syndication, &runtime_config);
 
-    let bin = ytdlp_bin();
+    let bin = match job.required_runtime_tool("yt-dlp") {
+        Ok(path) => path,
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("runtime_missing", error));
+        }
+    };
     let mut cmd = Command::new(&bin);
     cmd.kill_on_drop(true);
     cmd.args(&args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    #[cfg(windows)]
-    cmd.creation_flags(download_process_flags());
-
-    let mut child = match cmd.spawn() {
+    let mut child = match job.spawn(&mut cmd, "yt-dlp", true).await {
         Ok(child) => child,
         Err(error) => {
             return DownloadAttemptResult::Error(simple_error(
@@ -1873,40 +2933,42 @@ async fn run_download_attempt(
         }
     };
 
-    match job.attach_process(&child) {
-        Ok(true) => {}
-        Ok(false) => {
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            return DownloadAttemptResult::Cancelled;
-        }
-        Err(error) => {
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            return DownloadAttemptResult::Error(simple_error("process_control_failed", error));
-        }
-    }
-
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
-    let stderr_handle = spawn_stderr_tail_reader(stderr);
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut stderr_handle = spawn_stderr_tail_reader(stderr);
+    let mut stderr_output: Option<String> = None;
+    let mut reader = BufReader::new(stdout);
     let mut last_filename: Option<String> = None;
     let mut cancelled = false;
     let mut stdout_error: Option<String> = None;
 
     loop {
         let line = tokio::select! {
-            line = lines.next_line() => match line {
+            line = read_bounded_line(&mut reader, MAX_PROCESS_LINE_BYTES) => match line {
                 Ok(Some(line)) => Some(line),
                 Ok(None) => None,
                 Err(error) => {
                     stdout_error = Some(format!("Failed to read yt-dlp progress: {error}"));
+                    job.cancel();
+                    let _ = child.kill().await;
                     None
                 }
             },
+            result = &mut stderr_handle, if stderr_output.is_none() => {
+                match flatten_stderr_result(result) {
+                    Ok(output) => {
+                        stderr_output = Some(output);
+                        continue;
+                    }
+                    Err(error) => {
+                        stdout_error = Some(error);
+                        job.cancel();
+                        let _ = child.kill().await;
+                        None
+                    }
+                }
+            }
             _ = job.cancelled() => {
                 cancelled = true;
                 let _ = child.kill().await;
@@ -1957,10 +3019,35 @@ async fn run_download_attempt(
         }
     }
 
-    let stderr_output = stderr_handle.await.unwrap_or_default();
-    let status = child.wait().await.ok();
+    let (status, wait_cancelled) = match wait_child_monitor_stderr(
+        &mut child,
+        job,
+        &mut stderr_handle,
+        &mut stderr_output,
+        "yt-dlp",
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("process_output_failed", error));
+        }
+    };
+    cancelled |= wait_cancelled;
+    let stderr_output = match stderr_output {
+        Some(output) => output,
+        None => {
+            match await_stderr_tail_bounded(&mut stderr_handle, job, PROCESS_DRAIN_TIMEOUT).await {
+                Ok(output) => output,
+                Err(error) => {
+                    stdout_error.get_or_insert(error);
+                    String::new()
+                }
+            }
+        }
+    };
 
-    if cancelled || job.is_cancelled() {
+    if (cancelled || job.is_cancelled()) && stdout_error.is_none() {
         return DownloadAttemptResult::Cancelled;
     }
 
@@ -1969,8 +3056,8 @@ async fn run_download_attempt(
     }
 
     match status {
-        Some(s) if s.success() => DownloadAttemptResult::Completed(last_filename),
-        Some(s) => {
+        s if s.success() => DownloadAttemptResult::Completed(last_filename),
+        s => {
             if !use_twitter_syndication
                 && should_retry_with_twitter_syndication(&request.url, &stderr_output)
             {
@@ -1983,10 +3070,6 @@ async fn run_download_attempt(
                 ))
             }
         }
-        None => DownloadAttemptResult::Error(simple_error(
-            "process_terminated",
-            "Process terminated unexpectedly",
-        )),
     }
 }
 
@@ -2020,7 +3103,13 @@ async fn run_webm_conversion(
         },
     );
 
-    let mut cmd = Command::new(ffmpeg_bin());
+    let ffmpeg = match job.required_runtime_tool("ffmpeg") {
+        Ok(path) => path,
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("runtime_missing", error));
+        }
+    };
+    let mut cmd = Command::new(ffmpeg);
     cmd.kill_on_drop(true);
     cmd.args([
         "-y",
@@ -2059,10 +3148,7 @@ async fn run_webm_conversion(
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    #[cfg(windows)]
-    cmd.creation_flags(download_process_flags());
-
-    let mut child = match cmd.spawn() {
+    let mut child = match job.spawn(&mut cmd, "ffmpeg", true).await {
         Ok(child) => child,
         Err(error) => {
             return DownloadAttemptResult::Error(simple_error(
@@ -2072,40 +3158,42 @@ async fn run_webm_conversion(
         }
     };
 
-    match job.attach_process(&child) {
-        Ok(true) => {}
-        Ok(false) => {
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            return DownloadAttemptResult::Cancelled;
-        }
-        Err(error) => {
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-            return DownloadAttemptResult::Error(simple_error("process_control_failed", error));
-        }
-    }
-
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
-    let stderr_handle = spawn_stderr_tail_reader(stderr);
-    let reader = BufReader::new(stdout);
-    let mut lines = reader.lines();
+    let mut stderr_handle = spawn_stderr_tail_reader(stderr);
+    let mut stderr_output: Option<String> = None;
+    let mut reader = BufReader::new(stdout);
     let mut last_progress: f64 = 0.0;
     let mut cancelled = false;
     let mut stdout_error: Option<String> = None;
 
     loop {
         let line = tokio::select! {
-            line = lines.next_line() => match line {
+            line = read_bounded_line(&mut reader, MAX_PROCESS_LINE_BYTES) => match line {
                 Ok(Some(line)) => Some(line),
                 Ok(None) => None,
                 Err(error) => {
                     stdout_error = Some(format!("Failed to read FFmpeg progress: {error}"));
+                    job.cancel();
+                    let _ = child.kill().await;
                     None
                 }
             },
+            result = &mut stderr_handle, if stderr_output.is_none() => {
+                match flatten_stderr_result(result) {
+                    Ok(output) => {
+                        stderr_output = Some(output);
+                        continue;
+                    }
+                    Err(error) => {
+                        stdout_error = Some(error);
+                        job.cancel();
+                        let _ = child.kill().await;
+                        None
+                    }
+                }
+            }
             _ = job.cancelled() => {
                 cancelled = true;
                 let _ = child.kill().await;
@@ -2139,10 +3227,35 @@ async fn run_webm_conversion(
         );
     }
 
-    let stderr_output = stderr_handle.await.unwrap_or_default();
-    let status = child.wait().await.ok();
+    let (status, wait_cancelled) = match wait_child_monitor_stderr(
+        &mut child,
+        job,
+        &mut stderr_handle,
+        &mut stderr_output,
+        "FFmpeg",
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(error) => {
+            return DownloadAttemptResult::Error(simple_error("process_output_failed", error));
+        }
+    };
+    cancelled |= wait_cancelled;
+    let stderr_output = match stderr_output {
+        Some(output) => output,
+        None => {
+            match await_stderr_tail_bounded(&mut stderr_handle, job, PROCESS_DRAIN_TIMEOUT).await {
+                Ok(output) => output,
+                Err(error) => {
+                    stdout_error.get_or_insert(error);
+                    String::new()
+                }
+            }
+        }
+    };
 
-    if cancelled || job.is_cancelled() {
+    if (cancelled || job.is_cancelled()) && stdout_error.is_none() {
         return DownloadAttemptResult::Cancelled;
     }
 
@@ -2151,7 +3264,7 @@ async fn run_webm_conversion(
     }
 
     match status {
-        Some(status) if status.success() => {
+        status if status.success() => {
             match publish_converted_output(staged_output, final_path, job).await {
                 Ok(published_path) => {
                     DownloadAttemptResult::Completed(Some(path_to_string(&published_path)))
@@ -2162,14 +3275,10 @@ async fn run_webm_conversion(
                 }
             }
         }
-        Some(status) => DownloadAttemptResult::Error(classify_process_error(
+        status => DownloadAttemptResult::Error(classify_process_error(
             &stderr_output,
             status.code(),
             Some("webm"),
-        )),
-        None => DownloadAttemptResult::Error(simple_error(
-            "process_terminated",
-            "FFmpeg terminated unexpectedly",
         )),
     }
 }
@@ -2181,11 +3290,12 @@ async fn run_webm_download(
     manager: &DownloadManager,
     job: &DownloadJob,
 ) -> DownloadAttemptResult {
-    let staging_dir = build_staging_dir(download_id);
+    let output_dir = Path::new(&request.output_dir);
+    let staging_dir = build_staging_dir(output_dir, download_id);
     let mut use_twitter_syndication = false;
 
     loop {
-        if let Err(error) = reset_staging_dir(&staging_dir) {
+        if let Err(error) = reset_staging_dir(&staging_dir, output_dir, download_id) {
             return DownloadAttemptResult::Error(simple_error("staging_failed", error));
         }
 
@@ -2206,11 +3316,19 @@ async fn run_webm_download(
                     .map(PathBuf::from)
                     .or_else(|| find_latest_media_file(&staging_dir));
                 let Some(intermediate_path) = intermediate_path else {
-                    cleanup_staging_dir(&staging_dir);
+                    let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
                     return DownloadAttemptResult::Error(simple_error(
                         "staging_failed",
                         "Download completed but no staged media file was found.",
                     ));
+                };
+                let intermediate_path = match validate_staged_file(&intermediate_path, &staging_dir)
+                {
+                    Ok(path) => path,
+                    Err(error) => {
+                        let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
+                        return DownloadAttemptResult::Error(simple_error("path_escape", error));
+                    }
                 };
 
                 let final_path = build_webm_final_path(request, &intermediate_path);
@@ -2231,11 +3349,11 @@ async fn run_webm_download(
                 let _conversion_permit = match manager.acquire_conversion(job).await {
                     Ok(Some(permit)) => permit,
                     Ok(None) => {
-                        cleanup_staging_dir(&staging_dir);
+                        let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
                         return DownloadAttemptResult::Cancelled;
                     }
                     Err(error) => {
-                        cleanup_staging_dir(&staging_dir);
+                        let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
                         return DownloadAttemptResult::Error(simple_error(
                             "conversion_scheduler_failed",
                             error,
@@ -2252,14 +3370,14 @@ async fn run_webm_download(
                 )
                 .await;
 
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
                 return result;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
                 use_twitter_syndication = true;
             }
             other => {
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, download_id);
                 return other;
             }
         }
@@ -2269,7 +3387,7 @@ async fn run_webm_download(
 pub async fn start_download(
     app: AppHandle,
     download_id: String,
-    request: DownloadRequest,
+    mut request: DownloadRequest,
     manager: DownloadManager,
     job: DownloadJob,
 ) {
@@ -2284,25 +3402,20 @@ pub async fn start_download(
         return;
     }
 
-    if request.output_dir.trim().is_empty() {
-        emit_error_progress(
-            &app,
-            &download_id,
-            simple_error("output_folder", "Output folder is not set."),
-        );
-        return;
-    }
-
-    if let Err(error) = std::fs::create_dir_all(&request.output_dir) {
-        emit_error_progress(
-            &app,
-            &download_id,
-            simple_error(
-                "output_folder",
-                format!("Failed to create output folder: {}", error),
-            ),
-        );
-        return;
+    match validate_output_directory(&request.output_dir) {
+        Ok(output_dir) => request.output_dir = output_dir,
+        Err(error) => {
+            emit_error_progress(
+                &app,
+                &download_id,
+                DownloadErrorInfo {
+                    code: error.code,
+                    message: error.summary,
+                    detail: error.detail.unwrap_or_default(),
+                },
+            );
+            return;
+        }
     }
 
     emit_progress(
@@ -2360,11 +3473,12 @@ pub async fn start_download(
         return;
     }
 
-    let staging_dir = build_staging_dir(&download_id);
+    let output_dir = Path::new(&request.output_dir);
+    let staging_dir = build_staging_dir(output_dir, &download_id);
     let mut use_twitter_syndication = false;
 
     loop {
-        if let Err(error) = reset_staging_dir(&staging_dir) {
+        if let Err(error) = reset_staging_dir(&staging_dir, output_dir, &download_id) {
             emit_error_progress(&app, &download_id, simple_error("staging_failed", error));
             return;
         }
@@ -2387,7 +3501,7 @@ pub async fn start_download(
                     .filter(|path| path.is_file())
                     .or_else(|| find_latest_media_file(&staging_dir));
                 let Some(staged_path) = staged_path else {
-                    cleanup_staging_dir(&staging_dir);
+                    let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                     emit_error_progress(
                         &app,
                         &download_id,
@@ -2398,11 +3512,19 @@ pub async fn start_download(
                     );
                     return;
                 };
+                let staged_path = match validate_staged_file(&staged_path, &staging_dir) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
+                        emit_error_progress(&app, &download_id, simple_error("path_escape", error));
+                        return;
+                    }
+                };
 
                 let desired_path = match build_final_output_path(&request, &staged_path) {
                     Ok(path) => path,
                     Err(error) => {
-                        cleanup_staging_dir(&staging_dir);
+                        let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                         emit_error_progress(
                             &app,
                             &download_id,
@@ -2451,11 +3573,11 @@ pub async fn start_download(
                         simple_error("publish_failed", error),
                     ),
                 }
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                 return;
             }
             DownloadAttemptResult::Cancelled => {
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                 emit_progress(
                     &app,
                     &download_id,
@@ -2466,11 +3588,11 @@ pub async fn start_download(
                 return;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                 use_twitter_syndication = true;
             }
             DownloadAttemptResult::Error(error) => {
-                cleanup_staging_dir(&staging_dir);
+                let _ = cleanup_staging_dir(&staging_dir, output_dir, &download_id);
                 emit_error_progress(&app, &download_id, error);
                 return;
             }
@@ -2478,31 +3600,43 @@ pub async fn start_download(
     }
 }
 
-pub async fn cancel_download(download_id: &str, manager: DownloadManager) -> Result<(), String> {
-    manager.cancel(download_id).await;
-    Ok(())
-}
-
-pub async fn cancel_all_downloads(manager: DownloadManager) -> Result<(), String> {
-    manager.cancel_all_and_wait(Duration::from_secs(10)).await
-}
-
 #[cfg(test)]
 mod tests {
     use super::{
         build_download_args, build_download_args_with_runtime, build_error_message,
         build_output_template, build_staging_dir, build_webm_final_path, classify_process_error,
-        is_safe_staging_dir, is_twitter_api_auth_error, is_twitter_missing_video_error,
-        is_x_or_twitter_url, normalize_filename_override, parse_ffmpeg_progress_percent,
-        parse_first_json_value, publish_staged_output, push_bounded_playlist_entry,
-        sanitize_thumbnail_url, should_retry_with_twitter_syndication, validate_download_request,
-        validate_fetch_request, DownloadManager, PlaylistLineRecord, MAX_PLAYLIST_ENTRIES,
+        cleanup_abandoned_download_stages, cleanup_staging_dir, is_twitter_api_auth_error,
+        is_twitter_missing_video_error, is_x_or_twitter_url, normalize_filename_override,
+        parse_ffmpeg_progress_percent, parse_first_json_value, publish_staged_output,
+        push_bounded_playlist_entry, reset_staging_dir, sanitize_thumbnail_url,
+        should_retry_with_twitter_syndication, validate_download_request, validate_fetch_request,
+        wait_with_bounded_output_and_drain, DownloadJob, DownloadManager, PlaylistLineRecord,
+        MAX_INSPECTION_OUTPUT_BYTES, MAX_PLAYLIST_ENTRIES,
     };
     use crate::models::{CookieConfig, DownloadRequest, PlaylistEntry};
     use crate::runtime::YtdlpCommandConfig;
     use std::collections::HashSet;
     use std::path::{Path, PathBuf};
     use std::time::Duration;
+
+    #[cfg(windows)]
+    async fn spawn_powershell_fixture(job: &DownloadJob, script: &str) -> tokio::process::Child {
+        let mut command = tokio::process::Command::new("powershell.exe");
+        command
+            .kill_on_drop(true)
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                script,
+            ])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+        job.spawn(&mut command, "test fixture", false)
+            .await
+            .unwrap()
+    }
 
     fn arg_value_after<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
         args.windows(2)
@@ -2880,10 +4014,77 @@ mod tests {
     }
 
     #[test]
-    fn staging_paths_are_scoped_to_temp_download_folder() {
-        let staging_dir = build_staging_dir("abc-123");
-        assert!(is_safe_staging_dir(&staging_dir));
-        assert!(!is_safe_staging_dir(Path::new("C:\\Users\\Mr.W\\Desktop")));
+    fn abandoned_stage_cleanup_deletes_only_marker_owned_uuid_directories() {
+        let output =
+            std::env::temp_dir().join(format!("nuclear-stage-cleanup-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&output).unwrap();
+        let valid_id = uuid::Uuid::new_v4().to_string();
+        let valid = build_staging_dir(&output, &valid_id);
+        reset_staging_dir(&valid, &output, &valid_id).unwrap();
+        std::fs::write(valid.join("partial.bin"), b"owned").unwrap();
+        let unowned = output
+            .join(super::STAGING_ROOT_NAME)
+            .join(uuid::Uuid::new_v4().to_string());
+        std::fs::create_dir(&unowned).unwrap();
+        std::fs::write(unowned.join("user-file.txt"), b"preserve").unwrap();
+
+        let failures = cleanup_abandoned_download_stages(&[output.to_string_lossy().into_owned()]);
+
+        assert!(failures.is_empty());
+        assert!(!valid.exists());
+        assert!(unowned.join("user-file.txt").is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[test]
+    fn active_stage_cleanup_refuses_a_wrong_operation_marker() {
+        let output =
+            std::env::temp_dir().join(format!("nuclear-stage-marker-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&output).unwrap();
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = build_staging_dir(&output, &operation_id);
+        reset_staging_dir(&stage, &output, &operation_id).unwrap();
+        std::fs::write(stage.join("keep.txt"), b"preserve").unwrap();
+        let wrong_marker = serde_json::json!({
+            "schemaVersion": 1,
+            "owner": "nuclear-downloader",
+            "operationId": uuid::Uuid::new_v4().to_string(),
+        });
+        std::fs::write(
+            stage.join(super::STAGING_MARKER_NAME),
+            serde_json::to_vec(&wrong_marker).unwrap(),
+        )
+        .unwrap();
+
+        assert!(cleanup_staging_dir(&stage, &output, &operation_id).is_err());
+        assert!(stage.join("keep.txt").is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn active_stage_reset_refuses_a_reparse_staging_root() {
+        use std::os::windows::fs::symlink_dir;
+
+        let base =
+            std::env::temp_dir().join(format!("nuclear-stage-reparse-{}", uuid::Uuid::new_v4()));
+        let output = base.join("output");
+        let target = base.join("outside");
+        std::fs::create_dir_all(&output).unwrap();
+        std::fs::create_dir_all(&target).unwrap();
+        let root = output.join(super::STAGING_ROOT_NAME);
+        if symlink_dir(&target, &root).is_err() {
+            let _ = std::fs::remove_dir_all(base);
+            return;
+        }
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = root.join(&operation_id);
+
+        assert!(reset_staging_dir(&stage, &output, &operation_id).is_err());
+        assert!(target.read_dir().unwrap().next().is_none());
+
+        let _ = std::fs::remove_dir(&root);
+        let _ = std::fs::remove_dir_all(base);
     }
 
     #[test]
@@ -3134,12 +4335,12 @@ ffmpeg exited with code 1";
 
     #[tokio::test]
     async fn download_manager_cancellation_is_idempotent_before_spawn() {
-        let manager = DownloadManager::new(1);
+        let manager = DownloadManager::new(5, 1, 1);
         let job = manager.register("cancel-before-spawn").await.unwrap();
 
-        manager.cancel("cancel-before-spawn").await;
-        manager.cancel("cancel-before-spawn").await;
-        manager.cancel("already-finished").await;
+        manager.cancel("cancel-before-spawn").await.unwrap();
+        manager.cancel("cancel-before-spawn").await.unwrap();
+        assert!(manager.cancel("already-finished").await.is_err());
 
         assert!(job.is_cancelled());
         manager.finish("cancel-before-spawn").await;
@@ -3148,23 +4349,23 @@ ffmpeg exited with code 1";
 
     #[tokio::test]
     async fn download_manager_rejects_duplicate_ids_and_active_maintenance() {
-        let manager = DownloadManager::new(1);
+        let manager = DownloadManager::new(5, 1, 1);
         manager.register("same-id").await.unwrap();
 
         assert!(manager.register("same-id").await.is_err());
-        assert!(manager.begin_maintenance().await.is_err());
+        assert!(manager.acquire_maintenance().await.is_err());
 
         manager.finish("same-id").await;
-        manager.begin_maintenance().await.unwrap();
+        let lease = manager.acquire_maintenance().await.unwrap();
         assert!(manager.register("paused").await.is_err());
-        manager.end_maintenance().await;
+        lease.release().await;
         assert!(manager.register("resumed").await.is_ok());
         manager.finish("resumed").await;
     }
 
     #[tokio::test]
     async fn webm_conversion_slots_apply_backpressure() {
-        let manager = DownloadManager::new(1);
+        let manager = DownloadManager::new(5, 1, 1);
         let first_job = manager.register("first").await.unwrap();
         let second_job = manager.register("second").await.unwrap();
         let first_permit = manager
@@ -3188,5 +4389,204 @@ ffmpeg exited with code 1";
             .is_some());
         manager.finish("first").await;
         manager.finish("second").await;
+    }
+
+    #[tokio::test]
+    async fn download_scheduler_exposes_exactly_five_concurrent_slots() {
+        let manager = DownloadManager::new(5, 1, 1);
+        let mut permits = Vec::new();
+        for _ in 0..5 {
+            permits.push(manager.acquire_download_slot().await.unwrap());
+        }
+        assert!(
+            tokio::time::timeout(Duration::from_millis(25), manager.acquire_download_slot(),)
+                .await
+                .is_err()
+        );
+
+        permits.pop();
+        assert!(
+            tokio::time::timeout(Duration::from_millis(250), manager.acquire_download_slot(),)
+                .await
+                .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn cancel_all_cannot_release_an_update_maintenance_lease() {
+        let manager = DownloadManager::new(5, 1, 1);
+        let lease = manager.acquire_maintenance().await.unwrap();
+
+        let error = manager.begin_cancel_all().await.unwrap_err();
+        assert_eq!(error.code, "busy");
+        assert!(manager.register("must-remain-paused").await.is_err());
+
+        lease.release().await;
+        assert!(manager.register("after-update").await.is_ok());
+        manager.finish("after-update").await;
+    }
+
+    #[test]
+    fn streamed_inspection_enforces_one_cumulative_output_limit() {
+        let legal_line_bytes = 60 * 1024;
+        let mut total = 0usize;
+        let legal_lines = MAX_INSPECTION_OUTPUT_BYTES / (legal_line_bytes + 1);
+
+        for _ in 0..legal_lines {
+            super::record_streamed_output_bytes(
+                &mut total,
+                legal_line_bytes,
+                MAX_INSPECTION_OUTPUT_BYTES,
+            )
+            .unwrap();
+        }
+        let error = super::record_streamed_output_bytes(
+            &mut total,
+            legal_line_bytes,
+            MAX_INSPECTION_OUTPUT_BYTES,
+        )
+        .unwrap_err();
+
+        assert!(error.starts_with("process_output_limit:"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn cancel_all_timeout_reports_ids_and_keeps_manager_paused() {
+        let manager = DownloadManager::new(5, 1, 1);
+        manager.register("still-reaping").await.unwrap();
+
+        manager.begin_cancel_all().await.unwrap();
+        assert!(manager
+            .finish_cancel_all(Duration::from_millis(10))
+            .await
+            .is_err());
+        assert_eq!(manager.active_ids().await, vec!["still-reaping"]);
+        assert!(manager.register("new-work").await.is_err());
+
+        manager.finish("still-reaping").await;
+        manager.begin_cancel_all().await.unwrap();
+        assert!(manager
+            .finish_cancel_all(Duration::from_millis(10))
+            .await
+            .is_ok());
+        assert!(manager.register("resumed").await.is_ok());
+        manager.finish("resumed").await;
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn supervised_process_cancels_and_reaps_promptly() {
+        let job = DownloadJob::new().unwrap();
+        let child = spawn_powershell_fixture(&job, "Start-Sleep -Seconds 30").await;
+        let cancellation = job.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            cancellation.cancel();
+        });
+
+        let started = std::time::Instant::now();
+        let error = wait_with_bounded_output_and_drain(
+            child,
+            &job,
+            64 * 1024,
+            64 * 1024,
+            Duration::from_secs(30),
+            Duration::from_millis(500),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(error.starts_with("process_cancelled:"), "{error}");
+        assert!(started.elapsed() < Duration::from_secs(3));
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn cancelled_job_never_runs_suspended_child_first_instruction() {
+        let root = std::env::temp_dir().join(format!(
+            "nuclear-suspended-child-test-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let sentinel = root.join("child-ran.txt");
+        let escaped = sentinel.to_string_lossy().replace('\'', "''");
+        let script = format!("[IO.File]::WriteAllText('{escaped}', 'ran')");
+        let job = DownloadJob::new().unwrap();
+        job.cancel();
+
+        let mut command = tokio::process::Command::new("powershell.exe");
+        command
+            .kill_on_drop(true)
+            .args([
+                "-NoLogo",
+                "-NoProfile",
+                "-NonInteractive",
+                "-Command",
+                &script,
+            ])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        let error = job
+            .spawn(&mut command, "cancelled fixture", false)
+            .await
+            .unwrap_err();
+
+        assert!(error.contains("cancelled"), "{error}");
+        assert!(!sentinel.exists());
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn supervised_process_stops_oversized_output_without_draining_producer() {
+        let job = DownloadJob::new().unwrap();
+        let child = spawn_powershell_fixture(
+            &job,
+            "[Console]::Out.Write('x' * 70000); Start-Sleep -Seconds 30",
+        )
+        .await;
+
+        let started = std::time::Instant::now();
+        let error = wait_with_bounded_output_and_drain(
+            child,
+            &job,
+            128 * 1024,
+            64 * 1024,
+            Duration::from_secs(30),
+            Duration::from_millis(500),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(error.starts_with("process_output_limit:"), "{error}");
+        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        assert!(started.elapsed() < Duration::from_secs(15));
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn supervised_process_bounds_inherited_stderr_after_parent_exit() {
+        let job = DownloadJob::new().unwrap();
+        let child = spawn_powershell_fixture(
+            &job,
+            "Start-Process powershell.exe -ArgumentList '-NoLogo -NoProfile -NonInteractive -Command Start-Sleep -Seconds 30' -NoNewWindow",
+        )
+        .await;
+
+        let started = std::time::Instant::now();
+        let error = wait_with_bounded_output_and_drain(
+            child,
+            &job,
+            64 * 1024,
+            64 * 1024,
+            Duration::from_secs(30),
+            Duration::from_millis(250),
+        )
+        .await
+        .unwrap_err();
+
+        assert!(error.starts_with("process_drain_timeout:"), "{error}");
+        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        assert!(started.elapsed() < Duration::from_secs(15));
     }
 }

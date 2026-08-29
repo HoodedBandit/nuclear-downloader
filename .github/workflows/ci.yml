@@ -7,29 +7,103 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   verify:
     runs-on: windows-latest
+    timeout-minutes: 45
     defaults:
       run:
         shell: pwsh
         working-directory: nuclear-app
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Node.js 22.23.1
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22
+          node-version: 22.23.1
           cache: npm
           cache-dependency-path: nuclear-app/package-lock.json
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Pin npm 10.9.9
+        run: npm install --global npm@10.9.9
+
+      - name: Install Rust 1.94.1
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
+          toolchain: 1.94.1
           components: clippy,rustfmt
 
-      - run: npm ci
-      - run: npm run check
-      - run: npm test
-      - run: npm run build
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
-      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Check frontend formatting
+        run: npm run format:check
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Type-check Svelte
+        run: npm run check
+
+      - name: Test frontend
+        run: npm test
+
+      - name: Test renderer workflows in WebDriver browser mode
+        run: npm run test:e2e:renderer
+
+      - name: Build production frontend
+        run: npm run build
+
+      - name: Prove production bundle excludes WebDriver hooks
+        run: npm run test:e2e:production-bundle
+
+      - name: Audit production npm dependencies
+        run: npm run audit:production
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+      - name: Run strict Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Verify generated Rust-to-TypeScript contracts
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml --all-features export_bindings_
+          $changes = git status --porcelain -- src/lib/bindings
+          if ($changes) {
+            $changes | Write-Error
+            throw 'Generated TypeScript bindings do not match the Rust contracts.'
+          }
+
+      - name: Test Rust
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-features
+
+      - name: Install cargo-deny 0.20.2
+        run: cargo install cargo-deny --version 0.20.2 --locked
+
+      - name: Enforce dependency, advisory, source, and license policy
+        run: cargo deny --manifest-path src-tauri/Cargo.toml check
+
+      - name: Fetch locked Cargo sources for offline packaging verification
+        run: cargo fetch --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Test PowerShell packaging contracts
+        run: pwsh -NoProfile -File ..\scripts\test-packaging.ps1
+
+      - name: Test WebDriver and acceptance contracts
+        run: pwsh -NoProfile -File ..\scripts\test-e2e-contracts.ps1
+
+      - name: Verify generated files and tracked source are clean
+        working-directory: .
+        run: |
+          $changes = git status --porcelain
+          if ($changes) {
+            $changes | Write-Error
+            throw 'Quality gates changed tracked or generated source files.'
+          }

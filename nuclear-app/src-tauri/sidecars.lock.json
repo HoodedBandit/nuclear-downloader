@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "platform": "windows-x86_64",
+  "sidecars": [
+    {
+      "name": "yt-dlp",
+      "sourceUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp.exe",
+      "version": "2026.07.04",
+      "license": "Unlicense",
+      "architecture": "x86_64-pc-windows-msvc",
+      "filename": "yt-dlp-x86_64-pc-windows-msvc.exe",
+      "sha256": "52fe3c26dcf71fbdc85b528589020bb0b8e383155cfa81b64dd447bbe35e24b8"
+    },
+    {
+      "name": "ffmpeg",
+      "sourceUrl": "https://github.com/GyanD/codexffmpeg/releases/download/8.1/ffmpeg-8.1-essentials_build.zip",
+      "version": "8.1",
+      "license": "GPL-3.0-or-later",
+      "architecture": "x86_64-pc-windows-msvc",
+      "filename": "ffmpeg-x86_64-pc-windows-msvc.exe",
+      "sha256": "1a65d5b0b10d8d9a81d2824a3538046a40ed3607c906b335a166add87613f705",
+      "archiveMemberSuffix": "bin/ffmpeg.exe"
+    },
+    {
+      "name": "ffprobe",
+      "sourceUrl": "https://github.com/GyanD/codexffmpeg/releases/download/8.1/ffmpeg-8.1-essentials_build.zip",
+      "version": "8.1",
+      "license": "GPL-3.0-or-later",
+      "architecture": "x86_64-pc-windows-msvc",
+      "filename": "ffprobe-x86_64-pc-windows-msvc.exe",
+      "sha256": "54b944d6095c4588d7548424d7acd5118390a9d4f01b1c92f841547fc9a7429c",
+      "archiveMemberSuffix": "bin/ffprobe.exe"
+    },
+    {
+      "name": "deno",
+      "sourceUrl": "https://github.com/denoland/deno/releases/download/v2.9.2/deno-x86_64-pc-windows-msvc.zip",
+      "version": "2.9.2",
+      "license": "MIT",
+      "architecture": "x86_64-pc-windows-msvc",
+      "filename": "deno-x86_64-pc-windows-msvc.exe",
+      "sha256": "a5270c2bb75a2ec12fef53185730327267d9e9fe6be6a962c5d1d5a050f93c88",
+      "archiveMemberSuffix": "deno.exe"
+    }
+  ]
+}

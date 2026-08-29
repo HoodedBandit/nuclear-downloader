@@ -1,0 +1,48 @@
+[graph]
+all-features = true
+targets = [{ triple = "x86_64-pc-windows-msvc" }]
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+  { id = "RUSTSEC-2025-0057", reason = "Inherited through Tauri's HTML parser; no safe upstream upgrade exists and Nuclear Downloader does not use this hash for security decisions." },
+  { id = "RUSTSEC-2025-0075", reason = "Inherited through Tauri urlpattern; upstream marks the Unicode helper unmaintained but reports no vulnerability or safe direct replacement." },
+  { id = "RUSTSEC-2025-0080", reason = "Inherited through Tauri urlpattern; upstream marks the Unicode helper unmaintained but reports no vulnerability or safe direct replacement." },
+  { id = "RUSTSEC-2025-0081", reason = "Inherited through Tauri urlpattern; upstream marks the Unicode helper unmaintained but reports no vulnerability or safe direct replacement." },
+  { id = "RUSTSEC-2025-0098", reason = "Inherited through Tauri urlpattern; upstream marks the Unicode helper unmaintained but reports no vulnerability or safe direct replacement." },
+  { id = "RUSTSEC-2025-0100", reason = "Inherited through Tauri urlpattern; upstream marks the Unicode helper unmaintained but reports no vulnerability or safe direct replacement." },
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.8
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "BSL-1.0",
+  "CC0-1.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "OpenSSL",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

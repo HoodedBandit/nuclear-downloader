@@ -2,7 +2,12 @@
 
 This directory is intentionally kept out of Git for third-party binaries.
 
-If you want to build a Windows release that bundles its downloader sidecars, place these files here locally before running the Tauri release build:
+Nuclear Downloader supports Windows x64 only. ARM64 sidecars are not accepted.
+
+If you want to prepare a Windows release candidate, use
+`scripts/fetch-sidecars.ps1` to download and verify the exact inputs recorded in
+`../sidecars.lock.json`. The Rust build also rejects missing, wrong-hash, or
+wrong-architecture inputs before bundling:
 
 - `yt-dlp-x86_64-pc-windows-msvc.exe`
 - `ffmpeg-x86_64-pc-windows-msvc.exe`
