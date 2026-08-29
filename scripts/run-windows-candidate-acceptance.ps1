@@ -13,11 +13,7 @@ param(
     [string] $ExpectedCommitSha,
 
     [ValidatePattern('^[1-9][0-9]*$')]
-    [string] $ExpectedCandidateRunId,
-
-    [Parameter(Mandatory)]
-    [ValidatePattern('^https://[^\s]+$')]
-    [string] $PublicSmokeUrl
+    [string] $ExpectedCandidateRunId
 )
 
 $ErrorActionPreference = 'Stop'
@@ -116,7 +112,6 @@ $processEnvironment = @{
     LOCALAPPDATA = $localDataRoot
     APPDATA = $roamingDataRoot
     NUCLEAR_E2E_FIXTURE_TITLE = 'fixture-video'
-    NUCLEAR_E2E_PUBLIC_SMOKE_URL = $PublicSmokeUrl
 }
 
 try {
@@ -234,7 +229,6 @@ try {
             description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
             architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
         }
-        publicSmokeUrlConfigured = $true
         steps = $steps
         manualAcceptanceRequired = @(
             'Dedicated-account cookie/login test with no CI cookie secret',

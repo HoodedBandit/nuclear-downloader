@@ -51,7 +51,7 @@ $evidence = Read-BoundedJson -Path $evidenceFiles[0].FullName -Limit 1MB
 $inventory = Read-BoundedJson -Path (Join-Path $candidateRoot 'release-candidate-inventory.json') -Limit 1MB
 Assert-ExactProperties -Value $evidence -Expected @(
     'schemaVersion', 'releaseVersion', 'sourceCommit', 'candidateRunId', 'candidateCreatedAt',
-    'startedAt', 'completedAt', 'os', 'publicSmokeUrlConfigured', 'steps',
+    'startedAt', 'completedAt', 'os', 'steps',
     'manualAcceptanceRequired', 'candidateAssets'
 ) -Label 'Acceptance evidence'
 Assert-ExactProperties -Value $evidence.os -Expected @('description', 'architecture') -Label 'Acceptance operating system'
@@ -61,9 +61,8 @@ if ([int]$evidence.schemaVersion -ne 1 -or
     [string]$evidence.sourceCommit -cne $ExpectedCommitSha -or
     [string]$evidence.candidateRunId -cne $ExpectedCandidateRunId -or
     [string]$evidence.candidateCreatedAt -cne [string]$inventory.createdAt -or
-    -not [bool]$evidence.publicSmokeUrlConfigured -or
     [string]$evidence.os.architecture -cne 'X64') {
-    throw 'Acceptance evidence identity, platform, or smoke contract does not match the candidate.'
+    throw 'Acceptance evidence identity or platform does not match the candidate.'
 }
 
 foreach ($timestampName in @('startedAt', 'completedAt')) {

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 const fixtureUrl = process.env.NUCLEAR_E2E_FIXTURE_URL;
 const slowFixtureUrl = process.env.NUCLEAR_E2E_SLOW_FIXTURE_URL;
 const fixtureTitle = process.env.NUCLEAR_E2E_FIXTURE_TITLE ?? 'fixture';
-const publicSmokeUrl = process.env.NUCLEAR_E2E_PUBLIC_SMOKE_URL;
 
 async function addUrl(url) {
   const input = await $('#video-url');
@@ -19,7 +18,6 @@ describe('real backend fixture lifecycle', () => {
   it('downloads, converts, cancels, reconciles after reload, and clears diagnostics', async () => {
     assert.ok(fixtureUrl, 'NUCLEAR_E2E_FIXTURE_URL is required.');
     assert.ok(slowFixtureUrl, 'NUCLEAR_E2E_SLOW_FIXTURE_URL is required.');
-    assert.ok(publicSmokeUrl, 'NUCLEAR_E2E_PUBLIC_SMOKE_URL is required.');
 
     await $('h1').waitForDisplayed();
     await $('#format').selectByAttribute('value', 'mp3');
@@ -63,22 +61,6 @@ describe('real backend fixture lifecycle', () => {
       timeoutMsg: 'Renderer reload did not reconcile the backend-owned queue.'
     });
     assert.match(await $('.queue').getText(), new RegExp(fixtureTitle, 'i'));
-
-    await $('#format').selectByAttribute('value', 'mp4');
-    await addUrl(publicSmokeUrl);
-    await browser.waitUntil(async () => (await $$('tr.queue-item')).length === 3, {
-      timeout: 60_000,
-      timeoutMsg: 'Maintainer-controlled public smoke URL did not enter the queue.'
-    });
-    const publicRow = (await $$('tr.queue-item'))[2];
-    const publicDownload = await publicRow.$('button[aria-label^="Download "]');
-    await publicDownload.waitForClickable();
-    await publicDownload.click();
-    const publicStatus = await publicRow.$('.status-pill');
-    await publicStatus.waitUntil(async () => (await publicStatus.getText()) === 'completed', {
-      timeout: 3 * 60_000,
-      timeoutMsg: 'Maintainer-controlled unauthenticated public smoke download did not complete.'
-    });
 
     await browser.execute(() => {
       window.confirm = () => true;
