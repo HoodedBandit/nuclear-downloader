@@ -61,6 +61,14 @@ try {
         Assert-True -Condition ($parseErrors.Count -eq 0) -Message "PowerShell parser errors in ${relativePath}: $($parseErrors -join '; ')"
     }
 
+    $sidecarFetcher = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\fetch-sidecars.ps1')
+    Assert-True `
+        -Condition ($sidecarFetcher.Contains('$segments = @($normalized.Split(''/'')')) `
+        -Message 'Sidecar ZIP path segments must remain an array under strict PowerShell, including single-segment entries.'
+    Assert-True `
+        -Condition ($sidecarFetcher.Contains('$segments -contains ''..''')) `
+        -Message 'Sidecar ZIP path validation must reject explicit parent-directory segments.'
+
     $candidateWorkflowPath = Join-Path $repositoryRoot '.github\workflows\release-candidate.yml'
     $publishWorkflowPath = Join-Path $repositoryRoot '.github\workflows\publish-release.yml'
     $ciWorkflowPath = Join-Path $repositoryRoot '.github\workflows\ci.yml'

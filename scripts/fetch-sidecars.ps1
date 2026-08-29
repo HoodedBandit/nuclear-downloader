@@ -140,9 +140,10 @@ function Expand-LockedMember {
         $matches = [System.Collections.Generic.List[object]]::new()
         foreach ($entry in $archive.Entries) {
             $normalized = $entry.FullName.Replace('\', '/')
+            $segments = @($normalized.Split('/'))
             if (
                 [System.IO.Path]::IsPathRooted($normalized) -or
-                ($normalized.Split('/') | Where-Object { $_ -eq '..' }).Count -gt 0
+                $segments -contains '..'
             ) {
                 throw "Sidecar archive contains an unsafe path: $($entry.FullName)"
             }
