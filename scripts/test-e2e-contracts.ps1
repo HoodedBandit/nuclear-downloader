@@ -38,10 +38,25 @@ foreach ($required in @(
     'cargo install tauri-driver --version 2.0.6 --locked',
     'run-windows-candidate-acceptance.ps1',
     'test:e2e:production-bundle',
-    '-ExpectedCandidateRunId ''${{ github.run_id }}'''
+    '-ExpectedCandidateRunId ''${{ github.run_id }}''',
+    '- name: Upload private acceptance evidence',
+    'if: ${{ always() }}',
+    'if-no-files-found: warn'
 )) {
     if (-not $candidateWorkflow.Contains($required)) {
         throw "Release-candidate workflow is missing required acceptance contract: $required"
+    }
+}
+
+$acceptanceScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance.ps1')
+foreach ($required in @(
+    '$start.RedirectStandardOutput = $true',
+    '$start.RedirectStandardError = $true',
+    'Limit-RetainedProcessLog',
+    'Write-ProcessLogTail'
+)) {
+    if (-not $acceptanceScript.Contains($required)) {
+        throw "Candidate acceptance must retain failed process diagnostics: $required"
     }
 }
 

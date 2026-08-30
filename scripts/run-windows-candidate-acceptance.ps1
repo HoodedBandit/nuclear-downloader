@@ -72,10 +72,62 @@ $fixtureMediaPath = Join-Path $fixtureRoot 'fixture-video.mp4'
 $serverProcess = $null
 $startedAt = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
+$processInvocation = 0
+
+function Limit-RetainedProcessLog {
+    param(
+        [Parameter(Mandatory)] [string] $Path,
+        [long] $MaximumBytes = 4MB
+    )
+
+    $item = Get-Item -LiteralPath $Path
+    if ($item.Length -le $MaximumBytes) {
+        return
+    }
+
+    $buffer = [byte[]]::new([int]$MaximumBytes)
+    $source = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)
+    try {
+        [void]$source.Seek(-$MaximumBytes, [System.IO.SeekOrigin]::End)
+        $offset = 0
+        while ($offset -lt $buffer.Length) {
+            $read = $source.Read($buffer, $offset, $buffer.Length - $offset)
+            if ($read -eq 0) { break }
+            $offset += $read
+        }
+    } finally {
+        $source.Dispose()
+    }
+
+    $destination = [System.IO.File]::Open($Path, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+    try {
+        $notice = [System.Text.Encoding]::UTF8.GetBytes("[earlier process output omitted; retained tail follows]`n")
+        $destination.Write($notice, 0, $notice.Length)
+        $destination.Write($buffer, 0, $offset)
+    } finally {
+        $destination.Dispose()
+    }
+}
+
+function Write-ProcessLogTail {
+    param(
+        [Parameter(Mandatory)] [string] $Path,
+        [Parameter(Mandatory)] [string] $Label
+    )
+
+    if ((Get-Item -LiteralPath $Path).Length -eq 0) {
+        return
+    }
+    Write-Host "---- $Label (last 120 lines) ----"
+    Get-Content -LiteralPath $Path -Tail 120 | ForEach-Object { Write-Host $_ }
+}
 
 function Invoke-OwnedProcess {
     param(
         [Parameter(Mandatory)] [string] $FilePath,
+        [Parameter(Mandatory)]
+        [ValidatePattern('^[a-z0-9-]+$')]
+        [string] $LogName,
         [string[]] $ArgumentList = @(),
         [int] $TimeoutSeconds = 300,
         [hashtable] $Environment = @{},
@@ -86,6 +138,8 @@ function Invoke-OwnedProcess {
     $start.FileName = $FilePath
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
     $start.WorkingDirectory = $WorkingDirectory
     foreach ($argument in $ArgumentList) {
         [void]$start.ArgumentList.Add($argument)
@@ -93,17 +147,53 @@ function Invoke-OwnedProcess {
     foreach ($entry in $Environment.GetEnumerator()) {
         $start.Environment[[string]$entry.Key] = [string]$entry.Value
     }
-    $process = [System.Diagnostics.Process]::Start($start)
-    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-        try { $process.Kill($true) } catch { Write-Warning $_ }
-        [void]$process.WaitForExit(10000)
+    $script:processInvocation++
+    $logStem = '{0:D2}-{1}' -f $script:processInvocation, $LogName
+    $stdoutPath = Join-Path $resultsRoot "$logStem.stdout.log"
+    $stderrPath = Join-Path $resultsRoot "$logStem.stderr.log"
+    $stdoutStream = [System.IO.File]::Open($stdoutPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+    $stderrStream = [System.IO.File]::Open($stderrPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+    $process = $null
+    $stdoutCopy = $null
+    $stderrCopy = $null
+    $timedOut = $false
+    $processExitCode = $null
+    try {
+        $process = [System.Diagnostics.Process]::Start($start)
+        $stdoutCopy = $process.StandardOutput.BaseStream.CopyToAsync($stdoutStream)
+        $stderrCopy = $process.StandardError.BaseStream.CopyToAsync($stderrStream)
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            $timedOut = $true
+            try { $process.Kill($true) } catch { Write-Warning $_ }
+            [void]$process.WaitForExit(10000)
+        }
+        $processExitCode = $process.ExitCode
+        $stdoutCopy.GetAwaiter().GetResult()
+        $stderrCopy.GetAwaiter().GetResult()
+    } finally {
+        $stdoutStream.Dispose()
+        $stderrStream.Dispose()
+        if ($process) { $process.Dispose() }
+    }
+
+    Limit-RetainedProcessLog -Path $stdoutPath
+    Limit-RetainedProcessLog -Path $stderrPath
+    if ($timedOut) {
+        Write-ProcessLogTail -Path $stdoutPath -Label "$LogName stdout"
+        Write-ProcessLogTail -Path $stderrPath -Label "$LogName stderr"
         throw "Process exceeded its $TimeoutSeconds-second acceptance limit: $FilePath"
     }
-    if ($process.ExitCode -ne 0) {
-        throw "Process exited with code $($process.ExitCode): $FilePath"
+    if ($processExitCode -ne 0) {
+        Write-ProcessLogTail -Path $stdoutPath -Label "$LogName stdout"
+        Write-ProcessLogTail -Path $stderrPath -Label "$LogName stderr"
+        throw "Process exited with code $processExitCode`: $FilePath"
     }
 }
 
+if (Test-Path -LiteralPath $resultsRoot) {
+    throw "Acceptance results directory already exists: $resultsRoot"
+}
+New-Item -ItemType Directory -Path $resultsRoot | Out-Null
 New-Item -ItemType Directory -Path $acceptanceRoot, $installRoot, $portableRoot, $fixtureRoot, $profileRoot, $localDataRoot, $roamingDataRoot, $downloadsRoot | Out-Null
 [System.IO.File]::WriteAllText($ownershipMarker, $ExpectedCommitSha, [System.Text.UTF8Encoding]::new($false))
 
@@ -125,7 +215,7 @@ try {
     }
     $steps.portableExtracted = 'passed'
 
-    Invoke-OwnedProcess -FilePath $ffmpegExecutable -TimeoutSeconds 180 -ArgumentList @(
+    Invoke-OwnedProcess -FilePath $ffmpegExecutable -LogName 'fixture-ffmpeg' -TimeoutSeconds 180 -ArgumentList @(
         '-hide_banner', '-loglevel', 'error', '-y',
         '-f', 'lavfi', '-i', 'testsrc2=size=960x540:rate=30',
         '-f', 'lavfi', '-i', 'sine=frequency=1000:sample_rate=48000',
@@ -162,7 +252,7 @@ try {
     if ($installRoot.Contains(' ')) {
         throw 'The isolated NSIS install root must not contain spaces because /D must be the final raw argument.'
     }
-    Invoke-OwnedProcess -FilePath $installerPath -ArgumentList @('/S', "/D=$installRoot") -TimeoutSeconds 300
+    Invoke-OwnedProcess -FilePath $installerPath -LogName 'nsis-install' -ArgumentList @('/S', "/D=$installRoot") -TimeoutSeconds 300
     $installedExecutable = Join-Path $installRoot 'nuclear.exe'
     $uninstaller = Join-Path $installRoot 'uninstall.exe'
     if (-not (Test-Path -LiteralPath $installedExecutable -PathType Leaf) -or
@@ -179,7 +269,7 @@ try {
     if (-not (Test-Path -LiteralPath $wdioCli -PathType Leaf)) {
         throw 'Pinned WebdriverIO CLI is missing; run npm ci before candidate acceptance.'
     }
-    Invoke-OwnedProcess -FilePath $nodeExecutable -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 600 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-installed-full' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 600 -Environment $wdioEnvironment -WorkingDirectory $appRoot
     $steps.installedFixtureDownloadConversionCancelReloadDiagnostics = 'passed'
 
     $journalPath = Join-Path $localDataRoot 'Nuclear Downloader\state-v1.dpapi'
@@ -189,15 +279,15 @@ try {
 
     $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'restart'
     $wdioEnvironment.NUCLEAR_E2E_RESTART_TITLE = 'fixture-video'
-    Invoke-OwnedProcess -FilePath $nodeExecutable -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-installed-restart' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
     $steps.processRestartJournalRecovery = 'passed'
 
     $wdioEnvironment.NUCLEAR_E2E_APP_BINARY = $portableExecutable
     $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'smoke'
-    Invoke-OwnedProcess -FilePath $nodeExecutable -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-portable-smoke' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
     $steps.portableStartup = 'passed'
 
-    Invoke-OwnedProcess -FilePath $uninstaller -ArgumentList @('/S') -TimeoutSeconds 300
+    Invoke-OwnedProcess -FilePath $uninstaller -LogName 'nsis-uninstall' -ArgumentList @('/S') -TimeoutSeconds 300
     if (Test-Path -LiteralPath $installedExecutable -PathType Leaf) {
         throw 'NSIS uninstall left the installed application executable behind.'
     }
@@ -213,10 +303,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Candidate bytes changed during acceptance.' }
     $steps.postAcceptanceHashVerification = 'passed'
 
-    if (Test-Path -LiteralPath $resultsRoot) {
-        throw "Acceptance results directory already exists: $resultsRoot"
-    }
-    New-Item -ItemType Directory -Path $resultsRoot | Out-Null
     $result = [ordered]@{
         schemaVersion = 1
         releaseVersion = $ExpectedVersion
