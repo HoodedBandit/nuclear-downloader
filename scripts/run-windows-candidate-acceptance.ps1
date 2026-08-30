@@ -74,7 +74,8 @@ if ([string]::IsNullOrWhiteSpace($localDataRoot)) {
 $localDataRoot = [System.IO.Path]::GetFullPath($localDataRoot)
 $persistentAppDataRoot = Join-Path $localDataRoot 'Nuclear Downloader'
 $managedAppDataRoot = Join-Path $localDataRoot 'NuclearDownloader'
-foreach ($appDataRoot in @($persistentAppDataRoot, $managedAppDataRoot)) {
+$webviewDataRoot = Join-Path $localDataRoot 'com.mrw.nuclear'
+foreach ($appDataRoot in @($persistentAppDataRoot, $managedAppDataRoot, $webviewDataRoot)) {
     if (Test-Path -LiteralPath $appDataRoot) {
         throw "The disposable runner account is not clean; refusing to reuse application data: $appDataRoot"
     }
@@ -271,6 +272,7 @@ try {
     $wdioEnvironment = @{}
     foreach ($entry in $processEnvironment.GetEnumerator()) { $wdioEnvironment[$entry.Key] = $entry.Value }
     $wdioEnvironment.NUCLEAR_E2E_APP_BINARY = $installedExecutable
+    $wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $webviewDataRoot
     $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'full'
     $wdioCli = Join-Path $appRoot 'node_modules\@wdio\cli\bin\wdio.js'
     if (-not (Test-Path -LiteralPath $wdioCli -PathType Leaf)) {

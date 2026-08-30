@@ -1,11 +1,29 @@
 import { accessSync, constants } from 'node:fs';
 import path from 'node:path';
+import { launcher as TauriLauncher } from '@wdio/tauri-service';
 
 const appBinaryPath = path.resolve(process.env.NUCLEAR_E2E_APP_BINARY ?? '');
 if (!process.env.NUCLEAR_E2E_APP_BINARY) {
   throw new Error('NUCLEAR_E2E_APP_BINARY must name the exact x64 application executable.');
 }
 accessSync(appBinaryPath, constants.R_OK);
+
+const webviewDataFolder = process.env.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER;
+if (process.platform === 'win32' && !webviewDataFolder) {
+  throw new Error(
+    'NUCLEAR_E2E_WEBVIEW_DATA_FOLDER must name the exact Tauri WebView2 data folder on Windows.'
+  );
+}
+if (webviewDataFolder && !path.isAbsolute(webviewDataFolder)) {
+  throw new Error('NUCLEAR_E2E_WEBVIEW_DATA_FOLDER must be an absolute path.');
+}
+
+const tauriOptions = { application: appBinaryPath };
+if (webviewDataFolder) {
+  // Tauri supplies its identifier-based WebView2 data directory explicitly. EdgeDriver
+  // must watch the same directory for DevToolsActivePort instead of a temporary profile.
+  tauriOptions.webviewOptions = { userDataFolder: webviewDataFolder };
+}
 
 const suite = process.env.NUCLEAR_E2E_NATIVE_SUITE ?? 'full';
 const specs =
@@ -25,7 +43,10 @@ export const config = {
   maxInstances: 1,
   services: [
     [
-      '@wdio/tauri-service',
+      // Exact release binaries exclude tauri-plugin-wdio. Use the official service's
+      // launcher only; its worker service assumes the optional plugin is present and
+      // otherwise polls on every element lookup for APIs these acceptance tests do not use.
+      TauriLauncher,
       {
         appBinaryPath,
         driverProvider: 'external',
@@ -43,7 +64,7 @@ export const config = {
   capabilities: [
     {
       browserName: 'tauri',
-      'tauri:options': { application: appBinaryPath }
+      'tauri:options': tauriOptions
     }
   ],
   framework: 'mocha',
