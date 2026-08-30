@@ -69,6 +69,14 @@ try {
         -Condition ($sidecarFetcher.Contains('$segments -contains ''..''')) `
         -Message 'Sidecar ZIP path validation must reject explicit parent-directory segments.'
 
+    $runtimePackager = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\package-runtime.ps1')
+    Assert-True `
+        -Condition ($runtimePackager.Contains('"$archiveHash  $archiveName`n"')) `
+        -Message 'The runtime bridge checksum must end with one canonical LF byte.'
+    Assert-True `
+        -Condition (-not $runtimePackager.Contains('Set-Content -LiteralPath $checksumPath')) `
+        -Message 'Runtime bridge checksums must not depend on host newline defaults.'
+
     $candidateWorkflowPath = Join-Path $repositoryRoot '.github\workflows\release-candidate.yml'
     $publishWorkflowPath = Join-Path $repositoryRoot '.github\workflows\publish-release.yml'
     $ciWorkflowPath = Join-Path $repositoryRoot '.github\workflows\ci.yml'
