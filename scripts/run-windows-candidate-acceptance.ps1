@@ -22,6 +22,9 @@ Set-StrictMode -Version Latest
 if (-not [Environment]::Is64BitOperatingSystem) {
     throw 'Candidate acceptance requires Windows x64.'
 }
+if ($env:GITHUB_ACTIONS -cne 'true' -or [string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)) {
+    throw 'Candidate acceptance must run on the disposable Windows account provided by GitHub Actions.'
+}
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $candidateRoot = (Resolve-Path -LiteralPath $CandidateDirectory).Path
@@ -51,8 +54,7 @@ foreach ($required in @($installerPath, $portablePath)) {
     throw "Candidate acceptance input must be a regular non-reparse file: $required"
 }
 
-$acceptanceBase = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
-$acceptanceBase = [System.IO.Path]::GetFullPath($acceptanceBase)
+$acceptanceBase = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP)
 $acceptanceRoot = Join-Path $acceptanceBase "nuclear-acceptance-$([Guid]::NewGuid().ToString('N'))"
 $acceptanceLeaf = [System.IO.Path]::GetFileName($acceptanceRoot)
 if ($acceptanceLeaf -cnotmatch '^nuclear-acceptance-[0-9a-f]{32}$') {
@@ -62,13 +64,21 @@ if ($acceptanceLeaf -cnotmatch '^nuclear-acceptance-[0-9a-f]{32}$') {
 $installRoot = Join-Path $acceptanceRoot 'installed'
 $portableRoot = Join-Path $acceptanceRoot 'portable'
 $fixtureRoot = Join-Path $acceptanceRoot 'fixture'
-$profileRoot = Join-Path $acceptanceRoot 'profile'
-$localDataRoot = Join-Path $profileRoot 'LocalAppData'
-$roamingDataRoot = Join-Path $profileRoot 'RoamingAppData'
-$downloadsRoot = Join-Path $profileRoot 'Downloads'
 $ownershipMarker = Join-Path $acceptanceRoot '.nuclear-candidate-acceptance'
 $serverReadyPath = Join-Path $fixtureRoot 'server.port'
 $fixtureMediaPath = Join-Path $fixtureRoot 'fixture-video.mp4'
+$localDataRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+if ([string]::IsNullOrWhiteSpace($localDataRoot)) {
+    throw 'Windows did not provide the disposable runner account local application-data folder.'
+}
+$localDataRoot = [System.IO.Path]::GetFullPath($localDataRoot)
+$persistentAppDataRoot = Join-Path $localDataRoot 'Nuclear Downloader'
+$managedAppDataRoot = Join-Path $localDataRoot 'NuclearDownloader'
+foreach ($appDataRoot in @($persistentAppDataRoot, $managedAppDataRoot)) {
+    if (Test-Path -LiteralPath $appDataRoot) {
+        throw "The disposable runner account is not clean; refusing to reuse application data: $appDataRoot"
+    }
+}
 $serverProcess = $null
 $startedAt = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
@@ -168,8 +178,8 @@ function Invoke-OwnedProcess {
             [void]$process.WaitForExit(10000)
         }
         $processExitCode = $process.ExitCode
-        $stdoutCopy.GetAwaiter().GetResult()
-        $stderrCopy.GetAwaiter().GetResult()
+        [void]$stdoutCopy.GetAwaiter().GetResult()
+        [void]$stderrCopy.GetAwaiter().GetResult()
     } finally {
         $stdoutStream.Dispose()
         $stderrStream.Dispose()
@@ -194,13 +204,10 @@ if (Test-Path -LiteralPath $resultsRoot) {
     throw "Acceptance results directory already exists: $resultsRoot"
 }
 New-Item -ItemType Directory -Path $resultsRoot | Out-Null
-New-Item -ItemType Directory -Path $acceptanceRoot, $installRoot, $portableRoot, $fixtureRoot, $profileRoot, $localDataRoot, $roamingDataRoot, $downloadsRoot | Out-Null
+New-Item -ItemType Directory -Path $acceptanceRoot, $installRoot, $portableRoot, $fixtureRoot | Out-Null
 [System.IO.File]::WriteAllText($ownershipMarker, $ExpectedCommitSha, [System.Text.UTF8Encoding]::new($false))
 
 $processEnvironment = @{
-    USERPROFILE = $profileRoot
-    LOCALAPPDATA = $localDataRoot
-    APPDATA = $roamingDataRoot
     NUCLEAR_E2E_FIXTURE_TITLE = 'fixture-video'
 }
 
@@ -272,7 +279,7 @@ try {
     Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-installed-full' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 600 -Environment $wdioEnvironment -WorkingDirectory $appRoot
     $steps.installedFixtureDownloadConversionCancelReloadDiagnostics = 'passed'
 
-    $journalPath = Join-Path $localDataRoot 'Nuclear Downloader\state-v1.dpapi'
+    $journalPath = Join-Path $persistentAppDataRoot 'state-v1.dpapi'
     if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {
         throw 'The backend journal was not persisted after the fixture lifecycle.'
     }

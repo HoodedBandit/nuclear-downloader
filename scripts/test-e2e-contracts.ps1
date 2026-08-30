@@ -29,7 +29,9 @@ if ($cargoToml -match 'tauri-plugin-wdio' -or $rustEntry -match 'tauri_plugin_wd
 
 $nativeConfig = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'nuclear-app\e2e\wdio.native.conf.mjs')
 if ($nativeConfig -notmatch "driverProvider:\s*'external'" -or
-    $nativeConfig -notmatch 'autoInstallTauriDriver:\s*false') {
+    $nativeConfig -notmatch 'autoInstallTauriDriver:\s*false' -or
+    $nativeConfig -notmatch 'captureBackendLogs:\s*false' -or
+    $nativeConfig -notmatch 'captureFrontendLogs:\s*false') {
     throw 'Native WebDriver must use the pinned, external official tauri-driver.'
 }
 
@@ -50,6 +52,10 @@ foreach ($required in @(
 
 $acceptanceScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance.ps1')
 foreach ($required in @(
+    '$env:GITHUB_ACTIONS -cne ''true''',
+    '[Environment+SpecialFolder]::LocalApplicationData',
+    '$persistentAppDataRoot = Join-Path $localDataRoot ''Nuclear Downloader''',
+    '$managedAppDataRoot = Join-Path $localDataRoot ''NuclearDownloader''',
     '$start.RedirectStandardOutput = $true',
     '$start.RedirectStandardError = $true',
     'Limit-RetainedProcessLog',
@@ -57,6 +63,11 @@ foreach ($required in @(
 )) {
     if (-not $acceptanceScript.Contains($required)) {
         throw "Candidate acceptance must retain failed process diagnostics: $required"
+    }
+}
+foreach ($forbidden in @('USERPROFILE =', 'LOCALAPPDATA =', 'APPDATA =')) {
+    if ($acceptanceScript.Contains($forbidden)) {
+        throw "Candidate acceptance must not replace Windows profile variables: $forbidden"
     }
 }
 

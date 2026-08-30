@@ -31,8 +31,10 @@ export const config = {
         driverProvider: 'external',
         autoInstallTauriDriver: false,
         autoDownloadEdgeDriver: true,
-        captureBackendLogs: true,
-        captureFrontendLogs: true,
+        // The release binary intentionally excludes tauri-plugin-wdio. The acceptance
+        // wrapper retains the driver and runner streams without modifying shipped code.
+        captureBackendLogs: false,
+        captureFrontendLogs: false,
         startTimeout: 60_000,
         commandTimeout: 30_000
       }
