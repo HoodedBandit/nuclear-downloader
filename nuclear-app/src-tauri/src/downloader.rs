@@ -3621,6 +3621,13 @@ mod tests {
 
     #[cfg(windows)]
     async fn spawn_powershell_fixture(job: &DownloadJob, script: &str) -> tokio::process::Child {
+        let readiness_root =
+            std::env::temp_dir().join(format!("nuclear-process-fixture-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&readiness_root).unwrap();
+        let readiness_path = readiness_root.join("ready");
+        let escaped_readiness_path = readiness_path.to_string_lossy().replace('\'', "''");
+        let synchronized_script =
+            format!("[IO.File]::WriteAllText('{escaped_readiness_path}', 'ready'); {script}");
         let mut command = tokio::process::Command::new("powershell.exe");
         command
             .kill_on_drop(true)
@@ -3629,13 +3636,47 @@ mod tests {
                 "-NoProfile",
                 "-NonInteractive",
                 "-Command",
-                script,
+                &synchronized_script,
             ])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped());
-        job.spawn(&mut command, "test fixture", false)
+        let mut child = job
+            .spawn(&mut command, "test fixture", false)
             .await
-            .unwrap()
+            .unwrap();
+
+        let readiness = tokio::time::timeout(Duration::from_secs(60), async {
+            loop {
+                if readiness_path.is_file() {
+                    return Ok(());
+                }
+                if let Some(status) = child
+                    .try_wait()
+                    .map_err(|error| format!("fixture readiness check failed: {error}"))?
+                {
+                    return Err(format!(
+                        "fixture exited before signalling readiness: {status}"
+                    ));
+                }
+                tokio::time::sleep(Duration::from_millis(25)).await;
+            }
+        })
+        .await
+        .unwrap_or_else(|_| Err("fixture readiness timed out after 60 seconds".to_string()));
+
+        let cleanup_readiness = || {
+            let _ = std::fs::remove_file(&readiness_path);
+            let _ = std::fs::remove_dir(&readiness_root);
+        };
+        if let Err(error) = readiness {
+            job.cancel();
+            let _ = child.kill().await;
+            let _ = child.wait().await;
+            cleanup_readiness();
+            panic!("{error}");
+        }
+        cleanup_readiness();
+        child
     }
 
     fn arg_value_after<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
@@ -4559,7 +4600,7 @@ ffmpeg exited with code 1";
         .unwrap_err();
 
         assert!(error.starts_with("process_output_limit:"), "{error}");
-        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        // Readiness excludes cold PowerShell startup while still rejecting a full fixture drain.
         assert!(started.elapsed() < Duration::from_secs(15));
     }
 
@@ -4586,7 +4627,7 @@ ffmpeg exited with code 1";
         .unwrap_err();
 
         assert!(error.starts_with("process_drain_timeout:"), "{error}");
-        // Include cold PowerShell startup while still rejecting a full fixture drain.
+        // Readiness excludes cold PowerShell startup while still rejecting a full fixture drain.
         assert!(started.elapsed() < Duration::from_secs(15));
     }
 }
