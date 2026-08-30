@@ -75,6 +75,7 @@ $localDataRoot = [System.IO.Path]::GetFullPath($localDataRoot)
 $persistentAppDataRoot = Join-Path $localDataRoot 'Nuclear Downloader'
 $managedAppDataRoot = Join-Path $localDataRoot 'NuclearDownloader'
 $webviewDataRoot = Join-Path $localDataRoot 'com.mrw.nuclear'
+$edgeDriverDataRoot = Join-Path $webviewDataRoot 'EBWebView'
 foreach ($appDataRoot in @($persistentAppDataRoot, $managedAppDataRoot, $webviewDataRoot)) {
     if (Test-Path -LiteralPath $appDataRoot) {
         throw "The disposable runner account is not clean; refusing to reuse application data: $appDataRoot"
@@ -201,6 +202,124 @@ function Invoke-OwnedProcess {
     }
 }
 
+function Get-WebDriverProcesses {
+    @(
+        Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -in @('tauri-driver.exe', 'msedgedriver.exe')
+        }
+    )
+}
+
+function Stop-ProcessTreeAndWait {
+    param(
+        [Parameter(Mandatory)] [int] $ProcessId,
+        [Parameter(Mandatory)] [string] $Label
+    )
+
+    try {
+        $process = [System.Diagnostics.Process]::GetProcessById($ProcessId)
+    } catch [System.ArgumentException] {
+        return
+    }
+    try {
+        if (-not $process.HasExited) {
+            try {
+                $process.Kill($true)
+            } catch [System.InvalidOperationException] {
+                if (-not $process.HasExited) { throw }
+            }
+        }
+        if (-not $process.WaitForExit(10000)) {
+            throw "$Label process $ProcessId did not exit after tree termination."
+        }
+    } finally {
+        $process.Dispose()
+    }
+}
+
+function Stop-NewWebDriverProcesses {
+    param(
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $BaselineProcessIds,
+        [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath
+    )
+
+    Start-Sleep -Milliseconds 250
+    $baseline = [System.Collections.Generic.HashSet[int]]::new()
+    foreach ($driverProcessId in $BaselineProcessIds) { [void]$baseline.Add($driverProcessId) }
+
+    $newProcesses = @(Get-WebDriverProcesses | Where-Object { -not $baseline.Contains([int]$_.ProcessId) })
+    foreach ($driver in @($newProcesses | Where-Object Name -CEQ 'tauri-driver.exe')) {
+        $actualPath = [System.IO.Path]::GetFullPath([string]$driver.ExecutablePath)
+        if ($actualPath -cne $ExpectedTauriDriverPath) {
+            throw "Refusing to stop an unexpected tauri-driver executable: $actualPath"
+        }
+        Stop-ProcessTreeAndWait -ProcessId ([int]$driver.ProcessId) -Label 'tauri-driver'
+    }
+
+    Start-Sleep -Milliseconds 250
+
+    $driverCacheRoot = [System.IO.Path]::GetFullPath(
+        (Join-Path ([System.IO.Path]::GetTempPath()) 'msedgedriver')
+    )
+    $remaining = @(Get-WebDriverProcesses | Where-Object { -not $baseline.Contains([int]$_.ProcessId) })
+    foreach ($driver in $remaining) {
+        if ($driver.Name -cne 'msedgedriver.exe') {
+            throw "Acceptance left an unexpected WebDriver process running: $($driver.Name) ($($driver.ProcessId))"
+        }
+        $actualPath = [System.IO.Path]::GetFullPath([string]$driver.ExecutablePath)
+        $relativePath = [System.IO.Path]::GetRelativePath($driverCacheRoot, $actualPath)
+        if ([System.IO.Path]::IsPathRooted($relativePath) -or
+            $relativePath -eq '..' -or
+            $relativePath.StartsWith("..$([System.IO.Path]::DirectorySeparatorChar)")) {
+            throw "Refusing to stop an EdgeDriver outside the disposable WDIO cache: $actualPath"
+        }
+        Stop-ProcessTreeAndWait -ProcessId ([int]$driver.ProcessId) -Label 'msedgedriver'
+    }
+
+    $leaked = @(Get-WebDriverProcesses | Where-Object { -not $baseline.Contains([int]$_.ProcessId) })
+    if ($leaked.Count -ne 0) {
+        throw "Acceptance leaked WebDriver process IDs: $(($leaked.ProcessId -join ', '))"
+    }
+}
+
+function Invoke-WdioSuite {
+    param(
+        [Parameter(Mandatory)] [string] $NodeExecutable,
+        [Parameter(Mandatory)] [string] $WdioCli,
+        [Parameter(Mandatory)] [string] $AppBinary,
+        [Parameter(Mandatory)]
+        [ValidateSet('full', 'restart', 'smoke')]
+        [string] $Suite,
+        [Parameter(Mandatory)]
+        [ValidatePattern('^wdio-[a-z0-9-]+$')]
+        [string] $LogName,
+        [Parameter(Mandatory)] [hashtable] $BaseEnvironment,
+        [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath,
+        [int] $TimeoutSeconds = 180
+    )
+
+    $environment = @{}
+    foreach ($entry in $BaseEnvironment.GetEnumerator()) { $environment[$entry.Key] = $entry.Value }
+    $environment.NUCLEAR_E2E_APP_BINARY = $AppBinary
+    $environment.NUCLEAR_E2E_NATIVE_SUITE = $Suite
+    $baselineProcessIds = @(
+        Get-WebDriverProcesses | ForEach-Object { [int]$_.ProcessId }
+    )
+    try {
+        Invoke-OwnedProcess `
+            -FilePath $NodeExecutable `
+            -LogName $LogName `
+            -ArgumentList @($WdioCli, 'run', './e2e/wdio.native.conf.mjs') `
+            -TimeoutSeconds $TimeoutSeconds `
+            -Environment $environment `
+            -WorkingDirectory $appRoot
+    } finally {
+        Stop-NewWebDriverProcesses `
+            -BaselineProcessIds $baselineProcessIds `
+            -ExpectedTauriDriverPath $ExpectedTauriDriverPath
+    }
+}
+
 if (Test-Path -LiteralPath $resultsRoot) {
     throw "Acceptance results directory already exists: $resultsRoot"
 }
@@ -271,14 +390,18 @@ try {
 
     $wdioEnvironment = @{}
     foreach ($entry in $processEnvironment.GetEnumerator()) { $wdioEnvironment[$entry.Key] = $entry.Value }
-    $wdioEnvironment.NUCLEAR_E2E_APP_BINARY = $installedExecutable
-    $wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $webviewDataRoot
-    $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'full'
+    $wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $edgeDriverDataRoot
     $wdioCli = Join-Path $appRoot 'node_modules\@wdio\cli\bin\wdio.js'
     if (-not (Test-Path -LiteralPath $wdioCli -PathType Leaf)) {
         throw 'Pinned WebdriverIO CLI is missing; run npm ci before candidate acceptance.'
     }
-    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-installed-full' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 600 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    $tauriDriverExecutable = [System.IO.Path]::GetFullPath(
+        (Get-Command tauri-driver.exe -ErrorAction Stop).Source
+    )
+    Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
+        -AppBinary $installedExecutable -Suite 'full' -LogName 'wdio-installed-full' `
+        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
+        -TimeoutSeconds 600
     $steps.installedFixtureDownloadConversionCancelReloadDiagnostics = 'passed'
 
     $journalPath = Join-Path $persistentAppDataRoot 'state-v1.dpapi'
@@ -286,14 +409,15 @@ try {
         throw 'The backend journal was not persisted after the fixture lifecycle.'
     }
 
-    $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'restart'
     $wdioEnvironment.NUCLEAR_E2E_RESTART_TITLE = 'fixture-video'
-    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-installed-restart' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
+        -AppBinary $installedExecutable -Suite 'restart' -LogName 'wdio-installed-restart' `
+        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable
     $steps.processRestartJournalRecovery = 'passed'
 
-    $wdioEnvironment.NUCLEAR_E2E_APP_BINARY = $portableExecutable
-    $wdioEnvironment.NUCLEAR_E2E_NATIVE_SUITE = 'smoke'
-    Invoke-OwnedProcess -FilePath $nodeExecutable -LogName 'wdio-portable-smoke' -ArgumentList @($wdioCli, 'run', './e2e/wdio.native.conf.mjs') -TimeoutSeconds 180 -Environment $wdioEnvironment -WorkingDirectory $appRoot
+    Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
+        -AppBinary $portableExecutable -Suite 'smoke' -LogName 'wdio-portable-smoke' `
+        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable
     $steps.portableStartup = 'passed'
 
     Invoke-OwnedProcess -FilePath $uninstaller -LogName 'nsis-uninstall' -ArgumentList @('/S') -TimeoutSeconds 300

@@ -11,7 +11,7 @@ accessSync(appBinaryPath, constants.R_OK);
 const webviewDataFolder = process.env.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER;
 if (process.platform === 'win32' && !webviewDataFolder) {
   throw new Error(
-    'NUCLEAR_E2E_WEBVIEW_DATA_FOLDER must name the exact Tauri WebView2 data folder on Windows.'
+    'NUCLEAR_E2E_WEBVIEW_DATA_FOLDER must name the exact EdgeDriver automation folder on Windows.'
   );
 }
 if (webviewDataFolder && !path.isAbsolute(webviewDataFolder)) {
@@ -20,8 +20,8 @@ if (webviewDataFolder && !path.isAbsolute(webviewDataFolder)) {
 
 const tauriOptions = { application: appBinaryPath };
 if (webviewDataFolder) {
-  // Tauri supplies its identifier-based WebView2 data directory explicitly. EdgeDriver
-  // must watch the same directory for DevToolsActivePort instead of a temporary profile.
+  // Tauri's Windows profile stores DevToolsActivePort in its EBWebView child.
+  // Supply that child to EdgeDriver instead of the identifier-based parent.
   tauriOptions.webviewOptions = { userDataFolder: webviewDataFolder };
 }
 
