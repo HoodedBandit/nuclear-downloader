@@ -29,9 +29,14 @@ if ($cargoToml -match 'tauri-plugin-wdio' -or $rustEntry -match 'tauri_plugin_wd
 
 $nativeConfig = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'nuclear-app\e2e\wdio.native.conf.mjs')
 if ($nativeConfig -notmatch "driverProvider:\s*'external'" -or
+    $nativeConfig -notmatch 'launcher as TauriLauncher' -or
+    $nativeConfig -notmatch 'TauriLauncher,\s*\{' -or
+    $nativeConfig -match "\[\s*'@wdio/tauri-service'," -or
     $nativeConfig -notmatch 'autoInstallTauriDriver:\s*false' -or
     $nativeConfig -notmatch 'captureBackendLogs:\s*false' -or
-    $nativeConfig -notmatch 'captureFrontendLogs:\s*false') {
+    $nativeConfig -notmatch 'captureFrontendLogs:\s*false' -or
+    $nativeConfig -notmatch 'NUCLEAR_E2E_WEBVIEW_DATA_FOLDER' -or
+    $nativeConfig -notmatch 'userDataFolder:\s*webviewDataFolder') {
     throw 'Native WebDriver must use the pinned, external official tauri-driver.'
 }
 
@@ -56,6 +61,8 @@ foreach ($required in @(
     '[Environment+SpecialFolder]::LocalApplicationData',
     '$persistentAppDataRoot = Join-Path $localDataRoot ''Nuclear Downloader''',
     '$managedAppDataRoot = Join-Path $localDataRoot ''NuclearDownloader''',
+    '$webviewDataRoot = Join-Path $localDataRoot ''com.mrw.nuclear''',
+    '$wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $webviewDataRoot',
     '$start.RedirectStandardOutput = $true',
     '$start.RedirectStandardError = $true',
     'Limit-RetainedProcessLog',
