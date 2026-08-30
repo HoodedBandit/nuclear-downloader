@@ -112,6 +112,21 @@ try {
         Assert-True -Condition ($candidateWorkflow.Contains($publicVariable)) -Message "Candidate workflow is missing public trust variable $publicVariable."
         Assert-True -Condition ($publishWorkflow.Contains($publicVariable)) -Message "Publish workflow is missing public trust variable $publicVariable."
     }
+    $candidateAcceptanceStep = [regex]::Match(
+        $candidateWorkflow,
+        '(?ms)^\s*- name: Test the exact installer and portable candidate bytes\s+shell: pwsh\s+env:\s+(?<environment>.*?)^\s+run: \|'
+    )
+    Assert-True -Condition $candidateAcceptanceStep.Success -Message 'Candidate acceptance must declare an explicit environment block.'
+    foreach ($publicVariable in @(
+        'vars.NUCLEAR_UPDATE_KEY_ID',
+        'vars.NUCLEAR_UPDATE_PUBLIC_KEY',
+        'vars.NUCLEAR_UPDATE_NEXT_KEY_ID',
+        'vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY'
+    )) {
+        Assert-True `
+            -Condition ($candidateAcceptanceStep.Groups['environment'].Value.Contains($publicVariable)) `
+            -Message "Candidate acceptance is missing public trust variable $publicVariable."
+    }
     Assert-True -Condition ($candidateWorkflow.Contains('secrets.TAURI_SIGNING_PRIVATE_KEY')) -Message 'Candidate workflow must read the private signing key from a protected secret.'
     Assert-True -Condition ($candidateWorkflow.Contains('secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD')) -Message 'Candidate workflow must read the signing password from a protected secret.'
     Assert-True -Condition ($candidateWorkflow -notmatch 'secrets\.NUCLEAR_UPDATE_(?:NEXT_)?PUBLIC_KEY') -Message 'Public trust anchors belong in GitHub variables, not secret slots.'

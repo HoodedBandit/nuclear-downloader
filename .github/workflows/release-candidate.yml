@@ -159,6 +159,11 @@ jobs:
 
       - name: Test the exact installer and portable candidate bytes
         shell: pwsh
+        env:
+          NUCLEAR_UPDATE_KEY_ID: ${{ vars.NUCLEAR_UPDATE_KEY_ID }}
+          NUCLEAR_UPDATE_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_PUBLIC_KEY }}
+          NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
+          NUCLEAR_UPDATE_NEXT_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY }}
         run: |
           & scripts/run-windows-candidate-acceptance.ps1 `
             -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.6.0' `
