@@ -258,7 +258,11 @@ try {
         throw 'Runtime archive is empty or exceeds the 1 GiB compressed-size limit.'
     }
     $archiveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archivePath).Hash.ToLowerInvariant()
-    "$archiveHash  $archiveName" | Set-Content -LiteralPath $checksumPath -Encoding ascii
+    [System.IO.File]::WriteAllText(
+        $checksumPath,
+        "$archiveHash  $archiveName`n",
+        [System.Text.Encoding]::ASCII
+    )
 
     $descriptorPath = Get-CanonicalContainedPath -Candidate (Join-Path $outputRoot $descriptorName) -Root $targetRoot
     $descriptor = [ordered]@{
