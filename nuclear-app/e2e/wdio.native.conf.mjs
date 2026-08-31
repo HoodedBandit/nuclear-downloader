@@ -18,11 +18,37 @@ if (webviewDataFolder && !path.isAbsolute(webviewDataFolder)) {
   throw new Error('NUCLEAR_E2E_WEBVIEW_DATA_FOLDER must be an absolute path.');
 }
 
+const nativeDriverPath = process.env.NUCLEAR_E2E_NATIVE_DRIVER_PATH;
+if (nativeDriverPath) {
+  if (!path.isAbsolute(nativeDriverPath)) {
+    throw new Error('NUCLEAR_E2E_NATIVE_DRIVER_PATH must be an absolute path.');
+  }
+  accessSync(nativeDriverPath, constants.R_OK);
+}
+
 const tauriOptions = { application: appBinaryPath };
 if (webviewDataFolder) {
   // Tauri's Windows profile stores DevToolsActivePort in its EBWebView child.
   // Supply that child to EdgeDriver instead of the identifier-based parent.
   tauriOptions.webviewOptions = { userDataFolder: webviewDataFolder };
+}
+
+const launcherOptions = {
+  appBinaryPath,
+  driverProvider: 'external',
+  autoInstallTauriDriver: false,
+  // The pinned service performs an independent PATH-only compatibility preflight.
+  // Keep that preflight non-fatal; nativeDriverPath below remains authoritative.
+  autoDownloadEdgeDriver: true,
+  // The release binary intentionally excludes tauri-plugin-wdio. The acceptance
+  // wrapper retains the driver and runner streams without modifying shipped code.
+  captureBackendLogs: false,
+  captureFrontendLogs: false,
+  startTimeout: 60_000,
+  commandTimeout: 30_000
+};
+if (nativeDriverPath) {
+  launcherOptions.nativeDriverPath = nativeDriverPath;
 }
 
 const suite = process.env.NUCLEAR_E2E_NATIVE_SUITE ?? 'full';
@@ -47,18 +73,7 @@ export const config = {
       // launcher only; its worker service assumes the optional plugin is present and
       // otherwise polls on every element lookup for APIs these acceptance tests do not use.
       TauriLauncher,
-      {
-        appBinaryPath,
-        driverProvider: 'external',
-        autoInstallTauriDriver: false,
-        autoDownloadEdgeDriver: true,
-        // The release binary intentionally excludes tauri-plugin-wdio. The acceptance
-        // wrapper retains the driver and runner streams without modifying shipped code.
-        captureBackendLogs: false,
-        captureFrontendLogs: false,
-        startTimeout: 60_000,
-        commandTimeout: 30_000
-      }
+      launcherOptions
     ]
   ],
   capabilities: [

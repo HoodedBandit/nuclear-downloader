@@ -51,10 +51,13 @@ $evidence = Read-BoundedJson -Path $evidenceFiles[0].FullName -Limit 1MB
 $inventory = Read-BoundedJson -Path (Join-Path $candidateRoot 'release-candidate-inventory.json') -Limit 1MB
 Assert-ExactProperties -Value $evidence -Expected @(
     'schemaVersion', 'releaseVersion', 'sourceCommit', 'candidateRunId', 'candidateCreatedAt',
-    'startedAt', 'completedAt', 'os', 'steps',
+    'startedAt', 'completedAt', 'os', 'webdriver', 'steps',
     'manualAcceptanceRequired', 'candidateAssets'
 ) -Label 'Acceptance evidence'
 Assert-ExactProperties -Value $evidence.os -Expected @('description', 'architecture') -Label 'Acceptance operating system'
+Assert-ExactProperties -Value $evidence.webdriver -Expected @(
+    'webView2RuntimeVersion', 'edgeDriverVersion'
+) -Label 'Acceptance WebDriver environment'
 
 if ([int]$evidence.schemaVersion -ne 1 -or
     [string]$evidence.releaseVersion -cne $ExpectedVersion -or
@@ -63,6 +66,15 @@ if ([int]$evidence.schemaVersion -ne 1 -or
     [string]$evidence.candidateCreatedAt -cne [string]$inventory.createdAt -or
     [string]$evidence.os.architecture -cne 'X64') {
     throw 'Acceptance evidence identity or platform does not match the candidate.'
+}
+
+$webView2RuntimeVersion = [string]$evidence.webdriver.webView2RuntimeVersion
+$edgeDriverVersion = [string]$evidence.webdriver.edgeDriverVersion
+if ($webView2RuntimeVersion -cnotmatch '^[1-9][0-9]*\.[0-9]+\.[0-9]+\.[0-9]+$' -or
+    $edgeDriverVersion -cnotmatch '^[1-9][0-9]*\.[0-9]+\.[0-9]+\.[0-9]+$' -or
+    (($webView2RuntimeVersion.Split('.')[0..2] -join '.') -cne
+        ($edgeDriverVersion.Split('.')[0..2] -join '.'))) {
+    throw 'Acceptance evidence contains an invalid or incompatible WebView2/EdgeDriver pair.'
 }
 
 foreach ($timestampName in @('startedAt', 'completedAt')) {
