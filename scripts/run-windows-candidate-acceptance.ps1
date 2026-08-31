@@ -86,6 +86,8 @@ $startedAt = [DateTimeOffset]::UtcNow
 $steps = [ordered]@{}
 $processInvocation = 0
 
+. (Join-Path $PSScriptRoot 'windows-edgedriver.ps1')
+
 function Limit-RetainedProcessLog {
     param(
         [Parameter(Mandatory)] [string] $Path,
@@ -240,7 +242,8 @@ function Stop-ProcessTreeAndWait {
 function Stop-NewWebDriverProcesses {
     param(
         [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $BaselineProcessIds,
-        [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath
+        [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath,
+        [Parameter(Mandatory)] [string] $ExpectedNativeDriverPath
     )
 
     Start-Sleep -Milliseconds 250
@@ -258,20 +261,14 @@ function Stop-NewWebDriverProcesses {
 
     Start-Sleep -Milliseconds 250
 
-    $driverCacheRoot = [System.IO.Path]::GetFullPath(
-        (Join-Path ([System.IO.Path]::GetTempPath()) 'msedgedriver')
-    )
     $remaining = @(Get-WebDriverProcesses | Where-Object { -not $baseline.Contains([int]$_.ProcessId) })
     foreach ($driver in $remaining) {
         if ($driver.Name -cne 'msedgedriver.exe') {
             throw "Acceptance left an unexpected WebDriver process running: $($driver.Name) ($($driver.ProcessId))"
         }
         $actualPath = [System.IO.Path]::GetFullPath([string]$driver.ExecutablePath)
-        $relativePath = [System.IO.Path]::GetRelativePath($driverCacheRoot, $actualPath)
-        if ([System.IO.Path]::IsPathRooted($relativePath) -or
-            $relativePath -eq '..' -or
-            $relativePath.StartsWith("..$([System.IO.Path]::DirectorySeparatorChar)")) {
-            throw "Refusing to stop an EdgeDriver outside the disposable WDIO cache: $actualPath"
+        if ($actualPath -cne $ExpectedNativeDriverPath) {
+            throw "Refusing to stop an unexpected EdgeDriver executable: $actualPath"
         }
         Stop-ProcessTreeAndWait -ProcessId ([int]$driver.ProcessId) -Label 'msedgedriver'
     }
@@ -295,6 +292,7 @@ function Invoke-WdioSuite {
         [string] $LogName,
         [Parameter(Mandatory)] [hashtable] $BaseEnvironment,
         [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath,
+        [Parameter(Mandatory)] [string] $ExpectedNativeDriverPath,
         [int] $TimeoutSeconds = 180
     )
 
@@ -316,7 +314,8 @@ function Invoke-WdioSuite {
     } finally {
         Stop-NewWebDriverProcesses `
             -BaselineProcessIds $baselineProcessIds `
-            -ExpectedTauriDriverPath $ExpectedTauriDriverPath
+            -ExpectedTauriDriverPath $ExpectedTauriDriverPath `
+            -ExpectedNativeDriverPath $ExpectedNativeDriverPath
     }
 }
 
@@ -391,6 +390,13 @@ try {
     $wdioEnvironment = @{}
     foreach ($entry in $processEnvironment.GetEnumerator()) { $wdioEnvironment[$entry.Key] = $entry.Value }
     $wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $edgeDriverDataRoot
+    $webView2RuntimeVersion = Get-WebView2RuntimeVersion
+    $edgeDriver = Install-CompatibleEdgeDriver `
+        -DestinationDirectory (Join-Path $acceptanceRoot 'webdriver') `
+        -RuntimeVersion $webView2RuntimeVersion
+    $edgeDriverPath = [string]$edgeDriver.Path
+    $edgeDriverVersion = [string]$edgeDriver.Version
+    $wdioEnvironment.NUCLEAR_E2E_NATIVE_DRIVER_PATH = $edgeDriverPath
     $wdioCli = Join-Path $appRoot 'node_modules\@wdio\cli\bin\wdio.js'
     if (-not (Test-Path -LiteralPath $wdioCli -PathType Leaf)) {
         throw 'Pinned WebdriverIO CLI is missing; run npm ci before candidate acceptance.'
@@ -401,6 +407,7 @@ try {
     Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
         -AppBinary $installedExecutable -Suite 'full' -LogName 'wdio-installed-full' `
         -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
+        -ExpectedNativeDriverPath $edgeDriverPath `
         -TimeoutSeconds 600
     $steps.installedFixtureDownloadConversionCancelReloadDiagnostics = 'passed'
 
@@ -412,12 +419,14 @@ try {
     $wdioEnvironment.NUCLEAR_E2E_RESTART_TITLE = 'fixture-video'
     Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
         -AppBinary $installedExecutable -Suite 'restart' -LogName 'wdio-installed-restart' `
-        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable
+        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
+        -ExpectedNativeDriverPath $edgeDriverPath
     $steps.processRestartJournalRecovery = 'passed'
 
     Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
         -AppBinary $portableExecutable -Suite 'smoke' -LogName 'wdio-portable-smoke' `
-        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable
+        -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
+        -ExpectedNativeDriverPath $edgeDriverPath
     $steps.portableStartup = 'passed'
 
     Invoke-OwnedProcess -FilePath $uninstaller -LogName 'nsis-uninstall' -ArgumentList @('/S') -TimeoutSeconds 300
@@ -447,6 +456,10 @@ try {
         os = [ordered]@{
             description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
             architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+        }
+        webdriver = [ordered]@{
+            webView2RuntimeVersion = $webView2RuntimeVersion
+            edgeDriverVersion = $edgeDriverVersion
         }
         steps = $steps
         manualAcceptanceRequired = @(
