@@ -53,6 +53,8 @@ public static class WindowsUserProcess
     [DllImport("advapi32.dll", SetLastError = true)]
     private static extern bool SetTokenInformation(IntPtr token, int kind, ref SidAndAttributes value, uint size);
     [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool SetTokenInformation(IntPtr token, int kind, ref IntPtr value, uint size);
+    [DllImport("advapi32.dll", SetLastError = true)]
     private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr value, uint size, out uint needed);
     [DllImport("advapi32.dll")] private static extern uint GetLengthSid(IntPtr sid);
     [DllImport("advapi32.dll")] private static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
@@ -205,6 +207,47 @@ public static class WindowsUserProcess
         }
     }
 
+    private static void SetWorkerObjectAccess(IntPtr token)
+    {
+        IntPtr buffer = IntPtr.Zero, aclBuffer = IntPtr.Zero, userSid = IntPtr.Zero;
+        try
+        {
+            using (var identity = WindowsIdentity.GetCurrent())
+            {
+                uint size;
+                GetTokenInformation(token, 6, IntPtr.Zero, 0, out size);
+                if (size < IntPtr.Size || size > 65536) throw new InvalidOperationException("Invalid default DACL size");
+                buffer = Marshal.AllocHGlobal((int)size);
+                Check(GetTokenInformation(token, 6, buffer, size, out size), "Read worker default object access");
+                IntPtr aclPointer = Marshal.ReadIntPtr(buffer);
+                if (aclPointer != IntPtr.Zero)
+                {
+                    int aclSize = (ushort)Marshal.ReadInt16(aclPointer, 2);
+                    var bytes = new byte[aclSize];
+                    Marshal.Copy(aclPointer, bytes, 0, bytes.Length);
+                    var acl = new RawAcl(bytes, 0);
+                    acl.InsertAce(acl.Count, new CommonAce(AceFlags.None, AceQualifier.AccessAllowed,
+                        0x10000000, identity.User, false, null));
+                    bytes = new byte[acl.BinaryLength];
+                    acl.GetBinaryForm(bytes, 0);
+                    aclBuffer = Marshal.AllocHGlobal(bytes.Length);
+                    Marshal.Copy(bytes, 0, aclBuffer, bytes.Length);
+                    Check(SetTokenInformation(token, 6, ref aclBuffer, (uint)IntPtr.Size), "Set worker default object access");
+                }
+                // Objects created by the worker must be owned by its enabled user,
+                // not the Administrators group that is now deny-only.
+                Check(ConvertStringSidToSid(identity.User.Value, out userSid), "Read worker owner SID");
+                Check(SetTokenInformation(token, 4, ref userSid, (uint)IntPtr.Size), "Set worker object owner");
+            }
+        }
+        finally
+        {
+            if (userSid != IntPtr.Zero) LocalFree(userSid);
+            if (aclBuffer != IntPtr.Zero) Marshal.FreeHGlobal(aclBuffer);
+            if (buffer != IntPtr.Zero) Marshal.FreeHGlobal(buffer);
+        }
+    }
+
     public static int Run(string executable, string arguments, string directory, int timeoutSeconds)
     {
         if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable))
@@ -238,6 +281,7 @@ public static class WindowsUserProcess
             var label = new SidAndAttributes { Sid = sid, Attributes = 0x20 };
             Check(SetTokenInformation(restricted, 25, ref label,
                 (uint)Marshal.SizeOf<SidAndAttributes>() + GetLengthSid(sid)), "Set Medium integrity");
+            SetWorkerObjectAccess(restricted);
 
             job = CreateJobObject(IntPtr.Zero, null);
             Check(job != IntPtr.Zero, "Create owned worker job");
