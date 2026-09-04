@@ -218,9 +218,22 @@ public static class WindowsUserProcess
             // QUERY | DUPLICATE | ASSIGN_PRIMARY | ADJUST_DEFAULT. A restricted version of our own
             // token does not require the assign-primary-token privilege.
             Check(OpenProcessToken(GetCurrentProcess(), 0x8b, out original), "Open launcher token");
-            // DISABLE_MAX_PRIVILEGE | LUA_TOKEN also disables administrative groups.
-            Check(CreateRestrictedToken(original, 0x5, 0, IntPtr.Zero, 0, IntPtr.Zero,
-                0, IntPtr.Zero, out restricted), "Create normal-user token");
+            // Explicitly disable Administrators rather than using the legacy
+            // LUA_TOKEN flag, whose extra filtering can invalidate service tokens.
+            IntPtr administratorSid = IntPtr.Zero, disabledGroup = IntPtr.Zero;
+            try
+            {
+                Check(ConvertStringSidToSid("S-1-5-32-544", out administratorSid), "Create Administrators SID");
+                disabledGroup = Marshal.AllocHGlobal(Marshal.SizeOf<SidAndAttributes>());
+                Marshal.StructureToPtr(new SidAndAttributes { Sid = administratorSid }, disabledGroup, false);
+                Check(CreateRestrictedToken(original, 0x1, 1, disabledGroup, 0, IntPtr.Zero,
+                    0, IntPtr.Zero, out restricted), "Create normal-user token");
+            }
+            finally
+            {
+                if (disabledGroup != IntPtr.Zero) Marshal.FreeHGlobal(disabledGroup);
+                if (administratorSid != IntPtr.Zero) LocalFree(administratorSid);
+            }
             Check(ConvertStringSidToSid("S-1-16-8192", out sid), "Create Medium integrity SID");
             var label = new SidAndAttributes { Sid = sid, Attributes = 0x20 };
             Check(SetTokenInformation(restricted, 25, ref label,
