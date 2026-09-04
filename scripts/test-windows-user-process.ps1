@@ -10,6 +10,8 @@ New-Item -ItemType Directory -Path $fixtureRoot | Out-Null
 $resultPath = Join-Path $fixtureRoot 'result with spaces.json'
 $previousEnvironment = $env:NUCLEAR_USER_PROCESS_TEST
 try {
+    $desktop = [WindowsUserProcess]::DesktopName()
+    Write-Host "Launcher context: integrity=$([WindowsUserProcess]::IntegrityRid()), desktop=$desktop."
     $env:NUCLEAR_USER_PROCESS_TEST = 'inherited-not-profile-replaced'
     $arguments = "-NoProfile -File `"$fixture`" -Mode inspect -ResultPath `"$resultPath`" -HelperPath `"$helper`" -ExpectedText `"spaces and Unicode é漢`""
     $exitCode = [WindowsUserProcess]::Run($pwshPath, $arguments, $fixtureRoot, 30)
@@ -17,7 +19,8 @@ try {
     $result = Get-Content -Raw -LiteralPath $resultPath | ConvertFrom-Json
     if ($result.integrityRid -ne 8192 -or $result.administrator -ne $false -or
         $result.environment -cne $env:NUCLEAR_USER_PROCESS_TEST -or
-        $result.argument -cne 'spaces and Unicode é漢' -or $result.directory -cne $fixtureRoot) {
+        $result.argument -cne 'spaces and Unicode é漢' -or $result.directory -cne $fixtureRoot -or
+        $result.desktop -cne $desktop) {
         throw "Normal-user token, arguments, environment, or working directory contract failed: $result"
     }
     Write-Host "Launcher integrity transition verified: $([WindowsUserProcess]::IntegrityRid()) -> $($result.integrityRid), administrator=$($result.administrator)."

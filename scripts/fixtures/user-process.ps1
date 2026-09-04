@@ -20,6 +20,7 @@ if ($Mode -eq 'inspect') {
         environment = $env:NUCLEAR_USER_PROCESS_TEST
         argument = $ExpectedText
         directory = (Get-Location).Path
+        desktop = [WindowsUserProcess]::DesktopName()
     }
     [System.IO.File]::WriteAllText($ResultPath, ($result | ConvertTo-Json))
     exit 23

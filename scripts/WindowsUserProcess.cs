@@ -71,12 +71,30 @@ public static class WindowsUserProcess
     [DllImport("kernel32.dll", SetLastError = true)] private static extern uint WaitForSingleObject(IntPtr handle, uint timeout);
     [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetExitCodeProcess(IntPtr process, out uint code);
     [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")] private static extern IntPtr GetProcessWindowStation();
+    [DllImport("user32.dll")] private static extern IntPtr GetThreadDesktop(uint threadId);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool GetUserObjectInformation(IntPtr handle, int kind, StringBuilder value, uint size, out uint needed);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
     [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
 
     private static void Check(bool success, string action)
     {
         if (!success) throw new Win32Exception(Marshal.GetLastWin32Error(), action);
+    }
+
+    private static string UserObjectName(IntPtr handle)
+    {
+        var name = new StringBuilder(1024);
+        uint needed;
+        Check(GetUserObjectInformation(handle, 2, name, (uint)name.Capacity * 2, out needed), "Read desktop name");
+        return name.ToString();
+    }
+
+    public static string DesktopName()
+    {
+        return UserObjectName(GetProcessWindowStation()) + "\\" + UserObjectName(GetThreadDesktop(GetCurrentThreadId()));
     }
 
     public static uint IntegrityRid()
@@ -127,7 +145,9 @@ public static class WindowsUserProcess
             var limits = new ExtendedJobLimits { Basic = new JobLimits { Flags = 0x2000 } };
             Check(SetInformationJobObject(job, 9, ref limits, (uint)Marshal.SizeOf<ExtendedJobLimits>()),
                 "Enable worker tree kill-on-close");
-            var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = "winsta0\\default" };
+            // Inherit the actual runner desktop. Services need not be attached to
+            // winsta0\\default, and forcing it can cause STATUS_DLL_INIT_FAILED.
+            var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
             var command = new StringBuilder("\"" + executable + "\" " + arguments);
             // Suspended until job assignment prevents descendants escaping ownership.
             Check(CreateProcessAsUser(restricted, executable, command, IntPtr.Zero, IntPtr.Zero,
