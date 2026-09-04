@@ -1,25 +1,20 @@
 import assert from 'node:assert/strict';
+import { readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { addUrl, waitForWorkReady } from './helpers.mjs';
 
 const fixtureUrl = process.env.NUCLEAR_E2E_FIXTURE_URL;
 const slowFixtureUrl = process.env.NUCLEAR_E2E_SLOW_FIXTURE_URL;
 const fixtureTitle = process.env.NUCLEAR_E2E_FIXTURE_TITLE ?? 'fixture';
-
-async function addUrl(url) {
-  const input = await $('#video-url');
-  await input.setValue(url);
-  await $('button=Add').click();
-  await browser.waitUntil(async () => (await $$('tr.queue-item')).length > 0, {
-    timeout: 60_000,
-    timeoutMsg: `Fixture URL was not added to the queue: ${url}`
-  });
-}
 
 describe('real backend fixture lifecycle', () => {
   it('downloads, converts, cancels, reconciles after reload, and clears diagnostics', async () => {
     assert.ok(fixtureUrl, 'NUCLEAR_E2E_FIXTURE_URL is required.');
     assert.ok(slowFixtureUrl, 'NUCLEAR_E2E_SLOW_FIXTURE_URL is required.');
 
-    await $('h1').waitForDisplayed();
+    await waitForWorkReady();
+    const outputDirectory = await $('#outdir').getValue();
+    const originalFiles = new Set(readdirSync(outputDirectory));
     await $('#format').selectByAttribute('value', 'mp3');
     await addUrl(fixtureUrl);
 
@@ -32,6 +27,11 @@ describe('real backend fixture lifecycle', () => {
       timeout: 4 * 60_000,
       timeoutMsg: 'The exact candidate did not complete fixture download and audio conversion.'
     });
+    const audioFiles = readdirSync(outputDirectory).filter(
+      (name) => !originalFiles.has(name) && name.endsWith('.mp3')
+    );
+    assert.equal(audioFiles.length, 1, 'Fixture conversion must publish exactly one new MP3.');
+    assert.ok(statSync(path.join(outputDirectory, audioFiles[0])).size > 0);
 
     await $('#format').selectByAttribute('value', 'mp4');
     await addUrl(slowFixtureUrl);
@@ -68,7 +68,9 @@ describe('real backend fixture lifecycle', () => {
     await $('button=Clear Diagnostics').click();
     await expect($('.actions [role="status"]')).toHaveText(expect.stringContaining('diagnostics'));
 
-    await $('button=Check for Updates').click();
+    const checkUpdates = await $('button=Check for Updates');
+    await checkUpdates.waitForClickable({ timeout: 60_000 });
+    await checkUpdates.click();
     const updateDialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
     await updateDialog.waitForDisplayed();
     await updateDialog.$('button=Close').click();

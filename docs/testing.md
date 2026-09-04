@@ -14,6 +14,8 @@ This fast suite is not a substitute for desktop testing: there is no Rust proces
 
 `npm run test:e2e:native` drives the executable named by `NUCLEAR_E2E_APP_BINARY` through the official external `tauri-driver`. No WebDriver or evaluation plugin is compiled into Nuclear Downloader. The protected candidate workflow installs the exactly pinned `tauri-driver` 2.0.6 and verifies a Microsoft-signed EdgeDriver compatible with the runner's WebView2 build. Native acceptance runs under a verified Medium-integrity token, not the elevated GitHub runner token; see the [release process](release-process.md). Run `pwsh -NoProfile -File scripts/test-windows-user-process.ps1` from the repository root to exercise that launcher independently, without touching application data or installing the candidate.
 
+Native workflows wait for Add to become usable before selecting formats or submitting links; seeing the heading alone does not prove hydration, runtime probes, folder validation, or state reconciliation have finished. They require a newly added row and a nonempty, newly published MP3 after conversion. Failed CI tests retain bounded startup, runtime, and alert text without recording the link field or output path.
+
 The full native suite requires:
 
 - `NUCLEAR_E2E_FIXTURE_URL` and `NUCLEAR_E2E_SLOW_FIXTURE_URL`, served only from the acceptance runner;

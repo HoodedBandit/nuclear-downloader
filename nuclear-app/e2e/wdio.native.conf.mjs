@@ -92,5 +92,25 @@ export const config = {
   mochaOpts: {
     ui: 'bdd',
     timeout: 10 * 60_000
+  },
+  afterTest: async (_test, _context, { passed }) => {
+    if (passed || process.env.GITHUB_ACTIONS !== 'true') return;
+    try {
+      const state = await browser.execute(() => ({
+        runtime: document.querySelector('[data-testid="runtime-status"]')?.textContent,
+        startup: document.querySelector('.startup-status')?.textContent?.slice(0, 2_000),
+        addDisabled: document.querySelector('.url-bar button[type="submit"]')?.disabled,
+        outputConfigured: Boolean(document.querySelector('#outdir')?.value),
+        alerts: Array.from(document.querySelectorAll('[role="alert"]'))
+          .slice(0, 10)
+          .map((element) => element.textContent?.slice(0, 1_000)),
+        queueStates: Array.from(document.querySelectorAll('.status-pill'))
+          .slice(0, 10)
+          .map((element) => element.textContent)
+      }));
+      console.error('NATIVE_ACCEPTANCE_FAILURE', JSON.stringify(state));
+    } catch (error) {
+      console.error('Native failure state could not be read:', String(error));
+    }
   }
 };
