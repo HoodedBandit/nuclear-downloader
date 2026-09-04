@@ -103,9 +103,9 @@ public static class WindowsUserProcess
         return UserObjectName(GetProcessWindowStation()) + "\\" + UserObjectName(GetThreadDesktop(GetCurrentThreadId()));
     }
 
-    private static byte[] DesktopDacl(IntPtr handle)
+    private static byte[] DesktopDacl(IntPtr handle, uint information = 4)
     {
-        uint information = 4, needed;
+        uint needed;
         GetUserObjectSecurity(handle, ref information, null, 0, out needed);
         if (needed == 0 || needed > 65536) throw new InvalidOperationException("Invalid desktop security descriptor size");
         var descriptor = new byte[needed];
@@ -117,6 +117,14 @@ public static class WindowsUserProcess
     {
         return Convert.ToBase64String(DesktopDacl(GetProcessWindowStation())) + ":" +
             Convert.ToBase64String(DesktopDacl(GetThreadDesktop(GetCurrentThreadId())));
+    }
+
+    public static string DesktopSecuritySummary()
+    {
+        return "station=" + new RawSecurityDescriptor(DesktopDacl(GetProcessWindowStation(), 0x14), 0)
+            .GetSddlForm(AccessControlSections.All) + "; desktop=" +
+            new RawSecurityDescriptor(DesktopDacl(GetThreadDesktop(GetCurrentThreadId()), 0x14), 0)
+            .GetSddlForm(AccessControlSections.All);
     }
 
     // Elevated CI desktops can grant access only through Administrators. Grant
