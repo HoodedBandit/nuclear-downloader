@@ -13,7 +13,6 @@ try {
     $desktop = [WindowsUserProcess]::DesktopName()
     $desktopSecurity = [WindowsUserProcess]::DesktopSecuritySnapshot()
     Write-Host "Launcher context: integrity=$([WindowsUserProcess]::IntegrityRid()), desktop=$desktop."
-    Write-Host ([WindowsUserProcess]::DesktopSecuritySummary())
     $env:NUCLEAR_USER_PROCESS_TEST = 'inherited-not-profile-replaced'
     $arguments = "-NoProfile -File `"$fixture`" -Mode inspect -ResultPath `"$resultPath`" -HelperPath `"$helper`" -ExpectedText `"spaces and Unicode é漢`""
     $exitCode = [WindowsUserProcess]::Run($pwshPath, $arguments, $fixtureRoot, 30)

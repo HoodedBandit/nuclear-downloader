@@ -82,8 +82,6 @@ public static class WindowsUserProcess
     private static extern bool GetUserObjectInformation(IntPtr handle, int kind, StringBuilder value, uint size, out uint needed);
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetUserObjectSecurity(IntPtr handle, ref uint information, byte[] descriptor, uint size, out uint needed);
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SetUserObjectSecurity(IntPtr handle, ref uint information, byte[] descriptor);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
     [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
 
@@ -119,69 +117,6 @@ public static class WindowsUserProcess
     {
         return Convert.ToBase64String(DesktopDacl(GetProcessWindowStation())) + ":" +
             Convert.ToBase64String(DesktopDacl(GetThreadDesktop(GetCurrentThreadId())));
-    }
-
-    public static string DesktopSecuritySummary()
-    {
-        return "station=" + new RawSecurityDescriptor(DesktopDacl(GetProcessWindowStation(), 0x14), 0)
-            .GetSddlForm(AccessControlSections.All) + "; desktop=" +
-            new RawSecurityDescriptor(DesktopDacl(GetThreadDesktop(GetCurrentThreadId()), 0x14), 0)
-            .GetSddlForm(AccessControlSections.All);
-    }
-
-    // Elevated CI desktops can grant access only through Administrators. Grant
-    // this same user's SID access for the worker lifetime, then restore the exact
-    // original DACLs. Never grant Everyone access or change a persistent policy.
-    private sealed class DesktopAccessLease : IDisposable
-    {
-        private readonly IntPtr station = GetProcessWindowStation();
-        private readonly IntPtr desktop = GetThreadDesktop(GetCurrentThreadId());
-        private byte[] stationOriginal, desktopOriginal;
-
-        private static byte[] Grant(IntPtr handle, int mask, SecurityIdentifier user)
-        {
-            var original = DesktopDacl(handle);
-            var descriptor = new RawSecurityDescriptor(original, 0);
-            if (descriptor.DiscretionaryAcl == null) return original;
-            descriptor.DiscretionaryAcl.InsertAce(descriptor.DiscretionaryAcl.Count,
-                new CommonAce(AceFlags.None, AceQualifier.AccessAllowed, mask, user, false, null));
-            var modified = new byte[descriptor.BinaryLength];
-            descriptor.GetBinaryForm(modified, 0);
-            uint information = 4;
-            Check(SetUserObjectSecurity(handle, ref information, modified), "Grant runner user desktop access");
-            return original;
-        }
-
-        public DesktopAccessLease()
-        {
-            if (IntegrityRid() <= 8192) return;
-            using (var identity = WindowsIdentity.GetCurrent())
-            {
-                try
-                {
-                    stationOriginal = Grant(station, 0x000f037f, identity.User);
-                    desktopOriginal = Grant(desktop, 0x000f01ff, identity.User);
-                }
-                catch { Dispose(); throw; }
-            }
-        }
-
-        public void Dispose()
-        {
-            uint information = 4;
-            bool restored = true;
-            if (desktopOriginal != null)
-            {
-                restored &= SetUserObjectSecurity(desktop, ref information, desktopOriginal);
-                desktopOriginal = null;
-            }
-            if (stationOriginal != null)
-            {
-                restored &= SetUserObjectSecurity(station, ref information, stationOriginal);
-                stationOriginal = null;
-            }
-            Check(restored, "Restore original runner desktop access");
-        }
     }
 
     public static uint IntegrityRid()
@@ -255,7 +190,6 @@ public static class WindowsUserProcess
         if (timeoutSeconds < 1 || timeoutSeconds > 3600) throw new ArgumentOutOfRangeException("timeoutSeconds");
         IntPtr original = IntPtr.Zero, restricted = IntPtr.Zero, sid = IntPtr.Zero, job = IntPtr.Zero;
         ProcessInfo child = default(ProcessInfo);
-        DesktopAccessLease desktopAccess = null;
         try
         {
             // QUERY | DUPLICATE | ASSIGN_PRIMARY | ADJUST_DEFAULT. A restricted version of our own
@@ -288,7 +222,6 @@ public static class WindowsUserProcess
             var limits = new ExtendedJobLimits { Basic = new JobLimits { Flags = 0x2000 } };
             Check(SetInformationJobObject(job, 9, ref limits, (uint)Marshal.SizeOf<ExtendedJobLimits>()),
                 "Enable worker tree kill-on-close");
-            desktopAccess = new DesktopAccessLease();
             // Inherit the actual runner desktop. Services need not be attached to
             // winsta0\\default, and forcing it can cause STATUS_DLL_INIT_FAILED.
             var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
@@ -320,7 +253,6 @@ public static class WindowsUserProcess
             if (sid != IntPtr.Zero) LocalFree(sid);
             if (restricted != IntPtr.Zero) CloseHandle(restricted);
             if (original != IntPtr.Zero) CloseHandle(original);
-            if (desktopAccess != null) desktopAccess.Dispose();
         }
     }
 }
