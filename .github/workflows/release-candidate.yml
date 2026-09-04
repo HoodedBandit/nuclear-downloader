@@ -57,6 +57,10 @@ jobs:
       - name: Check out the exact source commit
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: Test normal-user process launcher before building
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/test-windows-user-process.ps1
+
       - name: Install Node.js 22.23.1
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -83,6 +87,8 @@ jobs:
         working-directory: nuclear-app
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           npm run format:check
           npm run lint
           npm run check
@@ -96,6 +102,8 @@ jobs:
         working-directory: nuclear-app
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           cargo fmt --manifest-path src-tauri/Cargo.toml --check
           cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
           cargo test --manifest-path src-tauri/Cargo.toml --all-features
@@ -104,6 +112,8 @@ jobs:
         working-directory: nuclear-app
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           cargo install cargo-deny --version 0.20.2 --locked
           cargo deny --manifest-path src-tauri/Cargo.toml check
 
@@ -114,6 +124,8 @@ jobs:
       - name: Test release packaging contracts
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           pwsh -NoProfile -File scripts/test-packaging.ps1
           pwsh -NoProfile -File scripts/test-e2e-contracts.ps1
 
@@ -165,7 +177,7 @@ jobs:
           NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
           NUCLEAR_UPDATE_NEXT_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY }}
         run: |
-          & scripts/run-windows-candidate-acceptance.ps1 `
+          & scripts/run-windows-candidate-acceptance-user.ps1 `
             -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.6.0' `
             -ResultsDirectory 'nuclear-app\src-tauri\target\release-acceptance-0.6.0' `
             -ExpectedVersion '0.6.0' `

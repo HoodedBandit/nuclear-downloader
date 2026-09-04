@@ -494,48 +494,63 @@ mod tests {
         assert!(!binding.contains("null | null"));
     }
 
-    fn assert_committed_binding<T: TS + 'static>() {
+    fn assert_committed_binding<T: TS + 'static>(committed: &str) {
         let generated = T::export_to_string(&Config::default()).unwrap();
         let relative = T::output_path().expect("exported binding path");
-        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src")
-            .join(relative);
-        let committed = std::fs::read_to_string(&path)
-            .unwrap_or_else(|error| panic!("could not read {}: {error}", path.display()));
-        assert_eq!(committed, generated, "binding drifted: {}", path.display());
+        assert_eq!(
+            committed,
+            generated,
+            "binding drifted: {}",
+            relative.display()
+        );
+    }
+
+    // ts-rs export tests write these files concurrently. Embed the pre-test
+    // contents so checking never races a truncating write or masks real drift.
+    macro_rules! check_binding {
+        ($ty:ty, $file:literal) => {
+            assert_committed_binding::<$ty>(include_str!(concat!(
+                "../../src/lib/bindings/",
+                $file,
+                ".ts"
+            )));
+        };
     }
 
     #[test]
     fn committed_typescript_bindings_match_every_public_contract() {
-        assert_committed_binding::<crate::app_error::AppError>();
-        assert_committed_binding::<VideoInfo>();
-        assert_committed_binding::<CookieConfig>();
-        assert_committed_binding::<PlaylistEntry>();
-        assert_committed_binding::<PlaylistInfo>();
-        assert_committed_binding::<UrlInspection>();
-        assert_committed_binding::<DownloadRequest>();
-        assert_committed_binding::<DownloadProgress>();
-        assert_committed_binding::<DownloaderToolStatus>();
-        assert_committed_binding::<DownloaderRuntimeStatus>();
-        assert_committed_binding::<DownloaderRuntimeState>();
-        assert_committed_binding::<DownloaderRuntimeUpdateCheck>();
-        assert_committed_binding::<DownloaderRuntimeUpdateProgress>();
-        assert_committed_binding::<UpdateCheckResult>();
-        assert_committed_binding::<UpdateInstallProgress>();
-        assert_committed_binding::<QueueItemState>();
-        assert_committed_binding::<OperationKind>();
-        assert_committed_binding::<OperationState>();
-        assert_committed_binding::<RuntimeReadiness>();
-        assert_committed_binding::<QueuePriority>();
-        assert_committed_binding::<QueueItemRecord>();
-        assert_committed_binding::<OperationSnapshot>();
-        assert_committed_binding::<AppSnapshot>();
-        assert_committed_binding::<StateDeltaValue>();
-        assert_committed_binding::<StateDelta>();
-        assert_committed_binding::<AddQueueItemInput>();
-        assert_committed_binding::<UpdateQueueItemInput>();
-        assert_committed_binding::<BeginInspectionInput>();
-        assert_committed_binding::<BeginOperationResult>();
-        assert_committed_binding::<CancelAllResult>();
+        check_binding!(crate::app_error::AppError, "AppError");
+        check_binding!(VideoInfo, "VideoInfo");
+        check_binding!(CookieConfig, "CookieConfig");
+        check_binding!(PlaylistEntry, "PlaylistEntry");
+        check_binding!(PlaylistInfo, "PlaylistInfo");
+        check_binding!(UrlInspection, "UrlInspection");
+        check_binding!(DownloadRequest, "DownloadRequest");
+        check_binding!(DownloadProgress, "DownloadProgress");
+        check_binding!(DownloaderToolStatus, "DownloaderToolStatus");
+        check_binding!(DownloaderRuntimeStatus, "DownloaderRuntimeStatus");
+        check_binding!(DownloaderRuntimeState, "DownloaderRuntimeState");
+        check_binding!(DownloaderRuntimeUpdateCheck, "DownloaderRuntimeUpdateCheck");
+        check_binding!(
+            DownloaderRuntimeUpdateProgress,
+            "DownloaderRuntimeUpdateProgress"
+        );
+        check_binding!(UpdateCheckResult, "UpdateCheckResult");
+        check_binding!(UpdateInstallProgress, "UpdateInstallProgress");
+        check_binding!(QueueItemState, "QueueItemState");
+        check_binding!(OperationKind, "OperationKind");
+        check_binding!(OperationState, "OperationState");
+        check_binding!(RuntimeReadiness, "RuntimeReadiness");
+        check_binding!(QueuePriority, "QueuePriority");
+        check_binding!(QueueItemRecord, "QueueItemRecord");
+        check_binding!(OperationSnapshot, "OperationSnapshot");
+        check_binding!(AppSnapshot, "AppSnapshot");
+        check_binding!(StateDeltaValue, "StateDeltaValue");
+        check_binding!(StateDelta, "StateDelta");
+        check_binding!(AddQueueItemInput, "AddQueueItemInput");
+        check_binding!(UpdateQueueItemInput, "UpdateQueueItemInput");
+        check_binding!(BeginInspectionInput, "BeginInspectionInput");
+        check_binding!(BeginOperationResult, "BeginOperationResult");
+        check_binding!(CancelAllResult, "CancelAllResult");
     }
 }

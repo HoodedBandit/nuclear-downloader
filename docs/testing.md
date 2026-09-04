@@ -12,7 +12,7 @@ This fast suite is not a substitute for desktop testing: there is no Rust proces
 
 ## Native Windows x64 suite
 
-`npm run test:e2e:native` drives the executable named by `NUCLEAR_E2E_APP_BINARY` through the official external `tauri-driver`. No WebDriver or evaluation plugin is compiled into Nuclear Downloader. The protected candidate workflow installs the exactly pinned `tauri-driver` 2.0.6 and lets the pinned WebdriverIO Tauri service obtain the Edge driver matching the runner's WebView2 installation.
+`npm run test:e2e:native` drives the executable named by `NUCLEAR_E2E_APP_BINARY` through the official external `tauri-driver`. No WebDriver or evaluation plugin is compiled into Nuclear Downloader. The protected candidate workflow installs the exactly pinned `tauri-driver` 2.0.6 and verifies a Microsoft-signed EdgeDriver compatible with the runner's WebView2 build. Native acceptance runs under a verified Medium-integrity token, not the elevated GitHub runner token; see the [release process](release-process.md). Run `pwsh -NoProfile -File scripts/test-windows-user-process.ps1` from the repository root to exercise that launcher independently, without touching application data or installing the candidate.
 
 The full native suite requires:
 

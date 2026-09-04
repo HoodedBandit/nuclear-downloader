@@ -1,0 +1,161 @@
+// Test infrastructure only: run exact release bytes with a normal-user token.
+// No credential, account, UAC policy, or installed application is changed.
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class WindowsUserProcess
+{
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SidAndAttributes { public IntPtr Sid; public uint Attributes; }
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct StartupInfo
+    {
+        public int Size;
+        public string Reserved, Desktop, Title;
+        public uint X, Y, Width, Height, XChars, YChars, FillAttribute, Flags;
+        public ushort ShowWindow, ReservedSize;
+        public IntPtr ReservedPointer, Stdin, Stdout, Stderr;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ProcessInfo { public IntPtr Process, Thread; public uint ProcessId, ThreadId; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct JobLimits
+    {
+        public long ProcessTime, JobTime;
+        public uint Flags;
+        public UIntPtr MinimumWorkingSet, MaximumWorkingSet;
+        public uint ActiveProcessLimit;
+        public UIntPtr Affinity;
+        public uint Priority, SchedulingClass;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct IoCounters { public ulong ReadOps, WriteOps, OtherOps, ReadBytes, WriteBytes, OtherBytes; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ExtendedJobLimits
+    {
+        public JobLimits Basic;
+        public IoCounters Io;
+        public UIntPtr ProcessMemory, JobMemory, PeakProcessMemory, PeakJobMemory;
+    }
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool CreateRestrictedToken(IntPtr token, uint flags, uint disableCount, IntPtr disable,
+        uint deleteCount, IntPtr delete, uint restrictCount, IntPtr restrict, out IntPtr restricted);
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool ConvertStringSidToSid(string value, out IntPtr sid);
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool SetTokenInformation(IntPtr token, int kind, ref SidAndAttributes value, uint size);
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool GetTokenInformation(IntPtr token, int kind, IntPtr value, uint size, out uint needed);
+    [DllImport("advapi32.dll")] private static extern uint GetLengthSid(IntPtr sid);
+    [DllImport("advapi32.dll")] private static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
+    [DllImport("advapi32.dll")] private static extern IntPtr GetSidSubAuthority(IntPtr sid, uint index);
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool CreateProcessAsUser(IntPtr token, string application, StringBuilder command,
+        IntPtr processAttributes, IntPtr threadAttributes, bool inheritHandles, uint flags,
+        IntPtr environment, string directory, ref StartupInfo startup, out ProcessInfo process);
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateJobObject(IntPtr attributes, string name);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetInformationJobObject(IntPtr job, int kind, ref ExtendedJobLimits limits, uint size);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern bool TerminateJobObject(IntPtr job, uint code);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern bool TerminateProcess(IntPtr process, uint code);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern uint ResumeThread(IntPtr thread);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern uint WaitForSingleObject(IntPtr handle, uint timeout);
+    [DllImport("kernel32.dll", SetLastError = true)] private static extern bool GetExitCodeProcess(IntPtr process, out uint code);
+    [DllImport("kernel32.dll")] private static extern IntPtr GetCurrentProcess();
+    [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
+
+    private static void Check(bool success, string action)
+    {
+        if (!success) throw new Win32Exception(Marshal.GetLastWin32Error(), action);
+    }
+
+    public static uint IntegrityRid()
+    {
+        IntPtr token = IntPtr.Zero, buffer = IntPtr.Zero;
+        try
+        {
+            Check(OpenProcessToken(GetCurrentProcess(), 0x8, out token), "Read process token");
+            uint size;
+            GetTokenInformation(token, 25, IntPtr.Zero, 0, out size);
+            if (size == 0 || size > 65536) throw new InvalidOperationException("Invalid token label size");
+            buffer = Marshal.AllocHGlobal((int)size);
+            Check(GetTokenInformation(token, 25, buffer, size, out size), "Read integrity label");
+            var label = Marshal.PtrToStructure<SidAndAttributes>(buffer);
+            byte count = Marshal.ReadByte(GetSidSubAuthorityCount(label.Sid));
+            if (count == 0) throw new InvalidOperationException("Missing token integrity RID");
+            return unchecked((uint)Marshal.ReadInt32(GetSidSubAuthority(label.Sid, (uint)count - 1)));
+        }
+        finally
+        {
+            if (buffer != IntPtr.Zero) Marshal.FreeHGlobal(buffer);
+            if (token != IntPtr.Zero) CloseHandle(token);
+        }
+    }
+
+    public static int Run(string executable, string arguments, string directory, int timeoutSeconds)
+    {
+        if (!Path.IsPathFullyQualified(executable) || !File.Exists(executable))
+            throw new ArgumentException("The worker executable must be an existing absolute path");
+        if (timeoutSeconds < 1 || timeoutSeconds > 3600) throw new ArgumentOutOfRangeException("timeoutSeconds");
+        IntPtr original = IntPtr.Zero, restricted = IntPtr.Zero, sid = IntPtr.Zero, job = IntPtr.Zero;
+        ProcessInfo child = default(ProcessInfo);
+        try
+        {
+            // QUERY | DUPLICATE | ASSIGN_PRIMARY | ADJUST_DEFAULT. A restricted version of our own
+            // token does not require the assign-primary-token privilege.
+            Check(OpenProcessToken(GetCurrentProcess(), 0x8b, out original), "Open launcher token");
+            // DISABLE_MAX_PRIVILEGE | LUA_TOKEN also disables administrative groups.
+            Check(CreateRestrictedToken(original, 0x5, 0, IntPtr.Zero, 0, IntPtr.Zero,
+                0, IntPtr.Zero, out restricted), "Create normal-user token");
+            Check(ConvertStringSidToSid("S-1-16-8192", out sid), "Create Medium integrity SID");
+            var label = new SidAndAttributes { Sid = sid, Attributes = 0x20 };
+            Check(SetTokenInformation(restricted, 25, ref label,
+                (uint)Marshal.SizeOf<SidAndAttributes>() + GetLengthSid(sid)), "Set Medium integrity");
+
+            job = CreateJobObject(IntPtr.Zero, null);
+            Check(job != IntPtr.Zero, "Create owned worker job");
+            var limits = new ExtendedJobLimits { Basic = new JobLimits { Flags = 0x2000 } };
+            Check(SetInformationJobObject(job, 9, ref limits, (uint)Marshal.SizeOf<ExtendedJobLimits>()),
+                "Enable worker tree kill-on-close");
+            var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>(), Desktop = "winsta0\\default" };
+            var command = new StringBuilder("\"" + executable + "\" " + arguments);
+            // Suspended until job assignment prevents descendants escaping ownership.
+            Check(CreateProcessAsUser(restricted, executable, command, IntPtr.Zero, IntPtr.Zero,
+                false, 0x4 | 0x400 | 0x08000000, IntPtr.Zero, directory, ref startup, out child),
+                "Start normal-user worker");
+            Check(AssignProcessToJobObject(job, child.Process), "Assign worker to owned job");
+            Check(ResumeThread(child.Thread) != uint.MaxValue, "Resume worker");
+            uint wait = WaitForSingleObject(child.Process, checked((uint)timeoutSeconds * 1000));
+            if (wait == 258) throw new TimeoutException("Normal-user worker exceeded its time limit");
+            Check(wait == 0, "Wait for worker exit");
+            uint exitCode;
+            Check(GetExitCodeProcess(child.Process, out exitCode), "Read worker exit code");
+            return unchecked((int)exitCode);
+        }
+        finally
+        {
+            if (job != IntPtr.Zero) { TerminateJobObject(job, 1); CloseHandle(job); }
+            if (child.Process != IntPtr.Zero)
+            {
+                // Also covers failure before job assignment. Handles, never PID lookup.
+                TerminateProcess(child.Process, 1);
+                WaitForSingleObject(child.Process, 10000);
+                CloseHandle(child.Process);
+            }
+            if (child.Thread != IntPtr.Zero) CloseHandle(child.Thread);
+            if (sid != IntPtr.Zero) LocalFree(sid);
+            if (restricted != IntPtr.Zero) CloseHandle(restricted);
+            if (original != IntPtr.Zero) CloseHandle(original);
+        }
+    }
+}

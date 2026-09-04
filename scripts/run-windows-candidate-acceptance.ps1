@@ -25,6 +25,12 @@ if (-not [Environment]::Is64BitOperatingSystem) {
 if ($env:GITHUB_ACTIONS -cne 'true' -or [string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)) {
     throw 'Candidate acceptance must run on the disposable Windows account provided by GitHub Actions.'
 }
+Add-Type -Path (Join-Path $PSScriptRoot 'WindowsUserProcess.cs')
+$integrityRid = [WindowsUserProcess]::IntegrityRid()
+if ($integrityRid -ne 8192) {
+    throw "Candidate acceptance requires Medium integrity (8192); found $integrityRid."
+}
+Write-Host "Verified normal-user acceptance token: integrity RID $integrityRid."
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $candidateRoot = (Resolve-Path -LiteralPath $CandidateDirectory).Path
@@ -458,6 +464,7 @@ try {
             architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
         }
         webdriver = [ordered]@{
+            integrityRid = $integrityRid
             webView2RuntimeVersion = $webView2RuntimeVersion
             edgeDriverVersion = $edgeDriverVersion
         }
