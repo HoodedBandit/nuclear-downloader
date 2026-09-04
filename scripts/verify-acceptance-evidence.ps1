@@ -42,12 +42,21 @@ function Assert-ExactProperties {
 
 $evidenceRoot = (Resolve-Path -LiteralPath $EvidenceDirectory).Path
 $candidateRoot = (Resolve-Path -LiteralPath $CandidateDirectory).Path
-$evidenceFiles = @(Get-ChildItem -LiteralPath $evidenceRoot -File -Force)
-if ($evidenceFiles.Count -ne 1 -or $evidenceFiles[0].Name -cne 'windows-x64-acceptance.json') {
-    throw 'Acceptance evidence must contain exactly windows-x64-acceptance.json.'
+$evidenceFiles = @(Get-ChildItem -LiteralPath $evidenceRoot -Force)
+if ($evidenceFiles.Count -lt 1 -or $evidenceFiles.Count -gt 64) {
+    throw 'Acceptance evidence must contain a bounded set of files.'
+}
+foreach ($file in $evidenceFiles) {
+    if ($file.PSIsContainer -or ($file.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'Acceptance evidence may contain only regular, non-reparse files.'
+    }
+    if ($file.Name -ceq 'windows-x64-acceptance.json') { continue }
+    if ($file.Name -cnotmatch '^[0-9]{2}-[a-z0-9-]+\.(stdout|stderr)\.log$' -or $file.Length -gt (4MB + 128)) {
+        throw 'Acceptance evidence contains an unexpected or oversized diagnostic log.'
+    }
 }
 
-$evidence = Read-BoundedJson -Path $evidenceFiles[0].FullName -Limit 1MB
+$evidence = Read-BoundedJson -Path (Join-Path $evidenceRoot 'windows-x64-acceptance.json') -Limit 1MB
 $inventory = Read-BoundedJson -Path (Join-Path $candidateRoot 'release-candidate-inventory.json') -Limit 1MB
 Assert-ExactProperties -Value $evidence -Expected @(
     'schemaVersion', 'releaseVersion', 'sourceCommit', 'candidateRunId', 'candidateCreatedAt',
@@ -56,7 +65,7 @@ Assert-ExactProperties -Value $evidence -Expected @(
 ) -Label 'Acceptance evidence'
 Assert-ExactProperties -Value $evidence.os -Expected @('description', 'architecture') -Label 'Acceptance operating system'
 Assert-ExactProperties -Value $evidence.webdriver -Expected @(
-    'webView2RuntimeVersion', 'edgeDriverVersion'
+    'webView2RuntimeVersion', 'edgeDriverVersion', 'integrityRid'
 ) -Label 'Acceptance WebDriver environment'
 
 if ([int]$evidence.schemaVersion -ne 1 -or
@@ -64,7 +73,9 @@ if ([int]$evidence.schemaVersion -ne 1 -or
     [string]$evidence.sourceCommit -cne $ExpectedCommitSha -or
     [string]$evidence.candidateRunId -cne $ExpectedCandidateRunId -or
     [string]$evidence.candidateCreatedAt -cne [string]$inventory.createdAt -or
-    [string]$evidence.os.architecture -cne 'X64') {
+    [string]$evidence.os.architecture -cne 'X64' -or
+    $evidence.webdriver.integrityRid -isnot [long] -or
+    $evidence.webdriver.integrityRid -ne 8192) {
     throw 'Acceptance evidence identity or platform does not match the candidate.'
 }
 

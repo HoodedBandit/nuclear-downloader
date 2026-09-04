@@ -92,6 +92,7 @@ cargo fetch --manifest-path src-tauri/Cargo.toml --locked
 cd ..
 pwsh -NoProfile -File scripts/test-packaging.ps1
 pwsh -NoProfile -File scripts/test-e2e-contracts.ps1
+pwsh -NoProfile -File scripts/test-windows-user-process.ps1
 git status --short
 ```
 
@@ -111,7 +112,11 @@ After the maintainer explicitly approves pushing the exact commit:
 
 The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the private inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. Its only upload is the private Actions artifact `nuclear-downloader-0.6.0-candidate`. Record the successful Actions run ID.
 
-After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance.ps1`. No WebDriver plugin is compiled into the app. The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.6.0-acceptance` as a separate private evidence artifact. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
+After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance-user.ps1`. The wrapper launches the acceptance worker with a restricted Medium-integrity token and an owned kill-on-close process job, preserving the runner account, environment, and exact production bytes. It does not alter UAC policy or add a WebDriver plugin to the app. An early CI fixture verifies the token, exit-code forwarding, environment, Unicode arguments, timeout, and descendant cleanup before building. Acceptance records the verified integrity RID alongside the WebView2 and EdgeDriver versions. This is required because [WebView2 ignores environment-supplied debugging arguments for elevated hosts](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645#issuecomment-4934355430).
+
+The restricted token retains its user's access to newly created process objects instead of relying on the now-disabled Administrators group. Existing desktop and window-station permissions are never changed; fixtures verify they remain identical after success and timeout.
+
+The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.6.0-acceptance` as a separate private evidence artifact. Evidence verification allows only the exact JSON contract and bounded, regularly named diagnostic logs; elevated runs and unexpected files fail closed. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
 
 The builder refuses a dirty worktree, version drift among npm/Tauri/Cargo metadata, an output path outside Cargo's target directory, existing candidate output, reparse-point traversal, wrong artifact names, oversized files, and manifest/hash mismatches. It never prints the signing key or password.
 

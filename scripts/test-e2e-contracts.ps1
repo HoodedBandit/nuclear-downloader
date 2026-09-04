@@ -46,7 +46,8 @@ if ($nativeConfig -notmatch "driverProvider:\s*'external'" -or
 $candidateWorkflow = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.github\workflows\release-candidate.yml')
 foreach ($required in @(
     'cargo install tauri-driver --version 2.0.6 --locked',
-    'run-windows-candidate-acceptance.ps1',
+    'run-windows-candidate-acceptance-user.ps1',
+    'test-windows-user-process.ps1',
     'test:e2e:production-bundle',
     '-ExpectedCandidateRunId ''${{ github.run_id }}''',
     '- name: Upload private acceptance evidence',
@@ -125,6 +126,10 @@ foreach ($forbidden in @('USERPROFILE =', 'LOCALAPPDATA =', 'APPDATA =')) {
 
 foreach ($scriptPath in @(
     (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance.ps1'),
+    (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance-user.ps1'),
+    (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance-worker.ps1'),
+    (Join-Path $repositoryRoot 'scripts\test-windows-user-process.ps1'),
+    (Join-Path $repositoryRoot 'scripts\fixtures\user-process.ps1'),
     $edgeDriverScriptPath,
     (Join-Path $repositoryRoot 'scripts\verify-acceptance-evidence.ps1'),
     $PSCommandPath
@@ -179,6 +184,7 @@ try {
         completedAt = '2026-08-18T12:02:00Z'
         os = [ordered]@{ description = 'Windows fixture'; architecture = 'X64' }
         webdriver = [ordered]@{
+            integrityRid = 8192
             webView2RuntimeVersion = '151.0.4129.101'
             edgeDriverVersion = '151.0.4129.107'
         }
@@ -198,11 +204,41 @@ try {
     )
     $evidencePath = Join-Path $evidenceFixture 'windows-x64-acceptance.json'
     [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
+    # Evidence uploads include bounded diagnostics as well as the signed-byte binding.
+    $logFixture = Join-Path $evidenceFixture '03-wdio-full.stdout.log'
+    [System.IO.File]::WriteAllText($logFixture, 'fixture process diagnostics', $utf8)
     & (Join-Path $repositoryRoot 'scripts\verify-acceptance-evidence.ps1') `
         -EvidenceDirectory $evidenceFixture `
         -CandidateDirectory $candidateFixture `
         -ExpectedCommitSha ('b' * 40) `
         -ExpectedCandidateRunId '12345' *> $null
+
+    function Assert-EvidenceRejected {
+        $rejected = $false
+        try {
+            & (Join-Path $repositoryRoot 'scripts\verify-acceptance-evidence.ps1') `
+                -EvidenceDirectory $evidenceFixture -CandidateDirectory $candidateFixture `
+                -ExpectedCommitSha ('b' * 40) -ExpectedCandidateRunId '12345' *> $null
+        } catch { $rejected = $true }
+        if (-not $rejected) { throw 'Malformed acceptance evidence was accepted.' }
+    }
+    $evidence.webdriver.integrityRid = 12288
+    [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
+    Assert-EvidenceRejected
+    $evidence.webdriver.integrityRid = 8192
+    [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
+    $unexpectedPath = Join-Path $evidenceFixture 'unexpected.exe'
+    [System.IO.File]::WriteAllText($unexpectedPath, 'not allowed', $utf8)
+    Assert-EvidenceRejected
+    Remove-Item -LiteralPath $unexpectedPath
+    $stream = [System.IO.File]::OpenWrite($logFixture)
+    try { $stream.SetLength(4MB + 129) } finally { $stream.Dispose() }
+    Assert-EvidenceRejected
+    Remove-Item -LiteralPath $logFixture
+    $nestedPath = Join-Path $evidenceFixture 'nested'
+    New-Item -ItemType Directory -Path $nestedPath | Out-Null
+    Assert-EvidenceRejected
+    [System.IO.Directory]::Delete($nestedPath, $false)
 
     $evidence.webdriver.edgeDriverVersion = '150.0.4129.107'
     [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
