@@ -11,10 +11,12 @@ $resultPath = Join-Path $fixtureRoot 'result with spaces.json'
 $previousEnvironment = $env:NUCLEAR_USER_PROCESS_TEST
 try {
     $desktop = [WindowsUserProcess]::DesktopName()
+    $desktopSecurity = [WindowsUserProcess]::DesktopSecuritySnapshot()
     Write-Host "Launcher context: integrity=$([WindowsUserProcess]::IntegrityRid()), desktop=$desktop."
     $env:NUCLEAR_USER_PROCESS_TEST = 'inherited-not-profile-replaced'
     $arguments = "-NoProfile -File `"$fixture`" -Mode inspect -ResultPath `"$resultPath`" -HelperPath `"$helper`" -ExpectedText `"spaces and Unicode é漢`""
     $exitCode = [WindowsUserProcess]::Run($pwshPath, $arguments, $fixtureRoot, 30)
+    if ([WindowsUserProcess]::DesktopSecuritySnapshot() -cne $desktopSecurity) { throw 'Launcher did not restore desktop permissions.' }
     if ($exitCode -ne 23) { throw "Worker exit code was not preserved: $exitCode" }
     $result = Get-Content -Raw -LiteralPath $resultPath | ConvertFrom-Json
     if ($result.integrityRid -ne 8192 -or $result.administrator -ne $false -or
@@ -38,6 +40,7 @@ try {
             $timedOut = $true
         }
         if ($timedOut -ne ($mode -eq 'timeout')) { throw 'Worker timeout was not reported correctly.' }
+        if ([WindowsUserProcess]::DesktopSecuritySnapshot() -cne $desktopSecurity) { throw 'Launcher did not restore desktop permissions after tree cleanup.' }
         $childId = [int](Get-Content -Raw -LiteralPath $resultPath)
         $child = Get-Process -Id $childId -ErrorAction SilentlyContinue
         if ($child) {
