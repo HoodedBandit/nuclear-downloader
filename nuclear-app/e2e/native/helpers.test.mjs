@@ -1,7 +1,38 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { addUrl } from './helpers.mjs';
+import { addUrl, waitForTerminalQueueStatus } from './helpers.mjs';
 
 afterEach(() => vi.unstubAllGlobals());
+
+describe('rendered terminal status', () => {
+  it.each([
+    ['Completed', 'completed'],
+    [' Cancelled ', 'cancelled']
+  ])('accepts CSS-capitalized %s after an active phase', async (rendered, expected) => {
+    const status = {
+      getText: vi.fn().mockResolvedValueOnce('Converting').mockResolvedValueOnce(rendered),
+      waitUntil: async (predicate, options) => {
+        expect(options.timeout).toBe(60_000);
+        expect(options.interval).toBe(500);
+        expect(await predicate()).toBe(false);
+        expect(await predicate()).toBe(true);
+      }
+    };
+    await waitForTerminalQueueStatus({ $: async () => status }, expected, 60_000);
+  });
+
+  it.each(['Error', 'Interrupted', 'Cancelled'])(
+    'rejects terminal %s instead of accepting success',
+    async (rendered) => {
+      const status = {
+        getText: async () => rendered,
+        waitUntil: async (predicate) => expect(await predicate()).toBe(true)
+      };
+      await expect(
+        waitForTerminalQueueStatus({ $: async () => status }, 'completed', 60_000)
+      ).rejects.toThrow(`ended in ${rendered.toLowerCase()}, expected completed`);
+    }
+  );
+});
 
 it('waits for startup readiness and a newly added row instead of an existing row', async () => {
   const events = [];

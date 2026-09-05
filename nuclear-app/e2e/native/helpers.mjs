@@ -1,3 +1,19 @@
+import assert from 'node:assert/strict';
+
+export async function waitForTerminalQueueStatus(row, expected, timeout) {
+  const status = await row.$('.status-pill');
+  let actual;
+  await status.waitUntil(
+    async () => {
+      // WebDriver returns rendered text, including CSS text-transform: capitalize.
+      actual = (await status.getText()).trim().toLowerCase();
+      return ['completed', 'cancelled', 'error', 'interrupted'].includes(actual);
+    },
+    { timeout, interval: 500, timeoutMsg: `The queue item did not reach terminal ${expected}.` }
+  );
+  assert.equal(actual, expected, `The queue item ended in ${actual}, expected ${expected}.`);
+}
+
 export async function waitForWorkReady() {
   await $('h1').waitForDisplayed();
   // The heading can render before hydration, runtime probes, folder validation,

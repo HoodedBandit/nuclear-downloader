@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { addUrl, waitForWorkReady } from './helpers.mjs';
+import { addUrl, waitForTerminalQueueStatus, waitForWorkReady } from './helpers.mjs';
 
 const fixtureUrl = process.env.NUCLEAR_E2E_FIXTURE_URL;
 const slowFixtureUrl = process.env.NUCLEAR_E2E_SLOW_FIXTURE_URL;
@@ -22,11 +22,7 @@ describe('real backend fixture lifecycle', () => {
     const firstDownload = await firstRow.$('button[aria-label^="Download "]');
     await firstDownload.waitForClickable();
     await firstDownload.click();
-    const firstStatus = await firstRow.$('.status-pill');
-    await firstStatus.waitUntil(async () => (await firstStatus.getText()) === 'completed', {
-      timeout: 4 * 60_000,
-      timeoutMsg: 'The exact candidate did not complete fixture download and audio conversion.'
-    });
+    await waitForTerminalQueueStatus(firstRow, 'completed', 4 * 60_000);
     const audioFiles = readdirSync(outputDirectory).filter(
       (name) => !originalFiles.has(name) && name.endsWith('.mp3')
     );
@@ -48,11 +44,7 @@ describe('real backend fixture lifecycle', () => {
     const cancel = await slowRow.$('button[aria-label^="Cancel "]');
     await cancel.waitForClickable({ timeout: 60_000 });
     await cancel.click();
-    const slowStatus = await slowRow.$('.status-pill');
-    await slowStatus.waitUntil(async () => (await slowStatus.getText()) === 'cancelled', {
-      timeout: 60_000,
-      timeoutMsg: 'Cancellation did not reach the backend terminal cancelled state.'
-    });
+    await waitForTerminalQueueStatus(slowRow, 'cancelled', 60_000);
 
     await browser.refresh();
     await $('h1').waitForDisplayed();

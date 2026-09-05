@@ -436,6 +436,13 @@ try {
     $steps.portableStartup = 'passed'
 
     Invoke-OwnedProcess -FilePath $uninstaller -LogName 'nsis-uninstall' -ArgumentList @('/S') -TimeoutSeconds 300
+    # The uninstaller can hand off to a temporary process. Require the actual
+    # installed files to disappear, not merely the launcher process to exit.
+    $uninstallDeadline = [DateTimeOffset]::UtcNow.AddSeconds(30)
+    while ((Test-Path -LiteralPath $installedExecutable -PathType Leaf) -and
+        [DateTimeOffset]::UtcNow -lt $uninstallDeadline) {
+        Start-Sleep -Milliseconds 100
+    }
     if (Test-Path -LiteralPath $installedExecutable -PathType Leaf) {
         throw 'NSIS uninstall left the installed application executable behind.'
     }
