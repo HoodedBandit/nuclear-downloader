@@ -128,19 +128,33 @@ jobs:
             -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
             -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}'
 
-      - name: Create and independently verify a draft release
+      - name: Create or recover and independently verify a draft release
         id: draft
         shell: pwsh
         env:
           EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           $tag = 'v0.6.0'
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            throw "Release $tag already exists. Published releases are immutable."
+          function Get-CandidateDraft {
+            # The tag endpoint only finds published releases, not untagged drafts.
+            $pages = gh api "repos/$env:GH_REPO/releases?per_page=100" --paginate --slurp | ConvertFrom-Json -DateKind String
+            $candidates = @($pages | ForEach-Object { $_ } | Where-Object { [string]$_.tag_name -ceq $tag })
+            if ($candidates.Count -gt 1) {
+              throw "Release $tag is ambiguous. No draft will be changed."
+            }
+            if ($candidates.Count -eq 1) {
+              if ($candidates[0].draft -ne $true) {
+                throw "Release $tag already exists. Published releases are immutable."
+              }
+              return $candidates[0]
+            }
           }
-          gh api "repos/$env:GH_REPO/git/ref/tags/$tag" *> $null
-          if ($LASTEXITCODE -eq 0) {
+
+          $existingDraft = Get-CandidateDraft
+          $tagRefs = @(gh api "repos/$env:GH_REPO/git/matching-refs/tags/$tag" | ConvertFrom-Json | Where-Object { [string]$_.ref -ceq "refs/tags/$tag" })
+          if ($tagRefs.Count -ne 0) {
             throw "Tag $tag already exists. This workflow only creates a release and tag together for the verified commit."
           }
 
@@ -169,39 +183,51 @@ jobs:
             'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
           ) -join "`n"
 
-          & gh release create $tag @assetPaths `
-            --repo $env:GH_REPO `
-            --target $env:EXPECTED_COMMIT_SHA `
-            --title 'Nuclear Downloader 0.6.0' `
-            --notes $releaseNotes `
-            --draft
-          if ($LASTEXITCODE -ne 0) {
-            throw 'GitHub failed to create the draft release.'
+          if ($null -eq $existingDraft) {
+            & gh release create $tag @assetPaths `
+              --repo $env:GH_REPO `
+              --target $env:EXPECTED_COMMIT_SHA `
+              --title 'Nuclear Downloader 0.6.0' `
+              --notes $releaseNotes `
+              --draft
+            if ($LASTEXITCODE -ne 0) {
+              throw 'GitHub failed to create the draft release.'
+            }
           }
-          "tag=$tag" >> $env:GITHUB_OUTPUT
 
-          $release = gh api "repos/$env:GH_REPO/releases/tags/$tag" | ConvertFrom-Json
-          if (-not [bool]$release.draft -or @($release.assets).Count -ne $assetPaths.Count) {
-            throw 'The draft release asset count is not exact.'
+          $draft = Get-CandidateDraft
+          if ($null -eq $draft -or [string]$draft.id -cnotmatch '^[1-9][0-9]*$') {
+            throw 'The draft release has no unambiguous numeric release ID.'
+          }
+          $release = gh api "repos/$env:GH_REPO/releases/$($draft.id)" | ConvertFrom-Json
+          if ($release.draft -ne $true -or $release.prerelease -ne $false -or
+              [string]$release.id -cne [string]$draft.id -or
+              [string]$release.tag_name -cne $tag -or
+              [string]$release.target_commitish -cne $env:EXPECTED_COMMIT_SHA -or
+              @($release.assets).Count -ne $assetPaths.Count) {
+            throw 'The draft release identity or asset count is not exact.'
           }
           foreach ($expected in $inventory.assets) {
             $matches = @($release.assets | Where-Object { [string]$_.name -ceq [string]$expected.fileName })
-            if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.size) {
+            if ($matches.Count -ne 1 -or [long]$matches[0].size -ne [long]$expected.size -or
+                [string]$matches[0].state -cne 'uploaded') {
               throw "The draft release does not exactly match $([string]$expected.fileName)."
             }
-            if ($matches[0].PSObject.Properties.Name -contains 'digest' -and
-                -not [string]::IsNullOrWhiteSpace([string]$matches[0].digest) -and
-                [string]$matches[0].digest -cne "sha256:$([string]$expected.sha256)") {
-              throw "GitHub reported a digest mismatch for $([string]$expected.fileName)."
+            if ([string]$matches[0].digest -cne "sha256:$([string]$expected.sha256)") {
+              throw "GitHub reported a missing or mismatched digest for $([string]$expected.fileName)."
             }
           }
+          "release_id=$($release.id)" >> $env:GITHUB_OUTPUT
 
       - name: Publish the exact verified draft
         shell: pwsh
         env:
-          VERIFIED_RELEASE_TAG: ${{ steps.draft.outputs.tag }}
+          VERIFIED_RELEASE_ID: ${{ steps.draft.outputs.release_id }}
         run: |
-          gh release edit $env:VERIFIED_RELEASE_TAG `
-            --repo $env:GH_REPO `
-            --draft=false `
-            --latest
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:VERIFIED_RELEASE_ID -cnotmatch '^[1-9][0-9]*$') {
+            throw 'No verified release ID was supplied.'
+          }
+          gh api --method PATCH "repos/$env:GH_REPO/releases/$env:VERIFIED_RELEASE_ID" `
+            -F draft=false -f make_latest=true --silent
