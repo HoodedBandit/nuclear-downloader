@@ -10,26 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-function Read-BoundedJson {
-    param([Parameter(Mandatory)] [string] $Path, [Parameter(Mandatory)] [long] $Limit)
-    $item = Get-Item -LiteralPath $Path -Force
-    if ($item.PSIsContainer -or
-        ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0 -or
-        $item.Length -le 0 -or
-        $item.Length -gt $Limit) {
-        throw "Evidence JSON is not a bounded regular file: $Path"
-    }
-    $bytes = [System.IO.File]::ReadAllBytes($item.FullName)
-    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xef -and $bytes[1] -eq 0xbb -and $bytes[2] -eq 0xbf) {
-        throw 'Evidence JSON must use UTF-8 without a byte-order mark.'
-    }
-    $utf8 = [System.Text.UTF8Encoding]::new($false, $true)
-    $arguments = @{ InputObject = $utf8.GetString($bytes) }
-    if ((Get-Command ConvertFrom-Json).Parameters.ContainsKey('DateKind')) {
-        $arguments.DateKind = 'String'
-    }
-    return ConvertFrom-Json @arguments
-}
+. (Join-Path $PSScriptRoot 'release-json.ps1')
 
 function Assert-ExactProperties {
     param([Parameter(Mandatory)] [object] $Value, [Parameter(Mandatory)] [string[]] $Expected, [Parameter(Mandatory)] [string] $Label)
@@ -56,8 +37,8 @@ foreach ($file in $evidenceFiles) {
     }
 }
 
-$evidence = Read-BoundedJson -Path (Join-Path $evidenceRoot 'windows-x64-acceptance.json') -Limit 1MB
-$inventory = Read-BoundedJson -Path (Join-Path $candidateRoot 'release-candidate-inventory.json') -Limit 1MB
+$evidence = Read-BoundedReleaseJson -Path (Join-Path $evidenceRoot 'windows-x64-acceptance.json') -Limit 1MB
+$inventory = Read-BoundedReleaseJson -Path (Join-Path $candidateRoot 'release-candidate-inventory.json') -Limit 1MB
 Assert-ExactProperties -Value $evidence -Expected @(
     'schemaVersion', 'releaseVersion', 'sourceCommit', 'candidateRunId', 'candidateCreatedAt',
     'startedAt', 'completedAt', 'os', 'webdriver', 'steps',

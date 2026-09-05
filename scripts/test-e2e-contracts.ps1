@@ -48,6 +48,7 @@ foreach ($required in @(
     'cargo install tauri-driver --version 2.0.6 --locked',
     'run-windows-candidate-acceptance-user.ps1',
     'test-windows-user-process.ps1',
+    'Test release evidence contracts before building',
     'test:e2e:production-bundle',
     '-ExpectedCandidateRunId ''${{ github.run_id }}''',
     '- name: Upload private acceptance evidence',
@@ -71,6 +72,8 @@ foreach ($required in @(
     '$edgeDriverDataRoot = Join-Path $webviewDataRoot ''EBWebView''',
     '$wdioEnvironment.NUCLEAR_E2E_WEBVIEW_DATA_FOLDER = $edgeDriverDataRoot',
     '. (Join-Path $PSScriptRoot ''windows-edgedriver.ps1'')',
+    '. (Join-Path $PSScriptRoot ''release-json.ps1'')',
+    '$inventory = Read-BoundedReleaseJson -Path $inventoryPath -Limit 1MB',
     '$wdioEnvironment.NUCLEAR_E2E_NATIVE_DRIVER_PATH = $edgeDriverPath',
     'function Stop-NewWebDriverProcesses',
     '$process.Kill($true)',
@@ -132,6 +135,7 @@ foreach ($scriptPath in @(
     (Join-Path $repositoryRoot 'scripts\fixtures\user-process.ps1'),
     $edgeDriverScriptPath,
     (Join-Path $repositoryRoot 'scripts\verify-acceptance-evidence.ps1'),
+    (Join-Path $repositoryRoot 'scripts\release-json.ps1'),
     $PSCommandPath
 )) {
     $tokens = $null
@@ -202,6 +206,27 @@ try {
         ($inventory | ConvertTo-Json -Depth 10),
         $utf8
     )
+    # Exercise the production reader -> evidence serialization -> validator path,
+    # not only hand-written fixture strings. Date coercion previously broke it.
+    . (Join-Path $PSScriptRoot 'release-json.ps1')
+    $originalCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
+    try {
+        foreach ($culture in @('en-US', 'de-DE')) {
+            [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::GetCultureInfo($culture)
+            $loadedInventory = Read-BoundedReleaseJson -Path (Join-Path $candidateFixture 'release-candidate-inventory.json') -Limit 1MB
+            if ($loadedInventory.createdAt -isnot [string] -or
+                $loadedInventory.createdAt -cne '2026-08-18T12:00:00Z') {
+                throw 'The production inventory reader changed a canonical timestamp.'
+            }
+            $evidence.candidateCreatedAt = $loadedInventory.createdAt
+            $roundTrip = ($evidence | ConvertTo-Json -Depth 10) | ConvertFrom-Json -DateKind String
+            if ($roundTrip.candidateCreatedAt -cne $loadedInventory.createdAt) {
+                throw 'Evidence serialization changed the candidate timestamp.'
+            }
+        }
+    } finally {
+        [System.Threading.Thread]::CurrentThread.CurrentCulture = $originalCulture
+    }
     $evidencePath = Join-Path $evidenceFixture 'windows-x64-acceptance.json'
     [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
     # Evidence uploads include bounded diagnostics as well as the signed-byte binding.
@@ -222,6 +247,10 @@ try {
         } catch { $rejected = $true }
         if (-not $rejected) { throw 'Malformed acceptance evidence was accepted.' }
     }
+    $evidence.candidateCreatedAt = '08/18/2026 12:00:00'
+    [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
+    Assert-EvidenceRejected
+    $evidence.candidateCreatedAt = $loadedInventory.createdAt
     $evidence.webdriver.integrityRid = 12288
     [System.IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 10), $utf8)
     Assert-EvidenceRejected

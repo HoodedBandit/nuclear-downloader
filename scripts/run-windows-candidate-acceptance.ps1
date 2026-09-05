@@ -46,7 +46,8 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Candidate contract verification failed before acceptance.'
 }
 
-$inventory = Get-Content -Raw -LiteralPath $inventoryPath | ConvertFrom-Json
+. (Join-Path $PSScriptRoot 'release-json.ps1')
+$inventory = Read-BoundedReleaseJson -Path $inventoryPath -Limit 1MB
 $installerName = "Nuclear.Downloader_${ExpectedVersion}_x64-setup.exe"
 $portableName = "Nuclear.Downloader_${ExpectedVersion}_x64-portable.zip"
 $installerPath = Join-Path $candidateRoot $installerName

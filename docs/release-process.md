@@ -71,7 +71,7 @@ Do not reformat either signed descriptor after signing it.
 
 ## Gate 1: local verification
 
-Use Node.js 22.23.1, npm 10.9.9, and Rust/Cargo 1.94.1 on Windows x64. From a clean worktree, run:
+Use Node.js 22.23.1, npm 10.9.9, Rust/Cargo 1.94.1, and PowerShell 7.5 or newer on Windows x64. Release evidence readers explicitly preserve JSON timestamp strings; older PowerShell versions fail early instead of changing their representation. From a clean worktree, run:
 
 ```powershell
 cd nuclear-app
