@@ -1,3 +1,9 @@
+mod data;
+
+#[cfg(test)]
+use self::data::MAX_RETAINED_INSPECTION_BYTES;
+pub(crate) use self::data::{estimate_inspection_allocation, StateData};
+use self::data::{InspectionRetentionBudget, SharedRecord};
 #[cfg(test)]
 use self::tests::TestCommitPause;
 use crate::app_error::AppError;
@@ -13,14 +19,12 @@ use crate::models::{
     StateDeltaValue, UpdateQueueItemInput, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
 };
 use crate::outbox::{StateOutbox, StateOutboxReader};
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
+use std::collections::{HashSet, VecDeque};
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::{Mutex as AsyncMutex, Notify};
 
 pub const MAX_QUEUE_ITEMS: usize = 1_000;
 pub const MAX_ACTIVE_OPERATIONS: usize = 1_000;
-const MAX_RETAINED_INSPECTION_BYTES: usize = 16 * 1024 * 1024;
 const MAX_UI_FIELD_BYTES: usize = 4 * 1024;
 
 #[derive(Clone)]
@@ -43,115 +47,6 @@ struct StateStoreInner {
     fail_next_finalizer_task: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     fail_next_finalizer_after_save: std::sync::atomic::AtomicBool,
-}
-
-#[derive(Default)]
-struct InspectionRetentionBudget {
-    retained: HashMap<usize, (Weak<UrlInspection>, usize)>,
-}
-
-impl InspectionRetentionBudget {
-    fn retain(&mut self, inspection: UrlInspection) -> Result<Arc<UrlInspection>, AppError> {
-        self.retained
-            .retain(|_, (inspection, _)| inspection.strong_count() != 0);
-        let retained_bytes = self
-            .retained
-            .values()
-            .map(|(_, bytes)| *bytes)
-            .sum::<usize>();
-        let bytes = estimate_inspection_allocation(&inspection);
-        if retained_bytes.saturating_add(bytes) > MAX_RETAINED_INSPECTION_BYTES {
-            return Err(AppError::new(
-                "inspection_retention_limit",
-                "Completed inspection results reached the 16 MiB retention limit. Add or dismiss earlier results, then retry.",
-            )
-            .retryable(true));
-        }
-        let inspection = Arc::new(inspection);
-        self.retained.insert(
-            Arc::as_ptr(&inspection) as usize,
-            (Arc::downgrade(&inspection), bytes),
-        );
-        Ok(inspection)
-    }
-}
-
-#[derive(Clone)]
-struct SharedRecord<T>(Arc<T>);
-
-impl<T> SharedRecord<T> {
-    fn new(value: T) -> Self {
-        Self(Arc::new(value))
-    }
-}
-
-impl<T: Clone> SharedRecord<T> {
-    fn snapshot(&self) -> T {
-        self.0.as_ref().clone()
-    }
-}
-
-impl<T> Deref for SharedRecord<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.0.as_ref()
-    }
-}
-
-impl<T: Clone> DerefMut for SharedRecord<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        Arc::make_mut(&mut self.0)
-    }
-}
-
-impl<T> From<T> for SharedRecord<T> {
-    fn from(value: T) -> Self {
-        Self::new(value)
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct StateData {
-    sequence: u64,
-    queue_order: Vec<String>,
-    queue: HashMap<String, SharedRecord<QueueItemRecord>>,
-    operation_order: Vec<String>,
-    operations: HashMap<String, SharedRecord<OperationSnapshot>>,
-    pending_downloads: VecDeque<String>,
-    runtime_readiness: RuntimeReadiness,
-    maintenance_active: bool,
-    draining: bool,
-    maintenance_owner: Option<String>,
-    persistence_health: PersistenceHealth,
-    persistence_dirty: bool,
-    pending_app_update: Option<PendingAppUpdateRecovery>,
-}
-
-impl StateData {
-    pub(crate) fn persistence_journal(&self) -> PersistentJournal {
-        PersistentJournal {
-            schema_version: APP_SCHEMA_VERSION,
-            revision: self.sequence,
-            queue: self
-                .queue_order
-                .iter()
-                .filter_map(|id| self.queue.get(id).map(SharedRecord::snapshot))
-                .collect(),
-            operations: self
-                .operation_order
-                .iter()
-                .filter_map(|id| {
-                    self.operations.get(id).map(|operation| {
-                        let mut operation = operation.snapshot();
-                        operation.inspection_result = None;
-                        operation
-                    })
-                })
-                .collect(),
-            pending_app_update: self.pending_app_update.clone(),
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -1732,54 +1627,6 @@ fn shrink_string(value: &mut String) {
 
 fn compact_vec<T>(value: &mut Vec<T>) {
     *value = std::mem::take(value).into_boxed_slice().into_vec();
-}
-
-pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usize {
-    let fixed =
-        std::mem::size_of::<UrlInspection>().saturating_add(2 * std::mem::size_of::<usize>());
-    match inspection {
-        UrlInspection::Video { video } => [
-            video.id.capacity(),
-            video.title.capacity(),
-            video.channel.as_ref().map_or(0, String::capacity),
-            video.thumbnail.as_ref().map_or(0, String::capacity),
-            video.url.capacity(),
-            video
-                .available_qualities
-                .capacity()
-                .saturating_mul(std::mem::size_of::<String>()),
-            video
-                .available_qualities
-                .iter()
-                .map(String::capacity)
-                .fold(0usize, usize::saturating_add),
-        ]
-        .into_iter()
-        .fold(fixed, usize::saturating_add),
-        UrlInspection::Playlist { playlist } => {
-            let entry_heap = playlist.entries.iter().fold(0usize, |total, entry| {
-                [
-                    entry.id.capacity(),
-                    entry.title.as_ref().map_or(0, String::capacity),
-                    entry.url.capacity(),
-                    entry.thumbnail.as_ref().map_or(0, String::capacity),
-                ]
-                .into_iter()
-                .fold(total, usize::saturating_add)
-            });
-            [
-                playlist.title.capacity(),
-                playlist.channel.as_ref().map_or(0, String::capacity),
-                playlist
-                    .entries
-                    .capacity()
-                    .saturating_mul(std::mem::size_of::<crate::models::PlaylistEntry>()),
-                entry_heap,
-            ]
-            .into_iter()
-            .fold(fixed, usize::saturating_add)
-        }
-    }
 }
 
 fn pending_download_available(state: &StateData) -> bool {
