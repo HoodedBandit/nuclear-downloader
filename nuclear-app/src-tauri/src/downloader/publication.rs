@@ -23,6 +23,9 @@ thread_local! {
     static TEST_PARTIAL_MARKER_WRITE_FAILURE: std::cell::Cell<bool> = const {
         std::cell::Cell::new(false)
     };
+    static TEST_FINAL_OUTPUT_RECORD_READ_BYTES: std::cell::Cell<usize> = const {
+        std::cell::Cell::new(0)
+    };
 }
 
 #[derive(Debug, Deserialize)]
@@ -1047,10 +1050,48 @@ fn resolve_recorded_output(
         });
     }
 
-    let contents = std::fs::read(record_path).map_err(|error| StagedOutputError {
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const FILE_SHARE_READ: u32 = 0x0000_0001;
+        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+        options
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    }
+    let mut record_file = options
+        .open(record_path)
+        .map_err(|error| StagedOutputError {
+            code: "staging_output_record_invalid",
+            message: format!("Failed to read downloader output record: {error}"),
+        })?;
+    let opened_metadata = record_file.metadata().map_err(|error| StagedOutputError {
         code: "staging_output_record_invalid",
-        message: format!("Failed to read downloader output record: {error}"),
+        message: format!("Failed to inspect opened downloader output record: {error}"),
     })?;
+    if !opened_metadata.is_file()
+        || is_reparse_metadata(&opened_metadata)
+        || opened_metadata.len() > MAX_FINAL_OUTPUT_RECORD_BYTES
+    {
+        return Err(StagedOutputError {
+            code: "staging_output_record_invalid",
+            message: format!(
+                "Downloader output record was not a regular non-reparse file within the {MAX_FINAL_OUTPUT_RECORD_BYTES}-byte limit."
+            ),
+        });
+    }
+    let mut contents = Vec::with_capacity(opened_metadata.len() as usize);
+    (&mut record_file)
+        .take(MAX_FINAL_OUTPUT_RECORD_BYTES + 1)
+        .read_to_end(&mut contents)
+        .map_err(|error| StagedOutputError {
+            code: "staging_output_record_invalid",
+            message: format!("Failed to read downloader output record: {error}"),
+        })?;
+    #[cfg(test)]
+    TEST_FINAL_OUTPUT_RECORD_READ_BYTES.with(|bytes| bytes.set(contents.len()));
     if contents.len() as u64 > MAX_FINAL_OUTPUT_RECORD_BYTES {
         return Err(StagedOutputError {
             code: "staging_output_record_invalid",
@@ -1253,6 +1294,29 @@ mod tests {
 
         assert_eq!(error.code, "staging_output_record_invalid");
         assert!(error.message.contains("malformed"));
+        let _ = std::fs::remove_dir_all(stage);
+    }
+
+    #[test]
+    fn stale_small_record_metadata_never_allows_an_unbounded_read() {
+        let stage = temp_stage();
+        let record_path = final_output_record_path(&stage);
+        std::fs::write(&record_path, b"{}\n").unwrap();
+        let stale_small_metadata = std::fs::symlink_metadata(&record_path).unwrap();
+        let oversized = vec![b' '; super::MAX_FINAL_OUTPUT_RECORD_BYTES as usize + 17];
+        std::fs::write(&record_path, &oversized).unwrap();
+        super::TEST_FINAL_OUTPUT_RECORD_READ_BYTES.with(|bytes| bytes.set(0));
+
+        let error = super::resolve_recorded_output(&record_path, &stale_small_metadata, &stage)
+            .unwrap_err();
+        let observed = super::TEST_FINAL_OUTPUT_RECORD_READ_BYTES.with(std::cell::Cell::get);
+
+        assert_eq!(error.code, "staging_output_record_invalid");
+        assert!(
+            observed <= super::MAX_FINAL_OUTPUT_RECORD_BYTES as usize + 1,
+            "record reader consumed {observed} bytes before rejecting its fixed budget"
+        );
+        assert_eq!(std::fs::read(&record_path).unwrap(), oversized);
         let _ = std::fs::remove_dir_all(stage);
     }
 
