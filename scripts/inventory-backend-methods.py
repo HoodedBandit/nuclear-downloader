@@ -27,6 +27,13 @@ REVIEW_FIELDS = (
     "purpose", *REVIEW_ARRAYS, "output", "cancellation", "findingStatus",
     "disposition", "destination", "reviewer", "reviewedAt", "status", "notes",
 )
+IDENTITY_FIELDS = (
+    "kind", "classification", "file", "line", "endLine", "symbol",
+    "qualifiedName", "signature", "sourceDigest", "cfg", "ownerCall",
+)
+DISPOSITIONS = {"keep", "move", "split", "fix", "remove", "test_only"}
+FINAL_FINDINGS = {"none", "resolved"}
+CANONICAL_UTC_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z")
 OWNING_CALLS = {
     "spawn", "spawn_blocking", "spawn_cleanup_continuation", "spawn_tracked",
     "spawn_startup",
@@ -202,8 +209,6 @@ def classify(path: str, name: str, cfg: Iterable[str], attributes: str, containe
     module_names = {container.get("name", "") for container in containers if container["kind"] == "module"}
     if re.search(r"#\s*\[\s*(?:tokio::)?test(?:\s*\(|\s*\])", attributes):
         return "test"
-    if path.endswith("backend_lifecycle_tests.rs") or name.startswith("test_"):
-        return "test"
     if path.endswith(("performance_harness.rs", "soak_harness.rs")):
         return "test_support"
     if "test" in joined_cfg or "tests" in module_names or name.endswith("_for_test") or name.startswith("assert_"):
@@ -221,7 +226,12 @@ def empty_review() -> dict[str, Any]:
     return review
 
 
-def scan_file(root: Path, path: Path) -> list[dict[str, Any]]:
+def scan_file(
+    root: Path,
+    path: Path,
+    external_cfg: Iterable[str] = (),
+    external_modules: Iterable[str] = (),
+) -> list[dict[str, Any]]:
     text = path.read_text(encoding="utf-8")
     masked = mask_rust(text)
     stream = tokens(masked)
@@ -275,12 +285,14 @@ def scan_file(root: Path, path: Path) -> list[dict[str, Any]]:
             if container["body"] < index < container["end"] and container["token"] != index
         ]
         enclosing.sort(key=lambda item: item["body"])
-        inherited_cfg = [cfg for container in enclosing for cfg in container["cfg"]]
+        inherited_cfg = list(external_cfg) + [cfg for container in enclosing for cfg in container["cfg"]]
         own_cfg = cfgs_before(text, masked, start)
         cfg = list(dict.fromkeys(inherited_cfg + own_cfg))
         impls = [container for container in enclosing if container["kind"] == "impl"]
         functions = [container for container in enclosing if container["kind"] == "function"]
-        modules = [container["name"] for container in enclosing if container["kind"] == "module"]
+        modules = list(external_modules) + [
+            container["name"] for container in enclosing if container["kind"] == "module"
+        ]
         qualifier = "::".join(modules)
         externs = [container for container in enclosing if container["kind"] == "extern"]
         kind = "free_function"
@@ -342,7 +354,9 @@ def scan_file(root: Path, path: Path) -> list[dict[str, Any]]:
         ]
         enclosing.sort(key=lambda item: item["body"])
         cfg = list(dict.fromkeys(
-            [value for candidate in enclosing for value in candidate["cfg"]] + list(container["cfg"])
+            list(external_cfg)
+            + [value for candidate in enclosing for value in candidate["cfg"]]
+            + list(container["cfg"])
         ))
         classification = classify(relative, container["name"], cfg, "", enclosing)
         cfg_key = ",".join(cfg) if cfg else "all"
@@ -479,12 +493,85 @@ def scan_file(root: Path, path: Path) -> list[dict[str, Any]]:
     return entries
 
 
+def external_module_contexts(
+    source_root: Path,
+    rust_files: list[Path],
+) -> dict[Path, tuple[list[str], list[str]]]:
+    """Resolve cfg/module context for conventional out-of-line Rust modules.
+
+    This intentionally follows only declarations whose conventional target is
+    present in the scanned source set. It does not guess from filenames such as
+    tests.rs or function names.
+    """
+    known = {path.resolve() for path in rust_files}
+    edges: dict[Path, list[tuple[Path, list[str], str]]] = {}
+    incoming: set[Path] = set()
+    for source in rust_files:
+        parent = source.resolve()
+        text = parent.read_text(encoding="utf-8")
+        masked = mask_rust(text)
+        stream = tokens(masked)
+        for index, (value, start, _) in enumerate(stream):
+            if value != "mod" or index + 1 >= len(stream):
+                continue
+            name = stream[index + 1][0]
+            if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
+                continue
+            header_end, terminator = find_header_end(stream, index + 2)
+            if header_end is None or terminator != ";":
+                continue
+            base = (
+                parent.parent
+                if parent.name in ("lib.rs", "main.rs", "mod.rs", "build.rs")
+                else parent.parent / parent.stem
+            )
+            candidates = [(base / f"{name}.rs").resolve(), (base / name / "mod.rs").resolve()]
+            matches = [candidate for candidate in candidates if candidate in known]
+            if not matches:
+                continue
+            if len(matches) != 1:
+                raise ValueError(f"ambiguous out-of-line module {name} declared by {parent}")
+            child = matches[0]
+            edges.setdefault(parent, []).append((child, cfgs_before(text, masked, start), name))
+            incoming.add(child)
+
+    contexts: dict[Path, tuple[list[str], list[str]]] = {
+        path: ([], []) for path in known if path not in incoming
+    }
+    pending = list(contexts)
+    while pending:
+        parent = pending.pop(0)
+        parent_cfg, parent_modules = contexts[parent]
+        for child, own_cfg, name in edges.get(parent, []):
+            cfg = list(dict.fromkeys(parent_cfg + own_cfg))
+            modules = parent_modules + [name]
+            previous = contexts.get(child)
+            context = (cfg, modules)
+            if previous is not None and previous != context:
+                raise ValueError(f"conflicting out-of-line module context for {child}")
+            if previous is None:
+                contexts[child] = context
+                pending.append(child)
+    for path in known:
+        contexts.setdefault(path, ([], []))
+    return contexts
+
+
 def scan(source_root: Path) -> dict[str, Any]:
     rust_files = sorted(
         [path for path in (source_root / "src").rglob("*.rs")]
         + [path for path in (source_root / "build.rs", source_root / "build_config.rs") if path.is_file()]
     )
-    entries = [entry for path in rust_files for entry in scan_file(source_root, path)]
+    external_context = external_module_contexts(source_root, rust_files)
+    entries = [
+        entry
+        for path in rust_files
+        for entry in scan_file(
+            source_root,
+            path,
+            *external_context.get(path.resolve(), ([], [])),
+        )
+    ]
     entries.sort(key=lambda entry: (entry["file"], entry["line"], entry["kind"], entry["id"]))
     ids = [entry["id"] for entry in entries]
     duplicates = [key for key, count in Counter(ids).items() if count > 1]
@@ -563,9 +650,9 @@ def merge_sidecars(current: dict[str, Any], reviews_dir: Path) -> None:
             target = by_id.get(entry_id)
             if target is None:
                 raise ValueError(f"stale sidecar entry not in source inventory: {entry_id}")
-            for identity in ("file", "line", "endLine", "qualifiedName", "sourceDigest"):
+            for identity in IDENTITY_FIELDS:
                 supplied = review.get(identity)
-                if supplied is not None and supplied != target[identity]:
+                if supplied is not None and supplied != target.get(identity):
                     raise ValueError(f"stale {identity} for {entry_id} in {path}")
             for field in REVIEW_FIELDS:
                 if field in review:
@@ -576,6 +663,10 @@ def merge_sidecars(current: dict[str, Any], reviews_dir: Path) -> None:
 def validate(ledger: dict[str, Any], current: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     actual = {entry["id"]: entry for entry in current["entries"]}
+    recorded_ids = [entry.get("id") for entry in ledger["entries"]]
+    for duplicate, count in Counter(recorded_ids).items():
+        if count > 1:
+            errors.append(f"duplicate ledger entry: {duplicate}")
     recorded = {entry["id"]: entry for entry in ledger["entries"]}
     for missing in sorted(actual.keys() - recorded.keys()):
         errors.append(f"unreviewed source entry: {missing}")
@@ -584,24 +675,33 @@ def validate(ledger: dict[str, Any], current: dict[str, Any]) -> list[str]:
     for entry_id in sorted(actual.keys() & recorded.keys()):
         source = actual[entry_id]
         entry = recorded[entry_id]
-        if entry.get("sourceDigest") != source["sourceDigest"]:
-            errors.append(f"stale source digest: {entry_id}")
+        for identity in IDENTITY_FIELDS:
+            if entry.get(identity) != source.get(identity):
+                errors.append(f"stale generated identity {identity}: {entry_id}")
         status = entry.get("status")
         if status != "reviewed":
             errors.append(f"unreviewed status: {entry_id}")
             continue
-        for field in ("purpose", "output", "findingStatus", "disposition", "reviewer", "reviewedAt"):
-            if not entry.get(field):
+        for field in (
+            "purpose", "output", "cancellation", "findingStatus", "disposition",
+            "destination", "reviewer", "reviewedAt", "notes",
+        ):
+            if not isinstance(entry.get(field), str) or not entry[field].strip():
                 errors.append(f"missing {field}: {entry_id}")
         for field in REVIEW_ARRAYS:
             if not isinstance(entry.get(field), list):
                 errors.append(f"{field} must be an array: {entry_id}")
-            elif entry.get("classification") == "production" and not entry[field]:
+            elif not entry[field]:
                 errors.append(f"{field} must record an explicit reviewed value: {entry_id}")
-        if entry.get("classification") == "production" and not entry.get("cancellation"):
-            errors.append(f"missing cancellation review: {entry_id}")
-        if entry.get("findingStatus") not in ("none", "resolved"):
+            elif any(not isinstance(value, str) or not value.strip() for value in entry[field]):
+                errors.append(f"{field} must contain nonempty reviewed text: {entry_id}")
+        if entry.get("findingStatus") not in FINAL_FINDINGS:
             errors.append(f"unresolved findingStatus: {entry_id}")
+        if entry.get("disposition") not in DISPOSITIONS:
+            errors.append(f"invalid disposition: {entry_id}")
+        reviewed_at = entry.get("reviewedAt")
+        if isinstance(reviewed_at, str) and not CANONICAL_UTC_RE.fullmatch(reviewed_at):
+            errors.append(f"reviewedAt must be canonical UTC: {entry_id}")
     return errors
 
 

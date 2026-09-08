@@ -30,7 +30,15 @@ literals while retaining byte offsets. It inventories explicit `fn`
 declarations, trait implementation blocks, every explicit async block, and
 closures passed directly to the configured task/thread ownership calls. It
 excludes function-pointer type syntax and does not infer callables generated
-only by macro expansion. At the starting source, an independent masked-token
+only by macro expansion. For conventional out-of-line modules, classification
+inherits module and `cfg` context only from an actual `mod name;` declaration
+whose source target exists in the scanned tree; filenames and `test_` prefixes
+do not establish inherited module context. Conventional resolution treats
+`lib.rs`, `main.rs`, `mod.rs`, and `build.rs` as crate/module roots and treats
+other source files as parents of a same-stem module directory. Explicit
+`#[path = "..."]` overrides, macro-generated modules, and nonconventional compiler
+module resolution are not followed; those remain source-review obligations.
+At the starting source, an independent masked-token
 reconciliation found 961 `fn` tokens: one function-pointer alias and exactly
 960 inventoried declarations. Its fixture tests cover comments/literals,
 lifetimes, FFI declarations, local/method/trait/Drop items, cfg-test
@@ -47,7 +55,10 @@ Every reviewed row records:
 - `invariants`, `tests`, `findingStatus`, and `evidence`;
 - `disposition`, `destination`, `reviewer`, `reviewedAt`, `status`, and `notes`.
 
-Array fields remain arrays even when the explicit reviewed value is `"none"`.
+Every reviewed row, including test and test-support infrastructure, supplies a
+nonempty array of nonempty strings for each array field. Use `["none"]` only
+when source review establishes that the field has no applicable behavior.
+Every scalar reviewer field is an explicit nonempty string.
 Use canonical UTC for `reviewedAt`. `findingStatus` is `none`, `risk`,
 `confirmed`, or `resolved`. A final passing ledger permits only `none` or
 `resolved`. `disposition` is `keep`, `move`, `split`, `fix`, `remove`, or
@@ -68,6 +79,11 @@ The sidecar shape is:
 Sidecar identity fields must match the generated inventory. A uniquely moved
 exact source body is identified, but remains pending because callers, visibility,
 and ownership context may have changed.
+
+Every generated identity field supplied by a sidecar is checked exactly. A
+sidecar cannot replace a generated signature, classification, kind, cfg list,
+owner call, source location, or digest. The final check also compares every
+recorded generated identity with a fresh source scan.
 
 ## Commands
 
