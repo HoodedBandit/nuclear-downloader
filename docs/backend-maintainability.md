@@ -11,8 +11,8 @@ fixes; mechanical moves do not also change behavior.
 | --- | --- | --- |
 | 1. Inventory and baseline | Passed | Fresh Rust 270/270, frontend 64/64, strict Clippy, formatting and binding-diff gates; 1,112 inventory entries across 27 files; inventory lexer/reconciliation tests 4/4 |
 | 2. Boundaries and supporting code | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings after downloader/runtime/installer leaves and private test extraction; source-tool fixtures 8/8 each |
-| 3. State and durable commits | In progress | Pure transitions, projection and one commit owner behind StateStore |
-| 4. Complete application workflows | Pending | Thin commands, explicit dependencies, startup/shutdown composition |
+| 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
+| 4. Complete application workflows | In progress | Thin commands, explicit dependencies, startup/shutdown composition |
 | 5. Runtime/updater/lifecycle internals | Pending | Verification, ownership, transaction and lifecycle components |
 | 6. Integrated qualification | Pending | Independent review, full local gates, performance comparison, new two-hour soak |
 
@@ -39,8 +39,9 @@ a proof of semantic correctness; its limitations are documented in the schema.
 - Workflow services own complete admission, execution and finalization sequences.
   Backend engines receive concrete dependencies and narrow callbacks, without
   reaching back into the crate root or looking up application-managed state.
-- StateStore owns authoritative state. Pure reducers and journal projection do not
-  perform I/O. One commit executor retains its mutation guard through preparation,
+- StateStore owns authoritative state. Transition/validation helpers and journal
+  projection do not perform persistence I/O; some helpers read the clock or create
+  error IDs. One commit executor retains its mutation guard through preparation,
   durable saving, installation, and ordered outbox publication.
 - The lifecycle coordinator owns admission, tracked tasks, cancellation, capacity,
   and protected publication. State and lifecycle remain independent peers; services
@@ -132,7 +133,7 @@ No publishing or pushing is included in this refactor.
 After these fixes and the lifecycle/cancellation/public-boundary test moves in
 `701d440`, the full backend suite passed 277 tests with three explicit ignores
 (24.14 seconds). Strict Clippy, formatting and binding-diff gates passed. These
-are intermediate receipts; the complete Stage 2 and final gates remain pending.
+are intermediate receipts; the final Stage 2 receipt is recorded below.
 
 After those additional fixes and the state/persistence test moves in `eba68a3`,
 the backend suite passed 279 tests with three explicit ignores (24.10 seconds).
@@ -158,3 +159,33 @@ Review also rejected two suspected lifecycle defects after checking their actual
 contracts: Tokio 1.50 captures broadcast notification generations when a waiter
 is created, and protected publication intentionally outlives ordinary shutdown's
 15-second grace. Neither requires a behavior change.
+
+Stage 3 moved state data/projection (`0d7f3ae`), transitions/validation (`42d955e`),
+and durable commits/finalization (`e6a9bf3`) into focused children of StateStore.
+Each slice passed all 283 Rust tests, strict Clippy, formatting and unchanged
+bindings. The final slice passed in 24.01 seconds; all 13 moved function bodies
+were token-equivalent to their previous implementations. The obsolete sibling
+journal-commit module was absorbed and StateData visibility narrowed.
+
+The initial Stage 3 performance comparison exceeded latency review thresholds,
+so three further identical workloads were run without competing builds. All four
+comparisons passed all 45 hard gates, retained five runtime hashes and 408 leases,
+and kept snapshot reads independent of blocked journal I/O. The timing threshold
+crossings did not recur on the same metric across the three repeats. For example,
+the 1,000-item durable-command p50 was 48.721 ms initially, then 41.991, 41.931 and
+46.391 ms, against the 41.926 ms reference. The corresponding direct-journal p50
+was 47.636, then 40.096, 39.972 and 40.396 ms, against 39.700 ms. Snapshot p99 was
+1.388, 1.271, 1.441 and 1.347 ms, against 1.909 ms. This closes the intermediate
+review as a threshold crossing not consistently reproduced, rather than claiming
+that disk timing is constant. Final integrated measurements remain required.
+
+All raw runs are retained under `target/performance/`:
+
+- `after-20260908T224734Z-2b581e3b55804bf2a4a65631b78a4e28`
+- `after-20260908T224908Z-42fd2b13c18447a9858e2583ee6522ae`
+- `after-20260908T225025Z-8f94a4c77f0949289c41d0c5a47180d9`
+- `after-20260908T225129Z-bebfea8e275142f5b8b9080b45c6f03f`
+
+The initial comparison is in
+`comparison-20260908T224906Z-51026848b4a04ca1a8b8bca0bd5b610e`;
+the repeats are in `maintainability-stage3-repeat-1`, `-2` and `-3`.
