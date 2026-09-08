@@ -10,8 +10,8 @@ fixes; mechanical moves do not also change behavior.
 | Stage | Status | Evidence |
 | --- | --- | --- |
 | 1. Inventory and baseline | Passed | Fresh Rust 270/270, frontend 64/64, strict Clippy, formatting and binding-diff gates; 1,112 inventory entries across 27 files; inventory lexer/reconciliation tests 4/4 |
-| 2. Boundaries and supporting code | Pending | Exact commands/bindings, private tests, focused policy components |
-| 3. State and durable commits | Pending | Pure transitions, projection and one commit owner behind StateStore |
+| 2. Boundaries and supporting code | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings after downloader/runtime/installer leaves and private test extraction; source-tool fixtures 8/8 each |
+| 3. State and durable commits | In progress | Pure transitions, projection and one commit owner behind StateStore |
 | 4. Complete application workflows | Pending | Thin commands, explicit dependencies, startup/shutdown composition |
 | 5. Runtime/updater/lifecycle internals | Pending | Verification, ownership, transaction and lifecycle components |
 | 6. Integrated qualification | Pending | Independent review, full local gates, performance comparison, new two-hour soak |
@@ -52,6 +52,15 @@ a proof of semantic correctness; its limitations are documented in the schema.
   schema 1, error/event contracts, concurrency, timeouts, retention and resource
   budgets remain unchanged. No actor rewrite or generalized framework is added.
 
+The intended navigation map is: `lib.rs` for the public command registry and
+Tauri wiring; `desktop.rs` for native events, dialogs and installer launch;
+`bootstrap.rs` for recovery and shutdown; `services/` for complete operations;
+`state/` for data, transitions and durable commits; `lifecycle/` for admission,
+task tracking and protected publication; `downloader/` for validation, arguments,
+processes and file publication; and `runtime/`, `updater/` and
+`runtime_transaction/` for authenticated runtime and installer management.
+This map is a target until the corresponding stage gate passes.
+
 ## Validation policy
 
 Fresh starting evidence on 2026-09-08: backend tests passed 270 cases with zero
@@ -90,3 +99,62 @@ fixtures, cookie acceptance, and authentic signed update acceptance still requir
 the external environment and credentials described in `backend-qualification.md`.
 These checks are not replaced by unit tests, fixture signing, or renderer mocks.
 No publishing or pushing is included in this refactor.
+
+## Confirmed defects and isolated commits
+
+- `27cff85`: bounded staging ownership marker reads to 4 KiB. The new oversized
+  marker regression failed before the fix, then passed; all 15 publication tests
+  and formatting passed. Rejected input is preserved. Verification remains tied
+  to the opened non-reparse file identity, with Windows sharing excluding writes
+  and deletion during verification.
+- `0efa621`: incomplete staging initialization now rolls back through retained
+  Windows directory/file handles. Tests cover failure before marker creation,
+  a partial marker write, retry, and preservation of unexpected content. The
+  ordinary create-directory/open-handle gap is documented; no claim is made of
+  atomic directory creation against another process replacing that path.
+- `10ce3d1`: quarantined runtime transaction records use a 64 KiB bounded read.
+  The regression failed against an oversized valid record before the fix and
+  verifies that rejected evidence stays intact.
+- `7fa1cc1`: failed diagnostics exports remove the exact opened partial file,
+  allowing same-path retry. Preexisting destinations remain unchanged.
+- `4650519`: the machine-readable final-output record is read through the opened
+  file with a hard byte budget. A regression first demonstrated that stale small
+  metadata could allow a larger file to be read; malformed evidence is preserved.
+- `077d049`: build-time and installed-runtime artifact checks use one canonical
+  lowercase SHA-256 policy. The regression first demonstrated acceptance of an
+  uppercase digest that runtime validation would reject.
+- `f81ab9e`: build-time updater key validation uses the same strict wrapper,
+  UTF-8 and Minisign parser as runtime verification. The malformed-key regression
+  failed before the correction; valid current keys, malformed optional rotation
+  keys, and empty debug configuration are covered. The build uses the already
+  locked Minisign dependency version.
+
+After these fixes and the lifecycle/cancellation/public-boundary test moves in
+`701d440`, the full backend suite passed 277 tests with three explicit ignores
+(24.14 seconds). Strict Clippy, formatting and binding-diff gates passed. These
+are intermediate receipts; the complete Stage 2 and final gates remain pending.
+
+After those additional fixes and the state/persistence test moves in `eba68a3`,
+the backend suite passed 279 tests with three explicit ignores (24.10 seconds).
+Strict Clippy, formatting and binding-diff checks passed. The Windows file helper
+consolidation in `8804913` then passed 29 focused publication, diagnostics and
+runtime-transaction tests. It shares SDK-typed identity/deletion primitives while
+each caller retains its ownership and open-handle policy.
+
+The downloader leaf extraction in `638fa9f` and updater-key correction passed the
+full backend suite with 283 tests and three explicit ignores (24.09 seconds),
+strict Clippy (15.98 seconds), formatting and binding-diff checks. The architecture
+and inventory tooling in `c3306f3` each passed eight fixture tests. The architecture
+gate intentionally remains incomplete until the Stage 4 boundary is implemented;
+its fixtures distinguish production-capable cfg expressions from test-only code.
+
+The final Stage 2 gate after extracting runtime verification/cache, installer
+ownership/cache and large downloader/runtime/updater test modules passed 283 Rust
+tests with three explicit ignores (24.11 seconds), strict Clippy (9.43 seconds),
+formatting, binding-diff and whitespace checks. Compilation caught ordinary
+import/visibility corrections during the moves; no runtime regression remained.
+
+Review also rejected two suspected lifecycle defects after checking their actual
+contracts: Tokio 1.50 captures broadcast notification generations when a waiter
+is created, and protected publication intentionally outlives ordinary shutdown's
+15-second grace. Neither requires a behavior change.
