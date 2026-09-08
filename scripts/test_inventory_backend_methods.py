@@ -28,6 +28,7 @@ const TEXT: &str = "fn string_fake() {}";
 type Callback = fn(u32) -> u32;
 extern "system" { fn NativeCall(value: u32) -> i32; }
 fn real() {}
+fn lifetime<'a>(value: &'a str) -> Option<&'a str> { Some(value) }
 '''
         )
         symbols = {entry["symbol"]: entry for entry in entries}
@@ -36,6 +37,7 @@ fn real() {}
         self.assertNotIn("(", symbols)
         self.assertEqual(symbols["NativeCall"]["kind"], "ffi_declaration")
         self.assertEqual(symbols["real"]["kind"], "free_function")
+        self.assertEqual(symbols["lifetime"]["kind"], "free_function")
 
     def test_methods_trait_impl_drop_local_and_cfg_test_are_inventoried(self):
         entries = self.scan_fixture(

@@ -98,29 +98,17 @@ def mask_rust(text: str) -> str:
             blank(start, i)
             continue
 
-        # A Rust character literal has a closing quote close by. Lifetimes do not.
-        if text[i] == "'" or (text.startswith("b'", i)):
-            prefix = 1 if text.startswith("b'", i) else 0
-            quote = i + prefix
-            cursor = quote + 1
-            escaped = False
-            closing = -1
-            while cursor < min(n, quote + 16):
-                char = text[cursor]
-                if char in "\r\n":
-                    break
-                if escaped:
-                    escaped = False
-                elif char == "\\":
-                    escaped = True
-                elif char == "'":
-                    closing = cursor
-                    break
-                cursor += 1
-            if closing >= 0:
-                blank(i, closing + 1)
-                i = closing + 1
-                continue
+        # Character literals contain one scalar or one escape. This deliberately
+        # does not pair separate lifetime annotations such as <'a>(..., &'a str).
+        character = re.match(
+            r"b?'(?:[^\\'\r\n]|\\(?:.|x[0-9A-Fa-f]{2}|u\{[0-9A-Fa-f_]{1,6}\}))'",
+            text[i:],
+        )
+        if character:
+            end = i + character.end()
+            blank(i, end)
+            i = end
+            continue
         i += 1
     return "".join(out)
 

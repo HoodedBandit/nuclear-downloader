@@ -9,7 +9,7 @@ fixes; mechanical moves do not also change behavior.
 
 | Stage | Status | Evidence |
 | --- | --- | --- |
-| 1. Inventory and baseline | Passed | Fresh Rust 270/270, frontend 64/64, strict Clippy, formatting and binding-diff gates; 1,111 inventory entries across 27 files; inventory lexer/reconciliation tests 4/4 |
+| 1. Inventory and baseline | Passed | Fresh Rust 270/270, frontend 64/64, strict Clippy, formatting and binding-diff gates; 1,112 inventory entries across 27 files; inventory lexer/reconciliation tests 4/4 |
 | 2. Boundaries and supporting code | Pending | Exact commands/bindings, private tests, focused policy components |
 | 3. State and durable commits | Pending | Pure transitions, projection and one commit owner behind StateStore |
 | 4. Complete application workflows | Pending | Thin commands, explicit dependencies, startup/shutdown composition |
@@ -22,10 +22,15 @@ discovery alone never marks an entry reviewed. Source digests invalidate stale
 reviews. Tests and test support have separate classifications. The feature matrix
 in `backend-feature-preservation.md` links observable behavior to retained checks.
 The initial inventory contains 671 production entries (including declarations,
-trait implementations and async blocks), 300 test entries, and 140 test-support
+trait implementations and async blocks), 300 test entries, and 141 test-support
 entries. These are review units, not a claim of 671 independent business methods.
 Per-method review continues through each owning subsystem's refactor and final
 source reconciliation.
+The structural inventory was cross-checked against all 961 masked Rust `fn`
+tokens: 960 declarations and one explicitly excluded function-pointer type.
+A lexer regression for paired lifetime annotations added one previously missed
+test helper. The inventory records reviewed source syntax, not macro expansion or
+a proof of semantic correctness; its limitations are documented in the schema.
 
 ## Ownership and dependency rules
 
