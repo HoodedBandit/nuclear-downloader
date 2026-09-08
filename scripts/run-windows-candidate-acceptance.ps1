@@ -34,7 +34,7 @@ Write-Host "Verified normal-user acceptance token: integrity RID $integrityRid."
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $candidateRoot = (Resolve-Path -LiteralPath $CandidateDirectory).Path
-$resultsRoot = [System.IO.Path]::GetFullPath($ResultsDirectory)
+$publishedResultsRoot = [System.IO.Path]::GetFullPath($ResultsDirectory)
 $appRoot = Join-Path $repositoryRoot 'nuclear-app'
 $inventoryPath = Join-Path $candidateRoot 'release-candidate-inventory.json'
 
@@ -71,6 +71,7 @@ if ($acceptanceLeaf -cnotmatch '^nuclear-acceptance-[0-9a-f]{32}$') {
 $installRoot = Join-Path $acceptanceRoot 'installed'
 $portableRoot = Join-Path $acceptanceRoot 'portable'
 $fixtureRoot = Join-Path $acceptanceRoot 'fixture'
+$resultsRoot = Join-Path $acceptanceRoot 'results-staging'
 $ownershipMarker = Join-Path $acceptanceRoot '.nuclear-candidate-acceptance'
 $serverReadyPath = Join-Path $fixtureRoot 'server.port'
 $fixtureMediaPath = Join-Path $fixtureRoot 'fixture-video.mp4'
@@ -94,41 +95,7 @@ $steps = [ordered]@{}
 $processInvocation = 0
 
 . (Join-Path $PSScriptRoot 'windows-edgedriver.ps1')
-
-function Limit-RetainedProcessLog {
-    param(
-        [Parameter(Mandatory)] [string] $Path,
-        [long] $MaximumBytes = 4MB
-    )
-
-    $item = Get-Item -LiteralPath $Path
-    if ($item.Length -le $MaximumBytes) {
-        return
-    }
-
-    $buffer = [byte[]]::new([int]$MaximumBytes)
-    $source = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)
-    try {
-        [void]$source.Seek(-$MaximumBytes, [System.IO.SeekOrigin]::End)
-        $offset = 0
-        while ($offset -lt $buffer.Length) {
-            $read = $source.Read($buffer, $offset, $buffer.Length - $offset)
-            if ($read -eq 0) { break }
-            $offset += $read
-        }
-    } finally {
-        $source.Dispose()
-    }
-
-    $destination = [System.IO.File]::Open($Path, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
-    try {
-        $notice = [System.Text.Encoding]::UTF8.GetBytes("[earlier process output omitted; retained tail follows]`n")
-        $destination.Write($notice, 0, $notice.Length)
-        $destination.Write($buffer, 0, $offset)
-    } finally {
-        $destination.Dispose()
-    }
-}
+. (Join-Path $PSScriptRoot 'acceptance-log-privacy.ps1')
 
 function Write-ProcessLogTail {
     param(
@@ -192,13 +159,15 @@ function Invoke-OwnedProcess {
         [void]$stdoutCopy.GetAwaiter().GetResult()
         [void]$stderrCopy.GetAwaiter().GetResult()
     } finally {
-        $stdoutStream.Dispose()
-        $stderrStream.Dispose()
-        if ($process) { $process.Dispose() }
+        try {
+            $stdoutStream.Dispose()
+            $stderrStream.Dispose()
+            if ($process) { $process.Dispose() }
+        } finally {
+            Protect-AcceptanceLog -Path $stdoutPath -ProtectedValues @($protectedFixtureUrls)
+            Protect-AcceptanceLog -Path $stderrPath -ProtectedValues @($protectedFixtureUrls)
+        }
     }
-
-    Limit-RetainedProcessLog -Path $stdoutPath
-    Limit-RetainedProcessLog -Path $stderrPath
     if ($timedOut) {
         Write-ProcessLogTail -Path $stdoutPath -Label "$LogName stdout"
         Write-ProcessLogTail -Path $stderrPath -Label "$LogName stderr"
@@ -292,7 +261,7 @@ function Invoke-WdioSuite {
         [Parameter(Mandatory)] [string] $WdioCli,
         [Parameter(Mandatory)] [string] $AppBinary,
         [Parameter(Mandatory)]
-        [ValidateSet('full', 'restart', 'smoke')]
+        [ValidateSet('full', 'interrupt', 'restart', 'smoke')]
         [string] $Suite,
         [Parameter(Mandatory)]
         [ValidatePattern('^wdio-[a-z0-9-]+$')]
@@ -326,22 +295,187 @@ function Invoke-WdioSuite {
     }
 }
 
-if (Test-Path -LiteralPath $resultsRoot) {
-    throw "Acceptance results directory already exists: $resultsRoot"
+function Invoke-InterruptedWdioSuite {
+    param(
+        [Parameter(Mandatory)] [string] $NodeExecutable,
+        [Parameter(Mandatory)] [string] $WdioCli,
+        [Parameter(Mandatory)] [string] $AppBinary,
+        [Parameter(Mandatory)] [hashtable] $BaseEnvironment,
+        [Parameter(Mandatory)] [string] $ExpectedTauriDriverPath,
+        [Parameter(Mandatory)] [string] $ExpectedNativeDriverPath,
+        [Parameter(Mandatory)] [string] $SentinelPath
+    )
+
+    $environment = @{}
+    foreach ($entry in $BaseEnvironment.GetEnumerator()) { $environment[$entry.Key] = $entry.Value }
+    $environment.NUCLEAR_E2E_APP_BINARY = $AppBinary
+    $environment.NUCLEAR_E2E_NATIVE_SUITE = 'interrupt'
+    $environment.NUCLEAR_E2E_INTERRUPT_SENTINEL = $SentinelPath
+
+    $baselineDriverIds = @(Get-WebDriverProcesses | ForEach-Object { [int]$_.ProcessId })
+    $canonicalApp = [System.IO.Path]::GetFullPath($AppBinary)
+    $baselineAppIds = [System.Collections.Generic.HashSet[int]]::new()
+    Get-CimInstance Win32_Process | Where-Object {
+        $_.ExecutablePath -and [System.IO.Path]::GetFullPath([string]$_.ExecutablePath) -ceq $canonicalApp
+    } | ForEach-Object { [void]$baselineAppIds.Add([int]$_.ProcessId) }
+
+    $script:processInvocation++
+    $logStem = '{0:D2}-wdio-installed-interrupt' -f $script:processInvocation
+    $stdoutPath = Join-Path $resultsRoot "$logStem.stdout.log"
+    $stderrPath = Join-Path $resultsRoot "$logStem.stderr.log"
+    $stdoutStream = [System.IO.File]::Open($stdoutPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+    $stderrStream = [System.IO.File]::Open($stderrPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::Read)
+    $start = [System.Diagnostics.ProcessStartInfo]::new()
+    $start.FileName = $NodeExecutable
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
+    $start.WorkingDirectory = $appRoot
+    foreach ($argument in @($WdioCli, 'run', './e2e/wdio.native.conf.mjs')) {
+        [void]$start.ArgumentList.Add($argument)
+    }
+    foreach ($entry in $environment.GetEnumerator()) {
+        $start.Environment[[string]$entry.Key] = [string]$entry.Value
+    }
+
+    $process = $null
+    $stdoutCopy = $null
+    $stderrCopy = $null
+    $exitCode = $null
+    try {
+        $process = [System.Diagnostics.Process]::Start($start)
+        $stdoutCopy = $process.StandardOutput.BaseStream.CopyToAsync($stdoutStream)
+        $stderrCopy = $process.StandardError.BaseStream.CopyToAsync($stderrStream)
+        $readyDeadline = [DateTimeOffset]::UtcNow.AddMinutes(3)
+        while (-not (Test-Path -LiteralPath $SentinelPath -PathType Leaf)) {
+            if ($process.HasExited) {
+                throw "Interruption seed exited before its active-download sentinel (exit $($process.ExitCode))."
+            }
+            if ([DateTimeOffset]::UtcNow -ge $readyDeadline) {
+                throw 'Interruption seed did not reach an active download within three minutes.'
+            }
+            Start-Sleep -Milliseconds 100
+        }
+
+        $expectedTitle = [string]$environment.NUCLEAR_E2E_RESTART_TITLE
+        if ([System.IO.File]::ReadAllText($SentinelPath, [System.Text.Encoding]::UTF8) -cne $expectedTitle) {
+            throw 'Interruption sentinel did not identify the expected queue item.'
+        }
+        $appProcesses = @(
+            Get-CimInstance Win32_Process | Where-Object {
+                $_.ExecutablePath -and
+                [System.IO.Path]::GetFullPath([string]$_.ExecutablePath) -ceq $canonicalApp -and
+                -not $baselineAppIds.Contains([int]$_.ProcessId)
+            }
+        )
+        if ($appProcesses.Count -ne 1) {
+            throw "Expected one newly launched installed application process; found $($appProcesses.Count)."
+        }
+        Stop-ProcessTreeAndWait -ProcessId ([int]$appProcesses[0].ProcessId) -Label 'interrupted installed application'
+        if (-not $process.WaitForExit(30000)) {
+            try { $process.Kill($true) } catch { Write-Warning $_ }
+            [void]$process.WaitForExit(10000)
+        }
+        $exitCode = $process.ExitCode
+        if ($exitCode -eq 0) {
+            throw 'Interruption WebDriver suite unexpectedly succeeded after the app process was forcibly terminated.'
+        }
+    } finally {
+        if ($process -and -not $process.HasExited) {
+            try { $process.Kill($true) } catch { Write-Warning $_ }
+            try { [void]$process.WaitForExit(10000) } catch { Write-Warning $_ }
+        }
+        Get-CimInstance Win32_Process | Where-Object {
+            $_.ExecutablePath -and
+            [System.IO.Path]::GetFullPath([string]$_.ExecutablePath) -ceq $canonicalApp -and
+            -not $baselineAppIds.Contains([int]$_.ProcessId)
+        } | ForEach-Object {
+            Stop-ProcessTreeAndWait -ProcessId ([int]$_.ProcessId) -Label 'interruption cleanup application'
+        }
+        try {
+            Stop-NewWebDriverProcesses `
+                -BaselineProcessIds $baselineDriverIds `
+                -ExpectedTauriDriverPath $ExpectedTauriDriverPath `
+                -ExpectedNativeDriverPath $ExpectedNativeDriverPath
+        } finally {
+            if ($stdoutCopy) { [void]$stdoutCopy.GetAwaiter().GetResult() }
+            if ($stderrCopy) { [void]$stderrCopy.GetAwaiter().GetResult() }
+            $stdoutStream.Dispose()
+            $stderrStream.Dispose()
+            if ($process) { $process.Dispose() }
+            Protect-AcceptanceLog -Path $stdoutPath -ProtectedValues @($protectedFixtureUrls)
+            Protect-AcceptanceLog -Path $stderrPath -ProtectedValues @($protectedFixtureUrls)
+        }
+    }
 }
-New-Item -ItemType Directory -Path $resultsRoot | Out-Null
-New-Item -ItemType Directory -Path $acceptanceRoot, $installRoot, $portableRoot, $fixtureRoot | Out-Null
+
+if (Test-Path -LiteralPath $publishedResultsRoot) {
+    throw "Acceptance results directory already exists: $publishedResultsRoot"
+}
+New-Item -ItemType Directory -Path $acceptanceRoot, $installRoot, $portableRoot, $fixtureRoot, $resultsRoot | Out-Null
 [System.IO.File]::WriteAllText($ownershipMarker, $ExpectedCommitSha, [System.Text.UTF8Encoding]::new($false))
 
 $processEnvironment = @{
     NUCLEAR_E2E_FIXTURE_TITLE = 'fixture-video'
+    NUCLEAR_E2E_COLLISION_STEM = "nuclear-collision-$ExpectedCandidateRunId"
 }
+$controlledSitePassed = @()
+$controlledSiteMissing = @()
+$protectedFixtureUrls = [System.Collections.Generic.List[string]]::new()
 
 try {
+    $controlledSiteDescriptors = @(
+        [ordered]@{
+            CaseId = 'youtube-maintainer-fixture'
+            UrlVariable = 'NUCLEAR_E2E_YOUTUBE_FIXTURE_URL'
+            IdVariable = 'NUCLEAR_E2E_YOUTUBE_FIXTURE_ID'
+            AllowedHosts = @('youtube.com', 'www.youtube.com', 'youtu.be')
+        },
+        [ordered]@{
+            CaseId = 'x-maintainer-fixture'
+            UrlVariable = 'NUCLEAR_E2E_X_FIXTURE_URL'
+            IdVariable = 'NUCLEAR_E2E_X_FIXTURE_ID'
+            AllowedHosts = @('x.com', 'www.x.com', 'twitter.com', 'www.twitter.com')
+        }
+    )
+    foreach ($descriptor in $controlledSiteDescriptors) {
+        $fixtureUrl = [Environment]::GetEnvironmentVariable([string]$descriptor.UrlVariable)
+        $fixtureId = [Environment]::GetEnvironmentVariable([string]$descriptor.IdVariable)
+        $hasUrl = -not [string]::IsNullOrWhiteSpace($fixtureUrl)
+        $hasId = -not [string]::IsNullOrWhiteSpace($fixtureId)
+        if (-not $hasUrl -and -not $hasId) {
+            $controlledSiteMissing += [string]$descriptor.CaseId
+            continue
+        }
+        if ($hasUrl -ne $hasId) {
+            throw "Controlled fixture $($descriptor.CaseId) requires both its protected URL and opaque ID variables."
+        }
+        if ($fixtureId -cnotmatch '^[a-z0-9][a-z0-9._-]{0,127}$') {
+            throw "Controlled fixture $($descriptor.CaseId) has an invalid opaque fixture ID."
+        }
+        $parsedFixtureUrl = $null
+        if ($fixtureUrl.Length -gt 4096 -or
+            -not [Uri]::TryCreate($fixtureUrl, [UriKind]::Absolute, [ref]$parsedFixtureUrl) -or
+            $parsedFixtureUrl.Scheme -cne 'https' -or
+            -not [string]::IsNullOrEmpty($parsedFixtureUrl.UserInfo) -or
+            $parsedFixtureUrl.Host -cnotin @($descriptor.AllowedHosts)) {
+            throw "Controlled fixture $($descriptor.CaseId) has an invalid protected site URL."
+        }
+        $protectedFixtureUrls.Add($fixtureUrl)
+        $processEnvironment[[string]$descriptor.UrlVariable] = $fixtureUrl
+        $processEnvironment[[string]$descriptor.IdVariable] = $fixtureId
+        $controlledSitePassed += [ordered]@{
+            caseId = [string]$descriptor.CaseId
+            fixtureId = $fixtureId
+        }
+    }
+
     Expand-Archive -LiteralPath $portablePath -DestinationPath $portableRoot
     $portableExecutable = Join-Path $portableRoot 'nuclear.exe'
     $ffmpegExecutable = Join-Path $portableRoot 'ffmpeg.exe'
-    foreach ($required in @($portableExecutable, $ffmpegExecutable)) {
+    $ytDlpExecutable = Join-Path $portableRoot 'yt-dlp.exe'
+    foreach ($required in @($portableExecutable, $ffmpegExecutable, $ytDlpExecutable)) {
         if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
             throw "Portable candidate is missing $([System.IO.Path]::GetFileName($required))."
         }
@@ -380,6 +514,37 @@ try {
     if ($fixturePort -lt 1024 -or $fixturePort -gt 65535) { throw 'Fixture server returned an invalid port.' }
     $processEnvironment.NUCLEAR_E2E_FIXTURE_URL = "http://127.0.0.1:$fixturePort/fixture-video.mp4"
     $processEnvironment.NUCLEAR_E2E_SLOW_FIXTURE_URL = "http://127.0.0.1:$fixturePort/slow-fixture-video.mp4"
+    $processEnvironment.NUCLEAR_E2E_PLAYLIST_FIXTURE_URL = "http://127.0.0.1:$fixturePort/generic-playlist.html"
+    $processEnvironment.NUCLEAR_E2E_FIXTURE_FILE = $fixtureMediaPath
+    $playlistInvocation = $processInvocation + 1
+    $playlistLogStem = '{0:D2}-playlist-validation' -f $playlistInvocation
+    $playlistJsonPath = Join-Path $resultsRoot "$playlistLogStem.stdout.log"
+    $playlistErrorPath = Join-Path $resultsRoot "$playlistLogStem.stderr.log"
+    try {
+        Invoke-OwnedProcess -FilePath $ytDlpExecutable -LogName 'playlist-validation' -TimeoutSeconds 60 -ArgumentList @(
+            '--no-warnings', '--flat-playlist', '--dump-single-json',
+            $processEnvironment.NUCLEAR_E2E_PLAYLIST_FIXTURE_URL
+        )
+        $playlistJsonItem = Get-Item -LiteralPath $playlistJsonPath
+        if ($playlistJsonItem.Length -le 0 -or $playlistJsonItem.Length -gt 1MB) {
+            throw 'Pinned yt-dlp generic-playlist validation returned invalid bounded output.'
+        }
+        $playlist = Get-Content -Raw -LiteralPath $playlistJsonPath | ConvertFrom-Json -AsHashtable
+        if ([string]$playlist._type -cne 'playlist' -or @($playlist.entries).Count -ne 2) {
+            throw 'Pinned yt-dlp did not recognize the loopback HTML as an exact two-entry generic playlist.'
+        }
+    } finally {
+        foreach ($validationLog in @($playlistJsonPath, $playlistErrorPath)) {
+            if (Test-Path -LiteralPath $validationLog -PathType Leaf) {
+                [System.IO.File]::WriteAllText(
+                    $validationLog,
+                    "Loopback generic-playlist validation output intentionally omitted.`n",
+                    [System.Text.UTF8Encoding]::new($false)
+                )
+            }
+        }
+    }
+    $steps.genericPlaylistValidated = 'passed'
     $steps.fixtureServer = 'passed'
 
     if ($installRoot.Contains(' ')) {
@@ -415,20 +580,37 @@ try {
         -AppBinary $installedExecutable -Suite 'full' -LogName 'wdio-installed-full' `
         -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
         -ExpectedNativeDriverPath $edgeDriverPath `
-        -TimeoutSeconds 600
-    $steps.installedFixtureDownloadConversionCancelReloadDiagnostics = 'passed'
+        -TimeoutSeconds 1800
+    $installedPath = [System.IO.Path]::GetFullPath($installedExecutable)
+    $lingeringInstalled = @(
+        Get-CimInstance Win32_Process | Where-Object {
+            $_.ExecutablePath -and
+            [System.IO.Path]::GetFullPath([string]$_.ExecutablePath) -ceq $installedPath
+        }
+    )
+    if ($lingeringInstalled.Count -ne 0) {
+        throw 'The installed application did not complete graceful shutdown after the full native suite.'
+    }
+    $steps.installedMp4RetryCollisionPlaylistCancelAllRuntimeChecks = 'passed'
 
     $journalPath = Join-Path $persistentAppDataRoot 'state-v1.dpapi'
     if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {
         throw 'The backend journal was not persisted after the fixture lifecycle.'
     }
 
-    $wdioEnvironment.NUCLEAR_E2E_RESTART_TITLE = 'fixture-video'
+    $interruptSentinel = Join-Path $fixtureRoot 'active-download.ready'
+    $wdioEnvironment.NUCLEAR_E2E_RESTART_TITLE = "nuclear-interrupted-$ExpectedCandidateRunId"
+    Invoke-InterruptedWdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
+        -AppBinary $installedExecutable -BaseEnvironment $wdioEnvironment `
+        -ExpectedTauriDriverPath $tauriDriverExecutable -ExpectedNativeDriverPath $edgeDriverPath `
+        -SentinelPath $interruptSentinel
+    $steps.forcedActiveProcessTermination = 'passed'
+
     Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
         -AppBinary $installedExecutable -Suite 'restart' -LogName 'wdio-installed-restart' `
         -BaseEnvironment $wdioEnvironment -ExpectedTauriDriverPath $tauriDriverExecutable `
         -ExpectedNativeDriverPath $edgeDriverPath
-    $steps.processRestartJournalRecovery = 'passed'
+    $steps.interruptedOperationRestartRecovery = 'passed'
 
     Invoke-WdioSuite -NodeExecutable $nodeExecutable -WdioCli $wdioCli `
         -AppBinary $portableExecutable -Suite 'smoke' -LogName 'wdio-portable-smoke' `
@@ -459,6 +641,15 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Candidate bytes changed during acceptance.' }
     $steps.postAcceptanceHashVerification = 'passed'
 
+    $manualAcceptanceRequired = @(
+        'clean-windows11-installer',
+        'clean-windows11-portable',
+        'youtube-maintainer-fixture',
+        'x-maintainer-fixture',
+        'dedicated-account-cookie-login',
+        'signed-app-update',
+        'signed-runtime-update-rollback'
+    )
     $result = [ordered]@{
         schemaVersion = 1
         releaseVersion = $ExpectedVersion
@@ -467,6 +658,13 @@ try {
         candidateCreatedAt = [string]$inventory.createdAt
         startedAt = $startedAt.ToString('yyyy-MM-ddTHH:mm:ssZ')
         completedAt = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+        qualificationStatus = 'incomplete'
+        incompleteRequirements = @($manualAcceptanceRequired)
+        extractorQualificationStatus = if ($controlledSiteMissing.Count -eq 0) { 'complete' } else { 'incomplete' }
+        controlledSiteFixtures = [ordered]@{
+            passed = @($controlledSitePassed)
+            missing = @($controlledSiteMissing)
+        }
         os = [ordered]@{
             description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
             architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
@@ -477,11 +675,7 @@ try {
             edgeDriverVersion = $edgeDriverVersion
         }
         steps = $steps
-        manualAcceptanceRequired = @(
-            'Dedicated-account cookie/login test with no CI cookie secret',
-            'Maintainer review of managed-runtime update and rollback UI against protected signed test assets',
-            'Maintainer acceptance decision before publication'
-        )
+        manualAcceptanceRequired = @($manualAcceptanceRequired)
         candidateAssets = $inventory.assets
     }
     $resultJson = $result | ConvertTo-Json -Depth 10
@@ -490,11 +684,22 @@ try {
         $resultJson,
         [System.Text.UTF8Encoding]::new($false)
     )
-    Write-Output (Join-Path $resultsRoot 'windows-x64-acceptance.json')
+    Write-Output (Join-Path $publishedResultsRoot 'windows-x64-acceptance.json')
 } finally {
     if ($serverProcess -and -not $serverProcess.HasExited) {
         try { $serverProcess.Kill($true) } catch { Write-Warning $_ }
         try { [void]$serverProcess.WaitForExit(10000) } catch { Write-Warning $_ }
+    }
+    $publicationFailure = $null
+    if (Test-Path -LiteralPath $resultsRoot -PathType Container) {
+        try {
+            Publish-SafeAcceptanceEvidence `
+                -StagingDirectory $resultsRoot `
+                -PublishedDirectory $publishedResultsRoot `
+                -ProtectedValues @($protectedFixtureUrls)
+        } catch {
+            $publicationFailure = $_
+        }
     }
     if (Test-Path -LiteralPath $acceptanceRoot) {
         $canonicalRoot = [System.IO.Path]::GetFullPath($acceptanceRoot)
@@ -512,5 +717,8 @@ try {
         } else {
             Write-Warning "Acceptance workspace cleanup was skipped because ownership could not be proven: $canonicalRoot"
         }
+    }
+    if ($publicationFailure) {
+        throw "Acceptance evidence was not retained because protected-log finalization failed: $($publicationFailure.Exception.Message)"
     }
 }

@@ -21,6 +21,13 @@ function Assert-ExactProperties {
     }
 }
 
+function Assert-OpaqueFixtureId {
+    param([Parameter(Mandatory)] [object] $Value, [Parameter(Mandatory)] [string] $Label)
+    if ([string]$Value -cnotmatch '^[a-z0-9][a-z0-9._-]{0,127}$') {
+        throw "$Label is not a bounded opaque fixture ID."
+    }
+}
+
 $evidenceRoot = (Resolve-Path -LiteralPath $EvidenceDirectory).Path
 $candidateRoot = (Resolve-Path -LiteralPath $CandidateDirectory).Path
 $evidenceFiles = @(Get-ChildItem -LiteralPath $evidenceRoot -Force)
@@ -42,6 +49,7 @@ $inventory = Read-BoundedReleaseJson -Path (Join-Path $candidateRoot 'release-ca
 Assert-ExactProperties -Value $evidence -Expected @(
     'schemaVersion', 'releaseVersion', 'sourceCommit', 'candidateRunId', 'candidateCreatedAt',
     'startedAt', 'completedAt', 'os', 'webdriver', 'steps',
+    'controlledSiteFixtures', 'extractorQualificationStatus', 'qualificationStatus', 'incompleteRequirements',
     'manualAcceptanceRequired', 'candidateAssets'
 ) -Label 'Acceptance evidence'
 Assert-ExactProperties -Value $evidence.os -Expected @('description', 'architecture') -Label 'Acceptance operating system'
@@ -87,10 +95,12 @@ foreach ($timestampName in @('startedAt', 'completedAt')) {
 $requiredSteps = @(
     'portableExtracted',
     'fixtureGenerated',
+    'genericPlaylistValidated',
     'fixtureServer',
     'cleanInstall',
-    'installedFixtureDownloadConversionCancelReloadDiagnostics',
-    'processRestartJournalRecovery',
+    'installedMp4RetryCollisionPlaylistCancelAllRuntimeChecks',
+    'forcedActiveProcessTermination',
+    'interruptedOperationRestartRecovery',
     'portableStartup',
     'uninstallAndRetainedUserData',
     'postAcceptanceHashVerification'
@@ -103,10 +113,43 @@ foreach ($step in $requiredSteps) {
 }
 
 $requiredManual = @(
-    'Dedicated-account cookie/login test with no CI cookie secret',
-    'Maintainer review of managed-runtime update and rollback UI against protected signed test assets',
-    'Maintainer acceptance decision before publication'
+    'clean-windows11-installer',
+    'clean-windows11-portable',
+    'youtube-maintainer-fixture',
+    'x-maintainer-fixture',
+    'dedicated-account-cookie-login',
+    'signed-app-update',
+    'signed-runtime-update-rollback'
 )
+$controlledFixtureCaseIds = @('youtube-maintainer-fixture', 'x-maintainer-fixture')
+Assert-ExactProperties -Value $evidence.controlledSiteFixtures -Expected @('passed', 'missing') -Label 'Controlled site fixtures'
+$passedFixtures = @($evidence.controlledSiteFixtures.passed)
+$missingFixtures = @($evidence.controlledSiteFixtures.missing)
+$passedCaseIds = @()
+foreach ($fixture in $passedFixtures) {
+    Assert-ExactProperties -Value $fixture -Expected @('caseId', 'fixtureId') -Label 'Passed controlled site fixture'
+    $caseId = [string]$fixture.caseId
+    if ($caseId -notin $controlledFixtureCaseIds -or $caseId -in $passedCaseIds) {
+        throw "Controlled site evidence contains an unexpected or duplicate passed case: $caseId"
+    }
+    Assert-OpaqueFixtureId -Value $fixture.fixtureId -Label "Controlled fixture ID for $caseId"
+    $passedCaseIds += $caseId
+}
+$expectedPassedOrder = @($controlledFixtureCaseIds | Where-Object { $_ -in $passedCaseIds })
+if (($passedCaseIds -join "`n") -cne ($expectedPassedOrder -join "`n")) {
+    throw 'Passed controlled site fixtures are not in canonical order.'
+}
+$expectedMissing = @($controlledFixtureCaseIds | Where-Object { $_ -notin $passedCaseIds })
+if (($missingFixtures -join "`n") -cne ($expectedMissing -join "`n")) {
+    throw 'Controlled site fixtures do not account for each required site exactly once.'
+}
+$expectedExtractorStatus = if ($expectedMissing.Count -eq 0) { 'complete' } else { 'incomplete' }
+if ([string]$evidence.extractorQualificationStatus -cne $expectedExtractorStatus -or
+    [string]$evidence.qualificationStatus -cne 'incomplete' -or
+    (@($evidence.incompleteRequirements) -join "`n") -cne ($requiredManual -join "`n")) {
+    throw 'Automated acceptance qualification status does not match its controlled-site evidence.'
+}
+
 if ((@($evidence.manualAcceptanceRequired) -join "`n") -cne ($requiredManual -join "`n")) {
     throw 'Acceptance evidence manual-review list is not exact.'
 }

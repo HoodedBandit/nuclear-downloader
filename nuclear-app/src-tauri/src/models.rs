@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::app_error::AppError;
 use serde::Deserializer;
+use std::sync::Arc;
 use ts_rs::TS;
 
 pub const APP_SCHEMA_VERSION: u32 = 1;
@@ -247,6 +248,39 @@ pub enum QueuePriority {
     Front,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct PublishedOutput {
+    pub path: String,
+    #[ts(type = "number")]
+    pub recorded_at_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct IntendedTerminalOutcome {
+    pub state: OperationState,
+    pub error: Option<AppError>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct PersistenceHealth {
+    pub degraded: bool,
+    pub error: Option<AppError>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingAppUpdateRecovery {
+    pub operation_id: String,
+    pub expected_version: String,
+    pub prepared_at_ms: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "../../src/lib/bindings/")]
@@ -307,7 +341,11 @@ pub struct OperationSnapshot {
     #[ts(type = "number | null")]
     pub finished_at_ms: Option<u64>,
     pub error: Option<AppError>,
-    pub inspection_result: Option<UrlInspection>,
+    pub inspection_result: Option<Arc<UrlInspection>>,
+    #[serde(default)]
+    pub published_output: Option<PublishedOutput>,
+    #[serde(default)]
+    pub intended_terminal_outcome: Option<Box<IntendedTerminalOutcome>>,
     pub correlation_id: String,
 }
 
@@ -321,6 +359,16 @@ pub struct AppSnapshot {
     pub runtime_readiness: RuntimeReadiness,
     pub maintenance_active: bool,
     pub draining: bool,
+    #[serde(default)]
+    pub persistence_health: PersistenceHealth,
+    #[ts(type = "number")]
+    pub latest_sequence: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct AppStateResyncRequired {
     #[ts(type = "number")]
     pub latest_sequence: u64,
 }
@@ -335,6 +383,7 @@ pub enum StateDeltaValue {
     OperationRemoved(String),
     RuntimeReadinessChanged(RuntimeReadiness),
     MaintenanceChanged { active: bool, draining: bool },
+    PersistenceHealthChanged(PersistenceHealth),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -494,6 +543,41 @@ mod tests {
         assert!(!binding.contains("null | null"));
     }
 
+    #[test]
+    fn schema_one_snapshots_default_new_persistence_fields() {
+        let operation = serde_json::json!({
+            "schemaVersion": APP_SCHEMA_VERSION,
+            "id": "operation",
+            "queueItemId": null,
+            "kind": "inspection",
+            "state": "completed",
+            "progress": 100.0,
+            "phase": null,
+            "sequence": 1,
+            "createdAtMs": 1,
+            "updatedAtMs": 2,
+            "finishedAtMs": 2,
+            "error": null,
+            "inspectionResult": null,
+            "correlationId": "correlation"
+        });
+        let operation: OperationSnapshot = serde_json::from_value(operation).unwrap();
+        assert!(operation.published_output.is_none());
+        assert!(operation.intended_terminal_outcome.is_none());
+
+        let snapshot = serde_json::json!({
+            "schemaVersion": APP_SCHEMA_VERSION,
+            "queue": [],
+            "operations": [],
+            "runtimeReadiness": "ready",
+            "maintenanceActive": false,
+            "draining": false,
+            "latestSequence": 0
+        });
+        let snapshot: AppSnapshot = serde_json::from_value(snapshot).unwrap();
+        assert_eq!(snapshot.persistence_health, PersistenceHealth::default());
+    }
+
     fn assert_committed_binding<T: TS + 'static>(committed: &str) {
         let generated = T::export_to_string(&Config::default()).unwrap();
         let relative = T::output_path().expect("exported binding path");
@@ -542,9 +626,13 @@ mod tests {
         check_binding!(OperationState, "OperationState");
         check_binding!(RuntimeReadiness, "RuntimeReadiness");
         check_binding!(QueuePriority, "QueuePriority");
+        check_binding!(PublishedOutput, "PublishedOutput");
+        check_binding!(IntendedTerminalOutcome, "IntendedTerminalOutcome");
+        check_binding!(PersistenceHealth, "PersistenceHealth");
         check_binding!(QueueItemRecord, "QueueItemRecord");
         check_binding!(OperationSnapshot, "OperationSnapshot");
         check_binding!(AppSnapshot, "AppSnapshot");
+        check_binding!(AppStateResyncRequired, "AppStateResyncRequired");
         check_binding!(StateDeltaValue, "StateDeltaValue");
         check_binding!(StateDelta, "StateDelta");
         check_binding!(AddQueueItemInput, "AddQueueItemInput");

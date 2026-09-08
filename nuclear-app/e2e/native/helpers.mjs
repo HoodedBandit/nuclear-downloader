@@ -24,16 +24,42 @@ export async function waitForWorkReady() {
   });
 }
 
-export async function addUrl(url) {
-  await waitForWorkReady();
-  const previousCount = (await $$('tr.queue-item')).length;
+export async function waitForQueueCount(expected, timeout = 60_000) {
+  await browser.waitUntil(async () => (await $$('tr.queue-item')).length === expected, {
+    timeout,
+    interval: 250,
+    timeoutMsg: `The queue did not reach exactly ${expected} items.`
+  });
+}
+
+async function submitReadyUrl(url) {
   const input = await $('#video-url');
   await input.setValue(url);
   const add = await $('button=Add');
   await add.waitForClickable({ timeout: 60_000 });
   await add.click();
-  await browser.waitUntil(async () => (await $$('tr.queue-item')).length === previousCount + 1, {
-    timeout: 60_000,
-    timeoutMsg: 'The fixture inspection did not add exactly one queue item.'
-  });
+}
+
+export async function submitUrl(url) {
+  await waitForWorkReady();
+  await submitReadyUrl(url);
+}
+
+export async function addUrl(url) {
+  await waitForWorkReady();
+  const previousCount = (await $$('tr.queue-item')).length;
+  await submitReadyUrl(url);
+  await waitForQueueCount(previousCount + 1);
+  return (await $$('tr.queue-item'))[previousCount];
+}
+
+export async function editQueuedFilename(row, filename) {
+  const edit = await row.$('button.title-button');
+  await edit.waitForClickable({ timeout: 30_000 });
+  await edit.click();
+  const input = await row.$('input[aria-label="Edit queued filename"]');
+  await input.waitForDisplayed({ timeout: 30_000 });
+  await input.setValue(filename);
+  await input.keys('Enter');
+  await row.$('.title-text').waitForDisplayed({ timeout: 30_000 });
 }

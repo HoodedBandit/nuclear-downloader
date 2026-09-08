@@ -11,29 +11,62 @@ const mediaPath = path.resolve(mediaArgument);
 const readyPath = path.resolve(readyArgument);
 const mediaSize = statSync(mediaPath).size;
 
-function writeHeaders(response) {
+function writeHeaders(response, filename = 'fixture-video.mp4') {
   response.writeHead(200, {
     'Content-Type': 'video/mp4',
     'Content-Length': mediaSize,
-    'Content-Disposition': 'inline; filename="fixture-video.mp4"',
+    'Content-Disposition': `inline; filename="${filename}"`,
     'Cache-Control': 'no-store',
     Connection: 'close'
   });
 }
 
 const server = http.createServer((request, response) => {
-  if (request.url === '/health') {
+  const requestUrl = new URL(request.url ?? '/', 'http://127.0.0.1');
+  if (requestUrl.pathname === '/health') {
     response.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
     response.end('ok');
     return;
   }
-  if (request.url !== '/fixture-video.mp4' && request.url !== '/slow-fixture-video.mp4') {
+  if (requestUrl.pathname === '/generic-playlist.html') {
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    const html = `<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>Nuclear Generic Playlist</title></head>
+  <body>
+    <h1>Nuclear Generic Playlist</h1>
+    <video controls title="Nuclear playlist entry one">
+      <source src="${origin}/playlist-one.mp4" type="video/mp4">
+    </video>
+    <video controls title="Nuclear playlist entry two">
+      <source src="${origin}/playlist-two.mp4" type="video/mp4">
+    </video>
+  </body>
+</html>`;
+    response.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': Buffer.byteLength(html),
+      'Cache-Control': 'no-store',
+      Connection: 'close'
+    });
+    response.end(request.method === 'HEAD' ? undefined : html);
+    return;
+  }
+
+  const mediaNames = new Map([
+    ['/fixture-video.mp4', 'fixture-video.mp4'],
+    ['/slow-fixture-video.mp4', 'slow-fixture-video.mp4'],
+    ['/playlist-one.mp4', 'playlist-one.mp4'],
+    ['/playlist-two.mp4', 'playlist-two.mp4']
+  ]);
+  const mediaName = mediaNames.get(requestUrl.pathname);
+  if (!mediaName) {
     response.writeHead(404, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' });
     response.end('not found');
     return;
   }
 
-  writeHeaders(response);
+  writeHeaders(response, mediaName);
   if (request.method === 'HEAD') {
     response.end();
     return;
@@ -44,11 +77,11 @@ const server = http.createServer((request, response) => {
   }
 
   const stream = createReadStream(mediaPath, {
-    highWaterMark: request.url.startsWith('/slow-') ? 32 * 1024 : 1024 * 1024
+    highWaterMark: requestUrl.pathname.startsWith('/slow-') ? 32 * 1024 : 1024 * 1024
   });
   let timer;
   stream.on('data', () => {
-    if (!request.url.startsWith('/slow-')) return;
+    if (!requestUrl.pathname.startsWith('/slow-')) return;
     stream.pause();
     timer = setTimeout(() => stream.resume(), 150);
   });

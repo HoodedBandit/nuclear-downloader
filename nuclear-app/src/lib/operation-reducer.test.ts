@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   reduceOperationProgress,
   reduceQueueProgress,
+  shouldIgnoreOperationProgress,
   type OperationProjection,
   type OperationProgress
 } from './operation-reducer';
@@ -69,6 +70,43 @@ describe('operation projection reducer', () => {
     );
     expect(next.progress).toBe(42);
     expect(next.downloadProgress).toBe(42);
+  });
+
+  it.each(['cancelling', 'completed', 'error', 'cancelled'] as const)(
+    'ignores late active progress after authoritative %s state',
+    (status) => {
+      const current = {
+        ...item(),
+        status,
+        downloadId: status === 'cancelling' ? 'operation-0' : null,
+        progress: status === 'completed' ? 100 : 42
+      };
+      const late = progress('downloading', { progress: 75, download_progress: 75 });
+
+      expect(shouldIgnoreOperationProgress(current, late)).toBe(true);
+      expect(reduceOperationProgress(current, late)).toBe(current);
+    }
+  );
+
+  it('accepts active progress after retry establishes a new operation and resets lifecycle state', () => {
+    const retry = {
+      ...item(),
+      downloadId: 'retry-operation',
+      status: 'queued' as const,
+      progress: 0,
+      downloadProgress: 0
+    };
+    const next = reduceOperationProgress(
+      retry,
+      progress('downloading', {
+        download_id: 'retry-operation',
+        progress: 10,
+        download_progress: 10
+      })
+    );
+
+    expect(next.status).toBe('downloading');
+    expect(next.progress).toBe(10);
   });
 
   it('meets the 1,000-row reducer p95 budget under the acceptance event load', () => {

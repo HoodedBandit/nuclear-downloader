@@ -61,7 +61,30 @@ jobs:
         run: npm test
 
       - name: Test renderer workflows in WebDriver browser mode
-        run: npm run test:e2e:renderer
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $profileRoot = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP)
+          $profileName = "nuclear-renderer-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $profile = Join-Path $profileRoot $profileName
+          if (Test-Path -LiteralPath $profile) {
+            throw 'Refusing to reuse an existing renderer browser profile.'
+          }
+          New-Item -ItemType Directory -Path $profile | Out-Null
+          $env:NUCLEAR_E2E_BROWSER_PROFILE_ROOT = $profileRoot
+          $env:NUCLEAR_E2E_BROWSER_PROFILE = $profile
+          try {
+            npm run test:e2e:renderer
+          } finally {
+            $item = Get-Item -LiteralPath $profile -Force
+            if ([System.IO.Path]::GetDirectoryName($item.FullName) -cne $profileRoot -or
+                $item.Name -cne $profileName -or
+                -not $item.PSIsContainer -or
+                ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+              throw 'Refusing to remove an ambiguous renderer browser profile.'
+            }
+            Remove-Item -LiteralPath $item.FullName -Recurse -Force
+          }
 
       - name: Build production frontend
         run: npm run build

@@ -48,6 +48,8 @@ function activeOperation(index) {
     finishedAtMs: null,
     error: null,
     inspectionResult: null,
+    publishedOutput: null,
+    intendedTerminalOutcome: null,
     correlationId: `performance-${index}`
   };
 }
@@ -60,6 +62,7 @@ async function preparePerformanceRenderer() {
     runtimeReadiness: 'ready',
     maintenanceActive: false,
     draining: false,
+    persistenceHealth: { degraded: false, error: null },
     latestSequence: 1
   };
 
@@ -210,6 +213,8 @@ describe('renderer performance acceptance', () => {
                   finishedAtMs: null,
                   error: null,
                   inspectionResult: null,
+                  publishedOutput: null,
+                  intendedTerminalOutcome: null,
                   correlationId: `performance-${active}`
                 }
               }

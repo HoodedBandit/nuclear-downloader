@@ -1,7 +1,33 @@
 import path from 'node:path';
+import { lstatSync, realpathSync } from 'node:fs';
 import { createServer } from 'vite';
 
 const devServerUrl = 'http://127.0.0.1:1420';
+const configuredProfileRoot = process.env.NUCLEAR_E2E_BROWSER_PROFILE_ROOT;
+const configuredBrowserProfile = process.env.NUCLEAR_E2E_BROWSER_PROFILE;
+if (
+  !configuredProfileRoot ||
+  !configuredBrowserProfile ||
+  !path.isAbsolute(configuredProfileRoot) ||
+  !path.isAbsolute(configuredBrowserProfile)
+) {
+  throw new Error('Renderer browser profile root and profile must be absolute directories.');
+}
+const profileRootMetadata = lstatSync(configuredProfileRoot);
+if (!profileRootMetadata.isDirectory() || profileRootMetadata.isSymbolicLink()) {
+  throw new Error('NUCLEAR_E2E_BROWSER_PROFILE_ROOT must be a regular directory.');
+}
+const profileRoot = realpathSync(configuredProfileRoot);
+const browserProfileMetadata = lstatSync(configuredBrowserProfile);
+const browserProfile = realpathSync(configuredBrowserProfile);
+if (
+  path.dirname(browserProfile) !== profileRoot ||
+  !browserProfileMetadata.isDirectory() ||
+  browserProfileMetadata.isSymbolicLink() ||
+  !/^nuclear-renderer-[A-Za-z0-9][A-Za-z0-9-]{0,127}$/.test(path.basename(browserProfile))
+) {
+  throw new Error('NUCLEAR_E2E_BROWSER_PROFILE must be an owned child of its profile root.');
+}
 let viteServer;
 
 export const config = {
@@ -21,6 +47,15 @@ export const config = {
     {
       browserName: 'tauri',
       timeouts: { script: 150_000 },
+      'goog:chromeOptions': {
+        args: [
+          '--headless=new',
+          '--window-size=1440,1000',
+          '--no-first-run',
+          '--disable-default-apps',
+          `--user-data-dir=${browserProfile}`
+        ]
+      },
       'wdio:tauriServiceOptions': {
         mode: 'browser',
         devServerUrl

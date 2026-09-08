@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { AppSnapshot } from './bindings/AppSnapshot';
+import type { OperationSnapshot } from './bindings/OperationSnapshot';
 import type { QueueItemRecord } from './bindings/QueueItemRecord';
 import type { StateDelta } from './bindings/StateDelta';
 import {
   SchemaVersionError,
   applyStateDelta,
   latestOperationForItem,
+  publishedOutputPath,
   validateAppSnapshot
 } from './backend-state';
 
@@ -35,6 +37,7 @@ const snapshot = (): AppSnapshot => ({
   runtimeReadiness: 'ready',
   maintenanceActive: false,
   draining: false,
+  persistenceHealth: { degraded: false, error: null },
   latestSequence: 10
 });
 
@@ -87,9 +90,91 @@ describe('backend state contracts', () => {
       finishedAtMs: null,
       error: null,
       inspectionResult: null,
+      publishedOutput: null,
+      intendedTerminalOutcome: null,
       correlationId: 'correlation'
     };
     const value = { ...snapshot(), operations: [operation] };
     expect(latestOperationForItem(value, 'one', 'operation')).toBe(operation);
+  });
+
+  it('normalizes legacy persistence and published-output fields to healthy defaults', () => {
+    const current = snapshot();
+    const { persistenceHealth: _persistenceHealth, ...legacySnapshot } = current;
+    const legacyOperation = {
+      schemaVersion: 1,
+      id: 'legacy-operation',
+      queueItemId: 'one',
+      kind: 'download' as const,
+      state: 'completed' as const,
+      progress: 100,
+      phase: 'complete',
+      sequence: 10,
+      createdAtMs: 1,
+      updatedAtMs: 2,
+      finishedAtMs: 2,
+      error: null,
+      inspectionResult: null,
+      correlationId: 'legacy-correlation'
+    };
+
+    const normalized = validateAppSnapshot({
+      ...legacySnapshot,
+      operations: [legacyOperation]
+    } as unknown as AppSnapshot);
+
+    expect(normalized.persistenceHealth).toEqual({ degraded: false, error: null });
+    expect(normalized.operations[0].publishedOutput).toBeNull();
+    expect(normalized.operations[0].intendedTerminalOutcome).toBeNull();
+  });
+
+  it('applies persistence degradation and recovery deltas', () => {
+    const failure = {
+      code: 'journal_write_failed',
+      summary: 'Queue history could not be saved.',
+      detail: null,
+      retryable: true,
+      correlationId: 'persistence-correlation'
+    };
+    const degraded = applyStateDelta(snapshot(), {
+      schemaVersion: 1,
+      sequence: 11,
+      emittedAtMs: 11,
+      kind: 'persistence_health_changed',
+      value: { degraded: true, error: failure }
+    } satisfies StateDelta);
+    expect(degraded.persistenceHealth).toEqual({ degraded: true, error: failure });
+
+    const recovered = applyStateDelta(degraded, {
+      schemaVersion: 1,
+      sequence: 12,
+      emittedAtMs: 12,
+      kind: 'persistence_health_changed',
+      value: { degraded: false, error: null }
+    } satisfies StateDelta);
+    expect(recovered.persistenceHealth).toEqual({ degraded: false, error: null });
+  });
+
+  it('recovers the published output path from an authoritative operation snapshot', () => {
+    const operation = {
+      schemaVersion: 1,
+      id: 'completed-operation',
+      queueItemId: 'one',
+      kind: 'download' as const,
+      state: 'completed' as const,
+      progress: 100,
+      phase: 'complete',
+      sequence: 10,
+      createdAtMs: 1,
+      updatedAtMs: 2,
+      finishedAtMs: 2,
+      error: null,
+      inspectionResult: null,
+      publishedOutput: { path: 'C:\\Downloads\\Fixture.mp4', recordedAtMs: 2 },
+      intendedTerminalOutcome: null,
+      correlationId: 'completed-correlation'
+    } satisfies OperationSnapshot;
+
+    expect(publishedOutputPath(operation)).toBe('C:\\Downloads\\Fixture.mp4');
   });
 });

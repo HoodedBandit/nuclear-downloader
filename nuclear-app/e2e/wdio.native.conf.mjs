@@ -57,11 +57,13 @@ const specs =
     ? [path.resolve('e2e/native/smoke.e2e.mjs')]
     : suite === 'restart'
       ? [path.resolve('e2e/native/restart.e2e.mjs')]
-      : suite === 'full'
-        ? [path.resolve('e2e/native/workflows.e2e.mjs')]
-        : (() => {
-            throw new Error(`Unknown NUCLEAR_E2E_NATIVE_SUITE: ${suite}`);
-          })();
+      : suite === 'interrupt'
+        ? [path.resolve('e2e/native/interrupt.e2e.mjs')]
+        : suite === 'full'
+          ? [path.resolve('e2e/native/workflows.e2e.mjs')]
+          : (() => {
+              throw new Error(`Unknown NUCLEAR_E2E_NATIVE_SUITE: ${suite}`);
+            })();
 
 export const config = {
   runner: 'local',
@@ -84,7 +86,9 @@ export const config = {
   ],
   framework: 'mocha',
   reporters: ['spec'],
-  logLevel: 'info',
+  // Protected maintainer fixture URLs are entered through the UI. Suppress
+  // routine WebDriver command payloads so retained acceptance logs cannot echo them.
+  logLevel: 'warn',
   bail: 1,
   waitforTimeout: 30_000,
   connectionRetryTimeout: 120_000,

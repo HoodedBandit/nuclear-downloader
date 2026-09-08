@@ -44,6 +44,15 @@ export function clampProgress(value: number): number {
   return Math.min(100, Math.max(0, value));
 }
 
+export function shouldIgnoreOperationProgress(
+  item: OperationProjection,
+  payload: OperationProgress
+): boolean {
+  if (item.downloadId !== payload.download_id) return true;
+  const activeProgress = payload.status === 'downloading' || payload.status === 'postprocessing';
+  return activeProgress && (item.status === 'cancelling' || isTerminalOperationStatus(item.status));
+}
+
 /**
  * Applies backend progress to a renderer projection. Terminal state is
  * authoritative: it clears transient phase, speed and ETA fields so stale
@@ -53,6 +62,8 @@ export function reduceOperationProgress<T extends OperationProjection>(
   item: T,
   payload: OperationProgress
 ): T {
+  if (shouldIgnoreOperationProgress(item, payload)) return item;
+
   const terminal = isTerminalOperationStatus(payload.status);
   const completed = payload.status === 'completed';
   const downloading = payload.status === 'downloading';

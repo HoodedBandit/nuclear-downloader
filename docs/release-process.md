@@ -110,7 +110,7 @@ After the maintainer explicitly approves pushing the exact commit:
 6. Enter the exact confirmation `BUILD v0.6.0`.
 7. Approve the protected `release-candidate` environment after reviewing the commit and inputs.
 
-The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the private inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. Its only upload is the private Actions artifact `nuclear-downloader-0.6.0-candidate`. Record the successful Actions run ID.
+The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the private inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. It creates no public release or tag. It uploads the private `nuclear-downloader-0.6.0-candidate` artifact after successful acceptance and separately retains sanitized acceptance evidence in `nuclear-downloader-0.6.0-acceptance`, including bounded diagnostics when acceptance fails. Record the successful Actions run ID.
 
 After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance-user.ps1`. The wrapper launches the acceptance worker with a restricted Medium-integrity token and an owned kill-on-close process job, preserving the runner account, environment, and exact production bytes. It does not alter UAC policy or add a WebDriver plugin to the app. An early CI fixture verifies the token, exit-code forwarding, environment, Unicode arguments, timeout, and descendant cleanup before building. Acceptance records the verified integrity RID alongside the WebView2 and EdgeDriver versions. This is required because [WebView2 ignores environment-supplied debugging arguments for elevated hosts](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645#issuecomment-4934355430).
 
@@ -132,11 +132,38 @@ Download the private candidate artifact from the successful run. Preserve the ar
 6. Portable ZIP startup.
 7. Diagnostics export and clear.
 8. Uninstall and retained-data behavior.
-9. Manual authenticated/cookie testing with a dedicated account. Never place cookies in CI secrets or artifacts.
+9. Maintainer-controlled YouTube and X fixtures.
+10. Manual authenticated/cookie testing with a dedicated account. Never place cookies in CI secrets or artifacts.
+11. Signed application update and signed managed-runtime update/rollback using protected test assets.
 
-The automated exact-byte runner covers items 1-4, portable startup, diagnostics clear, uninstall, retained data, and post-test hash verification using locally generated deterministic media. Diagnostics export uses the deterministic renderer suite because the native save dialog is outside the WebDriver DOM. Managed-runtime update/rollback using protected signed test assets and the dedicated-account cookie test remain explicit maintainer acceptance items; the generated acceptance JSON records them as required and cannot authorize publication by itself.
+The automated exact-byte runner covers items 1-4, portable startup, diagnostics clear, uninstall, retained data, and post-test hash verification using locally generated deterministic media. Diagnostics export uses the deterministic renderer suite because the native save dialog is outside the WebDriver DOM. Protected workflow variables may optionally provide paired maintainer-controlled YouTube/X fixtures: `NUCLEAR_E2E_YOUTUBE_FIXTURE_URL` with `NUCLEAR_E2E_YOUTUBE_FIXTURE_ID`, and `NUCLEAR_E2E_X_FIXTURE_URL` with `NUCLEAR_E2E_X_FIXTURE_ID`. Supplying only one member of a pair fails the run. IDs must match `^[a-z0-9][a-z0-9._-]{0,127}$`. YouTube URLs must use HTTPS on `youtube.com`, `www.youtube.com`, or `youtu.be`; X URLs must use HTTPS on `x.com`, `www.x.com`, `twitter.com`, or `www.twitter.com`. URLs reach only the child process environment and are excluded from evidence and retained log assertions; evidence records case-to-fixture ID mappings. Each unavailable site remains in `controlledSiteFixtures.missing`, and `extractorQualificationStatus` becomes `complete` only when both controlled extracts pass. Overall `qualificationStatus` remains `incomplete`, with all seven cases in `incompleteRequirements`, until the separate manual record exists. The GitHub `windows-latest` runner is not a Windows 11 client and cannot satisfy the manual client gate. Clean Windows 11 installer and portable checks, the controlled fixtures, the dedicated-account cookie test, and signed app/runtime update and rollback checks remain explicit maintainer acceptance items. The generated automated acceptance JSON records all seven manual case IDs and cannot authorize publication by itself.
 
-Record the candidate run ID, source commit, artifact hashes, toolchain versions, test results, operating-system build, and the maintainer's acceptance decision. Any failed acceptance item returns the release to development; produce a new commit and a new candidate run rather than changing the existing candidate artifact.
+Create the manual record from the exact downloaded candidate. First prepare a bounded JSON input containing `schemaVersion`, `clientEnvironment`, and all required `cases`. Get the case binding with `(Get-FileHash -Algorithm SHA256 C:\acceptance\candidate\release-candidate-inventory.json).Hash.ToLowerInvariant()`. Each case must already contain that digest as `candidateInventorySha256`, a bounded `operator`, a canonical UTC `completedAt`, `outcome` exactly `passed`, and these exact details:
+
+| Case ID | Required `details` fields |
+| --- | --- |
+| `clean-windows11-installer` | `artifactFileName`, `artifactSha256` |
+| `clean-windows11-portable` | `artifactFileName`, `artifactSha256` |
+| `youtube-maintainer-fixture` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
+| `x-maintainer-fixture` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
+| `dedicated-account-cookie-login` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
+| `signed-app-update` | `fromVersion`, `toVersion`, `manifestSha256`, `installerSha256` |
+| `signed-runtime-update-rollback` | `fromVersion`, `toVersion`, `rollbackVersion`, `descriptorSha256`, `archiveSha256` |
+
+Use opaque fixture IDs; never record fixture URLs, account identifiers, cookies, tokens, or free-form notes. Then run:
+
+```powershell
+pwsh -NoProfile -File scripts/write-windows-manual-acceptance.ps1 `
+  -CandidateDirectory C:\acceptance\candidate `
+  -InputPath C:\acceptance\manual-input.json `
+  -OutputDirectory C:\acceptance\evidence `
+  -ExpectedVersion 0.6.0 `
+  -ExpectedCommitSha <40-character-lowercase-commit> `
+  -ExpectedCandidateRunId <candidate-run-id> `
+  -Submitter <github-operator>
+```
+
+The writer refuses to overwrite evidence and validates the finished `windows-x64-manual-acceptance.json` before returning it. The client environment must record `InstallationType` `Client`, x64 architecture, build number 22000 or newer, UBR, product/display names, WebView2 version, app version, managed-runtime version, and all four runtime tool versions. `InstallationType` is required because Windows Server can share a Windows 11-range build number, while the registry product name can remain stale after a Windows 11 upgrade. Case timestamps must be no earlier than candidate creation and no later than the evidence submission time. Any failed item or changed candidate returns the release to development; produce a new commit and candidate run rather than changing an existing candidate artifact.
 
 ## Gate 4: protected publication
 
@@ -146,9 +173,10 @@ Only after exact-byte acceptance and explicit maintainer approval:
 2. Supply the successful `candidate_run_id`.
 3. Keep `release_version` exactly `0.6.0`.
 4. Enter the exact confirmation `PUBLISH v0.6.0`.
-5. Approve the protected `production-release` environment.
+5. Paste the exact `windows-x64-manual-acceptance.json` text into `manual_acceptance_json`.
+6. Approve the protected `production-release` environment.
 
-The publish workflow verifies that the selected run is a successful first-party **Release Candidate** workflow, checks out its recorded commit, downloads both the candidate and acceptance artifacts from that exact run ID, and validates that the evidence binds the source commit, candidate creation time, Windows x64 platform, every asset size/hash, and every automated acceptance result. The maintainer must also enter `COOKIE AND RUNTIME ACCEPTED v0.6.0`, recording that the two deliberately non-CI tests were completed before the protected production approval. It then fetches the exact `minisign-verify` 0.2.5 source pinned in `Cargo.lock` to crates.io checksum `22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e`. Verification resolves offline with `--locked`, checks the registry source and checksum lock entry, and reruns the complete structural/hash/inventory and detached-signature verification. It compiles only a temporary zero-dependency signature-verification helper; it does not rebuild or sign any application, installer, portable, runtime, manifest, or release asset.
+The publish workflow verifies that the selected run is a successful first-party **Release Candidate** workflow, checks out its recorded commit, downloads both the candidate and acceptance artifacts from that exact run ID, and validates that the evidence binds the source commit, candidate creation time, Windows x64 platform, every asset size/hash, and every automated acceptance result. It separately verifies the structured Windows 11 manual evidence, including its candidate inventory digest, complete asset list, submitter, environment versions, seven passed cases, operators, and timestamps. The verified manual record is retained as a private Actions artifact before any draft mutation. It then fetches the exact `minisign-verify` 0.2.5 source pinned in `Cargo.lock` to crates.io checksum `22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e`. Verification resolves offline with `--locked`, checks the registry source and checksum lock entry, and reruns the complete structural/hash/inventory and detached-signature verification. It compiles only a temporary zero-dependency signature-verification helper; it does not rebuild or sign any application, installer, portable, runtime, manifest, or release asset.
 
 The workflow then creates a draft `v0.6.0` release targeted at the candidate commit and uploads only the ten inventoried public files. It discovers unpublished drafts through the release listing and verifies them by numeric release ID, not the published-release tag endpoint. Every asset must be fully uploaded and have the exact inventoried name, size, and SHA-256 digest. The draft must also target the exact candidate commit. Only after those checks does the workflow publish that verified release ID and mark it latest.
 

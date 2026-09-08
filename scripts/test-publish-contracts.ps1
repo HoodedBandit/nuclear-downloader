@@ -3,6 +3,18 @@ Set-StrictMode -Version Latest
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $workflow = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.github/workflows/publish-release.yml')
+$manualVerificationIndex = $workflow.IndexOf('& scripts/verify-manual-acceptance-evidence.ps1')
+$manualRetentionIndex = $workflow.IndexOf('- name: Retain private manual acceptance evidence')
+$draftStepIndex = $workflow.IndexOf('- name: Create or recover and independently verify a draft release')
+if (-not $workflow.Contains('manual_acceptance_json:') -or
+    $workflow.Contains('manual_acceptance_confirmation:') -or
+    $workflow.Contains('COOKIE AND RUNTIME ACCEPTED') -or
+    -not $workflow.Contains('-ExpectedSubmitter $env:EXPECTED_MANUAL_SUBMITTER') -or
+    $manualVerificationIndex -lt 0 -or
+    $manualRetentionIndex -le $manualVerificationIndex -or
+    $draftStepIndex -le $manualRetentionIndex) {
+    throw 'Structured manual acceptance must be verified and retained before any draft release mutation.'
+}
 $draftMatch = [regex]::Match($workflow, '(?ms)^      - name: Create or recover and independently verify a draft release\r?\n.*?^        run: \|\r?\n(?<code>.*?)(?=^      - name:)')
 $publishMatch = [regex]::Match($workflow, '(?ms)^      - name: Publish the exact verified draft\r?\n.*?^        run: \|\r?\n(?<code>.*)\z')
 if (-not $draftMatch.Success -or -not $publishMatch.Success) {

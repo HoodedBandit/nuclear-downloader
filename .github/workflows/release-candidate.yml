@@ -97,7 +97,27 @@ jobs:
           npm run lint
           npm run check
           npm test
-          npm run test:e2e:renderer
+          $profileRoot = [System.IO.Path]::GetFullPath($env:RUNNER_TEMP)
+          $profileName = "nuclear-renderer-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $profile = Join-Path $profileRoot $profileName
+          if (Test-Path -LiteralPath $profile) {
+            throw 'Refusing to reuse an existing renderer browser profile.'
+          }
+          New-Item -ItemType Directory -Path $profile | Out-Null
+          $env:NUCLEAR_E2E_BROWSER_PROFILE_ROOT = $profileRoot
+          $env:NUCLEAR_E2E_BROWSER_PROFILE = $profile
+          try {
+            npm run test:e2e:renderer
+          } finally {
+            $item = Get-Item -LiteralPath $profile -Force
+            if ([System.IO.Path]::GetDirectoryName($item.FullName) -cne $profileRoot -or
+                $item.Name -cne $profileName -or
+                -not $item.PSIsContainer -or
+                ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+              throw 'Refusing to remove an ambiguous renderer browser profile.'
+            }
+            Remove-Item -LiteralPath $item.FullName -Recurse -Force
+          }
           npm run build
           npm run test:e2e:production-bundle
           npm run audit:production
@@ -180,6 +200,10 @@ jobs:
           NUCLEAR_UPDATE_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_PUBLIC_KEY }}
           NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
           NUCLEAR_UPDATE_NEXT_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY }}
+          NUCLEAR_E2E_YOUTUBE_FIXTURE_URL: ${{ secrets.NUCLEAR_E2E_YOUTUBE_FIXTURE_URL }}
+          NUCLEAR_E2E_YOUTUBE_FIXTURE_ID: ${{ vars.NUCLEAR_E2E_YOUTUBE_FIXTURE_ID }}
+          NUCLEAR_E2E_X_FIXTURE_URL: ${{ secrets.NUCLEAR_E2E_X_FIXTURE_URL }}
+          NUCLEAR_E2E_X_FIXTURE_ID: ${{ vars.NUCLEAR_E2E_X_FIXTURE_ID }}
         run: |
           & scripts/run-windows-candidate-acceptance-user.ps1 `
             -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.6.0' `

@@ -1,5 +1,7 @@
 import type { AppSnapshot } from './bindings/AppSnapshot';
 import type { OperationSnapshot } from './bindings/OperationSnapshot';
+import type { PersistenceHealth } from './bindings/PersistenceHealth';
+import type { PublishedOutput } from './bindings/PublishedOutput';
 import type { StateDelta } from './bindings/StateDelta';
 
 export const APP_SCHEMA_VERSION = 1;
@@ -17,17 +19,38 @@ function requireSchema(value: { schemaVersion: number }): void {
   }
 }
 
+const healthyPersistence = (): PersistenceHealth => ({
+  degraded: false,
+  error: null
+});
+
+function normalizeOperationSnapshot(operation: OperationSnapshot): OperationSnapshot {
+  const publishedOutput: PublishedOutput | null = operation.publishedOutput ?? null;
+  return {
+    ...operation,
+    publishedOutput,
+    intendedTerminalOutcome: operation.intendedTerminalOutcome ?? null
+  };
+}
+
 export function validateAppSnapshot(snapshot: AppSnapshot): AppSnapshot {
   requireSchema(snapshot);
   snapshot.queue.forEach(requireSchema);
   snapshot.operations.forEach(requireSchema);
-  return snapshot;
+  return {
+    ...snapshot,
+    operations: snapshot.operations.map(normalizeOperationSnapshot),
+    persistenceHealth: snapshot.persistenceHealth ?? healthyPersistence()
+  };
 }
 
 export function validateStateDelta(delta: StateDelta): StateDelta {
   requireSchema(delta);
   if (delta.kind === 'queue_item_upserted' || delta.kind === 'operation_upserted') {
     requireSchema(delta.value);
+  }
+  if (delta.kind === 'operation_upserted') {
+    return { ...delta, value: normalizeOperationSnapshot(delta.value) };
   }
   return delta;
 }
@@ -72,9 +95,16 @@ export function applyStateDelta(snapshot: AppSnapshot, unchecked: StateDelta): A
         draining: delta.value.draining
       };
       break;
+    case 'persistence_health_changed':
+      next = { ...next, persistenceHealth: delta.value };
+      break;
   }
 
   return next;
+}
+
+export function publishedOutputPath(operation: OperationSnapshot | null): string | null {
+  return operation?.publishedOutput?.path ?? null;
 }
 
 export function latestOperationForItem(

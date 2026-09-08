@@ -1,15 +1,16 @@
+use crate::lifecycle::{PublicationKind, UpdateRunError, UpdateTaskContext};
 use crate::models::{UpdateCheckResult, UpdateInstallProgress};
 use futures_util::StreamExt;
 use minisign_verify::{PublicKey, Signature};
 use reqwest::header::ACCEPT;
 use reqwest::{Client, Response};
 use semver::Version;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tokio::fs;
@@ -21,6 +22,7 @@ const GITHUB_RELEASES_LATEST_URL: &str =
 const UPDATE_PROGRESS_EVENT: &str = "update-install-progress";
 const UPDATE_DIRECTORY_NAME: &str = "updater";
 const UPDATE_LOCK_FILE_NAME: &str = "update.lock";
+const OWNER_RECORD_SUFFIX: &str = ".nuclear-owner.json";
 const UPDATE_PUBLIC_KEY: Option<&str> = option_env!("NUCLEAR_UPDATE_PUBLIC_KEY");
 const UPDATE_KEY_ID: Option<&str> = option_env!("NUCLEAR_UPDATE_KEY_ID");
 const UPDATE_NEXT_PUBLIC_KEY: Option<&str> = option_env!("NUCLEAR_UPDATE_NEXT_PUBLIC_KEY");
@@ -35,18 +37,9 @@ const MANIFEST_LIMIT: u64 = 64 * 1024;
 const SIGNATURE_LIMIT: u64 = 8 * 1024;
 const ERROR_BODY_LIMIT: u64 = 8 * 1024;
 const INSTALLER_LIMIT: u64 = 1024 * 1024 * 1024;
-static UPDATE_INSTALL_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 fn signed_update_minimum() -> Version {
     Version::new(0, 6, 0)
-}
-
-struct UpdateInstallGuard;
-
-impl Drop for UpdateInstallGuard {
-    fn drop(&mut self) {
-        UPDATE_INSTALL_IN_PROGRESS.store(false, Ordering::SeqCst);
-    }
 }
 
 /// A cryptographically verified installer whose open file handle prevents
@@ -60,6 +53,40 @@ struct VerifiedInstaller {
 impl VerifiedInstaller {
     fn path(&self) -> &Path {
         &self.path
+    }
+}
+
+enum CachedInstaller {
+    Vacant,
+    Verified(VerifiedInstaller),
+    UnownedCollision,
+}
+
+/// A fully verified installer whose file and updater-directory leases remain
+/// held until the caller has persisted the handoff and created the process.
+pub(crate) struct InstallerHandoff {
+    expected_version: String,
+    installer_name: String,
+    installer_size: u64,
+    installer: VerifiedInstaller,
+    _directory_lock: UpdateDirectoryLock,
+}
+
+impl InstallerHandoff {
+    pub(crate) fn expected_version(&self) -> &str {
+        &self.expected_version
+    }
+
+    pub(crate) fn installer_name(&self) -> &str {
+        &self.installer_name
+    }
+
+    pub(crate) fn installer_size(&self) -> u64 {
+        self.installer_size
+    }
+
+    pub(crate) fn installer_path(&self) -> &Path {
+        self.installer.path()
     }
 }
 
@@ -149,10 +176,26 @@ struct SignedInstaller {
     sha256: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct OwnedArtifactRecord {
+    schema_version: u32,
+    artifact_name: String,
+    installer_size: u64,
+    installer_sha256: String,
+}
+
 struct VerifiedUpdate<'a> {
     version: Version,
     installer_asset: &'a GitHubReleaseAsset,
     manifest: SignedAppManifest,
+}
+
+pub(crate) async fn cleanup_owned_installer_stages() -> Result<(), String> {
+    let target_dir = updater_directory();
+    let _directory_lock = UpdateDirectoryLock::acquire(&target_dir)?;
+    cleanup_owned_prepared_directories(&target_dir).await?;
+    cleanup_owned_partial_installers(&target_dir).await
 }
 
 pub async fn check_for_app_update(app: &AppHandle) -> Result<UpdateCheckResult, String> {
@@ -187,35 +230,41 @@ pub async fn check_for_app_update(app: &AppHandle) -> Result<UpdateCheckResult, 
     })
 }
 
-pub async fn install_app_update(app: &AppHandle, expected_version: String) -> Result<(), String> {
-    if UPDATE_INSTALL_IN_PROGRESS
-        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-        .is_err()
-    {
-        return Err("An app update is already in progress.".into());
-    }
-    let _guard = UpdateInstallGuard;
-    install_app_update_inner(app, expected_version.clone())
+pub(crate) async fn prepare_app_update(
+    app: &AppHandle,
+    expected_version: String,
+    context: &UpdateTaskContext,
+) -> Result<InstallerHandoff, UpdateRunError> {
+    prepare_app_update_inner(app, expected_version.clone(), context)
         .await
         .inspect_err(|error| {
+            let (status, message) = match error {
+                UpdateRunError::Cancelled => ("cancelled", "App update was cancelled.".to_string()),
+                UpdateRunError::Failed(error) => ("error", error.summary.clone()),
+            };
             emit_install_progress(
                 app,
                 UpdateInstallProgress {
-                    status: "error".into(),
+                    status: status.into(),
                     version: normalize_version_label(&expected_version),
                     downloaded_bytes: 0,
                     total_bytes: None,
-                    message: Some(error.clone()),
+                    message: Some(message),
                 },
             );
         })
 }
 
-async fn install_app_update_inner(app: &AppHandle, expected_version: String) -> Result<(), String> {
+async fn prepare_app_update_inner(
+    app: &AppHandle,
+    expected_version: String,
+    context: &UpdateTaskContext,
+) -> Result<InstallerHandoff, UpdateRunError> {
     #[cfg(not(all(target_os = "windows", target_arch = "x86_64")))]
     {
         let _ = app;
         let _ = expected_version;
+        let _ = context;
         return Err("Automatic updates are supported only on Windows x64 builds.".into());
     }
 
@@ -229,47 +278,45 @@ async fn install_app_update_inner(app: &AppHandle, expected_version: String) -> 
         if expected_semver <= current_semver {
             return Err(format!(
                 "No newer update is available. Current version is {current_semver}."
-            ));
+            )
+            .into());
         }
         let client = build_client(updater_user_agent(&current_semver.to_string()))?;
-        let release = fetch_latest_release(&client).await?;
+        let release = tokio::select! {
+            _ = context.cancelled() => return Err(UpdateRunError::Cancelled),
+            result = fetch_latest_release(&client) => result,
+        }?;
         let latest_semver = parse_release_tag(&release.tag_name)?;
         if latest_semver != expected_semver {
             return Err(format!(
                 "The latest GitHub release changed from {expected_semver} to {latest_semver}. Please check for updates again."
-            ));
+            )
+            .into());
         }
-        let verified = verify_release_contract(&client, &release, &latest_semver).await?;
+        let verified = tokio::select! {
+            _ = context.cancelled() => return Err(UpdateRunError::Cancelled),
+            result = verify_release_contract(&client, &release, &latest_semver) => result,
+        }?;
+        context.check_cancelled()?;
         let target_dir = updater_directory();
-        let _directory_lock = UpdateDirectoryLock::acquire(&target_dir)?;
+        let directory_lock = UpdateDirectoryLock::acquire(&target_dir)?;
+        cleanup_owned_prepared_directories(&target_dir).await?;
         cleanup_owned_partial_installers(&target_dir).await?;
         cleanup_owned_old_installers(&target_dir, &verified.manifest.installer.file_name).await?;
         let installer = tokio::time::timeout(
             INSTALLER_OVERALL_TIMEOUT,
-            download_installer(app, &client, &target_dir, &verified),
+            download_installer(app, &client, &target_dir, &verified, context),
         )
         .await
         .map_err(|_| "Update installer download exceeded the 30-minute limit.".to_string())??;
-
-        emit_install_progress(
-            app,
-            UpdateInstallProgress {
-                status: "launching".into(),
-                version: latest_semver.to_string(),
-                downloaded_bytes: verified.manifest.installer.size,
-                total_bytes: Some(verified.manifest.installer.size),
-                message: Some(format!(
-                    "Launching {}. Nuclear Downloader will close and reopen after install.",
-                    verified.manifest.installer.file_name
-                )),
-            },
-        );
-        std::process::Command::new(installer.path())
-            .args(["/S", "/R"])
-            .spawn()
-            .map_err(|error| format!("Failed to launch the verified installer: {error}"))?;
-        app.exit(0);
-        Ok(())
+        context.check_cancelled()?;
+        Ok(InstallerHandoff {
+            expected_version: latest_semver.to_string(),
+            installer_name: verified.manifest.installer.file_name.clone(),
+            installer_size: verified.manifest.installer.size,
+            installer,
+            _directory_lock: directory_lock,
+        })
     }
 }
 
@@ -284,19 +331,13 @@ async fn cleanup_owned_partial_installers(target_dir: &Path) -> Result<(), Strin
         .map_err(|error| format!("Failed to enumerate the updater directory: {error}"))?
     {
         let name = entry.file_name().to_string_lossy().to_string();
-        let owned_name = name
-            .strip_prefix("Nuclear.Downloader_")
-            .and_then(|rest| rest.split_once("_x64-setup.exe."))
-            .and_then(|(version, suffix)| {
-                let operation_id = suffix.strip_suffix(".part")?;
-                (parse_semver(version).is_ok() && uuid::Uuid::parse_str(operation_id).is_ok())
-                    .then_some(())
-            })
-            .is_some();
-        if !owned_name {
+        if !is_owned_partial_installer_name(&name) {
             continue;
         }
         let path = entry.path();
+        let Ok(Some((record_path, _record))) = read_owner_record(&path).await else {
+            continue;
+        };
         let metadata = fs::symlink_metadata(&path)
             .await
             .map_err(|error| format!("Failed to inspect abandoned updater data: {error}"))?;
@@ -310,8 +351,119 @@ async fn cleanup_owned_partial_installers(target_dir: &Path) -> Result<(), Strin
         fs::remove_file(path).await.map_err(|error| {
             format!("Failed to remove an abandoned updater partial file: {error}")
         })?;
+        cleanup_file_if_exists(&record_path).await;
     }
     Ok(())
+}
+
+async fn cleanup_owned_prepared_directories(target_dir: &Path) -> Result<(), String> {
+    ensure_no_reparse_components(target_dir)?;
+    let mut entries = fs::read_dir(target_dir)
+        .await
+        .map_err(|error| format!("Failed to inspect the updater directory: {error}"))?;
+    while let Some(entry) = entries
+        .next_entry()
+        .await
+        .map_err(|error| format!("Failed to enumerate the updater directory: {error}"))?
+    {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let Some(id) = name.strip_prefix("prepared-") else {
+            continue;
+        };
+        if uuid::Uuid::parse_str(id).is_err() {
+            continue;
+        }
+        let path = entry.path();
+        let metadata = fs::symlink_metadata(&path)
+            .await
+            .map_err(|error| format!("Failed to inspect prepared updater data: {error}"))?;
+        if !metadata.is_dir() || is_reparse_or_symlink(&path)? {
+            continue;
+        }
+        let Ok(Some((directory_record_path, directory_record))) = read_owner_record(&path).await
+        else {
+            continue;
+        };
+
+        let mut children = fs::read_dir(&path)
+            .await
+            .map_err(|error| format!("Failed to inspect prepared updater contents: {error}"))?;
+        let mut child_paths = Vec::new();
+        let mut artifact_names = HashSet::new();
+        let mut marker_names = HashSet::new();
+        let mut safe_to_remove = true;
+        while let Some(child) = children
+            .next_entry()
+            .await
+            .map_err(|error| format!("Failed to enumerate prepared updater contents: {error}"))?
+        {
+            let child_path = child.path();
+            let child_name = child.file_name().to_string_lossy().into_owned();
+            let child_metadata = fs::symlink_metadata(&child_path).await.map_err(|error| {
+                format!("Failed to inspect a prepared updater artifact: {error}")
+            })?;
+            if !child_metadata.is_file() || is_reparse_or_symlink(&child_path)? {
+                safe_to_remove = false;
+                break;
+            }
+            if child_name.ends_with(OWNER_RECORD_SUFFIX) {
+                if let Some(artifact_name) = child_name.strip_suffix(OWNER_RECORD_SUFFIX) {
+                    marker_names.insert(artifact_name.to_string());
+                }
+                child_paths.push(child_path);
+                continue;
+            }
+            if !is_exact_owned_installer_name(&child_name)
+                && !is_owned_partial_installer_name(&child_name)
+            {
+                safe_to_remove = false;
+                break;
+            }
+            let Ok(Some((_record_path, record))) = read_owner_record(&child_path).await else {
+                safe_to_remove = false;
+                break;
+            };
+            if record.installer_size != directory_record.installer_size
+                || record.installer_sha256 != directory_record.installer_sha256
+            {
+                safe_to_remove = false;
+                break;
+            }
+            artifact_names.insert(child_name);
+            child_paths.push(child_path);
+        }
+        drop(children);
+        if !safe_to_remove || artifact_names != marker_names {
+            continue;
+        }
+        child_paths.sort_by_key(|child_path| {
+            child_path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.ends_with(OWNER_RECORD_SUFFIX))
+        });
+        for child_path in child_paths {
+            fs::remove_file(&child_path)
+                .await
+                .map_err(|error| format!("Failed to remove prepared updater residue: {error}"))?;
+        }
+        fs::remove_dir(&path)
+            .await
+            .map_err(|error| format!("Failed to remove a prepared updater directory: {error}"))?;
+        cleanup_file_if_exists(&directory_record_path).await;
+    }
+    Ok(())
+}
+
+fn is_owned_partial_installer_name(name: &str) -> bool {
+    name.strip_prefix("Nuclear.Downloader_")
+        .and_then(|rest| rest.split_once("_x64-setup.exe."))
+        .and_then(|(version, suffix)| {
+            let operation_id = suffix.strip_suffix(".part")?;
+            (parse_semver(version).is_ok() && uuid::Uuid::parse_str(operation_id).is_ok())
+                .then_some(())
+        })
+        .is_some()
 }
 
 async fn cleanup_owned_old_installers(
@@ -332,19 +484,19 @@ async fn cleanup_owned_old_installers(
             continue;
         }
         let path = entry.path();
-        let metadata = fs::symlink_metadata(&path)
-            .await
-            .map_err(|error| format!("Failed to inspect an old updater artifact: {error}"))?;
-        if !metadata.is_file() || is_reparse_or_symlink(&path)? {
+        let Ok(Some((record_path, record))) = read_owner_record(&path).await else {
             continue;
-        }
-        ensure_no_reparse_components(&path)?;
-        if is_reparse_or_symlink(&path)? {
+        };
+        let Ok(Some(lease)) =
+            open_verified_installer(&path, record.installer_size, &record.installer_sha256).await
+        else {
             continue;
-        }
+        };
+        drop(lease);
         fs::remove_file(&path)
             .await
             .map_err(|error| format!("Failed to remove an old updater installer: {error}"))?;
+        cleanup_file_if_exists(&record_path).await;
     }
     Ok(())
 }
@@ -360,6 +512,84 @@ fn is_exact_owned_installer_name(name: &str) -> bool {
         return false;
     };
     version.pre.is_empty() && version.build.is_empty() && version.to_string() == version_text
+}
+
+fn owner_record_path(artifact_path: &Path) -> Result<PathBuf, String> {
+    let name = artifact_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
+    Ok(artifact_path.with_file_name(format!("{name}{OWNER_RECORD_SUFFIX}")))
+}
+
+async fn read_owner_record(
+    artifact_path: &Path,
+) -> Result<Option<(PathBuf, OwnedArtifactRecord)>, String> {
+    let record_path = owner_record_path(artifact_path)?;
+    let metadata = match fs::symlink_metadata(&record_path).await {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(format!("Failed to inspect updater ownership data: {error}")),
+    };
+    if !metadata.is_file() || metadata.len() > 4 * 1024 || is_reparse_or_symlink(&record_path)? {
+        return Err("The updater ownership data is not a regular bounded file.".into());
+    }
+    ensure_no_reparse_components(&record_path)?;
+    let bytes = fs::read(&record_path)
+        .await
+        .map_err(|error| format!("Failed to read updater ownership data: {error}"))?;
+    let record: OwnedArtifactRecord = serde_json::from_slice(&bytes)
+        .map_err(|error| format!("Failed to parse updater ownership data: {error}"))?;
+    let artifact_name = artifact_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
+    if record.schema_version != 1
+        || record.artifact_name != artifact_name
+        || record.installer_size == 0
+        || record.installer_size > INSTALLER_LIMIT
+        || validate_sha256(&record.installer_sha256).is_err()
+    {
+        return Err("The updater ownership data does not match its artifact.".into());
+    }
+    Ok(Some((record_path, record)))
+}
+
+async fn write_owner_record(
+    artifact_path: &Path,
+    installer_size: u64,
+    installer_sha256: &str,
+) -> Result<PathBuf, String> {
+    let record_path = owner_record_path(artifact_path)?;
+    let artifact_name = artifact_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
+    let record = OwnedArtifactRecord {
+        schema_version: 1,
+        artifact_name: artifact_name.to_string(),
+        installer_size,
+        installer_sha256: installer_sha256.to_string(),
+    };
+    let bytes = serde_json::to_vec(&record)
+        .map_err(|error| format!("Failed to encode updater ownership data: {error}"))?;
+    let mut file = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&record_path)
+        .await
+        .map_err(|error| format!("Failed to create updater ownership data: {error}"))?;
+    if let Err(error) = file.write_all(&bytes).await {
+        drop(file);
+        cleanup_file_if_exists(&record_path).await;
+        return Err(format!("Failed to write updater ownership data: {error}"));
+    }
+    if let Err(error) = file.sync_all().await {
+        drop(file);
+        cleanup_file_if_exists(&record_path).await;
+        return Err(format!("Failed to sync updater ownership data: {error}"));
+    }
+    Ok(record_path)
 }
 
 async fn verify_release_contract<'a>(
@@ -673,33 +903,48 @@ async fn download_installer(
     client: &Client,
     target_dir: &Path,
     verified: &VerifiedUpdate<'_>,
-) -> Result<VerifiedInstaller, String> {
+    context: &UpdateTaskContext,
+) -> Result<VerifiedInstaller, UpdateRunError> {
     ensure_no_reparse_components(target_dir)?;
     let installer = verified.installer_asset;
     validate_download_url(&installer.browser_download_url)?;
     let file_name = sanitize_file_name(&verified.manifest.installer.file_name)?;
-    let final_path = target_dir.join(&file_name);
-    let part_path = target_dir.join(format!("{file_name}.{}.part", uuid::Uuid::new_v4()));
-    if fs::try_exists(&final_path).await.unwrap_or(false) {
-        ensure_no_reparse_components(&final_path)?;
-        if let Some(installer) = open_verified_installer(
-            &final_path,
-            verified.manifest.installer.size,
-            &verified.manifest.installer.sha256,
-        )
-        .await?
-        {
+    let canonical_path = target_dir.join(&file_name);
+    let publication_dir = match open_or_quarantine_cached_installer(
+        target_dir,
+        &canonical_path,
+        verified.manifest.installer.size,
+        &verified.manifest.installer.sha256,
+    )
+    .await?
+    {
+        CachedInstaller::Verified(installer) => {
+            context.check_cancelled()?;
             return Ok(installer);
         }
-        return Err("An unverified file already occupies the updater destination.".into());
+        CachedInstaller::Vacant => target_dir.to_path_buf(),
+        CachedInstaller::UnownedCollision => {
+            create_prepared_directory(
+                target_dir,
+                verified.manifest.installer.size,
+                &verified.manifest.installer.sha256,
+            )
+            .await?
+        }
+    };
+    let final_path = publication_dir.join(&file_name);
+    let part_path = publication_dir.join(format!("{file_name}.{}.part", uuid::Uuid::new_v4()));
+    let response = tokio::select! {
+        _ = context.cancelled() => return Err(UpdateRunError::Cancelled),
+        result = client.get(&installer.browser_download_url).send() => result,
     }
-    let response = client
-        .get(&installer.browser_download_url)
-        .send()
-        .await
-        .map_err(|error| format!("Failed to download update installer: {error}"))?;
+    .map_err(|error| format!("Failed to download update installer: {error}"))?;
     if !response.status().is_success() {
-        return Err(read_http_error(response, "update installer").await);
+        let error = tokio::select! {
+            _ = context.cancelled() => return Err(UpdateRunError::Cancelled),
+            error = read_http_error(response, "update installer") => error,
+        };
+        return Err(error.into());
     }
     if response
         .content_length()
@@ -716,6 +961,17 @@ async fn download_installer(
         .open(&part_path)
         .await
         .map_err(|error| format!("Failed to create installer temp file: {error}"))?;
+    if let Err(error) = write_owner_record(
+        &part_path,
+        verified.manifest.installer.size,
+        &verified.manifest.installer.sha256,
+    )
+    .await
+    {
+        drop(file);
+        cleanup_file_if_exists(&part_path).await;
+        return Err(error.into());
+    }
     let mut downloaded_bytes = 0u64;
     let mut hasher = Sha256::new();
     emit_install_progress(
@@ -729,14 +985,22 @@ async fn download_installer(
         },
     );
 
-    while let Some(chunk_result) = stream.next().await {
+    loop {
+        let chunk_result = tokio::select! {
+            _ = context.cancelled() => {
+                cleanup_current_artifact(&part_path).await;
+                return Err(UpdateRunError::Cancelled);
+            }
+            result = stream.next() => result,
+        };
+        let Some(chunk_result) = chunk_result else {
+            break;
+        };
         let chunk = match chunk_result {
             Ok(chunk) => chunk,
             Err(error) => {
-                cleanup_file_if_exists(&part_path).await;
-                return Err(format!(
-                    "Failed while downloading update installer: {error}"
-                ));
+                cleanup_current_artifact(&part_path).await;
+                return Err(format!("Failed while downloading update installer: {error}").into());
             }
         };
         downloaded_bytes = downloaded_bytes
@@ -744,12 +1008,12 @@ async fn download_installer(
             .ok_or_else(|| "Installer byte count overflowed.".to_string())?;
         if downloaded_bytes > verified.manifest.installer.size || downloaded_bytes > INSTALLER_LIMIT
         {
-            cleanup_file_if_exists(&part_path).await;
+            cleanup_current_artifact(&part_path).await;
             return Err("Installer exceeded its signed size or the 1 GiB limit.".into());
         }
         if let Err(error) = file.write_all(&chunk).await {
-            cleanup_file_if_exists(&part_path).await;
-            return Err(format!("Failed to write installer download: {error}"));
+            cleanup_current_artifact(&part_path).await;
+            return Err(format!("Failed to write installer download: {error}").into());
         }
         hasher.update(&chunk);
         emit_install_progress(
@@ -772,11 +1036,12 @@ async fn download_installer(
         .map_err(|error| format!("Failed to sync installer download: {error}"))?;
     drop(file);
     if downloaded_bytes != verified.manifest.installer.size {
-        cleanup_file_if_exists(&part_path).await;
+        cleanup_current_artifact(&part_path).await;
         return Err(format!(
             "Downloaded installer size mismatch: expected {} bytes, got {downloaded_bytes} bytes.",
             verified.manifest.installer.size
-        ));
+        )
+        .into());
     }
     let actual_checksum = format!("{:x}", hasher.finalize());
     emit_install_progress(
@@ -790,26 +1055,32 @@ async fn download_installer(
         },
     );
     if actual_checksum != verified.manifest.installer.sha256 {
-        cleanup_file_if_exists(&part_path).await;
+        cleanup_current_artifact(&part_path).await;
         return Err("Downloaded installer SHA-256 does not match the signed manifest.".into());
     }
-    ensure_no_reparse_components(target_dir)?;
+    let publication = match context.enter_publication(PublicationKind::InstallerCache) {
+        Ok(publication) => publication,
+        Err(error) => {
+            cleanup_current_artifact(&part_path).await;
+            return Err(error);
+        }
+    };
+    if let Err(error) = ensure_no_reparse_components(target_dir) {
+        cleanup_current_artifact(&part_path).await;
+        return Err(error.into());
+    }
     if fs::try_exists(&final_path).await.unwrap_or(false) {
-        cleanup_file_if_exists(&part_path).await;
+        cleanup_current_artifact(&part_path).await;
         return Err("The updater destination appeared while publishing the installer.".into());
     }
     if let Err(error) = fs::hard_link(&part_path, &final_path).await {
-        cleanup_file_if_exists(&part_path).await;
+        cleanup_current_artifact(&part_path).await;
         return Err(format!(
             "Failed to publish the verified installer without replacement: {error}"
-        ));
+        )
+        .into());
     }
-    if let Err(error) = fs::remove_file(&part_path).await {
-        eprintln!(
-            "Published the verified installer, but failed to remove its partial link: {error}"
-        );
-    }
-    open_verified_installer(
+    let installer = open_verified_installer(
         &final_path,
         verified.manifest.installer.size,
         &verified.manifest.installer.sha256,
@@ -817,7 +1088,153 @@ async fn download_installer(
     .await?
     .ok_or_else(|| {
         "The published installer changed before its execution lease was acquired.".to_string()
-    })
+    })?;
+    if let Err(error) = write_owner_record(
+        &final_path,
+        verified.manifest.installer.size,
+        &verified.manifest.installer.sha256,
+    )
+    .await
+    {
+        cleanup_current_artifact(&part_path).await;
+        return Err(error.into());
+    }
+    if let Err(error) = fs::remove_file(&part_path).await {
+        eprintln!(
+            "Published the verified installer, but failed to remove its partial link: {error}"
+        );
+    }
+    if let Ok(record_path) = owner_record_path(&part_path) {
+        cleanup_file_if_exists(&record_path).await;
+    }
+    drop(publication);
+    context.check_cancelled()?;
+    Ok(installer)
+}
+
+async fn open_or_quarantine_cached_installer(
+    target_dir: &Path,
+    final_path: &Path,
+    expected_size: u64,
+    expected_sha256: &str,
+) -> Result<CachedInstaller, String> {
+    ensure_no_reparse_components(target_dir)?;
+    match fs::symlink_metadata(final_path).await {
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            let record_path = owner_record_path(final_path)?;
+            return match fs::symlink_metadata(record_path).await {
+                Ok(_) => Ok(CachedInstaller::UnownedCollision),
+                Err(record_error) if record_error.kind() == std::io::ErrorKind::NotFound => {
+                    Ok(CachedInstaller::Vacant)
+                }
+                Err(record_error) => Err(format!(
+                    "Failed to inspect cached installer ownership data: {record_error}"
+                )),
+            };
+        }
+        Err(error) => return Err(format!("Failed to inspect the cached installer: {error}")),
+    }
+
+    match open_verified_installer(final_path, expected_size, expected_sha256).await {
+        Ok(Some(installer)) => return Ok(CachedInstaller::Verified(installer)),
+        Ok(None) => {}
+        Err(_) => {}
+    }
+
+    let owner = match read_owner_record(final_path).await {
+        Ok(owner) => owner,
+        Err(_) => return Ok(CachedInstaller::UnownedCollision),
+    };
+    let Some((record_path, record)) = owner else {
+        return Ok(CachedInstaller::UnownedCollision);
+    };
+    if record.installer_size != expected_size || record.installer_sha256 != expected_sha256 {
+        return Ok(CachedInstaller::UnownedCollision);
+    }
+
+    quarantine_cached_installer(target_dir, final_path, &record_path).await?;
+    Ok(CachedInstaller::Vacant)
+}
+
+async fn quarantine_cached_installer(
+    target_dir: &Path,
+    final_path: &Path,
+    record_path: &Path,
+) -> Result<PathBuf, String> {
+    ensure_no_reparse_components(target_dir)?;
+    if final_path.parent() != Some(target_dir) {
+        return Err("The cached installer is outside the updater directory.".into());
+    }
+    let file_name = final_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "The cached installer name is invalid.".to_string())?;
+    if !is_exact_owned_installer_name(file_name) {
+        return Err("The cached installer is not an owned canonical installer.".into());
+    }
+    fs::symlink_metadata(final_path)
+        .await
+        .map_err(|error| format!("Failed to inspect the invalid cached installer: {error}"))?;
+
+    let quarantine_path = target_dir.join(format!(
+        "{file_name}.invalid.{}.quarantine",
+        uuid::Uuid::new_v4()
+    ));
+    let quarantine_record_path = owner_record_path(&quarantine_path)?;
+    match fs::symlink_metadata(&quarantine_path).await {
+        Ok(_) => return Err("The updater quarantine destination already exists.".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(format!(
+                "Failed to inspect the quarantine destination: {error}"
+            ));
+        }
+    }
+    fs::rename(final_path, &quarantine_path)
+        .await
+        .map_err(|error| format!("Failed to quarantine the invalid cached installer: {error}"))?;
+    if let Err(record_error) = fs::rename(record_path, &quarantine_record_path).await {
+        return match fs::rename(&quarantine_path, final_path).await {
+            Ok(()) => Err(format!(
+                "Failed to quarantine installer ownership data: {record_error}"
+            )),
+            Err(rollback_error) => Err(format!(
+                "Failed to quarantine installer ownership data ({record_error}) and failed to restore the installer ({rollback_error})."
+            )),
+        };
+    }
+    Ok(quarantine_path)
+}
+
+async fn create_prepared_directory(
+    target_dir: &Path,
+    installer_size: u64,
+    installer_sha256: &str,
+) -> Result<PathBuf, String> {
+    ensure_no_reparse_components(target_dir)?;
+    for _ in 0..4 {
+        let path = target_dir.join(format!("prepared-{}", uuid::Uuid::new_v4()));
+        match fs::create_dir(&path).await {
+            Ok(()) => {
+                ensure_no_reparse_components(&path)?;
+                if let Err(error) =
+                    write_owner_record(&path, installer_size, installer_sha256).await
+                {
+                    let _ = fs::remove_dir(&path).await;
+                    return Err(error);
+                }
+                return Ok(path);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(format!(
+                    "Failed to create an isolated installer directory: {error}"
+                ));
+            }
+        }
+    }
+    Err("Failed to allocate a unique isolated installer directory.".into())
 }
 
 async fn open_verified_installer(
@@ -1178,6 +1595,13 @@ async fn cleanup_file_if_exists(path: &Path) {
     }
 }
 
+async fn cleanup_current_artifact(path: &Path) {
+    cleanup_file_if_exists(path).await;
+    if let Ok(record_path) = owner_record_path(path) {
+        cleanup_file_if_exists(&record_path).await;
+    }
+}
+
 fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value.and_then(|text| {
         let trimmed = text.trim();
@@ -1431,6 +1855,133 @@ mod tests {
         let _ = std::fs::remove_dir_all(root);
     }
 
+    #[tokio::test]
+    async fn invalid_cached_installer_is_quarantined_before_fresh_verification() {
+        let root = unique_test_root("updater-invalid-cache");
+        let directory_lock = UpdateDirectoryLock::acquire(&root).unwrap();
+        let path = root.join("Nuclear.Downloader_0.6.0_x64-setup.exe");
+        let unrelated = root.join("keep-me.exe");
+        std::fs::write(&path, b"invalid-bytes!").unwrap();
+        std::fs::write(&unrelated, b"unrelated").unwrap();
+        let fresh_bytes = b"verified bytes";
+        let fresh_hash = format!("{:x}", Sha256::digest(fresh_bytes));
+        write_owner_record(&path, fresh_bytes.len() as u64, &fresh_hash)
+            .await
+            .unwrap();
+
+        assert!(matches!(
+            open_or_quarantine_cached_installer(
+                &root,
+                &path,
+                fresh_bytes.len() as u64,
+                &fresh_hash,
+            )
+            .await
+            .unwrap(),
+            CachedInstaller::Vacant
+        ));
+        assert!(!path.exists());
+        assert_eq!(std::fs::read(&unrelated).unwrap(), b"unrelated");
+        let quarantined = std::fs::read_dir(&root)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.ends_with(".quarantine"))
+            .collect::<Vec<_>>();
+        assert_eq!(quarantined.len(), 1);
+
+        std::fs::write(&path, fresh_bytes).unwrap();
+        let installer = open_or_quarantine_cached_installer(
+            &root,
+            &path,
+            fresh_bytes.len() as u64,
+            &fresh_hash,
+        )
+        .await
+        .unwrap();
+        assert!(matches!(installer, CachedInstaller::Verified(_)));
+        drop(directory_lock);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn unowned_canonical_collision_is_preserved_while_prepared_path_is_verified() {
+        let root = unique_test_root("updater-unowned-collision");
+        let directory_lock = UpdateDirectoryLock::acquire(&root).unwrap();
+        let canonical = root.join("Nuclear.Downloader_0.6.0_x64-setup.exe");
+        std::fs::write(&canonical, b"unrelated legacy bytes").unwrap();
+        let fresh = b"verified bytes";
+        let hash = format!("{:x}", Sha256::digest(fresh));
+
+        assert!(matches!(
+            open_or_quarantine_cached_installer(&root, &canonical, fresh.len() as u64, &hash)
+                .await
+                .unwrap(),
+            CachedInstaller::UnownedCollision
+        ));
+        assert_eq!(
+            std::fs::read(&canonical).unwrap(),
+            b"unrelated legacy bytes"
+        );
+
+        let prepared = create_prepared_directory(&root, fresh.len() as u64, &hash)
+            .await
+            .unwrap();
+        let prepared_installer = prepared.join(canonical.file_name().unwrap());
+        std::fs::write(&prepared_installer, fresh).unwrap();
+        write_owner_record(&prepared_installer, fresh.len() as u64, &hash)
+            .await
+            .unwrap();
+        let verified = open_verified_installer(&prepared_installer, fresh.len() as u64, &hash)
+            .await
+            .unwrap();
+        assert!(verified.is_some());
+        assert_eq!(
+            std::fs::read(&canonical).unwrap(),
+            b"unrelated legacy bytes"
+        );
+        drop(verified);
+        drop(directory_lock);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn prepared_cleanup_requires_complete_owned_non_reparse_contents() {
+        let root = unique_test_root("updater-prepared-cleanup");
+        std::fs::create_dir_all(&root).unwrap();
+        let bytes = b"verified bytes";
+        let hash = format!("{:x}", Sha256::digest(bytes));
+
+        let owned = create_prepared_directory(&root, bytes.len() as u64, &hash)
+            .await
+            .unwrap();
+        let owned_installer = owned.join("Nuclear.Downloader_0.6.0_x64-setup.exe");
+        std::fs::write(&owned_installer, bytes).unwrap();
+        write_owner_record(&owned_installer, bytes.len() as u64, &hash)
+            .await
+            .unwrap();
+        let owned_record = owner_record_path(&owned).unwrap();
+
+        let unowned = root.join("prepared-550e8400-e29b-41d4-a716-446655440000");
+        std::fs::create_dir(&unowned).unwrap();
+        std::fs::write(unowned.join("keep.txt"), b"keep").unwrap();
+
+        let ambiguous = create_prepared_directory(&root, bytes.len() as u64, &hash)
+            .await
+            .unwrap();
+        std::fs::write(ambiguous.join("unrelated.txt"), b"keep").unwrap();
+
+        cleanup_owned_prepared_directories(&root).await.unwrap();
+        assert!(!owned.exists());
+        assert!(!owned_record.exists());
+        assert_eq!(std::fs::read(unowned.join("keep.txt")).unwrap(), b"keep");
+        assert_eq!(
+            std::fs::read(ambiguous.join("unrelated.txt")).unwrap(),
+            b"keep"
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
     #[cfg(windows)]
     #[tokio::test]
     async fn verified_installer_lease_denies_mutation_and_replacement() {
@@ -1456,6 +2007,43 @@ mod tests {
         let _ = std::fs::remove_dir_all(root);
     }
 
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn installer_handoff_retains_verification_and_directory_leases() {
+        let root = unique_test_root("updater-handoff-lease");
+        let directory_lock = UpdateDirectoryLock::acquire(&root).unwrap();
+        let path = root.join("Nuclear.Downloader_0.6.0_x64-setup.exe");
+        std::fs::write(&path, b"verified bytes").unwrap();
+        let hash = format!("{:x}", Sha256::digest(b"verified bytes"));
+        let installer = open_verified_installer(&path, 14, &hash)
+            .await
+            .unwrap()
+            .unwrap();
+        let handoff = InstallerHandoff {
+            expected_version: "0.6.0".into(),
+            installer_name: "Nuclear.Downloader_0.6.0_x64-setup.exe".into(),
+            installer_size: 14,
+            installer,
+            _directory_lock: directory_lock,
+        };
+
+        assert_eq!(handoff.expected_version(), "0.6.0");
+        assert_eq!(
+            handoff.installer_name(),
+            "Nuclear.Downloader_0.6.0_x64-setup.exe"
+        );
+        assert_eq!(handoff.installer_size(), 14);
+        assert_eq!(handoff.installer_path(), path);
+        assert!(UpdateDirectoryLock::acquire(&root).is_err());
+        assert!(std::fs::OpenOptions::new().write(true).open(&path).is_err());
+
+        drop(handoff);
+        let reacquired = UpdateDirectoryLock::acquire(&root).unwrap();
+        drop(reacquired);
+        std::fs::remove_file(path).unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
     #[tokio::test]
     async fn partial_cleanup_removes_only_owned_regular_files() {
         let root = unique_test_root("updater-partials");
@@ -1464,11 +2052,19 @@ mod tests {
             "Nuclear.Downloader_0.6.0_x64-setup.exe.550e8400-e29b-41d4-a716-446655440000.part",
         );
         let unrelated = root.join("someone-elses-download.part");
+        let unowned = root.join(
+            "Nuclear.Downloader_0.6.0_x64-setup.exe.650e8400-e29b-41d4-a716-446655440000.part",
+        );
         std::fs::write(&owned, b"partial").unwrap();
         std::fs::write(&unrelated, b"keep").unwrap();
+        std::fs::write(&unowned, b"unowned").unwrap();
+        write_owner_record(&owned, 42, &"a".repeat(64))
+            .await
+            .unwrap();
         cleanup_owned_partial_installers(&root).await.unwrap();
         assert!(!owned.exists());
         assert!(unrelated.exists());
+        assert!(unowned.exists());
         let _ = std::fs::remove_dir_all(root);
     }
 
@@ -1480,9 +2076,13 @@ mod tests {
         let current = root.join("Nuclear.Downloader_0.6.1_x64-setup.exe");
         let noncanonical = root.join("Nuclear.Downloader_00.6.0_x64-setup.exe");
         let unrelated = root.join("keep.exe");
-        for path in [&old, &current, &noncanonical, &unrelated] {
+        let unowned_old = root.join("Nuclear.Downloader_0.5.9_x64-setup.exe");
+        for path in [&old, &current, &noncanonical, &unrelated, &unowned_old] {
             std::fs::write(path, b"data").unwrap();
         }
+        write_owner_record(&old, 4, &format!("{:x}", Sha256::digest(b"data")))
+            .await
+            .unwrap();
 
         cleanup_owned_old_installers(&root, current.file_name().unwrap().to_str().unwrap())
             .await
@@ -1491,6 +2091,7 @@ mod tests {
         assert!(current.exists());
         assert!(noncanonical.exists());
         assert!(unrelated.exists());
+        assert!(unowned_old.exists());
         let _ = std::fs::remove_dir_all(root);
     }
 

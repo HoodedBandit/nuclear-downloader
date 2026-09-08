@@ -18,6 +18,7 @@ const initialSnapshot = {
   runtimeReadiness: 'ready',
   maintenanceActive: false,
   draining: false,
+  persistenceHealth: { degraded: false, error: null },
   latestSequence: 1
 };
 
@@ -75,6 +76,8 @@ function operation(id, kind, state, overrides = {}) {
     finishedAtMs: state === 'completed' || state === 'cancelled' ? 10 : null,
     error: null,
     inspectionResult: null,
+    publishedOutput: null,
+    intendedTerminalOutcome: null,
     correlationId: `correlation-${id}`,
     ...overrides
   };
@@ -258,9 +261,9 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       IDS.videoInspection
     );
     await emit('queue_item_upserted', queueItem(IDS.item, video));
-    await expect($('.queue')).toHaveText(expect.stringContaining('Fixture Video'));
-
-    await $('button[aria-label="Download Fixture Video"]').click();
+    const fixtureDownload = await $('button[aria-label="Download Fixture Video"]');
+    await fixtureDownload.waitForClickable();
+    await fixtureDownload.click();
     await waitForMockCalls(mocks.enqueue_queue_items, 1);
     const runningItem = {
       ...queueItem(IDS.item, video),

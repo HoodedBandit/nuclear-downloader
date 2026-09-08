@@ -31,4 +31,13 @@ describe('typed IPC client', () => {
     await expect(listenEvent('app-state-changed', handler)).resolves.toBe(unlisten);
     expect(listenMock).toHaveBeenCalledWith('app-state-changed', handler);
   });
+
+  it('registers the state resync channel with its typed payload', async () => {
+    const unlisten = vi.fn();
+    listenMock.mockResolvedValue(unlisten);
+    const { listenEvent } = await import('./ipc-client');
+    const handler = vi.fn();
+    await expect(listenEvent('app-state-resync-required', handler)).resolves.toBe(unlisten);
+    expect(listenMock).toHaveBeenCalledWith('app-state-resync-required', handler);
+  });
 });

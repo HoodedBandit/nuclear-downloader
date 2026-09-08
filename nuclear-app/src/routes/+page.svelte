@@ -5,7 +5,11 @@
   import { SvelteMap } from 'svelte/reactivity';
   import { accessibleDialog } from '$lib/accessible-dialog';
   import { AppStateController } from '$lib/app-state-controller';
-  import { isTerminalOperation, latestOperationForItem } from '$lib/backend-state';
+  import {
+    isTerminalOperation,
+    latestOperationForItem,
+    publishedOutputPath
+  } from '$lib/backend-state';
   import type { AppSnapshot } from '$lib/bindings/AppSnapshot';
   import type { CookieConfig as BackendCookieConfig } from '$lib/bindings/CookieConfig';
   import type { DownloaderRuntimeStatus } from '$lib/bindings/DownloaderRuntimeStatus';
@@ -20,7 +24,7 @@
   import type { UrlInspection } from '$lib/bindings/UrlInspection';
   import type { VideoInfo } from '$lib/bindings/VideoInfo';
   import { invokeCommand as invoke, listenEvent as listen, type EventMap } from '$lib/ipc-client';
-  import { reduceOperationProgress } from '$lib/operation-reducer';
+  import { reduceOperationProgress, shouldIgnoreOperationProgress } from '$lib/operation-reducer';
   import { OperationWaitRegistry } from '$lib/operation-wait-registry';
   import {
     canStartWork,
@@ -88,7 +92,8 @@
     'eta',
     'error',
     'errorCode',
-    'errorDetail'
+    'errorDetail',
+    'filename'
   ] as const satisfies readonly (keyof QueueItem)[];
 
   type CookieConfig = Omit<BackendCookieConfig, 'mode' | 'browser'> & {
@@ -431,6 +436,7 @@
   let queueViewportHeight = $state(600);
   let backendSnapshot = $state<AppSnapshot | null>(null);
   let backendStateError = $state<string | null>(null);
+  let persistenceHealthError = $state<string | null>(null);
   let diagnosticsMessage = $state<string | null>(null);
   let diagnosticsError = $state<string | null>(null);
   const metadataByUrl = new SvelteMap<
@@ -465,8 +471,9 @@
       const listenerErrors: string[] = [];
 
       try {
-        await appStateController.start((handler) =>
-          listen('app-state-changed', (event) => handler(event.payload))
+        await appStateController.start(
+          (handler) => listen('app-state-changed', (event) => handler(event.payload)),
+          (handler) => listen('app-state-resync-required', (event) => handler(event.payload))
         );
         unlistenState = () => appStateController.stop();
       } catch (error) {
@@ -480,6 +487,7 @@
           if (idx === -1) return;
 
           const item = queue[idx];
+          if (shouldIgnoreOperationProgress(item, progress)) return;
           const statusChanged = item.status !== progress.status;
           const terminal = isTerminalStatus(progress.status);
           const shouldRefreshDisplay = shouldRefreshDownloadDisplay(item, progress, statusChanged);
@@ -510,7 +518,7 @@
             errorDetail: progress.error_detail ?? null,
             filename: progress.filename ?? item.filename
           };
-          assignChangedQueueFields(queue[idx], next, [...OPERATION_PROJECTION_FIELDS, 'filename']);
+          assignChangedQueueFields(queue[idx], next, OPERATION_PROJECTION_FIELDS);
 
           if (terminal) {
             clearProgressDisplayState(item.id);
@@ -609,6 +617,11 @@
     const previousSnapshot = backendSnapshot;
     backendSnapshot = snapshot;
     backendStateError = null;
+    persistenceHealthError = snapshot.persistenceHealth.degraded
+      ? `Queue history is not being saved. ${normalizeAppError(
+          snapshot.persistenceHealth.error ?? 'Persistence is degraded.'
+        )}`
+      : null;
     projectBackendQueue(snapshot, previousSnapshot, delta);
     operationWaiters.settle(snapshot.operations);
 
@@ -751,7 +764,8 @@
       errorCode: operation?.error?.code ?? (interrupted ? 'interrupted' : null),
       errorDetail: operationErrorDetail(operation),
       diagnosticsOpen: existing?.diagnosticsOpen ?? false,
-      filename: existing?.filename ?? null,
+      filename:
+        publishedOutputPath(operation) ?? (sameOperation ? (existing?.filename ?? null) : null),
       selected: existing?.selected ?? false
     } satisfies QueueItem;
   }
@@ -858,6 +872,7 @@
       }
       case 'runtime_readiness_changed':
       case 'maintenance_changed':
+      case 'persistence_health_changed':
         return;
     }
   }
@@ -2257,6 +2272,9 @@
     {/if}
     {#if queueActionError}
       <span class="error-text" role="alert" aria-live="assertive">{queueActionError}</span>
+    {/if}
+    {#if persistenceHealthError}
+      <span class="error-text" role="alert" aria-live="assertive">{persistenceHealthError}</span>
     {/if}
     {#if diagnosticsError}
       <span class="error-text" role="alert" aria-live="assertive">{diagnosticsError}</span>

@@ -17,7 +17,9 @@ function operation(id: string, state: OperationSnapshot['state']): OperationSnap
     finishedAtMs: state === 'completed' ? 1 : null,
     error: null,
     correlationId: id,
-    inspectionResult: null
+    inspectionResult: null,
+    publishedOutput: null,
+    intendedTerminalOutcome: null
   };
 }
 

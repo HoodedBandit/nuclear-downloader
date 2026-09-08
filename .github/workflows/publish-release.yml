@@ -16,8 +16,8 @@ on:
         description: Type PUBLISH v0.6.0
         required: true
         type: string
-      manual_acceptance_confirmation:
-        description: Type COOKIE AND RUNTIME ACCEPTED v0.6.0 after completing both protected manual tests
+      manual_acceptance_json:
+        description: Exact JSON emitted by write-windows-manual-acceptance.ps1 after all Windows 11 manual cases pass
         required: true
         type: string
 
@@ -47,16 +47,12 @@ jobs:
           INPUT_RELEASE_VERSION: ${{ inputs.release_version }}
           INPUT_CONFIRMATION: ${{ inputs.confirmation }}
           INPUT_CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
-          INPUT_MANUAL_ACCEPTANCE: ${{ inputs.manual_acceptance_confirmation }}
         run: |
           if ($env:INPUT_RELEASE_VERSION -cne '0.6.0') {
             throw 'This workflow is pinned to application version 0.6.0.'
           }
           if ($env:INPUT_CONFIRMATION -cne 'PUBLISH v0.6.0') {
             throw 'The publish confirmation text is not exact.'
-          }
-          if ($env:INPUT_MANUAL_ACCEPTANCE -cne 'COOKIE AND RUNTIME ACCEPTED v0.6.0') {
-            throw 'The dedicated-account cookie and protected signed-runtime acceptance must be explicitly confirmed.'
           }
           if ($env:INPUT_CANDIDATE_RUN_ID -cnotmatch '^[1-9][0-9]*$') {
             throw 'candidate_run_id must be a positive Actions run ID.'
@@ -112,6 +108,8 @@ jobs:
         env:
           EXPECTED_RELEASE_VERSION: ${{ inputs.release_version }}
           EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
+          INPUT_MANUAL_ACCEPTANCE_JSON: ${{ inputs.manual_acceptance_json }}
+          EXPECTED_MANUAL_SUBMITTER: ${{ github.actor }}
           NUCLEAR_UPDATE_KEY_ID: ${{ vars.NUCLEAR_UPDATE_KEY_ID }}
           NUCLEAR_UPDATE_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_PUBLIC_KEY }}
           NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
@@ -127,6 +125,42 @@ jobs:
             -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
             -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
             -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}'
+
+          $manualEvidenceBytes = [System.Text.Encoding]::UTF8.GetBytes($env:INPUT_MANUAL_ACCEPTANCE_JSON)
+          if ($manualEvidenceBytes.Length -le 0 -or $manualEvidenceBytes.Length -gt 1MB) {
+            throw 'The structured manual acceptance JSON is empty or oversized.'
+          }
+          if (Test-Path -LiteralPath manual-acceptance) {
+            throw 'The manual acceptance staging directory already exists.'
+          }
+          New-Item -ItemType Directory -Path manual-acceptance | Out-Null
+          $manualEvidenceDirectory = Get-Item -LiteralPath manual-acceptance -Force
+          if (-not $manualEvidenceDirectory.PSIsContainer -or
+              ($manualEvidenceDirectory.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'The manual acceptance staging directory is not an owned regular directory.'
+          }
+          [System.IO.File]::WriteAllText(
+            (Join-Path $manualEvidenceDirectory.FullName 'windows-x64-manual-acceptance.json'),
+            $env:INPUT_MANUAL_ACCEPTANCE_JSON,
+            [System.Text.UTF8Encoding]::new($false)
+          )
+          & scripts/verify-manual-acceptance-evidence.ps1 `
+            -EvidencePath 'manual-acceptance/windows-x64-manual-acceptance.json' `
+            -CandidateDirectory candidate `
+            -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
+            -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
+            -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}' `
+            -ExpectedSubmitter $env:EXPECTED_MANUAL_SUBMITTER
+
+      - name: Retain private manual acceptance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nuclear-downloader-0.6.0-manual-acceptance
+          path: manual-acceptance/windows-x64-manual-acceptance.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+          overwrite: false
 
       - name: Create or recover and independently verify a draft release
         id: draft

@@ -2,6 +2,7 @@ import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { listen as tauriListen, type Event, type UnlistenFn } from '@tauri-apps/api/event';
 import type { AddQueueItemInput } from './bindings/AddQueueItemInput';
 import type { AppSnapshot } from './bindings/AppSnapshot';
+import type { AppStateResyncRequired } from './bindings/AppStateResyncRequired';
 import type { BeginInspectionInput } from './bindings/BeginInspectionInput';
 import type { BeginOperationResult } from './bindings/BeginOperationResult';
 import type { CancelAllResult } from './bindings/CancelAllResult';
@@ -71,6 +72,7 @@ export interface CommandMap {
 
 export interface EventMap {
   'app-state-changed': StateDelta;
+  'app-state-resync-required': AppStateResyncRequired;
   'download-progress': Omit<DownloadProgress, 'status' | 'phase'> & {
     status:
       | 'fetching'
