@@ -63,7 +63,7 @@ impl StateStore {
         self.inner.journal.fail_next_save_for_test();
     }
 
-    fn fail_persistence_for_test(&self, count: usize) {
+    pub(crate) fn fail_persistence_for_test(&self, count: usize) {
         self.inner.journal.fail_saves_for_test(count);
     }
 

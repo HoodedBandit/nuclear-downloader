@@ -80,7 +80,7 @@ impl<T> From<T> for SharedRecord<T> {
 }
 
 #[derive(Clone)]
-pub(crate) struct StateData {
+pub(super) struct StateData {
     pub(super) sequence: u64,
     pub(super) queue_order: Vec<String>,
     pub(super) queue: HashMap<String, SharedRecord<QueueItemRecord>>,
@@ -97,7 +97,7 @@ pub(crate) struct StateData {
 }
 
 impl StateData {
-    pub(crate) fn persistence_journal(&self) -> PersistentJournal {
+    pub(super) fn persistence_journal(&self) -> PersistentJournal {
         PersistentJournal {
             schema_version: APP_SCHEMA_VERSION,
             revision: self.sequence,

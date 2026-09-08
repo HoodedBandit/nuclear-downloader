@@ -9,7 +9,6 @@ mod cancellation;
 mod diagnostics;
 mod downloader;
 mod journal;
-mod journal_commit;
 mod lifecycle;
 mod lifecycle_cleanup;
 mod models;
