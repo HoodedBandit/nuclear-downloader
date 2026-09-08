@@ -46,6 +46,13 @@ classification, assigned and nested async blocks, direct spawn ownership, and
 the process-spawn false-positive boundary. Discovery still requires source
 review; these checks establish inventory coverage only.
 
+Test-support classification evaluates `all`, `any`, and `not` cfg expressions
+with the `test` predicate fixed to false. A row is excluded from production only
+when its cfg cannot then be true. Other predicates remain unknown and malformed
+or unsupported expressions conservatively remain production-visible. Thus
+`cfg(not(test))` and `cfg(any(test, windows))` are production-capable, while
+`cfg(all(test, windows))` requires the test build.
+
 ## Reviewer fields
 
 Every reviewed row records:

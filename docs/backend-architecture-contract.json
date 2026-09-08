@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "stageStatus": "incomplete",
+  "sourceRoot": "nuclear-app/src-tauri",
+  "roles": {
+    "applicationBoundary": [
+      "src/lib.rs",
+      "src/main.rs",
+      "src/desktop.rs"
+    ],
+    "bootstrap": [
+      "src/bootstrap.rs"
+    ],
+    "services": [
+      "src/services/**/*.rs"
+    ],
+    "engines": [
+      "src/state.rs",
+      "src/state/**/*.rs",
+      "src/lifecycle.rs",
+      "src/lifecycle/**/*.rs",
+      "src/downloader.rs",
+      "src/downloader/**/*.rs",
+      "src/runtime.rs",
+      "src/runtime/**/*.rs",
+      "src/updater.rs",
+      "src/updater/**/*.rs",
+      "src/runtime_transaction.rs",
+      "src/runtime_transaction/**/*.rs"
+    ],
+    "build": [
+      "build.rs",
+      "build_config.rs"
+    ],
+    "testOnly": [
+      "src/**/tests.rs",
+      "src/**/tests/**/*.rs",
+      "src/**/test_support.rs",
+      "src/backend_lifecycle_tests.rs",
+      "src/performance_harness.rs",
+      "src/public_boundary_tests.rs",
+      "src/soak_harness.rs"
+    ]
+  },
+  "rootWorkflowSymbols": [
+    "release_app_maintenance",
+    "acquire_app_maintenance",
+    "run_tracked_command",
+    "readiness_from_status",
+    "record_runtime_readiness",
+    "record_download_progress",
+    "finalize_download",
+    "record_event_delivery_failure",
+    "record_download_cleanup_warning",
+    "begin_inspection",
+    "finalize_inspection_result",
+    "bounded_inspection",
+    "execute_inspection",
+    "cancel_all_downloads",
+    "get_app_snapshot",
+    "add_inspection_result_to_queue",
+    "update_queue_item",
+    "remove_queue_items",
+    "enqueue_queue_items",
+    "cancel_unregistered_operations",
+    "cancel_operation",
+    "dismiss_operation",
+    "check_downloader_runtime",
+    "check_runtime_update",
+    "runtime_check_error",
+    "begin_runtime_update",
+    "default_download_dir",
+    "validate_output_directory",
+    "display_output_directory",
+    "check_for_app_update",
+    "check_app_update",
+    "begin_app_update",
+    "launch_verified_installer",
+    "export_diagnostics",
+    "clear_diagnostics",
+    "report_startup_failure"
+  ]
+}

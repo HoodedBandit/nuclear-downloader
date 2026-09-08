@@ -192,6 +192,25 @@ async fn command() {
             errors,
         )
 
+    def test_cfg_classification_requires_test_instead_of_matching_its_name(self):
+        entries = self.scan_fixture(
+            r'''
+#[cfg(not(test))] fn not_test() {}
+#[cfg(any(test, windows))] fn test_or_windows() {}
+#[cfg(all(test, windows))] fn test_and_windows() {}
+#[cfg(test)] mod inherited { fn helper() {} }
+#[cfg(all(any(test, windows), all(test, not(unix))))] fn nested_requires_test() {}
+#[cfg(any(all(test, windows), feature = "fixture"))] fn nested_can_be_production() {}
+'''
+        )
+        classified = {entry["symbol"]: entry["classification"] for entry in entries}
+        self.assertEqual(classified["not_test"], "production")
+        self.assertEqual(classified["test_or_windows"], "production")
+        self.assertEqual(classified["test_and_windows"], "test_support")
+        self.assertEqual(classified["helper"], "test_support")
+        self.assertEqual(classified["nested_requires_test"], "test_support")
+        self.assertEqual(classified["nested_can_be_production"], "production")
+
 
 if __name__ == "__main__":
     unittest.main()

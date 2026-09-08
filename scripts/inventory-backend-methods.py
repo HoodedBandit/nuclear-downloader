@@ -189,6 +189,84 @@ def cfgs_before(text: str, masked: str, offset: int) -> list[str]:
     ]
 
 
+def cfg_value_options(expression: str) -> set[bool]:
+    """Over-approximate cfg results with the `test` predicate fixed false.
+
+    Other predicates remain unknown. Over-approximation is intentional: a
+    parse gap may keep production code visible, but can never hide it as test
+    support.
+    """
+    values = [token[0] for token in tokens(expression)]
+
+    def parse_at(position: int) -> tuple[set[bool], int]:
+        if position >= len(values):
+            raise ValueError("missing cfg expression")
+        name = values[position]
+        if name in ("all", "any", "not") and position + 1 < len(values) and values[position + 1] == "(":
+            position += 2
+            children: list[set[bool]] = []
+            while position < len(values) and values[position] != ")":
+                child, position = parse_at(position)
+                children.append(child)
+                if position < len(values) and values[position] == ",":
+                    position += 1
+                elif position < len(values) and values[position] != ")":
+                    raise ValueError("malformed cfg list")
+            if position >= len(values) or values[position] != ")":
+                raise ValueError("unterminated cfg expression")
+            position += 1
+            if name == "not":
+                if len(children) != 1:
+                    raise ValueError("not() requires one cfg expression")
+                return {not value for value in children[0]}, position
+            if name == "all":
+                possible = set()
+                if all(True in child for child in children):
+                    possible.add(True)
+                if any(False in child for child in children):
+                    possible.add(False)
+                return possible, position
+            possible = set()
+            if any(True in child for child in children):
+                possible.add(True)
+            if all(False in child for child in children):
+                possible.add(False)
+            return possible, position
+
+        start = position
+        depth = 0
+        while position < len(values):
+            value = values[position]
+            if depth == 0 and value in (",", ")"):
+                break
+            if value == "(":
+                depth += 1
+            elif value == ")" and depth:
+                depth -= 1
+            position += 1
+        atom = values[start:position]
+        if atom == ["test"]:
+            return {False}, position
+        return {False, True}, position
+
+    try:
+        possible, end = parse_at(0)
+        if end != len(values):
+            return {False, True}
+        return possible or {False, True}
+    except (IndexError, ValueError):
+        return {False, True}
+
+
+def cfg_requires_test(expression: str) -> bool:
+    """Return true only when a cfg cannot be true with `test=false`."""
+    return True not in cfg_value_options(expression)
+
+
+def cfgs_require_test(expressions: Iterable[str]) -> bool:
+    return any(cfg_requires_test(expression) for expression in expressions)
+
+
 def find_header_end(stream: list[tuple[str, int, int]], start: int) -> tuple[int | None, str | None]:
     paren = bracket = angle = 0
     for index in range(start, len(stream)):
@@ -205,13 +283,10 @@ def find_header_end(stream: list[tuple[str, int, int]], start: int) -> tuple[int
 
 
 def classify(path: str, name: str, cfg: Iterable[str], attributes: str, containers: list[dict[str, Any]]) -> str:
-    joined_cfg = " ".join(cfg)
-    module_names = {container.get("name", "") for container in containers if container["kind"] == "module"}
+    del path, name, containers
     if re.search(r"#\s*\[\s*(?:tokio::)?test(?:\s*\(|\s*\])", attributes):
         return "test"
-    if path.endswith(("performance_harness.rs", "soak_harness.rs")):
-        return "test_support"
-    if "test" in joined_cfg or "tests" in module_names or name.endswith("_for_test") or name.startswith("assert_"):
+    if cfgs_require_test(cfg):
         return "test_support"
     return "production"
 
