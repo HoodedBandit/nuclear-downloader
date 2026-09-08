@@ -6,6 +6,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$After,
 
+    [ValidateSet('overhaul', 'maintainability')]
+    [string]$ComparisonMode = 'overhaul',
+
     [string]$OutputRoot,
 
     [Nullable[long]]$MaxEventBacklogBytes = $null,
@@ -126,12 +129,35 @@ function New-NumericComparison {
         [AllowNull()][string]$Percentile,
         [Parameter(Mandatory = $true)][double]$BaselineValue,
         [Parameter(Mandatory = $true)][double]$AfterValue,
-        [Parameter(Mandatory = $true)][string]$Unit,
-        [bool]$Timing = $false
+        [Parameter(Mandatory = $true)][string]$Unit
     )
     $delta = $AfterValue - $BaselineValue
     $ratio = if ($BaselineValue -eq 0) { $null } else { $AfterValue / $BaselineValue }
     $percentChange = if ($null -eq $ratio) { $null } else { ($ratio - 1.0) * 100.0 }
+    $reviewRequired = $false
+    $reviewThreshold = $null
+    if ($ComparisonMode -ceq 'overhaul') {
+        if ($Category -in @('latency', 'blocked_io')) {
+            $reviewThreshold = 'any positive timing increase'
+            $reviewRequired = $delta -gt 0
+        }
+    }
+    else {
+        $relativeIncrease = if ($BaselineValue -eq 0) {
+            $AfterValue -gt 0
+        }
+        else {
+            $percentChange -gt 10.0
+        }
+        if ($Category -in @('latency', 'blocked_io')) {
+            $reviewThreshold = '>10% and >0.1 ms increase; positive-from-zero counts as a relative increase'
+            $reviewRequired = $relativeIncrease -and $delta -gt 100.0
+        }
+        elseif ($Category -eq 'memory') {
+            $reviewThreshold = '>10% and >2 MiB increase; positive-from-zero counts as a relative increase'
+            $reviewRequired = $relativeIncrease -and $delta -gt 2MB
+        }
+    }
     return [ordered]@{
         category = $Category
         scope = $Scope
@@ -144,7 +170,8 @@ function New-NumericComparison {
         ratio = $ratio
         percentChange = $percentChange
         direction = if ($delta -lt 0) { 'decreased' } elseif ($delta -gt 0) { 'increased' } else { 'unchanged' }
-        reviewRequired = $Timing -and $delta -gt 0
+        reviewRequired = $reviewRequired
+        reviewThreshold = $reviewThreshold
         releaseGate = $false
     }
 }
@@ -162,7 +189,8 @@ function Escape-Markdown {
     return ([string]$Value).Replace('|', '\|').Replace("`r", ' ').Replace("`n", ' ')
 }
 
-$baselineRun = Read-PerformanceRun -Path $Baseline -ExpectedLabel 'baseline'
+$expectedBaselineLabel = if ($ComparisonMode -ceq 'maintainability') { 'after' } else { 'baseline' }
+$baselineRun = Read-PerformanceRun -Path $Baseline -ExpectedLabel $expectedBaselineLabel
 $afterRun = Read-PerformanceRun -Path $After -ExpectedLabel 'after'
 
 Require-Evidence -Condition ([string]$baselineRun.profile -ceq [string]$afterRun.profile) `
@@ -237,8 +265,7 @@ for ($index = 0; $index -lt $baselineRun.states.Count; $index++) {
                 -Percentile $percentile `
                 -BaselineValue ([double]$baselineState.metrics.latencyMicros.$metric.$percentile) `
                 -AfterValue ([double]$afterState.metrics.latencyMicros.$metric.$percentile) `
-                -Unit 'microseconds' `
-                -Timing $true)) | Out-Null
+                -Unit 'microseconds')) | Out-Null
         }
     }
 
@@ -249,7 +276,7 @@ for ($index = 0; $index -lt $baselineRun.states.Count; $index++) {
         -Category 'blocked_io' -Scope $scope -Metric 'snapshot' -Percentile $null `
         -BaselineValue ([double]$baselineState.metrics.blockedJournalSnapshot.latencyMicros) `
         -AfterValue ([double]$afterState.metrics.blockedJournalSnapshot.latencyMicros) `
-        -Unit 'microseconds' -Timing $true)) | Out-Null
+        -Unit 'microseconds')) | Out-Null
 
     $expectedDeltaCount = $queueSize * 2
     Add-HardGate -List $hardGates -Name 'event_sequence_contiguous' -Scope $scope `
@@ -352,6 +379,12 @@ foreach ($field in $hashFields) {
         -BaselineValue ([double]$baselineRun.runtime.metrics.hashes.$field) `
         -AfterValue ([double]$afterRun.runtime.metrics.hashes.$field) `
         -Unit $(if ($field.EndsWith('Bytes')) { 'bytes' } else { 'count' }))) | Out-Null
+    if ($ComparisonMode -ceq 'maintainability') {
+        Add-HardGate -List $hardGates -Name 'maintainability_runtime_hash_count_preserved' -Scope "runtime/$field" `
+            -Passed ([int64]$afterRun.runtime.metrics.hashes.$field -eq [int64]$baselineRun.runtime.metrics.hashes.$field) `
+            -Expected ([int64]$baselineRun.runtime.metrics.hashes.$field) `
+            -Actual ([int64]$afterRun.runtime.metrics.hashes.$field)
+    }
 }
 foreach ($field in @('resolutionCalls', 'successfulResolutions')) {
     $comparisons.Add((New-NumericComparison `
@@ -377,7 +410,9 @@ Add-HardGate -List $hardGates -Name 'unchanged_leased_operations_add_no_executab
     -Expected 0 -Actual $additionalExecutableHashes
 
 $hardGateFailures = @($hardGates | Where-Object { -not $_.passed })
-$timingReviewRows = @($comparisons | Where-Object { $_.category -in @('latency', 'blocked_io') -and $_.reviewRequired })
+$reviewRows = @($comparisons | Where-Object { $_.reviewRequired })
+$timingReviewRows = @($reviewRows | Where-Object { $_.category -in @('latency', 'blocked_io') })
+$memoryReviewRows = @($reviewRows | Where-Object { $_.category -ceq 'memory' })
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $stamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ')
@@ -392,6 +427,7 @@ New-Item -ItemType Directory -Path $OutputRoot | Out-Null
 $result = [ordered]@{
     schemaVersion = 1
     benchmark = 'backend_performance_comparison'
+    comparisonMode = $ComparisonMode
     recordedAtUnixMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     profile = [string]$baselineRun.profile
     baseline = [ordered]@{ path = $baselineRun.path; artifacts = $baselineRun.artifacts }
@@ -413,9 +449,20 @@ $result = [ordered]@{
     }
     hardGateStatus = if ($hardGateFailures.Count -eq 0) { 'passed' } else { 'failed' }
     hardGates = @($hardGates)
-    performanceReviewRequired = $timingReviewRows.Count -gt 0
+    performanceReviewRequired = $reviewRows.Count -gt 0
+    performanceReviewStatus = if ($reviewRows.Count -gt 0) { 'review_required' } else { 'passed' }
+    performanceReviewCount = $reviewRows.Count
     timingReviewCount = $timingReviewRows.Count
-    note = 'Timing changes are informational and never determine hardGateStatus.'
+    memoryReviewCount = $memoryReviewRows.Count
+    note = if ($ComparisonMode -ceq 'overhaul') {
+        'Timing changes are informational and never determine hardGateStatus.'
+    }
+    elseif ($reviewRows.Count -gt 0) {
+        'A threshold regression requires review and three matched repeat comparisons; it does not change hardGateStatus.'
+    }
+    else {
+        'No latency or memory comparison exceeded both its relative and absolute review thresholds.'
+    }
     comparisons = @($comparisons)
     afterOnlyEvidence = @($afterOnlyEvidence)
 }
@@ -428,10 +475,12 @@ $json | Set-Content -LiteralPath $jsonPath -Encoding utf8
 $markdown = [Collections.Generic.List[string]]::new()
 $markdown.Add('# Backend performance comparison')
 $markdown.Add('')
+$markdown.Add("- Comparison mode: ``$($result.comparisonMode)``")
 $markdown.Add("- Profile: ``$($result.profile)``")
 $markdown.Add("- Hard gates: **$($result.hardGateStatus)**")
-$markdown.Add("- Timing rows requiring review: $($result.timingReviewCount)")
-$markdown.Add('- Timing changes are informational and do not determine the hard-gate result.')
+$markdown.Add("- Performance review: **$($result.performanceReviewStatus)**")
+$markdown.Add("- Performance rows requiring review: $($result.performanceReviewCount) (latency $($result.timingReviewCount), memory $($result.memoryReviewCount))")
+$markdown.Add("- $($result.note)")
 $markdown.Add('')
 $markdown.Add('## Hard gates')
 $markdown.Add('')
