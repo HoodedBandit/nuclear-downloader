@@ -2,7 +2,7 @@ use super::process::DownloadJob;
 use super::{normalize_filename_override, sanitize_filename_component, MAX_ACTIONABLE_FIELD_BYTES};
 use crate::models::DownloadRequest;
 use serde::Deserialize;
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
@@ -13,6 +13,17 @@ const STAGING_CLEANUP_PREFIX: &str = ".cleanup-";
 const FINAL_OUTPUT_RECORD_NAME: &str = ".nuclear-final-output-v1.jsonl";
 const MAX_FINAL_OUTPUT_RECORD_BYTES: u64 = 64 * 1024;
 const MAX_STAGING_MARKER_BYTES: u64 = 4 * 1024;
+
+#[cfg(test)]
+type MarkerInitializationHook = Box<dyn FnOnce(&Path) -> Result<(), String>>;
+
+#[cfg(test)]
+thread_local! {
+    static TEST_MARKER_INITIALIZATION_FAILURE: std::cell::RefCell<Option<MarkerInitializationHook>> = const { std::cell::RefCell::new(None) };
+    static TEST_PARTIAL_MARKER_WRITE_FAILURE: std::cell::Cell<bool> = const {
+        std::cell::Cell::new(false)
+    };
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -69,23 +80,221 @@ pub(super) fn reset_staging_dir(
     mark_hidden(&root)?;
     std::fs::create_dir(&operation_path)
         .map_err(|error| format!("Failed to create staging folder: {error}"))?;
-    let marker = serde_json::json!({
-        "schemaVersion": 1,
-        "owner": "nuclear-downloader",
-        "operationId": normalized_id,
-    });
-    let marker_bytes = serde_json::to_vec(&marker).map_err(|error| error.to_string())?;
-    let mut marker_file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(operation_path.join(STAGING_MARKER_NAME))
-        .map_err(|error| format!("Failed to create staging ownership marker: {error}"))?;
-    marker_file
-        .write_all(&marker_bytes)
-        .and_then(|()| marker_file.sync_all())
-        .map_err(|error| format!("Failed to write staging ownership marker: {error}"))?;
+    // Windows does not expose an atomic std create-directory-and-open-handle
+    // operation. A same-user actor monitoring this private staging parent
+    // could replace the UUID directory in that short gap; that actor is
+    // outside the supported filesystem trust boundary. The retained handle
+    // fixes identity from this point on.
+    let directory_lease = match NewStagingDirectoryLease::open(&operation_path) {
+        Ok(lease) => lease,
+        Err(error) => {
+            return Err(format!(
+                "Failed to secure the newly-created staging folder: {error} The folder was preserved."
+            ));
+        }
+    };
+    let mut marker_file = None;
+    let marker_initialization = (|| {
+        #[cfg(test)]
+        TEST_MARKER_INITIALIZATION_FAILURE.with(|hook| {
+            if let Some(hook) = hook.borrow_mut().take() {
+                hook(&operation_path)?;
+            }
+            Ok::<(), String>(())
+        })?;
+        let marker = serde_json::json!({
+            "schemaVersion": 1,
+            "owner": "nuclear-downloader",
+            "operationId": normalized_id,
+        });
+        let marker_bytes = serde_json::to_vec(&marker).map_err(|error| error.to_string())?;
+        marker_file = Some(open_new_staging_marker(
+            &operation_path.join(STAGING_MARKER_NAME),
+        )?);
+        #[cfg(test)]
+        if TEST_PARTIAL_MARKER_WRITE_FAILURE.with(|failure| failure.replace(false)) {
+            marker_file
+                .as_mut()
+                .expect("marker handle was just stored")
+                .write_all(b"{")
+                .map_err(|error| format!("Failed to inject a partial marker write: {error}"))?;
+            return Err("forced partial marker write failure".to_string());
+        }
+        let marker_file = marker_file
+            .as_mut()
+            .expect("marker handle was stored before initialization");
+        marker_file
+            .write_all(&marker_bytes)
+            .and_then(|()| marker_file.sync_all())
+            .map_err(|error| format!("Failed to write staging ownership marker: {error}"))?;
+        verify_opened_staging_marker(marker_file, &operation_path, &normalized_id, true)
+    })();
+    if let Err(error) = marker_initialization {
+        return match directory_lease.rollback(marker_file) {
+            Ok(()) => Err(error),
+            Err(rollback_error) => Err(format!(
+                "{error} The incomplete staging folder was preserved ({rollback_error})."
+            )),
+        };
+    }
     drop(marker_file);
-    verify_staging_marker(&operation_path, &normalized_id)
+    drop(directory_lease);
+    Ok(())
+}
+
+fn open_new_staging_marker(path: &Path) -> Result<std::fs::File, String> {
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true).write(true).create_new(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const DELETE: u32 = 0x0001_0000;
+        const GENERIC_READ: u32 = 0x8000_0000;
+        const GENERIC_WRITE: u32 = 0x4000_0000;
+        const FILE_SHARE_READ: u32 = 0x0000_0001;
+        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+        options
+            .access_mode(GENERIC_READ | GENERIC_WRITE | DELETE)
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    }
+    options
+        .open(path)
+        .map_err(|error| format!("Failed to create staging ownership marker: {error}"))
+}
+
+struct NewStagingDirectoryLease {
+    path: PathBuf,
+    #[cfg(windows)]
+    handle: std::fs::File,
+}
+
+impl NewStagingDirectoryLease {
+    fn open(path: &Path) -> Result<Self, String> {
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            const DELETE: u32 = 0x0001_0000;
+            const FILE_READ_ATTRIBUTES: u32 = 0x0000_0080;
+            const FILE_SHARE_READ: u32 = 0x0000_0001;
+            const FILE_SHARE_WRITE: u32 = 0x0000_0002;
+            const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+            const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+
+            let mut options = std::fs::OpenOptions::new();
+            options
+                .read(true)
+                .access_mode(FILE_READ_ATTRIBUTES | DELETE)
+                .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+                .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT);
+            let handle = options
+                .open(path)
+                .map_err(|error| format!("Could not lease staging directory: {error}"))?;
+            let metadata = handle
+                .metadata()
+                .map_err(|error| format!("Could not inspect leased staging directory: {error}"))?;
+            if !metadata.is_dir() || is_reparse_metadata(&metadata) {
+                return Err("The leased staging path was not a regular directory.".into());
+            }
+            Ok(Self {
+                path: path.to_path_buf(),
+                handle,
+            })
+        }
+        #[cfg(not(windows))]
+        {
+            Ok(Self {
+                path: path.to_path_buf(),
+            })
+        }
+    }
+
+    fn rollback(self, marker_file: Option<std::fs::File>) -> Result<(), String> {
+        #[cfg(windows)]
+        {
+            let expected_entries = usize::from(marker_file.is_some());
+            let entries = std::fs::read_dir(&self.path)
+                .map_err(|error| format!("Could not inspect rollback entries: {error}"))?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|error| format!("Could not inspect a rollback entry: {error}"))?;
+            if entries.len() != expected_entries
+                || entries.iter().any(|entry| {
+                    marker_file.is_none()
+                        || entry.file_name().as_os_str() != STAGING_MARKER_NAME
+                        || entry
+                            .file_type()
+                            .map(|kind| !kind.is_file() || kind.is_symlink())
+                            .unwrap_or(true)
+                })
+            {
+                return Err("rollback found unexpected staging content".into());
+            }
+
+            if let Some(marker_file) = marker_file {
+                let marker_path = self.path.join(STAGING_MARKER_NAME);
+                verify_opened_marker_identity(&marker_file, &marker_path)?;
+                mark_open_handle_for_deletion(&marker_file)?;
+                drop(marker_file);
+            }
+            if std::fs::read_dir(&self.path)
+                .map_err(|error| format!("Could not re-inspect rollback directory: {error}"))?
+                .next()
+                .is_some()
+            {
+                return Err("rollback directory was no longer empty".into());
+            }
+            mark_open_handle_for_deletion(&self.handle)?;
+            drop(self);
+            Ok(())
+        }
+        #[cfg(not(windows))]
+        {
+            let _ = marker_file;
+            Err("safe handle-bound rollback is unavailable on this platform".into())
+        }
+    }
+}
+
+#[cfg(windows)]
+fn mark_open_handle_for_deletion(file: &std::fs::File) -> Result<(), String> {
+    use std::ffi::c_void;
+    use std::os::windows::io::AsRawHandle;
+
+    const FILE_DISPOSITION_INFO_CLASS: i32 = 4;
+
+    #[repr(C)]
+    struct FileDispositionInfo {
+        delete_file: u8,
+    }
+
+    #[link(name = "Kernel32")]
+    unsafe extern "system" {
+        fn SetFileInformationByHandle(
+            file: *mut c_void,
+            class: i32,
+            information: *const c_void,
+            size: u32,
+        ) -> i32;
+    }
+
+    let disposition = FileDispositionInfo { delete_file: 1 };
+    // SAFETY: the handle remains valid for this call and `disposition` has the
+    // layout and size required by FILE_DISPOSITION_INFO.
+    if unsafe {
+        SetFileInformationByHandle(
+            file.as_raw_handle(),
+            FILE_DISPOSITION_INFO_CLASS,
+            (&raw const disposition).cast(),
+            std::mem::size_of::<FileDispositionInfo>() as u32,
+        )
+    } == 0
+    {
+        return Err(format!(
+            "Could not mark an owned staging handle for deletion: {}",
+            std::io::Error::last_os_error()
+        ));
+    }
+    Ok(())
 }
 
 fn cleanup_staging_dir(path: &Path, output_dir: &Path, operation_id: &str) -> Result<(), String> {
@@ -224,6 +433,7 @@ fn validate_staging_layout(
     Ok((root, operation_path, normalized_id))
 }
 
+#[cfg(test)]
 fn verify_staging_marker(path: &Path, expected_operation_id: &str) -> Result<(), String> {
     verify_staging_marker_with_name_policy(path, expected_operation_id, true)
 }
@@ -235,6 +445,21 @@ fn verify_staging_marker_with_name_policy(
 ) -> Result<(), String> {
     let marker_path = path.join(STAGING_MARKER_NAME);
     let mut marker_file = open_staging_marker(&marker_path)?;
+    verify_opened_staging_marker(
+        &mut marker_file,
+        path,
+        expected_operation_id,
+        require_operation_name,
+    )
+}
+
+fn verify_opened_staging_marker(
+    marker_file: &mut std::fs::File,
+    directory: &Path,
+    expected_operation_id: &str,
+    require_operation_name: bool,
+) -> Result<(), String> {
+    let marker_path = directory.join(STAGING_MARKER_NAME);
     let marker_metadata = marker_file
         .metadata()
         .map_err(|_| "Staging ownership marker could not be inspected.".to_string())?;
@@ -242,17 +467,20 @@ fn verify_staging_marker_with_name_policy(
         return Err("Staging ownership marker exceeded the 4 KiB limit.".into());
     }
     let mut marker_bytes = Vec::with_capacity(marker_metadata.len() as usize);
-    (&mut marker_file)
+    marker_file
+        .seek(std::io::SeekFrom::Start(0))
+        .map_err(|_| "Staging ownership marker could not be read.".to_string())?;
+    (&mut *marker_file)
         .take(MAX_STAGING_MARKER_BYTES + 1)
         .read_to_end(&mut marker_bytes)
         .map_err(|_| "Staging ownership marker could not be read.".to_string())?;
     if marker_bytes.len() as u64 > MAX_STAGING_MARKER_BYTES {
         return Err("Staging ownership marker exceeded the 4 KiB limit.".into());
     }
-    verify_opened_marker_identity(&marker_file, &marker_path)?;
+    verify_opened_marker_identity(marker_file, &marker_path)?;
     let marker: serde_json::Value = serde_json::from_slice(&marker_bytes)
         .map_err(|_| "Staging ownership marker was invalid.".to_string())?;
-    let directory_id = path.file_name().and_then(|name| name.to_str());
+    let directory_id = directory.file_name().and_then(|name| name.to_str());
     if marker["schemaVersion"] != 1
         || marker["owner"] != "nuclear-downloader"
         || marker["operationId"] != expected_operation_id
@@ -301,6 +529,8 @@ fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<
     use std::os::windows::io::AsRawHandle;
 
     const FILE_SHARE_READ: u32 = 0x0000_0001;
+    const FILE_SHARE_WRITE: u32 = 0x0000_0002;
+    const FILE_SHARE_DELETE: u32 = 0x0000_0004;
     const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
 
     #[repr(C)]
@@ -354,9 +584,12 @@ fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<
         return Err("Staging ownership marker path changed while it was open.".into());
     }
     let mut options = std::fs::OpenOptions::new();
+    // This short-lived comparison handle shares all access so it can coexist
+    // with the retained writer/delete handle. The retained handle's narrower
+    // share mode still prevents external mutation or replacement.
     options
         .read(true)
-        .share_mode(FILE_SHARE_READ)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE)
         .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
     let current = options
         .open(path)
@@ -1223,6 +1456,84 @@ mod tests {
 
         assert!(cleanup_staging_dir(&stage, &output, &operation_id).is_err());
         assert!(stage.join("keep.txt").is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn marker_initialization_failure_removes_the_empty_new_stage() {
+        let output = std::env::temp_dir().join(format!(
+            "nuclear-stage-marker-init-failure-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&output).unwrap();
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = build_staging_dir(&output, &operation_id);
+        super::TEST_MARKER_INITIALIZATION_FAILURE.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(|_| Err("forced marker failure".to_string())));
+        });
+
+        let error = reset_staging_dir(&stage, &output, &operation_id).unwrap_err();
+
+        assert!(error.contains("forced marker failure"));
+        assert!(
+            !stage.exists(),
+            "failed initialization left a blocking stage"
+        );
+
+        reset_staging_dir(&stage, &output, &operation_id).unwrap();
+        assert!(stage.join(STAGING_MARKER_NAME).is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn partial_marker_failure_removes_only_the_handle_owned_stage() {
+        let output = std::env::temp_dir().join(format!(
+            "nuclear-stage-partial-marker-failure-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&output).unwrap();
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = build_staging_dir(&output, &operation_id);
+        super::TEST_PARTIAL_MARKER_WRITE_FAILURE.with(|failure| failure.set(true));
+
+        let error = reset_staging_dir(&stage, &output, &operation_id).unwrap_err();
+
+        assert!(error.contains("forced partial marker write failure"));
+        assert!(
+            !stage.exists(),
+            "owned partial marker and stage were not rolled back"
+        );
+        reset_staging_dir(&stage, &output, &operation_id).unwrap();
+        assert!(stage.join(STAGING_MARKER_NAME).is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[test]
+    fn marker_initialization_rollback_preserves_unexpected_content() {
+        let output = std::env::temp_dir().join(format!(
+            "nuclear-stage-marker-rollback-preserve-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&output).unwrap();
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = build_staging_dir(&output, &operation_id);
+        super::TEST_MARKER_INITIALIZATION_FAILURE.with(|hook| {
+            *hook.borrow_mut() = Some(Box::new(|stage| {
+                std::fs::write(stage.join("unexpected.txt"), b"preserve me").unwrap();
+                Err("forced marker failure with unexpected content".to_string())
+            }));
+        });
+
+        let error = reset_staging_dir(&stage, &output, &operation_id).unwrap_err();
+
+        assert!(error.contains("forced marker failure with unexpected content"));
+        assert!(error.contains("incomplete staging folder was preserved"));
+        assert_eq!(
+            std::fs::read(stage.join("unexpected.txt")).unwrap(),
+            b"preserve me"
+        );
         let _ = std::fs::remove_dir_all(output);
     }
 
