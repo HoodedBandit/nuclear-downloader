@@ -726,8 +726,12 @@ def merge_sidecars(current: dict[str, Any], reviews_dir: Path) -> None:
             if target is None:
                 raise ValueError(f"stale sidecar entry not in source inventory: {entry_id}")
             for identity in IDENTITY_FIELDS:
-                supplied = review.get(identity)
-                if supplied is not None and supplied != target.get(identity):
+                if identity not in review:
+                    raise ValueError(
+                        f"missing generated identity {identity} for {entry_id} in {path}"
+                    )
+                supplied = review[identity]
+                if supplied != target.get(identity):
                     raise ValueError(f"stale {identity} for {entry_id} in {path}")
             for field in REVIEW_FIELDS:
                 if field in review:

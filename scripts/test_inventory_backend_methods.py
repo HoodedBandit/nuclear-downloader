@@ -153,6 +153,10 @@ async fn command() {
         }]}
         with tempfile.TemporaryDirectory() as temporary:
             reviews = Path(temporary)
+            generated = {
+                field: current["entries"][0].get(field)
+                for field in MODULE.IDENTITY_FIELDS
+            }
             for field, bad in (
                 ("signature", "fn run(value: u8)"),
                 ("classification", "test"),
@@ -160,10 +164,37 @@ async fn command() {
             ):
                 sidecar = {
                     "schemaVersion": 1,
-                    "entries": [{"id": "src/lib.rs::run[cfg=all]", field: bad}],
+                    "entries": [{
+                        "id": "src/lib.rs::run[cfg=all]",
+                        **generated,
+                        field: bad,
+                    }],
                 }
                 (reviews / "review.json").write_text(json.dumps(sidecar), encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, f"stale {field}"):
+                    MODULE.merge_sidecars(current, reviews)
+
+    def test_sidecar_must_supply_every_generated_identity(self):
+        source = {
+            "id": "src/lib.rs::run[cfg=all]",
+            "kind": "free_function", "classification": "production",
+            "file": "src/lib.rs", "line": 1, "endLine": 1,
+            "symbol": "run", "qualifiedName": "run", "signature": "fn run()",
+            "sourceDigest": "digest", "cfg": [], **MODULE.empty_review(),
+        }
+        current = {"entries": [source]}
+        complete_identity = {
+            "id": source["id"],
+            **{field: source.get(field) for field in MODULE.IDENTITY_FIELDS},
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            reviews = Path(temporary)
+            for missing in MODULE.IDENTITY_FIELDS:
+                review = dict(complete_identity)
+                del review[missing]
+                sidecar = {"schemaVersion": 1, "entries": [review]}
+                (reviews / "review.json").write_text(json.dumps(sidecar), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, f"missing generated identity {missing}"):
                     MODULE.merge_sidecars(current, reviews)
 
     def test_final_validation_requires_explicit_review_evidence_for_test_rows(self):

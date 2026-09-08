@@ -83,14 +83,17 @@ The sidecar shape is:
 }
 ```
 
-Sidecar identity fields must match the generated inventory. A uniquely moved
-exact source body is identified, but remains pending because callers, visibility,
-and ownership context may have changed.
+Every sidecar entry must include every generated identity field and each value
+must exactly match the current generated inventory. This includes an explicit
+`ownerCall: null` when the row has no owning call. Missing identity fields are
+rejected rather than populated during merge, so an old reviewed sidecar cannot
+silently bless a changed signature, classification, kind, cfg list, owner call,
+source location, or digest. Copy current identity fields only after reviewing
+the current source span and its caller/ownership context.
 
-Every generated identity field supplied by a sidecar is checked exactly. A
-sidecar cannot replace a generated signature, classification, kind, cfg list,
-owner call, source location, or digest. The final check also compares every
-recorded generated identity with a fresh source scan.
+A uniquely moved exact source body is identified, but remains pending because
+callers, visibility, and ownership context may have changed. The final check
+also compares every recorded generated identity with a fresh source scan.
 
 ## Commands
 
