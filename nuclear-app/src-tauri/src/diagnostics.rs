@@ -2,9 +2,11 @@ use crate::app_error::AppError;
 use crate::journal::now_ms;
 use regex::Regex;
 use serde::Serialize;
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::{Duration, SystemTime};
 
@@ -34,6 +36,8 @@ pub struct Diagnostics {
 struct DiagnosticsInner {
     directory: PathBuf,
     lock: Mutex<()>,
+    #[cfg(test)]
+    fail_next_export_after_copy: AtomicBool,
 }
 
 #[derive(Serialize)]
@@ -65,6 +69,8 @@ impl Diagnostics {
             inner: Arc::new(DiagnosticsInner {
                 directory,
                 lock: Mutex::new(()),
+                #[cfg(test)]
+                fail_next_export_after_copy: AtomicBool::new(false),
             }),
         };
         diagnostics.cleanup_expired();
@@ -103,36 +109,55 @@ impl Diagnostics {
             .lock
             .lock()
             .map_err(|_| AppError::internal("The diagnostics writer is unavailable."))?;
-        let mut output = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(destination)
-            .map_err(|error| {
+        let mut output = open_export_destination(destination).map_err(|error| {
+            AppError::new(
+                "diagnostics_export_failed",
+                "Could not create the diagnostics export file.",
+            )
+            .with_detail(error.kind().to_string())
+        })?;
+
+        let export = (|| -> Result<(), AppError> {
+            for index in (0..MAX_LOG_FILES).rev() {
+                let source = self.log_path(index);
+                if !source.is_file() {
+                    continue;
+                }
+                let mut input = fs::File::open(&source).map_err(|error| {
+                    AppError::internal("Could not read a diagnostics log.")
+                        .with_detail(error.kind().to_string())
+                })?;
+                std::io::copy(&mut input, &mut output).map_err(|error| {
+                    AppError::internal("Could not write the diagnostics export.")
+                        .with_detail(error.kind().to_string())
+                })?;
+                #[cfg(test)]
+                if self
+                    .inner
+                    .fail_next_export_after_copy
+                    .swap(false, Ordering::SeqCst)
+                {
+                    return Err(AppError::internal(
+                        "Could not write the diagnostics export.",
+                    ));
+                }
+            }
+            output.sync_all().map_err(|error| {
+                AppError::internal("Could not flush the diagnostics export.")
+                    .with_detail(error.kind().to_string())
+            })
+        })();
+        if export.is_err() {
+            discard_failed_export(&output, destination).map_err(|error| {
                 AppError::new(
-                    "diagnostics_export_failed",
-                    "Could not create the diagnostics export file.",
+                    "diagnostics_export_cleanup_failed",
+                    "Could not remove the incomplete diagnostics export.",
                 )
                 .with_detail(error.kind().to_string())
-            })?;
-
-        for index in (0..MAX_LOG_FILES).rev() {
-            let source = self.log_path(index);
-            if !source.is_file() {
-                continue;
-            }
-            let mut input = fs::File::open(&source).map_err(|error| {
-                AppError::internal("Could not read a diagnostics log.")
-                    .with_detail(error.kind().to_string())
-            })?;
-            std::io::copy(&mut input, &mut output).map_err(|error| {
-                AppError::internal("Could not write the diagnostics export.")
-                    .with_detail(error.kind().to_string())
+                .retryable(true)
             })?;
         }
-        output.sync_all().map_err(|error| {
-            AppError::internal("Could not flush the diagnostics export.")
-                .with_detail(error.kind().to_string())
-        })
+        export
     }
 
     pub fn clear(&self) -> Result<(), AppError> {
@@ -203,6 +228,87 @@ impl Diagnostics {
                 .join(format!("{LOG_PREFIX}.{index}.jsonl"))
         }
     }
+
+    #[cfg(test)]
+    fn fail_next_export_after_copy_for_test(&self) {
+        self.inner
+            .fail_next_export_after_copy
+            .store(true, Ordering::SeqCst);
+    }
+}
+
+fn open_export_destination(destination: &Path) -> std::io::Result<File> {
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const DELETE_ACCESS: u32 = 0x0001_0000;
+        const GENERIC_WRITE_ACCESS: u32 = 0x4000_0000;
+        options
+            .access_mode(GENERIC_WRITE_ACCESS | DELETE_ACCESS)
+            .share_mode(0);
+    }
+    options.open(destination)
+}
+
+#[cfg(windows)]
+fn discard_failed_export(output: &File, _destination: &Path) -> std::io::Result<()> {
+    use std::os::windows::io::AsRawHandle;
+
+    #[repr(C)]
+    struct FileDispositionInfo {
+        delete_file: u8,
+    }
+
+    const FILE_DISPOSITION_INFO_CLASS: i32 = 4;
+    #[link(name = "Kernel32")]
+    extern "system" {
+        fn SetFileInformationByHandle(
+            file: *mut core::ffi::c_void,
+            information_class: i32,
+            information: *const core::ffi::c_void,
+            information_size: u32,
+        ) -> i32;
+    }
+
+    let information = FileDispositionInfo { delete_file: 1 };
+    // SAFETY: `output` owns a valid Windows file handle opened with DELETE access,
+    // and `information` matches the one-byte FILE_DISPOSITION_INFO ABI.
+    let result = unsafe {
+        SetFileInformationByHandle(
+            output.as_raw_handle(),
+            FILE_DISPOSITION_INFO_CLASS,
+            (&information as *const FileDispositionInfo).cast(),
+            std::mem::size_of::<FileDispositionInfo>() as u32,
+        )
+    };
+    if result == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(unix)]
+fn discard_failed_export(output: &File, destination: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::MetadataExt;
+
+    let opened = output.metadata()?;
+    let current = match fs::metadata(destination) {
+        Ok(current) => current,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error),
+    };
+    if opened.dev() == current.dev() && opened.ino() == current.ino() {
+        fs::remove_file(destination)?;
+    }
+    Ok(())
+}
+
+#[cfg(not(any(windows, unix)))]
+fn discard_failed_export(_output: &File, _destination: &Path) -> std::io::Result<()> {
+    Ok(())
 }
 
 pub fn redact(message: &str) -> String {
@@ -271,5 +377,39 @@ mod tests {
         assert!(bounded.len() <= MAX_DIAGNOSTIC_MESSAGE_BYTES);
         assert!(bounded.ends_with("...[truncated]"));
         assert!(std::str::from_utf8(bounded.as_bytes()).is_ok());
+    }
+
+    #[test]
+    fn failed_export_removes_partial_destination_and_allows_retry() {
+        let root =
+            std::env::temp_dir().join(format!("nuclear-diagnostics-{}", uuid::Uuid::new_v4()));
+        let diagnostics = Diagnostics::open(root.clone()).unwrap();
+        std::fs::write(root.join("diagnostics.jsonl"), b"{\"message\":\"test\"}\n").unwrap();
+        let destination = root.join("export.jsonl");
+
+        diagnostics.fail_next_export_after_copy_for_test();
+        assert!(diagnostics.export_to(&destination).is_err());
+        let partial_exists = destination.exists();
+        let retry = diagnostics.export_to(&destination);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert!(!partial_exists, "failed export left a partial destination");
+        assert!(retry.is_ok(), "same-path retry remained blocked");
+    }
+
+    #[test]
+    fn export_preserves_a_preexisting_destination() {
+        let root =
+            std::env::temp_dir().join(format!("nuclear-diagnostics-{}", uuid::Uuid::new_v4()));
+        let diagnostics = Diagnostics::open(root.clone()).unwrap();
+        let destination = root.join("export.jsonl");
+        std::fs::write(&destination, b"existing").unwrap();
+
+        let error = diagnostics.export_to(&destination).unwrap_err();
+        let retained = std::fs::read(&destination).unwrap();
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(error.code, "diagnostics_export_failed");
+        assert_eq!(retained, b"existing");
     }
 }
