@@ -1,6 +1,7 @@
+use super::command_args::FINAL_OUTPUT_RECORD_NAME;
+use super::naming::suffixed_output_path;
 use super::process::DownloadJob;
-use super::{normalize_filename_override, sanitize_filename_component, MAX_ACTIONABLE_FIELD_BYTES};
-use crate::models::DownloadRequest;
+use super::validation::MAX_ACTIONABLE_FIELD_BYTES;
 use serde::Deserialize;
 use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
@@ -10,7 +11,6 @@ const MAX_OUTPUT_SUFFIX: usize = 9_999;
 const STAGING_ROOT_NAME: &str = ".nuclear-downloader-staging";
 const STAGING_MARKER_NAME: &str = ".nuclear-downloader-owner-v1.json";
 const STAGING_CLEANUP_PREFIX: &str = ".cleanup-";
-const FINAL_OUTPUT_RECORD_NAME: &str = ".nuclear-final-output-v1.jsonl";
 const MAX_FINAL_OUTPUT_RECORD_BYTES: u64 = 64 * 1024;
 const MAX_STAGING_MARKER_BYTES: u64 = 4 * 1024;
 
@@ -43,16 +43,6 @@ pub(super) struct StagedOutputError {
 
 fn final_output_record_path(staging_dir: &Path) -> PathBuf {
     staging_dir.join(FINAL_OUTPUT_RECORD_NAME)
-}
-
-pub(super) fn append_final_output_record_args(args: &mut Vec<String>, staging_dir: &Path) {
-    let record_path = final_output_record_path(staging_dir)
-        .to_string_lossy()
-        .replace('\\', "/")
-        .replace('%', "%%");
-    args.push("--print-to-file".to_string());
-    args.push(r#"after_move:{"schema_version":1,"filepath":%(filepath)j}"#.to_string());
-    args.push(record_path);
 }
 
 fn staging_root(output_dir: &Path) -> PathBuf {
@@ -723,83 +713,6 @@ fn validate_staged_file(path: &Path, staging_dir: &Path) -> Result<PathBuf, Stri
     Ok(canonical_path)
 }
 
-pub(super) fn path_to_string(path: &Path) -> String {
-    path.to_string_lossy().to_string()
-}
-
-pub(super) fn build_webm_final_path(
-    request: &DownloadRequest,
-    intermediate_path: &Path,
-) -> PathBuf {
-    let filename = request
-        .filename_override
-        .as_deref()
-        .and_then(normalize_filename_override)
-        .or_else(|| {
-            intermediate_path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .and_then(sanitize_filename_component)
-        })
-        .unwrap_or_else(|| "download".to_string());
-
-    PathBuf::from(&request.output_dir).join(format!("{filename}.webm"))
-}
-
-pub(super) fn build_staged_webm_output_path(staging_dir: &Path, final_path: &Path) -> PathBuf {
-    let stem = final_path
-        .file_stem()
-        .and_then(|stem| stem.to_str())
-        .and_then(sanitize_filename_component)
-        .unwrap_or_else(|| "download".to_string());
-
-    staging_dir.join(format!("{stem}.converted.webm"))
-}
-
-pub(super) fn build_final_output_path(
-    request: &DownloadRequest,
-    staged_path: &Path,
-) -> Result<PathBuf, String> {
-    let file_name = if let Some(filename) = request
-        .filename_override
-        .as_deref()
-        .and_then(normalize_filename_override)
-    {
-        let extension = staged_path
-            .extension()
-            .and_then(|value| value.to_str())
-            .filter(|value| !value.is_empty())
-            .unwrap_or(request.format.as_str());
-        format!("{filename}.{extension}").into()
-    } else {
-        staged_path
-            .file_name()
-            .ok_or_else(|| "Downloaded file did not have a valid filename.".to_string())?
-            .to_os_string()
-    };
-
-    Ok(PathBuf::from(&request.output_dir).join(file_name))
-}
-
-fn suffixed_output_path(base_path: &Path, suffix: usize) -> PathBuf {
-    if suffix <= 1 {
-        return base_path.to_path_buf();
-    }
-
-    let stem = base_path
-        .file_stem()
-        .and_then(|value| value.to_str())
-        .and_then(sanitize_filename_component)
-        .unwrap_or_else(|| "download".to_string());
-    let extension = base_path.extension().and_then(|value| value.to_str());
-    let filename = match extension {
-        Some(extension) if !extension.is_empty() => format!("{stem} ({suffix}).{extension}"),
-        _ => format!("{stem} ({suffix})"),
-    };
-
-    base_path.with_file_name(filename)
-}
-
 pub(super) async fn publish_staged_output(
     staged_output: &Path,
     desired_path: &Path,
@@ -1134,15 +1047,13 @@ fn resolve_unambiguous_fallback(staging_dir: &Path) -> Result<PathBuf, StagedOut
 
 #[cfg(test)]
 mod tests {
-    use super::super::MAX_ACTIONABLE_FIELD_BYTES;
+    use super::super::validation::MAX_ACTIONABLE_FIELD_BYTES;
     use super::{
-        append_final_output_record_args, build_staging_dir, build_webm_final_path,
-        cleanup_abandoned_download_stages, cleanup_staging_dir, final_output_record_path,
-        publish_staged_output, reset_staging_dir, resolve_staged_output, FINAL_OUTPUT_RECORD_NAME,
+        build_staging_dir, cleanup_abandoned_download_stages, cleanup_staging_dir,
+        final_output_record_path, publish_staged_output, reset_staging_dir, resolve_staged_output,
         STAGING_MARKER_NAME, STAGING_ROOT_NAME,
     };
-    use crate::models::DownloadRequest;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     fn temp_stage() -> PathBuf {
         let path = std::env::temp_dir().join(format!(
@@ -1153,42 +1064,12 @@ mod tests {
         path
     }
 
-    fn download_request(format: &str, quality: &str) -> DownloadRequest {
-        DownloadRequest {
-            url: "https://example.com/video".into(),
-            quality: quality.into(),
-            format: format.into(),
-            output_dir: "C:\\Users\\Mr.W\\Downloads".into(),
-            cookie_config: None,
-            filename_override: None,
-            compat_config_path: None,
-        }
-    }
-
     fn write_record(stage: &std::path::Path, path: &std::path::Path) {
         let record = serde_json::json!({
             "schema_version": 1,
             "filepath": path.to_string_lossy(),
         });
         std::fs::write(final_output_record_path(stage), format!("{record}\n")).unwrap();
-    }
-
-    #[test]
-    fn output_record_args_use_after_move_json_and_escape_percent_in_record_path() {
-        let stage = PathBuf::from("C:\\Downloads\\100% Ready");
-        let mut args = Vec::new();
-
-        append_final_output_record_args(&mut args, &stage);
-
-        assert_eq!(args[0], "--print-to-file");
-        assert_eq!(
-            args[1],
-            r#"after_move:{"schema_version":1,"filepath":%(filepath)j}"#
-        );
-        assert_eq!(
-            args[2],
-            format!("C:/Downloads/100%% Ready/{FINAL_OUTPUT_RECORD_NAME}")
-        );
     }
 
     #[test]
@@ -1377,24 +1258,6 @@ mod tests {
         assert!(error.contains("4 KiB metadata limit"), "{error}");
         assert!(staged.is_file());
         let _ = std::fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn webm_final_path_uses_custom_filename_or_staged_stem() {
-        let mut request = download_request("webm", "best");
-        request.output_dir = "C:\\Users\\Mr.W\\Desktop".into();
-        request.filename_override = Some("Clip: 100%?".into());
-
-        assert_eq!(
-            build_webm_final_path(&request, Path::new("C:\\Temp\\ignored.mkv")),
-            PathBuf::from("C:\\Users\\Mr.W\\Desktop").join("Clip_ 100%_.webm")
-        );
-
-        request.filename_override = None;
-        assert_eq!(
-            build_webm_final_path(&request, Path::new("C:\\Temp\\Title [abc123].mkv")),
-            PathBuf::from("C:\\Users\\Mr.W\\Desktop").join("Title [abc123].webm")
-        );
     }
 
     #[test]

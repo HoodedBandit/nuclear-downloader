@@ -1,12 +1,13 @@
+use super::command_args::{
+    append_cookie_args, append_twitter_syndication_args, append_ytdlp_runtime_args,
+    configure_cookie_args,
+};
+use super::errors::{error_for_fetch, should_retry_with_twitter_syndication};
 use super::process::{
     record_streamed_output_bytes, wait_with_bounded_output, wait_with_streamed_stdout, DownloadJob,
     MAX_STDERR_BYTES,
 };
-use super::{
-    append_cookie_args, append_twitter_syndication_args, append_ytdlp_runtime_args,
-    configure_cookie_args, error_for_fetch, is_allowed_download_url,
-    should_retry_with_twitter_syndication, validate_fetch_request,
-};
+use super::validation::{is_allowed_download_url, validate_fetch_request};
 use crate::models::{CookieConfig, PlaylistEntry, PlaylistInfo, UrlInspection, VideoInfo};
 use serde::Deserialize;
 use serde_json::Deserializer;
