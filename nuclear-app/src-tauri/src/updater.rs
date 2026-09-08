@@ -1552,11 +1552,7 @@ fn validate_timestamp(value: &str) -> Result<(), String> {
 }
 
 fn validate_sha256(value: &str) -> Result<(), String> {
-    if value.len() != 64
-        || !value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-    {
+    if !crate::artifact_contract::is_canonical_sha256(value) {
         return Err("The signed installer SHA-256 must be 64 lowercase hexadecimal digits.".into());
     }
     Ok(())

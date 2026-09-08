@@ -1,4 +1,5 @@
 mod app_error;
+mod artifact_contract;
 #[cfg(test)]
 mod backend_lifecycle_tests;
 #[cfg(test)]

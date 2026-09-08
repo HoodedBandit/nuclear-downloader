@@ -8,6 +8,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[path = "src/artifact_contract.rs"]
+mod artifact_contract;
 mod build_config;
 
 const LOCK_PATH: &str = "sidecars.lock.json";
@@ -145,9 +147,9 @@ fn validate_sidecar_lock<'a>(
                 entry.name, entry.architecture
             );
         }
-        if entry.sha256.len() != 64 || !entry.sha256.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        if !artifact_contract::is_canonical_sha256(&entry.sha256) {
             panic!(
-                "{} sha256 must be exactly 64 hexadecimal characters",
+                "{} sha256 must be exactly 64 lowercase hexadecimal characters",
                 entry.name
             );
         }
