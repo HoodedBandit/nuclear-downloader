@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 const JOURNAL_FILE: &str = ".runtime-transaction-v1.json";
@@ -233,9 +233,26 @@ pub(crate) fn protected_update_ids(root: &Path) -> Result<HashSet<String>, Strin
         if !name.starts_with(QUARANTINE_PREFIX) || !name.ends_with(".json") {
             continue;
         }
-        ensure_regular_path(&entry.path(), false, "quarantined runtime transaction")?;
-        let bytes = std::fs::read(entry.path())
+        let path = entry.path();
+        ensure_regular_path(&path, false, "quarantined runtime transaction")?;
+        let mut file = File::open(&path)
+            .map_err(|error| format!("Failed to open quarantined runtime transaction: {error}"))?;
+        let metadata = file.metadata().map_err(|error| {
+            format!("Failed to inspect quarantined runtime transaction: {error}")
+        })?;
+        if !metadata.is_file() || is_reparse(&metadata) || metadata.len() > JOURNAL_LIMIT {
+            return Err(
+                "Quarantined runtime transaction exceeds the 64 KiB limit or is not a regular file."
+                    .into(),
+            );
+        }
+        let mut bytes = Vec::new();
+        Read::take(&mut file, JOURNAL_LIMIT + 1)
+            .read_to_end(&mut bytes)
             .map_err(|error| format!("Failed to read quarantined runtime transaction: {error}"))?;
+        if bytes.len() as u64 > JOURNAL_LIMIT {
+            return Err("Quarantined runtime transaction exceeds the 64 KiB limit.".into());
+        }
         let transaction = serde_json::from_slice::<RuntimeTransaction>(&bytes)
             .map_err(|error| format!("Failed to parse quarantined runtime transaction: {error}"))?;
         transaction.validate()?;
@@ -513,6 +530,28 @@ mod tests {
 
         assert!(quarantine(&root, &stale).is_err());
         assert_eq!(load(&root).unwrap(), Some(stored));
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn protected_update_ids_rejects_oversized_quarantine_and_preserves_it() {
+        let root = root("runtime-quarantine-bound");
+        std::fs::create_dir_all(&root).unwrap();
+        let transaction = RuntimeTransaction::new(
+            uuid::Uuid::new_v4().to_string(),
+            "2026.06.09".to_string(),
+            true,
+        )
+        .unwrap();
+        let quarantine = root.join(format!("{QUARANTINE_PREFIX}{}.json", transaction.update_id));
+        let mut bytes = serde_json::to_vec(&transaction).unwrap();
+        bytes.resize(JOURNAL_LIMIT as usize + 1, b' ');
+        std::fs::write(&quarantine, &bytes).unwrap();
+
+        let error = protected_update_ids(&root).unwrap_err();
+        assert!(error.contains("64 KiB limit"));
+        assert_eq!(std::fs::read(&quarantine).unwrap(), bytes);
+
         let _ = std::fs::remove_dir_all(root);
     }
 
