@@ -24,6 +24,8 @@ mod soak_harness;
 mod state;
 mod state_events;
 mod updater;
+#[cfg(windows)]
+mod windows_file;
 
 use app_error::AppError;
 use futures_util::FutureExt;

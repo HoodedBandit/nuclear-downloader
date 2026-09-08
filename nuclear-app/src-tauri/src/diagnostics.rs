@@ -247,40 +247,7 @@ fn open_export_destination(destination: &Path) -> std::io::Result<File> {
 
 #[cfg(windows)]
 fn discard_failed_export(output: &File, _destination: &Path) -> std::io::Result<()> {
-    use std::os::windows::io::AsRawHandle;
-
-    #[repr(C)]
-    struct FileDispositionInfo {
-        delete_file: u8,
-    }
-
-    const FILE_DISPOSITION_INFO_CLASS: i32 = 4;
-    #[link(name = "Kernel32")]
-    extern "system" {
-        fn SetFileInformationByHandle(
-            file: *mut core::ffi::c_void,
-            information_class: i32,
-            information: *const core::ffi::c_void,
-            information_size: u32,
-        ) -> i32;
-    }
-
-    let information = FileDispositionInfo { delete_file: 1 };
-    // SAFETY: `output` owns a valid Windows file handle opened with DELETE access,
-    // and `information` matches the one-byte FILE_DISPOSITION_INFO ABI.
-    let result = unsafe {
-        SetFileInformationByHandle(
-            output.as_raw_handle(),
-            FILE_DISPOSITION_INFO_CLASS,
-            (&information as *const FileDispositionInfo).cast(),
-            std::mem::size_of::<FileDispositionInfo>() as u32,
-        )
-    };
-    if result == 0 {
-        Err(std::io::Error::last_os_error())
-    } else {
-        Ok(())
-    }
+    crate::windows_file::mark_for_deletion(output)
 }
 
 #[cfg(unix)]

@@ -260,44 +260,8 @@ impl NewStagingDirectoryLease {
 
 #[cfg(windows)]
 fn mark_open_handle_for_deletion(file: &std::fs::File) -> Result<(), String> {
-    use std::ffi::c_void;
-    use std::os::windows::io::AsRawHandle;
-
-    const FILE_DISPOSITION_INFO_CLASS: i32 = 4;
-
-    #[repr(C)]
-    struct FileDispositionInfo {
-        delete_file: u8,
-    }
-
-    #[link(name = "Kernel32")]
-    unsafe extern "system" {
-        fn SetFileInformationByHandle(
-            file: *mut c_void,
-            class: i32,
-            information: *const c_void,
-            size: u32,
-        ) -> i32;
-    }
-
-    let disposition = FileDispositionInfo { delete_file: 1 };
-    // SAFETY: the handle remains valid for this call and `disposition` has the
-    // layout and size required by FILE_DISPOSITION_INFO.
-    if unsafe {
-        SetFileInformationByHandle(
-            file.as_raw_handle(),
-            FILE_DISPOSITION_INFO_CLASS,
-            (&raw const disposition).cast(),
-            std::mem::size_of::<FileDispositionInfo>() as u32,
-        )
-    } == 0
-    {
-        return Err(format!(
-            "Could not mark an owned staging handle for deletion: {}",
-            std::io::Error::last_os_error()
-        ));
-    }
-    Ok(())
+    crate::windows_file::mark_for_deletion(file)
+        .map_err(|error| format!("Could not mark an owned staging handle for deletion: {error}"))
 }
 
 fn cleanup_staging_dir(path: &Path, output_dir: &Path, operation_id: &str) -> Result<(), String> {
@@ -527,58 +491,16 @@ fn open_staging_marker(path: &Path) -> Result<std::fs::File, String> {
 
 #[cfg(windows)]
 fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<(), String> {
-    use std::ffi::c_void;
     use std::os::windows::fs::OpenOptionsExt;
-    use std::os::windows::io::AsRawHandle;
 
     const FILE_SHARE_READ: u32 = 0x0000_0001;
     const FILE_SHARE_WRITE: u32 = 0x0000_0002;
     const FILE_SHARE_DELETE: u32 = 0x0000_0004;
     const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
 
-    #[repr(C)]
-    struct FileTime {
-        low_date_time: u32,
-        high_date_time: u32,
-    }
-
-    #[repr(C)]
-    struct ByHandleFileInformation {
-        file_attributes: u32,
-        creation_time: FileTime,
-        last_access_time: FileTime,
-        last_write_time: FileTime,
-        volume_serial_number: u32,
-        file_size_high: u32,
-        file_size_low: u32,
-        number_of_links: u32,
-        file_index_high: u32,
-        file_index_low: u32,
-    }
-
-    #[link(name = "Kernel32")]
-    unsafe extern "system" {
-        fn GetFileInformationByHandle(
-            file: *mut c_void,
-            information: *mut ByHandleFileInformation,
-        ) -> i32;
-    }
-
-    fn identity(file: &std::fs::File) -> Result<(u32, u64), String> {
-        let mut information = std::mem::MaybeUninit::<ByHandleFileInformation>::uninit();
-        // SAFETY: the raw handle remains valid for the call and Windows writes
-        // one complete `ByHandleFileInformation` value on success.
-        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), information.as_mut_ptr()) }
-            == 0
-        {
-            return Err("Staging ownership marker identity could not be verified.".into());
-        }
-        // SAFETY: a successful call initialized the complete output structure.
-        let information = unsafe { information.assume_init() };
-        Ok((
-            information.volume_serial_number,
-            (u64::from(information.file_index_high) << 32) | u64::from(information.file_index_low),
-        ))
+    fn identity(file: &std::fs::File) -> Result<crate::windows_file::FileIdentity, String> {
+        crate::windows_file::identity(file)
+            .map_err(|_| "Staging ownership marker identity could not be verified.".to_string())
     }
 
     let current_metadata = std::fs::symlink_metadata(path)

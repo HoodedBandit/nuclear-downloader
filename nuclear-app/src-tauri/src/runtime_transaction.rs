@@ -320,60 +320,15 @@ fn ensure_no_reparse_components(path: &Path) -> Result<(), String> {
 
 #[cfg(windows)]
 fn verify_opened_lock_identity(opened: &File, path: &Path) -> Result<(), String> {
-    use std::ffi::c_void;
     use std::os::windows::fs::OpenOptionsExt;
-    use std::os::windows::io::AsRawHandle;
 
     const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
     const FILE_SHARE_READ: u32 = 0x0000_0001;
     const FILE_SHARE_WRITE: u32 = 0x0000_0002;
 
-    #[repr(C)]
-    struct FileTime {
-        low_date_time: u32,
-        high_date_time: u32,
-    }
-
-    #[repr(C)]
-    struct ByHandleFileInformation {
-        file_attributes: u32,
-        creation_time: FileTime,
-        last_access_time: FileTime,
-        last_write_time: FileTime,
-        volume_serial_number: u32,
-        file_size_high: u32,
-        file_size_low: u32,
-        number_of_links: u32,
-        file_index_high: u32,
-        file_index_low: u32,
-    }
-
-    #[link(name = "Kernel32")]
-    unsafe extern "system" {
-        fn GetFileInformationByHandle(
-            file: *mut c_void,
-            information: *mut ByHandleFileInformation,
-        ) -> i32;
-    }
-
-    fn identity(file: &File) -> Result<(u32, u64), String> {
-        let mut information = std::mem::MaybeUninit::<ByHandleFileInformation>::uninit();
-        // SAFETY: the raw handle remains valid for this call and Windows writes
-        // exactly one `ByHandleFileInformation` value on success.
-        let result =
-            unsafe { GetFileInformationByHandle(file.as_raw_handle(), information.as_mut_ptr()) };
-        if result == 0 {
-            return Err(format!(
-                "Failed to identify runtime mutation lock: {}",
-                std::io::Error::last_os_error()
-            ));
-        }
-        // SAFETY: a successful call initialized the complete output structure.
-        let information = unsafe { information.assume_init() };
-        Ok((
-            information.volume_serial_number,
-            (u64::from(information.file_index_high) << 32) | u64::from(information.file_index_low),
-        ))
+    fn identity(file: &File) -> Result<crate::windows_file::FileIdentity, String> {
+        crate::windows_file::identity(file)
+            .map_err(|error| format!("Failed to identify runtime mutation lock: {error}"))
     }
 
     let mut options = OpenOptions::new();
