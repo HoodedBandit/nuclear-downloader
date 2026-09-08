@@ -1,4 +1,7 @@
 use super::*;
+use reqwest::Client;
+use semver::Version;
+use sha2::{Digest, Sha256};
 use std::io::{Read as _, Write as _};
 use std::path::PathBuf;
 

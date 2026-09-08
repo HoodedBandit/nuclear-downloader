@@ -1,6 +1,6 @@
 use crate::app_error::AppError;
 use crate::downloader;
-use crate::lifecycle::{DownloadManager, TrackedTaskKind};
+use crate::lifecycle::{DownloadManager, TrackedTaskKind, DOWNLOAD_CAPACITY};
 use crate::models::DownloadProgress;
 use crate::notifications::{DownloadNotifications, DownloadProgressSink};
 use crate::scheduling::run_registered_download;
@@ -104,7 +104,7 @@ pub(crate) fn spawn_download_workers(
     store: &StateStore,
     manager: &DownloadManager,
 ) -> Result<(), AppError> {
-    for _ in 0..5 {
+    for _ in 0..DOWNLOAD_CAPACITY {
         let publish_progress = publish_progress.clone();
         let notifications = download_notifications(store, publish_progress.clone());
         let store = store.clone();

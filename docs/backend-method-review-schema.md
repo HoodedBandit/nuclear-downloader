@@ -26,7 +26,7 @@ normalizing CRLF or CR to LF, without trimming or adding a newline.
 
 The tool is a conservative structural lexer, not a complete Rust parser. It
 masks nested comments and string, raw-string, byte-string, and character
-literals while retaining byte offsets. It inventories explicit `fn`
+literals while retaining source character offsets. It inventories explicit `fn`
 declarations, trait implementation blocks, every explicit async block, and
 closures passed directly to the configured task/thread ownership calls. It
 excludes function-pointer type syntax and does not infer callables generated

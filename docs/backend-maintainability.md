@@ -13,8 +13,8 @@ fixes; mechanical moves do not also change behavior.
 | 2. Boundaries and supporting code | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings after downloader/runtime/installer leaves and private test extraction; source-tool fixtures 8/8 each |
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
 | 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
-| 5. Runtime/updater/lifecycle internals | Pending | Verification, ownership, transaction and lifecycle components |
-| 6. Integrated qualification | Pending | Independent review, full local gates, performance comparison, new two-hour soak |
+| 5. Runtime/updater/lifecycle internals | Passed | 290 Rust tests, strict Clippy, formatting, unchanged bindings, architecture checks and independent runtime/updater extraction review |
+| 6. Integrated qualification | Paused for user reboot | Final method-ledger reconciliation, remaining local gates, final performance comparison and new two-hour soak remain; see backend-resume-checkpoint.md |
 
 Every production method and ownership-bearing asynchronous closure is recorded in
 `backend-method-review.json`. Reviewer sidecars record actual inspection outcomes;
@@ -226,3 +226,39 @@ suite passed 288 tests with three explicit ignores in 25.56 seconds, including
 the existing pre-save and post-save panic recovery tests. This is a narrow owned
 finalizer contract correction; the application's tracked workflows already retain
 their task owners during ordinary IPC cancellation.
+
+The frontend compatibility rerun passed formatting, strict lint, Svelte/TypeScript
+checking (zero errors or warnings), all 64 tests across ten files, the production
+build, and the production-bundle test-hook exclusion check. No frontend product
+source changed.
+
+Renderer acceptance was attempted with matching installed Chrome/ChromeDriver
+152.0.7977.76 and an explicit, newly created profile under the repository's ignored
+test directory. ChromeDriver's version preflight passed, but Chrome failed before
+creating a WebDriver session: its GPU subprocesses exited with `0xC0000022`
+(access denied), followed by `GPU process isn't usable`. No renderer test ran.
+Further browser launches were stopped; this remains an environment-blocked gate,
+not a passing workflow test or evidence of an application failure. Logs and the
+isolated profile are preserved under
+`target/renderer-maintainability/6b1029656d484c7a8077077c38bbbb17/`.
+
+Stage 5 split lifecycle admission/capacity/publication/task tracking, runtime
+manifest/release/archive/promotion, runtime transaction journal/locking/filesystem,
+and updater release/network/installer internals into focused modules. Two direct
+publisher regressions cover successful transaction/cache publication and
+cancellation while a cache lease prevents mutation. The integrated suite passed
+290 tests with zero failures and three explicit ignores in 25.91 seconds. Strict
+Clippy passed in 9.24 seconds; formatting, binding-diff, architecture and whitespace
+checks passed. Independent reviews found no runtime/updater behavioral blocker.
+Two nonblocking extraction cleanup observations are retained in the resume note.
+
+The separate review-tool fix in `ebc23f1` requires every generated source identity
+field before accepting a method sidecar. Its missing-identity regression failed
+before the fix and passed afterward; inventory fixtures passed 9/9 and architecture
+fixtures 8/8. Production npm audit reported zero vulnerabilities. Cargo deny
+passed advisories, bans, licenses and sources, with policy-allowed warnings.
+
+The user requested a checkpoint and stop before reboot. Source and draft sidecars
+are saved, but those sidecars are not yet reconciled or finally accepted. No new
+two-hour soak has started and final qualification remains incomplete. Resume only
+when requested, following `backend-resume-checkpoint.md`.

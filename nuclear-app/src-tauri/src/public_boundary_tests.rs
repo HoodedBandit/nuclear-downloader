@@ -77,7 +77,8 @@ fn persistent_state_opens_only_after_single_instance_registration() {
 fn download_worker_pool_is_started_once_during_setup() {
     let production = include_str!("lib.rs");
     assert_eq!(production.matches("spawn_download_workers(").count(), 1);
-    assert!(include_str!("services/downloads.rs").contains("for _ in 0..5"));
+    assert_eq!(crate::lifecycle::DOWNLOAD_CAPACITY, 5);
+    assert!(include_str!("services/downloads.rs").contains("for _ in 0..DOWNLOAD_CAPACITY"));
     let enqueue = include_str!("services/queue.rs")
         .split("fn enqueue_queue_items(")
         .nth(1)

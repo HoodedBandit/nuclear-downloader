@@ -1,5 +1,5 @@
 use super::cache::{RuntimeCache, RuntimeCacheRead};
-use super::{
+use super::manifest::{
     discover_managed_runtime_at_with_verifier, ensure_no_reparse_components, is_reparse_or_symlink,
     tool_exe_name, validate_canonical_sha256, RuntimeSignatureVerifier, REQUIRED_TOOLS,
     RUNTIME_ENTRY_SIZE_LIMIT,

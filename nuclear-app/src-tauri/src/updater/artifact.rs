@@ -1,4 +1,4 @@
-use super::{parse_semver, validate_sha256};
+use super::release::{parse_semver, validate_sha256};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

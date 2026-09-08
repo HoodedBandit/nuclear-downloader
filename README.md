@@ -121,6 +121,12 @@ pwsh -NoProfile -File .\scripts\fetch-sidecars.ps1
 
 See [docs/quickstart.md](docs/quickstart.md) for the full setup, development, and release build workflow.
 
+Backend contributors can start with the [ownership and module map](docs/backend-maintainability.md)
+and [feature preservation checklist](docs/backend-feature-preservation.md). The
+[method review ledger workflow](docs/backend-method-review-schema.md) explains how
+to review changed methods and keep their source identities current. These checks
+run before dependency installation in CI; discovery alone never counts as review.
+
 ## License
 
 This repository is source-available, not open-source.

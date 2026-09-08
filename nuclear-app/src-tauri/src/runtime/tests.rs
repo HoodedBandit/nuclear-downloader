@@ -646,6 +646,115 @@ async fn atomic_runtime_promotion_restores_existing_destination_on_publish_failu
     let _ = fs::remove_dir_all(root);
 }
 
+#[tokio::test]
+async fn verified_candidate_publication_uses_the_transaction_and_refreshes_its_cache() {
+    let root = unique_test_root("runtime-publisher-entry");
+    let managed_root = root.join("managed");
+    let update_id = uuid::Uuid::new_v4().to_string();
+    let work_root = managed_root.join(".updates").join(&update_id);
+    fs::create_dir_all(&work_root).unwrap();
+    let fixture_dir = write_phase4_signed_runtime_fixture(&work_root);
+    let candidate_dir = work_root.join("extracted");
+    fs::rename(&fixture_dir, &candidate_dir).unwrap();
+    fs::remove_file(work_root.join(RUNTIME_CURRENT_POINTER)).unwrap();
+    let cache = RuntimeCache::new();
+    let lifecycle = crate::lifecycle::LifecycleCoordinator::new(1, 1, 1);
+    let (_tracked, context) = lifecycle
+        .register_update(
+            update_id.clone(),
+            crate::models::OperationKind::RuntimeUpdate,
+        )
+        .unwrap();
+
+    let outcome = publish_verified_candidate_with_cache(
+        RuntimePublicationRequest {
+            managed_root: managed_root.clone(),
+            candidate_dir,
+            update_id,
+            runtime_version: PHASE4_FIXTURE_VERSION.to_string(),
+            bundled_root: None,
+            signature_verifier: verify_phase4_fixture_signature,
+        },
+        &context,
+        &cache,
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(outcome.installed_version, PHASE4_FIXTURE_VERSION);
+    assert!(outcome.warnings.is_empty());
+    assert!(runtime_transaction::load(&managed_root).unwrap().is_none());
+    let cached = cache.get_initialized().unwrap().unwrap();
+    assert_eq!(
+        cached.runtime_version.as_deref(),
+        Some(PHASE4_FIXTURE_VERSION)
+    );
+    drop(cached);
+    cache.begin_mutation().await.publish(Ok(None));
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn cancellation_while_waiting_for_cache_does_not_publish_a_transaction_record() {
+    let root = unique_test_root("runtime-publisher-cancel-before-record");
+    let managed_root = root.join("managed");
+    fs::create_dir_all(&managed_root).unwrap();
+    let update_id = uuid::Uuid::new_v4().to_string();
+    let cache = RuntimeCache::new();
+    let held = cache
+        .get_or_initialize(|| async {
+            Ok(Some(VerifiedRuntimeSnapshot {
+                runtime_dir: None,
+                runtime_version: None,
+                source: "test".into(),
+                tools: HashMap::new(),
+            }))
+        })
+        .await
+        .unwrap()
+        .unwrap();
+    let lifecycle = crate::lifecycle::LifecycleCoordinator::new(1, 1, 1);
+    let (_tracked, context) = lifecycle
+        .register_update(
+            update_id.clone(),
+            crate::models::OperationKind::RuntimeUpdate,
+        )
+        .unwrap();
+    let publication = publish_verified_candidate_with_cache(
+        RuntimePublicationRequest {
+            managed_root: managed_root.clone(),
+            candidate_dir: managed_root
+                .join(".updates")
+                .join(&update_id)
+                .join("extracted"),
+            update_id: update_id.clone(),
+            runtime_version: PHASE4_FIXTURE_VERSION.to_string(),
+            bundled_root: None,
+            signature_verifier: verify_phase4_fixture_signature,
+        },
+        &context,
+        &cache,
+    );
+    tokio::pin!(publication);
+
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), publication.as_mut())
+            .await
+            .is_err()
+    );
+    assert!(runtime_transaction::load(&managed_root).unwrap().is_none());
+    assert_eq!(
+        lifecycle.cancel_update(&update_id).unwrap(),
+        crate::lifecycle::UpdateCancellation::Requested
+    );
+    assert!(matches!(publication.await, Err(UpdateRunError::Cancelled)));
+    assert!(runtime_transaction::load(&managed_root).unwrap().is_none());
+
+    drop(held);
+    cache.begin_mutation().await.publish(Ok(None));
+    fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn corrupted_marker_owned_same_version_is_authorized_for_repair() {
     let root = unique_test_root("runtime-same-version-repair");
