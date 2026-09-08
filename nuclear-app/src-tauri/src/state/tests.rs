@@ -1239,6 +1239,78 @@ async fn failed_finalizer_task_installs_a_degraded_terminal_compensation() {
     )));
 }
 
+#[tokio::test]
+async fn abandoned_caller_cannot_abandon_a_panicked_owned_finalizer() {
+    let store = test_store();
+    let reader = store.take_outbox_reader().unwrap();
+    let (item, _) = add_item(&store, 1).await;
+    let (work, _) = store
+        .enqueue(std::slice::from_ref(&item.id), QueuePriority::Normal)
+        .await
+        .unwrap();
+    let operation_id = work[0].operation_id.clone();
+    while reader.try_recv().is_some() {}
+
+    let pause = store.pause_next_commit_for_test();
+    store.fail_next_finalizer_task_for_test();
+    let caller_store = store.clone();
+    let caller_operation_id = operation_id.clone();
+    let caller = tokio::spawn(async move {
+        caller_store
+            .finalize_download(
+                &caller_operation_id,
+                super::DownloadTerminalOutcome::Completed {
+                    filename: Some("C:\\Downloads\\published.mp4".to_string()),
+                },
+            )
+            .await
+    });
+
+    pause.wait_entered().await;
+    caller.abort();
+    assert!(caller.await.unwrap_err().is_cancelled());
+    pause.release();
+
+    // Acquiring the same gate proves the detached owner has exited after the
+    // injected panic before inspecting the installed state.
+    let mutation = store.inner.mutation_gate.clone().lock_owned().await;
+    drop(mutation);
+
+    let snapshot = store.snapshot().unwrap();
+    assert!(snapshot.persistence_health.degraded);
+    let operation = snapshot
+        .operations
+        .iter()
+        .find(|operation| operation.id == operation_id)
+        .unwrap();
+    assert_eq!(operation.state, OperationState::Failed);
+    assert_eq!(
+        operation
+            .intended_terminal_outcome
+            .as_ref()
+            .map(|outcome| outcome.state),
+        Some(OperationState::Completed)
+    );
+    assert_eq!(
+        operation
+            .published_output
+            .as_ref()
+            .map(|output| output.path.as_str()),
+        Some("C:\\Downloads\\published.mp4")
+    );
+    assert!(
+        std::iter::from_fn(|| reader.try_recv()).any(|publication| matches!(
+            publication,
+            crate::outbox::StatePublication::Deltas(deltas)
+                if deltas.iter().any(|delta| matches!(
+                    &delta.delta,
+                    crate::models::StateDeltaValue::OperationUpserted(operation)
+                        if operation.id == operation_id && operation.state == OperationState::Failed
+                ))
+        ))
+    );
+}
+
 #[cfg(windows)]
 #[tokio::test]
 async fn failure_after_save_advances_compensation_past_the_persisted_candidate_revision() {

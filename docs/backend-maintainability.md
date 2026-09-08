@@ -215,3 +215,14 @@ The architecture policy is now active in CI and release-candidate checks. The
 WebDriver exclusion guard scans every crate-owned Rust source plus build inputs,
 so moving code cannot silently remove that coverage. The final per-method review
 gate will be enabled only after the final source identities are reconciled.
+
+A separate finalizer regression then demonstrated that aborting the awaiting
+caller could abandon panic compensation in an otherwise detached finalizer. The
+new deterministic test failed at the missing degraded-state assertion before the
+fix. Panic recovery now belongs to the detached task itself, which retains the
+mutation guard through compensation, preserves the intended outcome and output
+path, and advances beyond any possibly persisted candidate revision. The full
+suite passed 288 tests with three explicit ignores in 25.56 seconds, including
+the existing pre-save and post-save panic recovery tests. This is a narrow owned
+finalizer contract correction; the application's tracked workflows already retain
+their task owners during ordinary IPC cancellation.

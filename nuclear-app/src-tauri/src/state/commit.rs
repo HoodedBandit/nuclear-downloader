@@ -10,6 +10,8 @@ use crate::models::{
     DownloadProgress, IntendedTerminalOutcome, OperationKind, OperationSnapshot, OperationState,
     PersistenceHealth, PublishedOutput, StateDelta, StateDeltaValue, UrlInspection,
 };
+use futures_util::FutureExt;
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use tokio::sync::OwnedMutexGuard;
 
@@ -149,93 +151,117 @@ impl StateStore {
         let compensation_published_output = published_output.clone();
         let compensation_sequence = candidate.sequence;
         let finalizer = tokio::spawn(async move {
+            // Keep serialization ownership outside the caught body so panic
+            // compensation remains ordered with every other mutation.
             let _mutation = mutation;
-            #[cfg(test)]
-            if store
-                .inner
-                .fail_next_finalizer_task
-                .swap(false, std::sync::atomic::Ordering::SeqCst)
-            {
-                panic!("injected finalizer task failure");
-            }
-            match store
-                .persist_candidate_with_retry(&candidate, retention_now)
-                .await
-            {
-                Ok(()) => {
-                    #[cfg(test)]
-                    if store
-                        .inner
-                        .fail_next_finalizer_after_save
-                        .swap(false, std::sync::atomic::Ordering::SeqCst)
-                    {
-                        panic!("injected finalizer task failure after save");
+            let result = AssertUnwindSafe(async {
+                #[cfg(test)]
+                store.pause_commit_for_test().await;
+                #[cfg(test)]
+                if store
+                    .inner
+                    .fail_next_finalizer_task
+                    .swap(false, std::sync::atomic::Ordering::SeqCst)
+                {
+                    panic!("injected finalizer task failure");
+                }
+                match store
+                    .persist_candidate_with_retry(&candidate, retention_now)
+                    .await
+                {
+                    Ok(()) => {
+                        #[cfg(test)]
+                        if store
+                            .inner
+                            .fail_next_finalizer_after_save
+                            .swap(false, std::sync::atomic::Ordering::SeqCst)
+                        {
+                            panic!("injected finalizer task failure after save");
+                        }
+                        let latest_sequence = candidate.sequence;
+                        store.install_candidate(candidate)?;
+                        store.inner.outbox.enqueue(deltas.clone(), latest_sequence);
+                        if let Some((correlation_id, message)) = failure {
+                            store.inner.diagnostics.log(
+                                "error",
+                                "operation_failed",
+                                &correlation_id,
+                                &message,
+                            );
+                        }
+                        store.inner.operation_notify.notify_waiters();
+                        Ok(AppliedFinalization {
+                            deltas,
+                            durability: FinalizationDurability::Persisted,
+                            state: operation_state,
+                            error: operation.error,
+                            published_output,
+                        })
                     }
-                    let latest_sequence = candidate.sequence;
-                    store.install_candidate(candidate)?;
-                    store.inner.outbox.enqueue(deltas.clone(), latest_sequence);
-                    if let Some((correlation_id, message)) = failure {
+                    Err(save_error) => {
+                        let applied = store.install_degraded_finalization(
+                            &operation_id,
+                            intended_outcome,
+                            published_output,
+                            DegradedFinalizationMetadata {
+                                candidate_sequence: candidate.sequence,
+                                code: "state_persistence_failed",
+                                summary:
+                                    "The operation finished, but its final state could not be saved.",
+                                detail: &save_error.summary,
+                            },
+                        )?;
                         store.inner.diagnostics.log(
                             "error",
-                            "operation_failed",
-                            &correlation_id,
-                            &message,
+                            "terminal_state_persistence_failed",
+                            &save_error.correlation_id,
+                            &save_error.summary,
                         );
+                        Ok(applied)
                     }
-                    store.inner.operation_notify.notify_waiters();
-                    Ok(AppliedFinalization {
-                        deltas,
-                        durability: FinalizationDurability::Persisted,
-                        state: operation_state,
-                        error: operation.error,
-                        published_output,
-                    })
                 }
-                Err(save_error) => {
-                    let applied = store.install_degraded_finalization(
-                        &operation_id,
-                        intended_outcome,
-                        published_output,
-                        DegradedFinalizationMetadata {
-                            candidate_sequence: candidate.sequence,
-                            code: "state_persistence_failed",
-                            summary:
-                                "The operation finished, but its final state could not be saved.",
-                            detail: &save_error.summary,
-                        },
-                    )?;
+            })
+            .catch_unwind()
+            .await;
+            match result {
+                Ok(result) => result,
+                Err(_) => {
                     store.inner.diagnostics.log(
                         "error",
-                        "terminal_state_persistence_failed",
-                        &save_error.correlation_id,
-                        &save_error.summary,
+                        "terminal_finalizer_task_failed",
+                        &uuid::Uuid::new_v4().to_string(),
+                        "The terminal finalizer task panicked.",
                     );
-                    Ok(applied)
+                    store.install_degraded_finalization(
+                        &compensation_operation_id,
+                        compensation_intended_outcome,
+                        compensation_published_output,
+                        DegradedFinalizationMetadata {
+                            candidate_sequence: compensation_sequence,
+                            code: "state_finalizer_failed",
+                            summary:
+                                "The operation finished, but its final state worker stopped unexpectedly.",
+                            detail: "The final state will be saved by the next durable command.",
+                        },
+                    )
                 }
             }
         });
         match finalizer.await {
             Ok(result) => result,
             Err(join_error) => {
-                let _mutation = self.inner.mutation_gate.lock().await;
                 self.inner.diagnostics.log(
                     "error",
                     "terminal_finalizer_task_failed",
                     &uuid::Uuid::new_v4().to_string(),
                     &join_error.to_string(),
                 );
-                self.install_degraded_finalization(
-                    &compensation_operation_id,
-                    compensation_intended_outcome,
-                    compensation_published_output,
-                    DegradedFinalizationMetadata {
-                        candidate_sequence: compensation_sequence,
-                        code: "state_finalizer_failed",
-                        summary:
-                            "The operation finished, but its final state worker stopped unexpectedly.",
-                        detail: "The final state will be saved by the next durable command.",
-                    },
+                Err(AppError::new(
+                    "state_finalizer_failed",
+                    "The operation finalizer task stopped unexpectedly before it completed.",
                 )
+                .retryable(true)
+                .with_detail(join_error.to_string()))
             }
         }
     }
