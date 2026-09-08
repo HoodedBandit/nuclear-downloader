@@ -12,7 +12,7 @@ fixes; mechanical moves do not also change behavior.
 | 1. Inventory and baseline | Passed | Fresh Rust 270/270, frontend 64/64, strict Clippy, formatting and binding-diff gates; 1,112 inventory entries across 27 files; inventory lexer/reconciliation tests 4/4 |
 | 2. Boundaries and supporting code | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings after downloader/runtime/installer leaves and private test extraction; source-tool fixtures 8/8 each |
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
-| 4. Complete application workflows | In progress | Thin commands, explicit dependencies, startup/shutdown composition |
+| 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
 | 5. Runtime/updater/lifecycle internals | Pending | Verification, ownership, transaction and lifecycle components |
 | 6. Integrated qualification | Pending | Independent review, full local gates, performance comparison, new two-hour soak |
 
@@ -189,3 +189,29 @@ All raw runs are retained under `target/performance/`:
 The initial comparison is in
 `comparison-20260908T224906Z-51026848b4a04ca1a8b8bca0bd5b610e`;
 the repeats are in `maintainability-stage3-repeat-1`, `-2` and `-3`.
+
+Stage 4 moved complete operations into `services/`, recovery/shutdown into
+`bootstrap.rs`, and event delivery/dialogs/installer launch into `desktop.rs`.
+Downloader and updater engines now receive typed callbacks and an explicit app
+version; neither looks up a Tauri-managed StateStore. The public registry still
+contains exactly 18 commands, with unchanged generated bindings and five event
+names. Cancellation retains one shared ten-second deadline and the production
+worker pool remains five.
+
+The four new service regressions exercise state-before-progress publication,
+exhausted terminal-save retries, successful installer handoff ordering/leases,
+and failed-launch rollback/reopened admission. A new fixture initially opened
+admission without completing startup, which correctly left the service waiting;
+that test process was stopped and its evidence retained. The fixture now drives
+the real tracked startup sequence and bounds admission waits. The integrated
+suite then passed 287 tests with three explicit ignores in 25.40 seconds, and
+strict Clippy passed in 8.34 seconds after naming two complex callback types.
+Formatting, binding-diff, architecture and whitespace checks passed. Both source
+tool fixture suites passed 8/8. Executable publish/acceptance-contract fixtures
+passed using an isolated temporary directory and a closed fake CLI; no release,
+installer, native application, or external service was launched by those checks.
+
+The architecture policy is now active in CI and release-candidate checks. The
+WebDriver exclusion guard scans every crate-owned Rust source plus build inputs,
+so moving code cannot silently remove that coverage. The final per-method review
+gate will be enabled only after the final source identities are reconciled.

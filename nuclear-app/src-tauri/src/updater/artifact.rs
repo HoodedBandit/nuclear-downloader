@@ -9,6 +9,9 @@ use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
+#[cfg(test)]
+use crate::lifecycle::UpdateRunError;
+
 const UPDATE_DIRECTORY_NAME: &str = "updater";
 pub(super) const UPDATE_LOCK_FILE_NAME: &str = "update.lock";
 const OWNER_RECORD_SUFFIX: &str = ".nuclear-owner.json";
@@ -128,6 +131,76 @@ pub(crate) async fn cleanup_owned_installer_stages() -> Result<(), String> {
     let _directory_lock = UpdateDirectoryLock::acquire(&target_dir)?;
     cleanup_owned_prepared_directories(&target_dir).await?;
     cleanup_owned_partial_installers(&target_dir).await
+}
+
+#[cfg(test)]
+pub(crate) async fn test_installer_handoff(
+    root: &Path,
+    expected_version: &str,
+) -> Result<InstallerHandoff, UpdateRunError> {
+    let version = parse_semver(expected_version)?;
+    if version.to_string() != expected_version {
+        return Err("The test installer version must be canonical SemVer.".into());
+    }
+
+    let directory_lock = UpdateDirectoryLock::acquire(root)?;
+    let installer_name = format!("Nuclear.Downloader_{expected_version}_x64-setup.exe");
+    let installer_path = root.join(&installer_name);
+    const INSTALLER_BYTES: &[u8] = b"nuclear-test-installer";
+    let installer_sha256 = format!("{:x}", Sha256::digest(INSTALLER_BYTES));
+    let mut file = fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(&installer_path)
+        .await
+        .map_err(|error| format!("Failed to create test installer: {error}"))?;
+    let write_result = async {
+        file.write_all(INSTALLER_BYTES).await?;
+        file.sync_all().await
+    }
+    .await;
+    if let Err(error) = write_result {
+        drop(file);
+        cleanup_file_if_exists(&installer_path).await;
+        return Err(format!("Failed to persist test installer: {error}").into());
+    }
+    drop(file);
+
+    if let Err(error) = write_owner_record(
+        &installer_path,
+        INSTALLER_BYTES.len() as u64,
+        &installer_sha256,
+    )
+    .await
+    {
+        cleanup_current_artifact(&installer_path).await;
+        return Err(error.into());
+    }
+    let installer = match open_verified_installer(
+        &installer_path,
+        INSTALLER_BYTES.len() as u64,
+        &installer_sha256,
+    )
+    .await
+    {
+        Ok(Some(installer)) => installer,
+        Ok(None) => {
+            cleanup_current_artifact(&installer_path).await;
+            return Err("The test installer could not acquire its verified lease.".into());
+        }
+        Err(error) => {
+            cleanup_current_artifact(&installer_path).await;
+            return Err(error.into());
+        }
+    };
+
+    Ok(InstallerHandoff {
+        expected_version: expected_version.to_string(),
+        installer_name,
+        installer_size: INSTALLER_BYTES.len() as u64,
+        installer,
+        _directory_lock: directory_lock,
+    })
 }
 
 pub(super) async fn cleanup_owned_partial_installers(target_dir: &Path) -> Result<(), String> {

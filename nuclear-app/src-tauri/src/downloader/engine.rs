@@ -20,9 +20,9 @@ use super::publication::{
 use super::validation::{validate_download_request, validate_output_directory};
 use crate::lifecycle::DownloadManager;
 use crate::models::{DownloadProgress, DownloadRequest};
+use crate::notifications::DownloadNotifications;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
 use tokio::process::Command;
 
 #[derive(Default)]
@@ -62,7 +62,7 @@ impl From<DownloadErrorInfo> for DownloadOutcome {
 }
 
 async fn emit_progress(
-    app: &AppHandle,
+    notifications: &DownloadNotifications,
     download_id: &str,
     status: &str,
     progress: f64,
@@ -82,12 +82,7 @@ async fn emit_progress(
         error_detail: fields.error_detail,
         filename: fields.filename,
     };
-    if !crate::record_download_progress(app, &event).await {
-        return;
-    }
-    if let Err(error) = app.emit("download-progress", &event) {
-        crate::record_event_delivery_failure(app, "download-progress", &error.to_string());
-    }
+    (notifications.progress)(event).await;
 }
 
 async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<f64, String> {
@@ -168,7 +163,7 @@ fn terminal_outcome_from_attempt(result: DownloadAttemptResult) -> DownloadOutco
 }
 
 async fn run_download_attempt(
-    app: &AppHandle,
+    notifications: &DownloadNotifications,
     download_id: &str,
     request: &DownloadRequest,
     job: &DownloadJob,
@@ -242,7 +237,7 @@ async fn run_download_attempt(
 
         async move {
             if let Some((status, progress, fields)) = update {
-                emit_progress(app, download_id, status, progress, fields).await;
+                emit_progress(notifications, download_id, status, progress, fields).await;
             }
             Ok(())
         }
@@ -278,7 +273,7 @@ async fn run_download_attempt(
 }
 
 async fn run_webm_conversion(
-    app: &AppHandle,
+    notifications: &DownloadNotifications,
     download_id: &str,
     input_path: &Path,
     staged_output: &Path,
@@ -294,7 +289,7 @@ async fn run_webm_conversion(
     };
 
     emit_progress(
-        app,
+        notifications,
         download_id,
         "postprocessing",
         0.0,
@@ -378,7 +373,7 @@ async fn run_webm_conversion(
         async move {
             if let Some(progress) = update {
                 emit_progress(
-                    app,
+                    notifications,
                     download_id,
                     "postprocessing",
                     progress,
@@ -428,7 +423,7 @@ async fn run_webm_conversion(
 }
 
 async fn run_webm_download(
-    app: &AppHandle,
+    notifications: &DownloadNotifications,
     download_id: &str,
     request: &DownloadRequest,
     manager: &DownloadManager,
@@ -447,7 +442,7 @@ async fn run_webm_download(
         staged_request.output_dir = path_to_string(&staging_dir);
 
         match run_download_attempt(
-            app,
+            notifications,
             download_id,
             &staged_request,
             job,
@@ -459,7 +454,12 @@ async fn run_webm_download(
                 let intermediate_path = match resolve_staged_output(&staging_dir) {
                     Ok(path) => path,
                     Err(error) => {
-                        cleanup_staging_with_warning(app, &staging_dir, output_dir, download_id);
+                        cleanup_staging_with_warning(
+                            notifications,
+                            &staging_dir,
+                            output_dir,
+                            download_id,
+                        );
                         return DownloadAttemptResult::Error(simple_error(
                             error.code,
                             error.message,
@@ -470,7 +470,7 @@ async fn run_webm_download(
                 let final_path = build_webm_final_path(request, &intermediate_path);
                 let staged_output = build_staged_webm_output_path(&staging_dir, &final_path);
                 emit_progress(
-                    app,
+                    notifications,
                     download_id,
                     "postprocessing",
                     0.0,
@@ -486,11 +486,21 @@ async fn run_webm_download(
                 let _conversion_permit = match manager.acquire_conversion(job).await {
                     Ok(Some(permit)) => permit,
                     Ok(None) => {
-                        cleanup_staging_with_warning(app, &staging_dir, output_dir, download_id);
+                        cleanup_staging_with_warning(
+                            notifications,
+                            &staging_dir,
+                            output_dir,
+                            download_id,
+                        );
                         return DownloadAttemptResult::Cancelled;
                     }
                     Err(error) => {
-                        cleanup_staging_with_warning(app, &staging_dir, output_dir, download_id);
+                        cleanup_staging_with_warning(
+                            notifications,
+                            &staging_dir,
+                            output_dir,
+                            download_id,
+                        );
                         return DownloadAttemptResult::Error(simple_error(
                             "conversion_scheduler_failed",
                             error,
@@ -498,7 +508,7 @@ async fn run_webm_download(
                     }
                 };
                 let result = run_webm_conversion(
-                    app,
+                    notifications,
                     download_id,
                     &intermediate_path,
                     &staged_output,
@@ -507,14 +517,14 @@ async fn run_webm_download(
                 )
                 .await;
 
-                cleanup_staging_with_warning(app, &staging_dir, output_dir, download_id);
+                cleanup_staging_with_warning(notifications, &staging_dir, output_dir, download_id);
                 return result;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
                 use_twitter_syndication = true;
             }
             other => {
-                cleanup_staging_with_warning(app, &staging_dir, output_dir, download_id);
+                cleanup_staging_with_warning(notifications, &staging_dir, output_dir, download_id);
                 return other;
             }
         }
@@ -522,7 +532,7 @@ async fn run_webm_download(
 }
 
 pub async fn start_download(
-    app: AppHandle,
+    notifications: DownloadNotifications,
     download_id: String,
     mut request: DownloadRequest,
     manager: DownloadManager,
@@ -548,7 +558,7 @@ pub async fn start_download(
     }
 
     emit_progress(
-        &app,
+        &notifications,
         &download_id,
         "downloading",
         0.0,
@@ -562,7 +572,7 @@ pub async fn start_download(
 
     if request.format == "webm" {
         return terminal_outcome_from_attempt(
-            run_webm_download(&app, &download_id, &request, &manager, &job).await,
+            run_webm_download(&notifications, &download_id, &request, &manager, &job).await,
         );
     }
 
@@ -579,7 +589,7 @@ pub async fn start_download(
         staged_request.output_dir = path_to_string(&staging_dir);
 
         match run_download_attempt(
-            &app,
+            &notifications,
             &download_id,
             &staged_request,
             &job,
@@ -591,7 +601,12 @@ pub async fn start_download(
                 let staged_path = match resolve_staged_output(&staging_dir) {
                     Ok(path) => path,
                     Err(error) => {
-                        cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                        cleanup_staging_with_warning(
+                            &notifications,
+                            &staging_dir,
+                            output_dir,
+                            &download_id,
+                        );
                         return simple_error(error.code, error.message).into();
                     }
                 };
@@ -599,13 +614,18 @@ pub async fn start_download(
                 let desired_path = match build_final_output_path(&request, &staged_path) {
                     Ok(path) => path,
                     Err(error) => {
-                        cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                        cleanup_staging_with_warning(
+                            &notifications,
+                            &staging_dir,
+                            output_dir,
+                            &download_id,
+                        );
                         return simple_error("invalid_filename", error).into();
                     }
                 };
 
                 emit_progress(
-                    &app,
+                    &notifications,
                     &download_id,
                     "postprocessing",
                     100.0,
@@ -626,19 +646,39 @@ pub async fn start_download(
                         Err(_) if job.is_cancelled() => DownloadOutcome::Cancelled,
                         Err(error) => simple_error("publish_failed", error).into(),
                     };
-                cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                cleanup_staging_with_warning(
+                    &notifications,
+                    &staging_dir,
+                    output_dir,
+                    &download_id,
+                );
                 return outcome;
             }
             DownloadAttemptResult::Cancelled => {
-                cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                cleanup_staging_with_warning(
+                    &notifications,
+                    &staging_dir,
+                    output_dir,
+                    &download_id,
+                );
                 return DownloadOutcome::Cancelled;
             }
             DownloadAttemptResult::RetryWithTwitterSyndication => {
-                cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                cleanup_staging_with_warning(
+                    &notifications,
+                    &staging_dir,
+                    output_dir,
+                    &download_id,
+                );
                 use_twitter_syndication = true;
             }
             DownloadAttemptResult::Error(error) => {
-                cleanup_staging_with_warning(&app, &staging_dir, output_dir, &download_id);
+                cleanup_staging_with_warning(
+                    &notifications,
+                    &staging_dir,
+                    output_dir,
+                    &download_id,
+                );
                 return error.into();
             }
         }

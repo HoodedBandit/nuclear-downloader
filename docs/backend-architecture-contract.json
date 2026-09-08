@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "stageStatus": "incomplete",
+  "stageStatus": "complete",
   "sourceRoot": "nuclear-app/src-tauri",
   "roles": {
     "applicationBoundary": [
@@ -12,13 +12,30 @@
       "src/bootstrap.rs"
     ],
     "services": [
-      "src/services/**/*.rs"
+      "src/services/**/*.rs",
+      "src/cancellation.rs",
+      "src/lifecycle_cleanup.rs",
+      "src/notifications.rs",
+      "src/scheduling.rs",
+      "src/state_events.rs",
+      "src/state_events/**/*.rs"
     ],
     "engines": [
+      "src/app_error.rs",
+      "src/app_error/**/*.rs",
+      "src/artifact_contract.rs",
+      "src/diagnostics.rs",
+      "src/diagnostics/**/*.rs",
       "src/state.rs",
       "src/state/**/*.rs",
+      "src/journal.rs",
+      "src/journal/**/*.rs",
       "src/lifecycle.rs",
       "src/lifecycle/**/*.rs",
+      "src/models.rs",
+      "src/models/**/*.rs",
+      "src/outbox.rs",
+      "src/outbox/**/*.rs",
       "src/downloader.rs",
       "src/downloader/**/*.rs",
       "src/runtime.rs",
@@ -26,7 +43,8 @@
       "src/updater.rs",
       "src/updater/**/*.rs",
       "src/runtime_transaction.rs",
-      "src/runtime_transaction/**/*.rs"
+      "src/runtime_transaction/**/*.rs",
+      "src/windows_file.rs"
     ],
     "build": [
       "build.rs",

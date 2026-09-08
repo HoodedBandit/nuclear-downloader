@@ -1,6 +1,19 @@
-use super::*;
-use models::{UrlInspection, VideoInfo};
-use std::sync::atomic::AtomicUsize;
+use crate::app_error::AppError;
+use crate::lifecycle::{DownloadManager, TrackedTaskKind};
+use crate::models::{
+    self, AddQueueItemInput, DownloadProgress, OperationKind, OperationState, QueueItemRecord,
+    QueuePriority, RuntimeReadiness, UrlInspection, VideoInfo,
+};
+use crate::scheduling::run_registered_download;
+use crate::services::commands::run_tracked_command;
+use crate::services::inspection::finalize_inspection_result;
+use crate::state::{self, StateStore};
+use crate::{downloader, outbox};
+use futures_util::FutureExt;
+use std::panic::AssertUnwindSafe;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 5)]
 async fn five_progress_producers_publish_one_contiguous_authoritative_stream() {
@@ -204,7 +217,7 @@ async fn panic_after_durable_inspection_before_publish_is_cleaned_up() {
     std::fs::remove_dir_all(root).unwrap();
 }
 
-async fn coordinator() -> DownloadManager {
+pub(crate) async fn coordinator() -> DownloadManager {
     let manager = DownloadManager::new(1, 1, 1);
     let shutdown = manager.shutdown_token();
     manager

@@ -57,6 +57,13 @@ jobs:
       - name: Check out the exact source commit
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: Verify backend source architecture
+        shell: pwsh
+        run: |
+          python -m unittest scripts/test_inventory_backend_methods.py
+          python -m unittest scripts/test_backend_architecture.py
+          python scripts/check-backend-architecture.py
+
       - name: Test normal-user process launcher before building
         shell: pwsh
         run: pwsh -NoProfile -File scripts/test-windows-user-process.ps1

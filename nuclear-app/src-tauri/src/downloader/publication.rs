@@ -2,10 +2,10 @@ use super::command_args::FINAL_OUTPUT_RECORD_NAME;
 use super::naming::suffixed_output_path;
 use super::process::DownloadJob;
 use super::validation::MAX_ACTIONABLE_FIELD_BYTES;
+use crate::notifications::DownloadNotifications;
 use serde::Deserialize;
 use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
-use tauri::AppHandle;
 
 const MAX_OUTPUT_SUFFIX: usize = 9_999;
 const STAGING_ROOT_NAME: &str = ".nuclear-downloader-staging";
@@ -262,13 +262,13 @@ fn cleanup_staging_dir(path: &Path, output_dir: &Path, operation_id: &str) -> Re
 }
 
 pub(super) fn cleanup_staging_with_warning(
-    app: &AppHandle,
+    notifications: &DownloadNotifications,
     path: &Path,
     output_dir: &Path,
     operation_id: &str,
 ) {
     if let Err(error) = cleanup_staging_dir(path, output_dir, operation_id) {
-        crate::record_download_cleanup_warning(app, operation_id, &error);
+        (notifications.cleanup_warning)(operation_id, &error);
     }
 }
 

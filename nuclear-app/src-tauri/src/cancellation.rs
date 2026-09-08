@@ -1,17 +1,18 @@
 use crate::app_error::AppError;
 use crate::lifecycle::{DownloadManager, DrainCompletion, DrainTicket, TrackedTaskKind};
-use crate::models::{CancelAllResult, DownloadProgress};
+use crate::models::CancelAllResult;
+use crate::notifications::DownloadProgressSink;
 use crate::state::{DownloadTerminalOutcome, StateStore};
 use futures_util::FutureExt;
 use std::panic::AssertUnwindSafe;
-use std::sync::Arc;
+use std::time::Duration;
 
-pub(crate) type ProgressPublisher = Arc<dyn Fn(&DownloadProgress) + Send + Sync>;
+pub(crate) const CANCELLATION_WAIT_TIMEOUT: Duration = Duration::from_secs(10);
 
 struct DrainCleanup {
     manager: DownloadManager,
     store: StateStore,
-    publish_progress: ProgressPublisher,
+    publish_progress: DownloadProgressSink,
     ticket: DrainTicket,
 }
 
@@ -127,7 +128,7 @@ async fn complete_drain(cleanup: &DrainCleanup) -> Result<CancelAllResult, AppEr
 pub(crate) async fn cancel_all(
     store: StateStore,
     manager: DownloadManager,
-    publish_progress: ProgressPublisher,
+    publish_progress: DownloadProgressSink,
 ) -> Result<CancelAllResult, AppError> {
     let (sender, receiver) = tokio::sync::oneshot::channel();
     let task_manager = manager.clone();
@@ -161,7 +162,7 @@ pub(crate) async fn cancel_all(
         }
         let _ = sender.send(result);
     })?;
-    match tokio::time::timeout(crate::CANCELLATION_WAIT_TIMEOUT, receiver).await {
+    match tokio::time::timeout(CANCELLATION_WAIT_TIMEOUT, receiver).await {
         Ok(result) => {
             result.map_err(|_| AppError::internal("The cancellation result was unavailable."))?
         }

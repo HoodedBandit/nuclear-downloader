@@ -2,6 +2,7 @@ mod artifact;
 
 use crate::lifecycle::{PublicationKind, UpdateRunError, UpdateTaskContext};
 use crate::models::{UpdateCheckResult, UpdateInstallProgress};
+use crate::notifications::UpdateProgressSink;
 use futures_util::StreamExt;
 use minisign_verify::Signature;
 use reqwest::header::ACCEPT;
@@ -11,11 +12,12 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use url::Url;
 
+#[cfg(test)]
+pub(crate) use artifact::test_installer_handoff;
 #[cfg(test)]
 use artifact::UPDATE_LOCK_FILE_NAME;
 use artifact::{
@@ -29,7 +31,6 @@ pub(crate) use artifact::{cleanup_owned_installer_stages, InstallerHandoff};
 
 const GITHUB_RELEASES_LATEST_URL: &str =
     "https://api.github.com/repos/HoodedBandit/nuclear-downloader/releases/latest";
-const UPDATE_PROGRESS_EVENT: &str = "update-install-progress";
 const UPDATE_PUBLIC_KEY: Option<&str> = option_env!("NUCLEAR_UPDATE_PUBLIC_KEY");
 const UPDATE_KEY_ID: Option<&str> = option_env!("NUCLEAR_UPDATE_KEY_ID");
 const UPDATE_NEXT_PUBLIC_KEY: Option<&str> = option_env!("NUCLEAR_UPDATE_NEXT_PUBLIC_KEY");
@@ -88,10 +89,9 @@ struct VerifiedUpdate<'a> {
     manifest: SignedAppManifest,
 }
 
-pub async fn check_for_app_update(app: &AppHandle) -> Result<UpdateCheckResult, String> {
-    let current_version = app.package_info().version.to_string();
-    let current_semver = parse_semver(&current_version)?;
-    let client = build_client(updater_user_agent(&current_version))?;
+pub async fn check_for_app_update(current_version: &str) -> Result<UpdateCheckResult, String> {
+    let current_semver = parse_semver(current_version)?;
+    let client = build_client(updater_user_agent(current_version))?;
     let release = fetch_latest_release(&client).await?;
     let latest_semver = parse_release_tag(&release.tag_name)?;
     let has_update = latest_semver > current_semver;
@@ -111,7 +111,7 @@ pub async fn check_for_app_update(app: &AppHandle) -> Result<UpdateCheckResult, 
     };
 
     Ok(UpdateCheckResult {
-        current_version,
+        current_version: current_version.to_string(),
         has_update,
         latest_version: Some(latest_semver.to_string()),
         notes: normalize_optional_text(release.body),
@@ -121,38 +121,46 @@ pub async fn check_for_app_update(app: &AppHandle) -> Result<UpdateCheckResult, 
 }
 
 pub(crate) async fn prepare_app_update(
-    app: &AppHandle,
+    current_version: &str,
+    progress: UpdateProgressSink,
     expected_version: String,
     context: &UpdateTaskContext,
 ) -> Result<InstallerHandoff, UpdateRunError> {
-    prepare_app_update_inner(app, expected_version.clone(), context)
-        .await
-        .inspect_err(|error| {
-            let (status, message) = match error {
-                UpdateRunError::Cancelled => ("cancelled", "App update was cancelled.".to_string()),
-                UpdateRunError::Failed(error) => ("error", error.summary.clone()),
-            };
-            emit_install_progress(
-                app,
-                UpdateInstallProgress {
-                    status: status.into(),
-                    version: normalize_version_label(&expected_version),
-                    downloaded_bytes: 0,
-                    total_bytes: None,
-                    message: Some(message),
-                },
-            );
-        })
+    prepare_app_update_inner(
+        current_version,
+        &progress,
+        expected_version.clone(),
+        context,
+    )
+    .await
+    .inspect_err(|error| {
+        let (status, message) = match error {
+            UpdateRunError::Cancelled => ("cancelled", "App update was cancelled.".to_string()),
+            UpdateRunError::Failed(error) => ("error", error.summary.clone()),
+        };
+        emit_install_progress(
+            &progress,
+            UpdateInstallProgress {
+                status: status.into(),
+                version: normalize_version_label(&expected_version),
+                downloaded_bytes: 0,
+                total_bytes: None,
+                message: Some(message),
+            },
+        );
+    })
 }
 
 async fn prepare_app_update_inner(
-    app: &AppHandle,
+    current_version: &str,
+    progress: &UpdateProgressSink,
     expected_version: String,
     context: &UpdateTaskContext,
 ) -> Result<InstallerHandoff, UpdateRunError> {
     #[cfg(not(all(target_os = "windows", target_arch = "x86_64")))]
     {
-        let _ = app;
+        let _ = current_version;
+        let _ = progress;
         let _ = expected_version;
         let _ = context;
         return Err("Automatic updates are supported only on Windows x64 builds.".into());
@@ -161,7 +169,7 @@ async fn prepare_app_update_inner(
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     {
         let expected_semver = parse_semver(&expected_version)?;
-        let current_semver = parse_semver(&app.package_info().version.to_string())?;
+        let current_semver = parse_semver(current_version)?;
         if expected_semver < signed_update_minimum() {
             return Err("Unsigned app releases are not accepted by this updater.".into());
         }
@@ -195,7 +203,7 @@ async fn prepare_app_update_inner(
         cleanup_owned_old_installers(&target_dir, &verified.manifest.installer.file_name).await?;
         let installer = tokio::time::timeout(
             INSTALLER_OVERALL_TIMEOUT,
-            download_installer(app, &client, &target_dir, &verified, context),
+            download_installer(progress, &client, &target_dir, &verified, context),
         )
         .await
         .map_err(|_| "Update installer download exceeded the 30-minute limit.".to_string())??;
@@ -437,7 +445,7 @@ fn select_one_exact_asset<'a>(
 }
 
 async fn download_installer(
-    app: &AppHandle,
+    progress: &UpdateProgressSink,
     client: &Client,
     target_dir: &Path,
     verified: &VerifiedUpdate<'_>,
@@ -513,7 +521,7 @@ async fn download_installer(
     let mut downloaded_bytes = 0u64;
     let mut hasher = Sha256::new();
     emit_install_progress(
-        app,
+        progress,
         UpdateInstallProgress {
             status: "downloading".into(),
             version: verified.version.to_string(),
@@ -555,7 +563,7 @@ async fn download_installer(
         }
         hasher.update(&chunk);
         emit_install_progress(
-            app,
+            progress,
             UpdateInstallProgress {
                 status: "downloading".into(),
                 version: verified.version.to_string(),
@@ -583,7 +591,7 @@ async fn download_installer(
     }
     let actual_checksum = format!("{:x}", hasher.finalize());
     emit_install_progress(
-        app,
+        progress,
         UpdateInstallProgress {
             status: "verifying".into(),
             version: verified.version.to_string(),
@@ -884,10 +892,8 @@ fn updater_user_agent(version: &str) -> String {
     format!("NuclearDownloader/{version} (+https://github.com/HoodedBandit/nuclear-downloader)")
 }
 
-fn emit_install_progress(app: &AppHandle, payload: UpdateInstallProgress) {
-    if let Err(error) = app.emit(UPDATE_PROGRESS_EVENT, payload) {
-        eprintln!("Failed to emit updater progress: {error}");
-    }
+fn emit_install_progress(progress: &UpdateProgressSink, payload: UpdateInstallProgress) {
+    progress(payload);
 }
 
 #[cfg(test)]

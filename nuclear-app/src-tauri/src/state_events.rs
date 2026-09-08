@@ -1,44 +1,11 @@
-use crate::app_error::AppError;
-use crate::lifecycle::{DownloadManager, TrackedTaskKind};
+use crate::lifecycle::DownloadManager;
 use crate::outbox::{StateOutboxReader, StatePublication};
 use crate::state::StateStore;
 use std::time::Duration;
-use tauri::Emitter;
 
 const INITIAL_DELIVERY_RETRY_DELAY: Duration = Duration::from_millis(25);
 const MAX_DELIVERY_RETRY_DELAY: Duration = Duration::from_secs(1);
 const SHUTDOWN_DELIVERY_RETRY_BUDGET: Duration = Duration::from_secs(1);
-
-pub(crate) fn spawn_state_events(
-    app: &tauri::AppHandle,
-    store: &StateStore,
-    manager: &DownloadManager,
-) -> Result<(), AppError> {
-    let reader = store.take_outbox_reader()?;
-    let app = app.clone();
-    let store = store.clone();
-    let coordinator = manager.clone();
-    manager.spawn_tracked(TrackedTaskKind::Events, async move {
-        publish_state_events(
-            &store,
-            &coordinator,
-            reader,
-            |publication| match publication {
-                StatePublication::Deltas(deltas) => {
-                    for delta in deltas.iter() {
-                        app.emit("app-state-changed", delta)
-                            .map_err(|error| error.to_string())?;
-                    }
-                    Ok(())
-                }
-                StatePublication::ResyncRequired(required) => app
-                    .emit("app-state-resync-required", required)
-                    .map_err(|error| error.to_string()),
-            },
-        )
-        .await;
-    })
-}
 
 pub(crate) async fn publish_state_events<S>(
     store: &StateStore,

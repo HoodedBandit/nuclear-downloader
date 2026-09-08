@@ -24,8 +24,16 @@ if ([string]$package.overrides.'@wdio/tauri-service'.'@wdio/native-utils' -cne '
 }
 
 $cargoToml = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'nuclear-app\src-tauri\Cargo.toml')
-$rustEntry = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'nuclear-app\src-tauri\src\lib.rs')
-if ($cargoToml -match 'tauri-plugin-wdio' -or $rustEntry -match 'tauri_plugin_wdio') {
+$rustSourceRoot = Join-Path $repositoryRoot 'nuclear-app\src-tauri'
+$rustSourceFiles = @(
+    Get-ChildItem -LiteralPath (Join-Path $rustSourceRoot 'src') -Recurse -File -Filter '*.rs'
+    Get-Item -LiteralPath (Join-Path $rustSourceRoot 'build.rs')
+    Get-Item -LiteralPath (Join-Path $rustSourceRoot 'build_config.rs')
+)
+$webdriverRustSource = @($rustSourceFiles | Where-Object {
+    (Get-Content -Raw -LiteralPath $_.FullName) -match 'tauri_plugin_wdio'
+})
+if ($cargoToml -match 'tauri-plugin-wdio' -or $webdriverRustSource.Count -ne 0) {
     throw 'A WebDriver plugin must never be compiled into the application.'
 }
 
@@ -46,6 +54,18 @@ if ($nativeConfig -notmatch "driverProvider:\s*'external'" -or
 }
 
 $candidateWorkflow = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.github\workflows\release-candidate.yml')
+$ciWorkflow = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot '.github\workflows\ci.yml')
+$backendSourceGateContracts = @(
+    'Verify backend source architecture',
+    'python -m unittest scripts/test_inventory_backend_methods.py',
+    'python -m unittest scripts/test_backend_architecture.py',
+    'python scripts/check-backend-architecture.py'
+)
+foreach ($required in $backendSourceGateContracts) {
+    if (-not $ciWorkflow.Contains($required) -or -not $candidateWorkflow.Contains($required)) {
+        throw "CI and release-candidate workflows must both enforce the backend source contract: $required"
+    }
+}
 foreach ($required in @(
     'cargo install tauri-driver --version 2.0.6 --locked',
     'run-windows-candidate-acceptance-user.ps1',

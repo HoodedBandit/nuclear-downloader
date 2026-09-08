@@ -6,6 +6,7 @@ use crate::models::{
     DownloaderRuntimeState, DownloaderRuntimeStatus, DownloaderRuntimeUpdateCheck,
     DownloaderRuntimeUpdateProgress, DownloaderToolStatus,
 };
+use crate::notifications::RuntimeProgressSink;
 use crate::runtime_transaction::{
     self, RuntimeMutationLock, RuntimeTransaction, RuntimeTransactionCheckpoint,
 };
@@ -22,7 +23,6 @@ use std::path::{Component, Path, PathBuf};
 #[cfg(test)]
 use std::sync::LazyLock;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio_util::sync::CancellationToken;
@@ -36,7 +36,6 @@ use std::sync::Mutex;
 
 const GITHUB_RELEASES_LATEST_URL: &str =
     "https://api.github.com/repos/HoodedBandit/nuclear-downloader/releases/latest";
-const RUNTIME_UPDATE_PROGRESS_EVENT: &str = "downloader-runtime-update-progress";
 const MIN_RECOMMENDED_YTDLP_VERSION: &str = "2026.07.04";
 const NETWORK_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const NETWORK_READ_TIMEOUT: Duration = Duration::from_secs(30);
@@ -501,26 +500,26 @@ pub(crate) async fn check_downloader_runtime_update_with_status_cancellable(
 }
 
 pub async fn update_downloader_runtime(
-    app: AppHandle,
+    progress: RuntimeProgressSink,
     context: UpdateTaskContext,
 ) -> Result<DownloaderRuntimeStatus, UpdateRunError> {
-    let result = update_downloader_runtime_inner(&app, &context).await;
+    let result = update_downloader_runtime_inner(&progress, &context).await;
     if let Err(error) = &result {
         let (status, message) = match error {
             UpdateRunError::Cancelled => ("cancelled", "Runtime update was cancelled.".to_string()),
             UpdateRunError::Failed(error) => ("error", error.summary.clone()),
         };
-        emit_runtime_progress(&app, status, None, 0, None, Some(message));
+        emit_runtime_progress(&progress, status, None, 0, None, Some(message));
     }
     result
 }
 
 async fn update_downloader_runtime_inner(
-    app: &AppHandle,
+    progress: &RuntimeProgressSink,
     context: &UpdateTaskContext,
 ) -> Result<DownloaderRuntimeStatus, UpdateRunError> {
     emit_runtime_progress(
-        app,
+        progress,
         "checking",
         None,
         0,
@@ -562,7 +561,7 @@ async fn update_downloader_runtime_inner(
     let archive_path = work_root.join(archive_name);
 
     emit_runtime_progress(
-        app,
+        progress,
         "downloading",
         Some(selection.version.clone()),
         0,
@@ -574,7 +573,7 @@ async fn update_downloader_runtime_inner(
     let install_result = async {
         let actual_checksum = tokio::time::timeout(
             RUNTIME_DOWNLOAD_TIMEOUT,
-            download_archive(app, &client, &selection, &archive_path, context),
+            download_archive(progress, &client, &selection, &archive_path, context),
         )
         .await
         .map_err(|_| "Runtime download exceeded the 30-minute limit.".to_string())??;
@@ -583,7 +582,7 @@ async fn update_downloader_runtime_inner(
         }
 
         emit_runtime_progress(
-            app,
+            progress,
             "installing",
             Some(selection.version.clone()),
             selection.archive_size,
@@ -762,7 +761,7 @@ async fn update_downloader_runtime_inner(
     }
 
     emit_runtime_progress(
-        app,
+        progress,
         "complete",
         Some(installed_version),
         selection.archive_size,
@@ -2071,7 +2070,7 @@ async fn download_bounded_body(
 }
 
 async fn download_archive(
-    app: &AppHandle,
+    progress: &RuntimeProgressSink,
     client: &Client,
     selection: &RuntimeAssetSelection,
     archive_path: &Path,
@@ -2132,7 +2131,7 @@ async fn download_archive(
             .map_err(|error| format!("Failed to write runtime archive: {error}"))?;
         hasher.update(&chunk);
         emit_runtime_progress(
-            app,
+            progress,
             "downloading",
             Some(selection.version.clone()),
             downloaded_bytes,
@@ -2582,25 +2581,20 @@ async fn remove_owned_runtime_update_dir(path: &Path) -> Result<(), String> {
 }
 
 fn emit_runtime_progress(
-    app: &AppHandle,
+    progress: &RuntimeProgressSink,
     status: &str,
     version: Option<String>,
     downloaded_bytes: u64,
     total_bytes: Option<u64>,
     message: Option<String>,
 ) {
-    if let Err(error) = app.emit(
-        RUNTIME_UPDATE_PROGRESS_EVENT,
-        DownloaderRuntimeUpdateProgress {
-            status: status.to_string(),
-            version,
-            downloaded_bytes,
-            total_bytes,
-            message,
-        },
-    ) {
-        eprintln!("Failed to emit runtime update progress: {error}");
-    }
+    progress(DownloaderRuntimeUpdateProgress {
+        status: status.to_string(),
+        version,
+        downloaded_bytes,
+        total_bytes,
+        message,
+    });
 }
 
 #[cfg(test)]

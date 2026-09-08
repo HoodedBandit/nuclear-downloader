@@ -1,4 +1,4 @@
-use super::display_output_directory;
+use crate::services::queue::display_output_directory;
 
 #[test]
 fn output_directory_hides_windows_verbatim_prefixes() {
@@ -77,8 +77,8 @@ fn persistent_state_opens_only_after_single_instance_registration() {
 fn download_worker_pool_is_started_once_during_setup() {
     let production = include_str!("lib.rs");
     assert_eq!(production.matches("spawn_download_workers(").count(), 1);
-    assert!(include_str!("scheduling.rs").contains("for _ in 0..5"));
-    let enqueue = production
+    assert!(include_str!("services/downloads.rs").contains("for _ in 0..5"));
+    let enqueue = include_str!("services/queue.rs")
         .split("fn enqueue_queue_items(")
         .nth(1)
         .and_then(|tail| tail.split("\n}\n").next())
