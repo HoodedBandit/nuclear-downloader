@@ -2,7 +2,7 @@ use super::process::DownloadJob;
 use super::{normalize_filename_override, sanitize_filename_component, MAX_ACTIONABLE_FIELD_BYTES};
 use crate::models::DownloadRequest;
 use serde::Deserialize;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
 
@@ -12,6 +12,7 @@ const STAGING_MARKER_NAME: &str = ".nuclear-downloader-owner-v1.json";
 const STAGING_CLEANUP_PREFIX: &str = ".cleanup-";
 const FINAL_OUTPUT_RECORD_NAME: &str = ".nuclear-final-output-v1.jsonl";
 const MAX_FINAL_OUTPUT_RECORD_BYTES: u64 = 64 * 1024;
+const MAX_STAGING_MARKER_BYTES: u64 = 4 * 1024;
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -233,16 +234,24 @@ fn verify_staging_marker_with_name_policy(
     require_operation_name: bool,
 ) -> Result<(), String> {
     let marker_path = path.join(STAGING_MARKER_NAME);
-    let marker_metadata = std::fs::symlink_metadata(&marker_path)
-        .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?;
-    if !marker_metadata.is_file() || is_reparse_metadata(&marker_metadata) {
-        return Err("Staging ownership marker was not a regular non-reparse file.".into());
+    let mut marker_file = open_staging_marker(&marker_path)?;
+    let marker_metadata = marker_file
+        .metadata()
+        .map_err(|_| "Staging ownership marker could not be inspected.".to_string())?;
+    if marker_metadata.len() > MAX_STAGING_MARKER_BYTES {
+        return Err("Staging ownership marker exceeded the 4 KiB limit.".into());
     }
-    let marker: serde_json::Value = serde_json::from_slice(
-        &std::fs::read(&marker_path)
-            .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?,
-    )
-    .map_err(|_| "Staging ownership marker was invalid.".to_string())?;
+    let mut marker_bytes = Vec::with_capacity(marker_metadata.len() as usize);
+    (&mut marker_file)
+        .take(MAX_STAGING_MARKER_BYTES + 1)
+        .read_to_end(&mut marker_bytes)
+        .map_err(|_| "Staging ownership marker could not be read.".to_string())?;
+    if marker_bytes.len() as u64 > MAX_STAGING_MARKER_BYTES {
+        return Err("Staging ownership marker exceeded the 4 KiB limit.".into());
+    }
+    verify_opened_marker_identity(&marker_file, &marker_path)?;
+    let marker: serde_json::Value = serde_json::from_slice(&marker_bytes)
+        .map_err(|_| "Staging ownership marker was invalid.".to_string())?;
     let directory_id = path.file_name().and_then(|name| name.to_str());
     if marker["schemaVersion"] != 1
         || marker["owner"] != "nuclear-downloader"
@@ -250,6 +259,148 @@ fn verify_staging_marker_with_name_policy(
         || (require_operation_name && directory_id != Some(expected_operation_id))
     {
         return Err("Staging ownership marker was not recognized.".to_string());
+    }
+    Ok(())
+}
+
+fn open_staging_marker(path: &Path) -> Result<std::fs::File, String> {
+    let path_metadata = std::fs::symlink_metadata(path)
+        .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?;
+    if !path_metadata.is_file() || is_reparse_metadata(&path_metadata) {
+        return Err("Staging ownership marker was not a regular non-reparse file.".into());
+    }
+
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const FILE_SHARE_READ: u32 = 0x0000_0001;
+        const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+        options
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    }
+    let file = options
+        .open(path)
+        .map_err(|_| "Staging folder did not contain an ownership marker.".to_string())?;
+    let opened_metadata = file
+        .metadata()
+        .map_err(|_| "Staging ownership marker could not be inspected.".to_string())?;
+    if !opened_metadata.is_file() || is_reparse_metadata(&opened_metadata) {
+        return Err("Staging ownership marker was not a regular non-reparse file.".into());
+    }
+    verify_opened_marker_identity(&file, path)?;
+    Ok(file)
+}
+
+#[cfg(windows)]
+fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<(), String> {
+    use std::ffi::c_void;
+    use std::os::windows::fs::OpenOptionsExt;
+    use std::os::windows::io::AsRawHandle;
+
+    const FILE_SHARE_READ: u32 = 0x0000_0001;
+    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+
+    #[repr(C)]
+    struct FileTime {
+        low_date_time: u32,
+        high_date_time: u32,
+    }
+
+    #[repr(C)]
+    struct ByHandleFileInformation {
+        file_attributes: u32,
+        creation_time: FileTime,
+        last_access_time: FileTime,
+        last_write_time: FileTime,
+        volume_serial_number: u32,
+        file_size_high: u32,
+        file_size_low: u32,
+        number_of_links: u32,
+        file_index_high: u32,
+        file_index_low: u32,
+    }
+
+    #[link(name = "Kernel32")]
+    unsafe extern "system" {
+        fn GetFileInformationByHandle(
+            file: *mut c_void,
+            information: *mut ByHandleFileInformation,
+        ) -> i32;
+    }
+
+    fn identity(file: &std::fs::File) -> Result<(u32, u64), String> {
+        let mut information = std::mem::MaybeUninit::<ByHandleFileInformation>::uninit();
+        // SAFETY: the raw handle remains valid for the call and Windows writes
+        // one complete `ByHandleFileInformation` value on success.
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), information.as_mut_ptr()) }
+            == 0
+        {
+            return Err("Staging ownership marker identity could not be verified.".into());
+        }
+        // SAFETY: a successful call initialized the complete output structure.
+        let information = unsafe { information.assume_init() };
+        Ok((
+            information.volume_serial_number,
+            (u64::from(information.file_index_high) << 32) | u64::from(information.file_index_low),
+        ))
+    }
+
+    let current_metadata = std::fs::symlink_metadata(path)
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    if !current_metadata.is_file() || is_reparse_metadata(&current_metadata) {
+        return Err("Staging ownership marker path changed while it was open.".into());
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options
+        .read(true)
+        .share_mode(FILE_SHARE_READ)
+        .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+    let current = options
+        .open(path)
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    let current_metadata = current
+        .metadata()
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    if !current_metadata.is_file()
+        || is_reparse_metadata(&current_metadata)
+        || identity(opened)? != identity(&current)?
+    {
+        return Err("Staging ownership marker path changed while it was open.".into());
+    }
+    Ok(())
+}
+
+#[cfg(unix)]
+fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<(), String> {
+    use std::os::unix::fs::MetadataExt;
+
+    let current_path_metadata = std::fs::symlink_metadata(path)
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    if !current_path_metadata.is_file() || is_reparse_metadata(&current_path_metadata) {
+        return Err("Staging ownership marker path changed while it was open.".into());
+    }
+    let opened_metadata = opened
+        .metadata()
+        .map_err(|_| "Staging ownership marker identity could not be verified.".to_string())?;
+    let current_metadata = std::fs::metadata(path)
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    if opened_metadata.dev() != current_metadata.dev()
+        || opened_metadata.ino() != current_metadata.ino()
+    {
+        return Err("Staging ownership marker path changed while it was open.".into());
+    }
+    Ok(())
+}
+
+#[cfg(not(any(windows, unix)))]
+fn verify_opened_marker_identity(_opened: &std::fs::File, path: &Path) -> Result<(), String> {
+    let current_metadata = std::fs::symlink_metadata(path)
+        .map_err(|_| "Staging ownership marker path changed while it was open.".to_string())?;
+    if !current_metadata.is_file() || is_reparse_metadata(&current_metadata) {
+        return Err("Staging ownership marker path changed while it was open.".into());
     }
     Ok(())
 }
@@ -1072,6 +1223,32 @@ mod tests {
 
         assert!(cleanup_staging_dir(&stage, &output, &operation_id).is_err());
         assert!(stage.join("keep.txt").is_file());
+        let _ = std::fs::remove_dir_all(output);
+    }
+
+    #[test]
+    fn oversized_staging_marker_is_rejected_without_removing_input() {
+        let output = std::env::temp_dir().join(format!(
+            "nuclear-stage-oversized-marker-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&output).unwrap();
+        let operation_id = uuid::Uuid::new_v4().to_string();
+        let stage = build_staging_dir(&output, &operation_id);
+        reset_staging_dir(&stage, &output, &operation_id).unwrap();
+        let marker_path = stage.join(STAGING_MARKER_NAME);
+        let mut marker = serde_json::to_vec(&serde_json::json!({
+            "schemaVersion": 1,
+            "owner": "nuclear-downloader",
+            "operationId": operation_id,
+        }))
+        .unwrap();
+        marker.resize(64 * 1024, b' ');
+        std::fs::write(&marker_path, &marker).unwrap();
+
+        assert!(super::verify_staging_marker(&stage, &operation_id).is_err());
+        assert_eq!(std::fs::read(&marker_path).unwrap(), marker);
+
         let _ = std::fs::remove_dir_all(output);
     }
 
