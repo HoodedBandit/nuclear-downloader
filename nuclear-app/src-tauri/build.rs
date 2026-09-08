@@ -192,33 +192,14 @@ fn validate_update_key_environment(profile: &str) {
     let current_key = env::var("NUCLEAR_UPDATE_PUBLIC_KEY").unwrap_or_default();
     let next_id = env::var("NUCLEAR_UPDATE_NEXT_KEY_ID").unwrap_or_default();
     let next_key = env::var("NUCLEAR_UPDATE_NEXT_PUBLIC_KEY").unwrap_or_default();
-
-    if profile == "release" && (current_id.is_empty() || current_key.is_empty()) {
-        panic!(
-            "Release builds require NUCLEAR_UPDATE_KEY_ID and NUCLEAR_UPDATE_PUBLIC_KEY so update manifests are authenticated."
-        );
-    }
-    if current_id.is_empty() != current_key.is_empty() {
-        panic!("The current updater key ID and public key must be configured together.");
-    }
-    if next_id.is_empty() != next_key.is_empty() {
-        panic!("The next updater key ID and public key must be configured together.");
-    }
-    for (label, key_id) in [("current", &current_id), ("next", &next_id)] {
-        if !key_id.is_empty()
-            && (key_id.len() > 64
-                || !key_id
-                    .bytes()
-                    .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(&byte)))
-        {
-            panic!(
-                "The {label} updater key ID must use 1-64 ASCII letters, digits, '.', '_', or '-'."
-            );
-        }
-    }
-    if !next_id.is_empty() && next_id == current_id {
-        panic!("The current and next updater key IDs must be different.");
-    }
+    build_config::validate_update_key_configuration(
+        profile,
+        &current_id,
+        &current_key,
+        &next_id,
+        &next_key,
+    )
+    .unwrap_or_else(|error| panic!("{error}"));
 }
 
 fn verify_sidecar(path: &Path, entry: &SidecarEntry) -> Result<(), String> {

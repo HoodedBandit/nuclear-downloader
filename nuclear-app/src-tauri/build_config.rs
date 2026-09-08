@@ -48,9 +48,50 @@ pub fn merge_external_bins(
         .map_err(|error| format!("Failed to serialize merged TAURI_CONFIG: {error}"))
 }
 
+pub fn validate_update_key_configuration(
+    profile: &str,
+    current_id: &str,
+    current_key: &str,
+    next_id: &str,
+    next_key: &str,
+) -> Result<(), String> {
+    if profile == "release" && (current_id.is_empty() || current_key.is_empty()) {
+        return Err(
+            "Release builds require NUCLEAR_UPDATE_KEY_ID and NUCLEAR_UPDATE_PUBLIC_KEY so update manifests are authenticated."
+                .into(),
+        );
+    }
+    if current_id.is_empty() != current_key.is_empty() {
+        return Err(
+            "The current updater key ID and public key must be configured together.".into(),
+        );
+    }
+    if next_id.is_empty() != next_key.is_empty() {
+        return Err("The next updater key ID and public key must be configured together.".into());
+    }
+    for (label, key_id) in [("current", current_id), ("next", next_id)] {
+        if !key_id.is_empty() && !crate::artifact_contract::is_canonical_update_key_id(key_id) {
+            return Err(format!(
+                "The {label} updater key ID must use 1-64 ASCII letters, digits, '.', '_', or '-'."
+            ));
+        }
+    }
+    if !next_id.is_empty() && next_id == current_id {
+        return Err("The current and next updater key IDs must be different.".into());
+    }
+    for (label, public_key) in [("current", current_key), ("next", next_key)] {
+        if !public_key.is_empty() {
+            crate::artifact_contract::parse_tauri_update_public_key(public_key).map_err(
+                |error| format!("The embedded {label} updater public key is invalid: {error}"),
+            )?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::merge_external_bins;
+    use super::{merge_external_bins, validate_update_key_configuration};
     use serde_json::Value;
 
     #[test]
@@ -98,5 +139,51 @@ mod tests {
         .expect_err("non-array externalBin should fail");
 
         assert!(error.contains("externalBin must be an array"));
+    }
+
+    #[test]
+    fn release_key_configuration_rejects_malformed_public_key_wrapper() {
+        let error = validate_update_key_configuration(
+            "release",
+            "release-key-1",
+            "not-tauri-base64",
+            "",
+            "",
+        )
+        .unwrap_err();
+
+        assert!(error.contains("public key"));
+    }
+
+    #[test]
+    fn release_key_configuration_accepts_valid_public_key_wrapper() {
+        validate_update_key_configuration(
+            "release",
+            "release-key-1",
+            crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY,
+            "",
+            "",
+        )
+        .expect("the repository Minisign fixture should be accepted");
+    }
+
+    #[test]
+    fn debug_key_configuration_accepts_empty_rotation_slots() {
+        validate_update_key_configuration("debug", "", "", "", "")
+            .expect("debug builds may omit updater keys");
+    }
+
+    #[test]
+    fn release_key_configuration_rejects_malformed_optional_next_key() {
+        let error = validate_update_key_configuration(
+            "release",
+            "release-key-1",
+            crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY,
+            "release-key-2",
+            "not-tauri-base64",
+        )
+        .unwrap_err();
+
+        assert!(error.contains("next updater public key"));
     }
 }

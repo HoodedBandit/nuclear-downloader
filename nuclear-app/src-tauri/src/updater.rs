@@ -1,7 +1,7 @@
 use crate::lifecycle::{PublicationKind, UpdateRunError, UpdateTaskContext};
 use crate::models::{UpdateCheckResult, UpdateInstallProgress};
 use futures_util::StreamExt;
-use minisign_verify::{PublicKey, Signature};
+use minisign_verify::Signature;
 use reqwest::header::ACCEPT;
 use reqwest::{Client, Response};
 use semver::Version;
@@ -738,11 +738,7 @@ fn select_public_key<'a>(
 }
 
 pub(crate) fn is_canonical_update_key_id(value: &str) -> bool {
-    !value.is_empty()
-        && value.len() <= 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || b"._-".contains(&byte))
+    crate::artifact_contract::is_canonical_update_key_id(value)
 }
 
 fn verify_with_public_key(
@@ -750,95 +746,19 @@ fn verify_with_public_key(
     bytes: &[u8],
     signature_bytes: &[u8],
 ) -> Result<(), String> {
-    let decoded_key = decode_tauri_base64_wrapper(public_key_text.as_bytes(), 8 * 1024)
-        .map_err(|_| "The embedded Tauri update public key wrapper is invalid.".to_string())?;
-    let decoded_signature = decode_tauri_base64_wrapper(signature_bytes, SIGNATURE_LIMIT as usize)
-        .map_err(|_| "The Tauri release signature wrapper is invalid.".to_string())?;
-    let public_key_text = std::str::from_utf8(&decoded_key)
-        .map_err(|_| "The embedded update public key is not valid UTF-8.".to_string())?;
+    let public_key = crate::artifact_contract::parse_tauri_update_public_key(public_key_text)?;
+    let decoded_signature = crate::artifact_contract::decode_tauri_base64_wrapper(
+        signature_bytes,
+        SIGNATURE_LIMIT as usize,
+    )
+    .map_err(|_| "The Tauri release signature wrapper is invalid.".to_string())?;
     let signature_text = std::str::from_utf8(&decoded_signature)
         .map_err(|_| "The release signature is not valid UTF-8.".to_string())?;
-    let public_key = PublicKey::decode(public_key_text)
-        .map_err(|_| "The embedded update public key is invalid.".to_string())?;
     let signature = Signature::decode(signature_text)
         .map_err(|_| "The release signature has an invalid format.".to_string())?;
     public_key
         .verify(bytes, &signature, false)
         .map_err(|_| "The release manifest signature is invalid.".to_string())
-}
-
-fn decode_tauri_base64_wrapper(input: &[u8], decoded_limit: usize) -> Result<Vec<u8>, ()> {
-    let input = input
-        .strip_suffix(b"\r\n")
-        .or_else(|| input.strip_suffix(b"\n"))
-        .unwrap_or(input);
-    if input.is_empty()
-        || !input.len().is_multiple_of(4)
-        || input.iter().any(u8::is_ascii_whitespace)
-    {
-        return Err(());
-    }
-    let padding = input.iter().rev().take_while(|byte| **byte == b'=').count();
-    if padding > 2 || input[..input.len() - padding].contains(&b'=') {
-        return Err(());
-    }
-    let decoded_length = input
-        .len()
-        .checked_div(4)
-        .and_then(|groups| groups.checked_mul(3))
-        .and_then(|length| length.checked_sub(padding))
-        .ok_or(())?;
-    if decoded_length > decoded_limit {
-        return Err(());
-    }
-    let mut output = Vec::with_capacity(decoded_length);
-    for (group_index, group) in input.chunks_exact(4).enumerate() {
-        let last = group_index + 1 == input.len() / 4;
-        let a = decode_base64_digit(group[0]).ok_or(())? as u32;
-        let b = decode_base64_digit(group[1]).ok_or(())? as u32;
-        let c = if group[2] == b'=' {
-            if !last || group[3] != b'=' {
-                return Err(());
-            }
-            if b & 0x0f != 0 {
-                return Err(());
-            }
-            0
-        } else {
-            decode_base64_digit(group[2]).ok_or(())? as u32
-        };
-        let d = if group[3] == b'=' {
-            if !last {
-                return Err(());
-            }
-            if c & 0x03 != 0 {
-                return Err(());
-            }
-            0
-        } else {
-            decode_base64_digit(group[3]).ok_or(())? as u32
-        };
-        let value = (a << 18) | (b << 12) | (c << 6) | d;
-        output.push((value >> 16) as u8);
-        if group[2] != b'=' {
-            output.push((value >> 8) as u8);
-        }
-        if group[3] != b'=' {
-            output.push(value as u8);
-        }
-    }
-    (output.len() == decoded_length).then_some(output).ok_or(())
-}
-
-fn decode_base64_digit(byte: u8) -> Option<u8> {
-    match byte {
-        b'A'..=b'Z' => Some(byte - b'A'),
-        b'a'..=b'z' => Some(byte - b'a' + 26),
-        b'0'..=b'9' => Some(byte - b'0' + 52),
-        b'+' => Some(62),
-        b'/' => Some(63),
-        _ => None,
-    }
 }
 
 fn select_signed_update_assets<'a>(
@@ -1791,15 +1711,13 @@ mod tests {
 
     #[test]
     fn minisign_verification_covers_exact_manifest_bytes() {
-        let public_key = b"untrusted comment: minisign public key E7620F1842B4E81F\nRWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3";
+        let public_key = crate::artifact_contract::TEST_MINISIGN_PUBLIC_KEY;
         let signature = b"untrusted comment: signature from minisign secret key\nRUQf6LRCGA9i559r3g7V1qNyJDApGip8MfqcadIgT9CuhV3EMhHoN1mGTkUidF/z7SrlQgXdy8ofjb7bNJJylDOocrCo8KLzZwo=\ntrusted comment: timestamp:1556193335\tfile:test\ny/rUw2y8/hOUYjZU71eHp/Wo1KZ40fGy2VJEDl34XMJM+TX48Ss/17u3IvIfbVR1FkZZSNCisQbuQY+bHwhEBg==";
-        let wrapped_key = base64_encode(public_key);
+        let wrapped_key = crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY;
         let wrapped_signature = base64_encode(signature);
+        assert!(verify_with_public_key(wrapped_key, b"test", wrapped_signature.as_bytes()).is_ok());
         assert!(
-            verify_with_public_key(&wrapped_key, b"test", wrapped_signature.as_bytes()).is_ok()
-        );
-        assert!(
-            verify_with_public_key(&wrapped_key, b"Test", wrapped_signature.as_bytes()).is_err()
+            verify_with_public_key(wrapped_key, b"Test", wrapped_signature.as_bytes()).is_err()
         );
         assert!(verify_with_public_key(
             std::str::from_utf8(public_key).unwrap(),
