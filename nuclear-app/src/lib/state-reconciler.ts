@@ -24,13 +24,14 @@ export class StateReconciler<TState, TDelta> {
 
   constructor(private readonly applyDelta: DeltaApplication<TState, TDelta>) {}
 
-  push(delta: SequencedDelta<TDelta>): void {
+  /** Only an immediately applied delta may be published with the current state. */
+  push(delta: SequencedDelta<TDelta>): boolean {
     if (this.loading) {
       this.buffered.push(delta);
-      return;
+      return false;
     }
 
-    this.apply(delta);
+    return this.apply(delta);
   }
 
   beginReload(): void {
@@ -59,14 +60,15 @@ export class StateReconciler<TState, TDelta> {
     return { sequence: this.sequence, value: this.state };
   }
 
-  private apply(delta: SequencedDelta<TDelta>): void {
-    if (this.gap || this.state === null || delta.sequence <= this.sequence) return;
+  private apply(delta: SequencedDelta<TDelta>): boolean {
+    if (this.gap || this.state === null || delta.sequence <= this.sequence) return false;
     if (delta.sequence !== this.sequence + 1) {
       this.gap = true;
-      return;
+      return false;
     }
 
     this.state = this.applyDelta(this.state, delta.value);
     this.sequence = delta.sequence;
+    return true;
   }
 }

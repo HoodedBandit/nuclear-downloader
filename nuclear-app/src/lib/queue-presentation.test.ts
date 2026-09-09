@@ -66,7 +66,7 @@ function snapshot(queue = [record()], operations: OperationSnapshot[] = []): App
 
 function setup(now = vi.fn(() => 1_000)) {
   const state = createQueuePresentationState();
-  const invoke = vi.fn(async () => undefined);
+  const invoke = vi.fn<() => Promise<void>>(async () => undefined);
   const focus = vi.fn(async () => undefined);
   const controller = new QueuePresentationController(state, {
     invoke: invoke as never,
@@ -470,6 +470,138 @@ describe('QueuePresentationController', () => {
       error: 'rename rejected'
     });
     expect(clear).not.toHaveBeenCalled();
+  });
+
+  it('does not let a late filename save clear a newer edit', async () => {
+    let resolveSave!: () => void;
+    const save = new Promise<void>((resolve) => (resolveSave = resolve));
+    const { controller, state, invoke } = setup();
+    invoke.mockReturnValueOnce(save);
+    controller.applySnapshot(snapshot([record('item-1'), record('item-2')]));
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Saved first.mp4';
+    const pending = controller.commitFilenameEdit();
+
+    controller.cancelFilenameEdit();
+    await controller.beginFilenameEdit(state.items[1]);
+    state.editing.draft = 'Keep second draft.mp4';
+    resolveSave();
+    await pending;
+
+    expect(state.editing).toEqual({
+      itemId: 'item-2',
+      draft: 'Keep second draft.mp4',
+      error: ''
+    });
+  });
+
+  it('does not let a late filename failure overwrite a newer edit', async () => {
+    let rejectSave!: (error: Error) => void;
+    const save = new Promise<void>((_, reject) => (rejectSave = reject));
+    const { controller, state, invoke } = setup();
+    invoke.mockReturnValueOnce(save);
+    controller.applySnapshot(snapshot([record('item-1'), record('item-2')]));
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Rejected first.mp4';
+    const pending = controller.commitFilenameEdit();
+
+    controller.cancelFilenameEdit();
+    await controller.beginFilenameEdit(state.items[1]);
+    state.editing.draft = 'Keep second draft.mp4';
+    rejectSave(new Error('late first failure'));
+    await pending;
+
+    expect(state.editing).toEqual({
+      itemId: 'item-2',
+      draft: 'Keep second draft.mp4',
+      error: ''
+    });
+  });
+
+  it('does not clear a same-row draft changed while its filename save is pending', async () => {
+    let resolveSave!: () => void;
+    const save = new Promise<void>((resolve) => (resolveSave = resolve));
+    const { controller, state, invoke } = setup();
+    invoke.mockReturnValueOnce(save);
+    controller.applySnapshot(snapshot());
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Submitted.mp4';
+    const pending = controller.commitFilenameEdit();
+
+    state.editing.draft = 'Newer draft.mp4';
+    resolveSave();
+    await pending;
+
+    expect(state.editing).toEqual({
+      itemId: 'item-1',
+      draft: 'Newer draft.mp4',
+      error: ''
+    });
+  });
+
+  it('does not let a late filename save clear a reopened same-row edit with the same draft', async () => {
+    let resolveSave!: () => void;
+    const save = new Promise<void>((resolve) => (resolveSave = resolve));
+    const { controller, state, invoke } = setup();
+    invoke.mockReturnValueOnce(save);
+    controller.applySnapshot(snapshot());
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Same draft.mp4';
+    const pending = controller.commitFilenameEdit();
+
+    controller.cancelFilenameEdit();
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Same draft.mp4';
+    resolveSave();
+    await pending;
+
+    expect(state.editing).toEqual({ itemId: 'item-1', draft: 'Same draft.mp4', error: '' });
+  });
+
+  it('does not show a late filename failure after the same-row draft changes', async () => {
+    let rejectSave!: (error: Error) => void;
+    const save = new Promise<void>((_, reject) => (rejectSave = reject));
+    const { controller, state, invoke } = setup();
+    invoke.mockReturnValueOnce(save);
+    controller.applySnapshot(snapshot());
+    await controller.beginFilenameEdit(state.items[0]);
+    state.editing.draft = 'Submitted.mp4';
+    const pending = controller.commitFilenameEdit();
+
+    state.editing.draft = 'Newer draft.mp4';
+    rejectSave(new Error('late failure'));
+    await pending;
+
+    expect(state.editing).toEqual({ itemId: 'item-1', draft: 'Newer draft.mp4', error: '' });
+  });
+
+  it.each(['Keep second draft.mp4', '   '])(
+    'ignores a stale row callback while another filename editor owns draft %j',
+    async (draft) => {
+      const { controller, state, invoke } = setup();
+      controller.applySnapshot(snapshot([record('item-1'), record('item-2')]));
+      await controller.beginFilenameEdit(state.items[1]);
+      state.editing.draft = draft;
+      const before = { ...state.editing };
+
+      await controller.commitFilenameEdit('item-1');
+
+      expect(invoke).not.toHaveBeenCalled();
+      expect(state.editing).toEqual(before);
+    }
+  );
+
+  it('ignores a stale row callback after the filename editor is cancelled', async () => {
+    const { controller, state, invoke } = setup();
+    controller.applySnapshot(snapshot());
+    await controller.beginFilenameEdit(state.items[0]);
+    controller.cancelFilenameEdit();
+    const before = { ...state.editing };
+
+    await controller.commitFilenameEdit('item-1');
+
+    expect(invoke).not.toHaveBeenCalled();
+    expect(state.editing).toEqual(before);
   });
 
   it('derives selection summaries and exact virtual row spacers', () => {

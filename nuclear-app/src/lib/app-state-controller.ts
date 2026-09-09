@@ -132,12 +132,12 @@ export class AppStateController {
     if (!this.isCurrent(session)) return;
     const delta = validateStateDelta(unchecked);
     if (!this.isCurrent(session)) return;
-    session.reconciler.push({ sequence: delta.sequence, value: delta });
+    const applied = session.reconciler.push({ sequence: delta.sequence, value: delta });
     if (session.registrationsComplete && session.reconciler.needsRefetch()) {
       await this.load(session, true);
       return;
     }
-    this.publish(session, delta);
+    if (applied) this.publish(session, delta);
   }
 
   private async acceptResyncFor(

@@ -68,6 +68,7 @@ export function createQueuePresentationState(): QueuePresentationState {
 export class QueuePresentationController {
   private readonly metadataByUrl = new Map<string, RetainedMetadata[]>();
   private readonly displayUpdatedAt = new Map<string, { operationId: string; updatedAt: number }>();
+  private filenameEditGeneration = 0;
 
   constructor(
     readonly state: QueuePresentationState,
@@ -241,6 +242,7 @@ export class QueuePresentationController {
       await this.commitFilenameEdit(this.state.editing.itemId);
       if (!this.options.isActive() || this.state.editing.itemId) return;
     }
+    this.filenameEditGeneration += 1;
     this.state.editing.itemId = item.id;
     this.state.editing.draft = getQueueItemDisplayTitle(item);
     this.state.editing.error = '';
@@ -249,12 +251,15 @@ export class QueuePresentationController {
 
   async commitFilenameEdit(id: string | null = this.state.editing.itemId): Promise<void> {
     if (!id) return;
+    if (this.state.editing.itemId !== id) return;
     const item = this.state.items.find((candidate) => candidate.id === id);
     if (!item) {
       this.cancelFilenameEdit();
       return;
     }
-    const cleaned = sanitizeFilenameDraft(this.state.editing.draft);
+    const generation = this.filenameEditGeneration;
+    const draft = this.state.editing.draft;
+    const cleaned = sanitizeFilenameDraft(draft);
     if (!cleaned) {
       this.state.editing.error = 'Filename must contain at least one valid character.';
       return;
@@ -265,17 +270,27 @@ export class QueuePresentationController {
         input: { filenameOverride: cleaned !== item.title ? cleaned : null }
       });
       if (!this.options.isActive()) return;
-      this.cancelFilenameEdit();
+      if (this.ownsFilenameEdit(generation, id, draft)) this.cancelFilenameEdit();
     } catch (error) {
-      if (this.options.isActive()) this.state.editing.error = normalizeAppError(error);
+      if (this.options.isActive() && this.ownsFilenameEdit(generation, id, draft))
+        this.state.editing.error = normalizeAppError(error);
     }
   }
 
   cancelFilenameEdit(): void {
+    this.filenameEditGeneration += 1;
     this.state.editing.itemId = null;
     this.state.editing.draft = '';
     this.state.editing.error = '';
     this.options.clearFilenameEditor?.();
+  }
+
+  private ownsFilenameEdit(generation: number, id: string, draft: string): boolean {
+    return (
+      this.filenameEditGeneration === generation &&
+      this.state.editing.itemId === id &&
+      this.state.editing.draft === draft
+    );
   }
 
   toggleDiagnostics(id: string): void {
