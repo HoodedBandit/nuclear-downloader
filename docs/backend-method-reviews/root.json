@@ -59,7 +59,7 @@
         "Recovery precedes normal admission; failed startup never clears maintenance."
       ],
       "tests": [
-        "backend lifecycle startup tests and runtime recovery tests; Stage4 full Rust suite passed."
+        "Static source and caller review of bootstrap::start; no dedicated test in this sidecar directly isolates the complete startup sequence."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -111,7 +111,7 @@
         "Runs startup maintenance, transaction recovery, owned-stage cleanup, runtime initialization, and final maintenance clearing."
       ],
       "tests": [
-        "backend lifecycle startup/shutdown and protected-publication tests; exact nested body also statically reviewed"
+        "Static source and caller review of this exact nested body; no dedicated test directly isolates it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -164,7 +164,7 @@
         "Runs abandoned download-stage filesystem cleanup on Tauri blocking capacity using the captured journaled output roots."
       ],
       "tests": [
-        "backend lifecycle startup/shutdown and protected-publication tests; exact nested body also statically reviewed"
+        "Static source and caller review of this exact nested body; no dedicated test directly isolates it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -217,7 +217,7 @@
         "Receives the startup result and logs startup_admission_closed through the captured StateStore diagnostics on failure."
       ],
       "tests": [
-        "backend lifecycle startup/shutdown and protected-publication tests; exact nested body also statically reviewed"
+        "Static source and caller review of this exact nested body; no dedicated test directly isolates it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -270,7 +270,7 @@
         "Driver is not registered in the task set it waits for; pending finalization precedes manager.finish."
       ],
       "tests": [
-        "backend lifecycle shutdown/protected-publication tests; Stage4 full Rust suite passed."
+        "Static source and caller review of bootstrap::shutdown; no dedicated test in this sidecar directly isolates the complete shutdown sequence."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -322,7 +322,7 @@
         "Waits for shutdown cancellation, marks shutdown maintenance, terminally cancels pending downloads, then calls manager.finish for each."
       ],
       "tests": [
-        "backend lifecycle startup/shutdown and protected-publication tests; exact nested body also statically reviewed"
+        "Static source and caller review of this exact nested body; no dedicated test directly isolates it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -687,7 +687,7 @@
         "Owns the sole outbox reader, cloned StateStore, DownloadManager and AppHandle while publish_state_events retries and emits state publications until shutdown."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/desktop.rs:87; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of desktop::spawn_state_events::owned_async_closure#1; no dedicated test directly isolates this adapter-owned task body."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -869,8 +869,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 47,
-      "endLine": 53,
+      "line": 48,
+      "endLine": 54,
       "symbol": "begin_inspection",
       "qualifiedName": "begin_inspection",
       "signature": "async fn begin_inspection( _app: tauri::AppHandle, state: State<'_, AppState>, input: BeginInspectionInput, ) -> Result<BeginOperationResult, AppError>",
@@ -906,7 +906,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:47",
+        "src/lib.rs:48",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -921,8 +921,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 56,
-      "endLine": 67,
+      "line": 57,
+      "endLine": 68,
       "symbol": "cancel_operation",
       "qualifiedName": "cancel_operation",
       "signature": "async fn cancel_operation( app: tauri::AppHandle, state: State<'_, AppState>, operation_id: String, ) -> Result<(), AppError>",
@@ -958,7 +958,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:56",
+        "src/lib.rs:57",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -973,8 +973,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 70,
-      "endLine": 76,
+      "line": 71,
+      "endLine": 77,
       "symbol": "dismiss_operation",
       "qualifiedName": "dismiss_operation",
       "signature": "async fn dismiss_operation( _app: tauri::AppHandle, state: State<'_, AppState>, operation_id: String, ) -> Result<(), AppError>",
@@ -1010,7 +1010,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:70",
+        "src/lib.rs:71",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1025,8 +1025,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 79,
-      "endLine": 88,
+      "line": 80,
+      "endLine": 89,
       "symbol": "cancel_all_downloads",
       "qualifiedName": "cancel_all_downloads",
       "signature": "async fn cancel_all_downloads( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<CancelAllResult, AppError>",
@@ -1062,7 +1062,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:79",
+        "src/lib.rs:80",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1077,8 +1077,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 91,
-      "endLine": 93,
+      "line": 92,
+      "endLine": 94,
       "symbol": "get_app_snapshot",
       "qualifiedName": "get_app_snapshot",
       "signature": "fn get_app_snapshot(state: State<'_, AppState>) -> Result<AppSnapshot, AppError>",
@@ -1114,7 +1114,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:91",
+        "src/lib.rs:92",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1129,8 +1129,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 96,
-      "endLine": 102,
+      "line": 97,
+      "endLine": 103,
       "symbol": "add_inspection_result_to_queue",
       "qualifiedName": "add_inspection_result_to_queue",
       "signature": "async fn add_inspection_result_to_queue( _app: tauri::AppHandle, state: State<'_, AppState>, input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>",
@@ -1166,7 +1166,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:96",
+        "src/lib.rs:97",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1181,8 +1181,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 105,
-      "endLine": 112,
+      "line": 106,
+      "endLine": 113,
       "symbol": "update_queue_item",
       "qualifiedName": "update_queue_item",
       "signature": "async fn update_queue_item( _app: tauri::AppHandle, state: State<'_, AppState>, item_id: String, input: UpdateQueueItemInput, ) -> Result<(), AppError>",
@@ -1218,7 +1218,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:105",
+        "src/lib.rs:106",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1233,8 +1233,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 115,
-      "endLine": 121,
+      "line": 116,
+      "endLine": 122,
       "symbol": "remove_queue_items",
       "qualifiedName": "remove_queue_items",
       "signature": "async fn remove_queue_items( _app: tauri::AppHandle, state: State<'_, AppState>, item_ids: Vec<String>, ) -> Result<(), AppError>",
@@ -1270,7 +1270,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:115",
+        "src/lib.rs:116",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1285,8 +1285,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 124,
-      "endLine": 131,
+      "line": 125,
+      "endLine": 132,
       "symbol": "enqueue_queue_items",
       "qualifiedName": "enqueue_queue_items",
       "signature": "async fn enqueue_queue_items( _app: tauri::AppHandle, state: State<'_, AppState>, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
@@ -1322,7 +1322,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:124",
+        "src/lib.rs:125",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1337,8 +1337,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 134,
-      "endLine": 139,
+      "line": 135,
+      "endLine": 140,
       "symbol": "check_downloader_runtime",
       "qualifiedName": "check_downloader_runtime",
       "signature": "async fn check_downloader_runtime( _app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::DownloaderRuntimeStatus, AppError>",
@@ -1374,7 +1374,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:134",
+        "src/lib.rs:135",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1389,8 +1389,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 142,
-      "endLine": 147,
+      "line": 143,
+      "endLine": 148,
       "symbol": "check_runtime_update",
       "qualifiedName": "check_runtime_update",
       "signature": "async fn check_runtime_update( _app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::DownloaderRuntimeUpdateCheck, AppError>",
@@ -1426,7 +1426,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:142",
+        "src/lib.rs:143",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1441,8 +1441,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 150,
-      "endLine": 159,
+      "line": 151,
+      "endLine": 160,
       "symbol": "begin_runtime_update",
       "qualifiedName": "begin_runtime_update",
       "signature": "async fn begin_runtime_update( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<BeginOperationResult, AppError>",
@@ -1478,7 +1478,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:150",
+        "src/lib.rs:151",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1493,8 +1493,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 162,
-      "endLine": 164,
+      "line": 163,
+      "endLine": 165,
       "symbol": "default_download_dir",
       "qualifiedName": "default_download_dir",
       "signature": "fn default_download_dir() -> Result<String, AppError>",
@@ -1530,7 +1530,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:162",
+        "src/lib.rs:163",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1545,8 +1545,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 167,
-      "endLine": 169,
+      "line": 168,
+      "endLine": 170,
       "symbol": "validate_output_directory",
       "qualifiedName": "validate_output_directory",
       "signature": "fn validate_output_directory(path: String) -> Result<String, AppError>",
@@ -1582,7 +1582,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:167",
+        "src/lib.rs:168",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1597,8 +1597,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 172,
-      "endLine": 181,
+      "line": 173,
+      "endLine": 182,
       "symbol": "check_app_update",
       "qualifiedName": "check_app_update",
       "signature": "async fn check_app_update( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::UpdateCheckResult, AppError>",
@@ -1634,7 +1634,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:172",
+        "src/lib.rs:173",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1649,8 +1649,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 184,
-      "endLine": 197,
+      "line": 185,
+      "endLine": 198,
       "symbol": "begin_app_update",
       "qualifiedName": "begin_app_update",
       "signature": "async fn begin_app_update( app: tauri::AppHandle, state: State<'_, AppState>, expected_version: String, ) -> Result<BeginOperationResult, AppError>",
@@ -1686,7 +1686,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:184",
+        "src/lib.rs:185",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1701,8 +1701,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 200,
-      "endLine": 205,
+      "line": 201,
+      "endLine": 206,
       "symbol": "export_diagnostics",
       "qualifiedName": "export_diagnostics",
       "signature": "fn export_diagnostics(state: State<'_, AppState>, destination: String) -> Result<(), AppError>",
@@ -1738,7 +1738,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:200",
+        "src/lib.rs:201",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1753,8 +1753,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 208,
-      "endLine": 210,
+      "line": 209,
+      "endLine": 211,
       "symbol": "clear_diagnostics",
       "qualifiedName": "clear_diagnostics",
       "signature": "fn clear_diagnostics(state: State<'_, AppState>) -> Result<(), AppError>",
@@ -1790,7 +1790,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:208",
+        "src/lib.rs:209",
         "src/lib.rs tauri::generate_handler! registration"
       ],
       "disposition": "keep",
@@ -1805,8 +1805,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 213,
-      "endLine": 318,
+      "line": 214,
+      "endLine": 319,
       "symbol": "run",
       "qualifiedName": "run",
       "signature": "pub fn run()",
@@ -1844,9 +1844,9 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:213",
+        "src/lib.rs:214",
         "src/public_boundary_tests.rs source guards",
-        "Stage4 cargo test: 287 passed (reported by root)."
+        "Named public_boundary_tests source guards listed in this row; no aggregate suite count is used as behavioral proof."
       ],
       "disposition": "keep",
       "destination": "src/lib.rs",
@@ -1856,12 +1856,12 @@
       "notes": "Thin desktop composition root; behavior-preserving extraction reviewed."
     },
     {
-      "id": "src/lib.rs::run::owned_async_closure#1@311[cfg=all]",
+      "id": "src/lib.rs::run::owned_async_closure#1@312[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 311,
-      "endLine": 315,
+      "line": 312,
+      "endLine": 316,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "run::owned_async_closure#1",
       "signature": "async move",
@@ -1898,7 +1898,7 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:311",
+        "src/lib.rs:312",
         "Enclosing callable: src/lib.rs::run.",
         "Owns Backend, AppHandle and completion flag while awaiting bootstrap shutdown, then marks completion and requests the saved exit code."
       ],
@@ -1989,7 +1989,7 @@
         "Registers one tracked task, runs the supplied future under unwind conversion, and returns its result through a oneshot channel."
       ],
       "errors": [
-        "Returns the `Result<T, AppError> where T: Send + 'static, F: Future<Output = Result<T, AppError>> + Send + 'static,` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns spawn_tracked failure, the startup/service AppError sent by the task, a panic mapped to internal AppError, or a closed-result-channel internal AppError."
       ],
       "ownership": [
         "Moves the supplied future and oneshot sender into a registered task; the caller awaits only the receiver while the coordinator clone retains task ownership."
@@ -3401,7 +3401,7 @@
         "Owns Backend, operation ID and progress sink while selecting update/download cancellation, finalizing pending work, and waiting boundedly for terminal state."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/operations.rs:30; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::operations::cancel_operation::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -3497,7 +3497,7 @@
         "Propagates StateStore dismissal error."
       ],
       "ownership": [
-        "Owns Backend and operation ID; cancel block additionally owns the progress sink through any pending-download finalization."
+        "Owns Backend and operation ID through the single StateStore dismissal mutation; captures no progress sink."
       ],
       "locks": [
         "Tracked Admission registration spans the StateStore mutation."
@@ -3507,7 +3507,7 @@
         "Owns Backend and operation ID and awaits the single durable dismiss_operation mutation."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/operations.rs:109; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::operations::dismiss_operation::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -3600,7 +3600,7 @@
         "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion."
       ],
       "errors": [
-        "Propagates the exact validation, StateStore, or admission publication error; enqueue performs compensation before returning publication error."
+        "Propagates inspection lookup, request validation, output-path validation, audio-compatibility, or StateStore insertion AppError."
       ],
       "ownership": [
         "Owns Backend and the command input values through the single tracked admission transaction."
@@ -3613,7 +3613,7 @@
         "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/queue.rs:17; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::queue::add_inspection_result_to_queue::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -3706,7 +3706,7 @@
         "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch."
       ],
       "errors": [
-        "Propagates the exact validation, StateStore, or admission publication error; enqueue performs compensation before returning publication error."
+        "Propagates queue lookup, merged-request validation, output-path validation, audio-compatibility, or StateStore update AppError."
       ],
       "ownership": [
         "Owns Backend and the command input values through the single tracked admission transaction."
@@ -3719,7 +3719,7 @@
         "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/queue.rs:56; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::queue::update_queue_item::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -3812,7 +3812,7 @@
         "Owns Backend and item IDs and awaits the durable queue removal mutation."
       ],
       "errors": [
-        "Propagates the exact validation, StateStore, or admission publication error; enqueue performs compensation before returning publication error."
+        "Propagates only the StateStore queue-removal AppError after tracked startup admission succeeds."
       ],
       "ownership": [
         "Owns Backend and the command input values through the single tracked admission transaction."
@@ -3825,7 +3825,7 @@
         "Owns Backend and item IDs and awaits the durable queue removal mutation."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/queue.rs:99; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::queue::remove_queue_items::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -3931,7 +3931,7 @@
         "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure."
       ],
       "tests": [
-        "Static review of this nested body and its enclosing callable at src/services/queue.rs:112; Stage4 complete Rust suite reported 287 passing tests."
+        "Static source and caller review of services::queue::enqueue_queue_items::async_block#1; no dedicated test directly isolates this service block."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4295,7 +4295,7 @@
         "Calls readiness_from_status and StateStore::set_runtime_readiness once."
       ],
       "errors": [
-        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Propagates only StateStore::set_runtime_readiness AppError; readiness_from_status is infallible and this helper logs nothing."
       ],
       "ownership": [
         "Borrows StateStore and DownloaderRuntimeStatus only through the awaited set_runtime_readiness call; retains neither."
@@ -4354,7 +4354,7 @@
         "Consumes Backend into tracked Health work; shutdown token and status remain local until readiness commit."
       ],
       "locks": [
-        "AppMaintenanceLease closes admission; TrackedUpdate owns registry membership; PublicationGuard protects installer launch; updater handoff holds verified file/directory leases."
+        "Tracked Health task registration spans runtime inspection and the readiness commit; StateStore serializes that commit. No maintenance, update, publication, or installer lease is acquired."
       ],
       "cancellation": "Health/network checks observe shutdown tokens; runtime/app updates check UpdateTaskContext around state transitions and publication, with committed publication deferred by design.",
       "invariants": [
@@ -4414,8 +4414,7 @@
         "Owns Backend and shutdown token while running runtime health inspection and durably storing readiness."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this runtime-health block; no dedicated behavioral test directly reaches it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4461,7 +4460,7 @@
         "Consumes Backend into tracked Network work; shutdown token/result/status remain local until readiness commit."
       ],
       "locks": [
-        "AppMaintenanceLease closes admission; TrackedUpdate owns registry membership; PublicationGuard protects installer launch; updater handoff holds verified file/directory leases."
+        "Tracked Network task registration spans update discovery and the readiness commit; StateStore serializes that commit. No maintenance, update, publication, or installer lease is acquired."
       ],
       "cancellation": "Health/network checks observe shutdown tokens; runtime/app updates check UpdateTaskContext around state transitions and publication, with committed publication deferred by design.",
       "invariants": [
@@ -4521,8 +4520,7 @@
         "Owns Backend and shutdown token while checking runtime update metadata and storing UpdateAvailable or measured readiness."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this runtime-update-check block; no dedicated behavioral test directly reaches it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4622,7 +4620,7 @@
         "Consumes Backend and progress sink into tracked admission; detached task owns lease/tracker/context/store/progress after returning operation ID."
       ],
       "locks": [
-        "AppMaintenanceLease closes admission; TrackedUpdate owns registry membership; PublicationGuard protects installer launch; updater handoff holds verified file/directory leases."
+        "AppMaintenanceLease closes admission and TrackedUpdate owns runtime-update registry membership; StateStore serializes operation/readiness commits. This workflow acquires no installer handoff or PublicationGuard."
       ],
       "cancellation": "Health/network checks observe shutdown tokens; runtime/app updates check UpdateTaskContext around state transitions and publication, with committed publication deferred by design.",
       "invariants": [
@@ -4682,8 +4680,7 @@
         "Owns Backend/progress through tracked admission and creates the maintenance lease, tracked update and detached runtime task."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this runtime-update admission block; no dedicated behavioral test directly reaches it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4736,8 +4733,7 @@
         "Owns lease/tracker/context/store/progress while running the updater, finalizing terminal state, releasing maintenance, then dropping registration."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this detached runtime-update task; no dedicated behavioral test directly reaches it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4790,8 +4786,7 @@
         "Checks update cancellation, commits Running, and awaits runtime::update_downloader_runtime; catch_unwind wraps this exact block."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this caught runtime-update body; no dedicated behavioral test directly reaches it."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -4897,8 +4892,7 @@
         "Owns current version and shutdown token and races shutdown against app update discovery."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of this app-update discovery block; the installer-handoff tests do not execute update discovery."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -5004,8 +4998,7 @@
         "Owns current version, progress, expected version and context and invokes updater::prepare_app_update with a borrowed local context."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "Static source and caller review of the real updater preparer closure; the injected-preparer tests bypass this closure."
       ],
       "findingStatus": "none",
       "evidence": [
@@ -5046,7 +5039,7 @@
         "Mutates runtime readiness/update operation state, drives updater/runtime work, invokes progress and installer adapters, and releases maintenance/tracker owners in defined order."
       ],
       "errors": [
-        "Returns the `F + Send + 'static, F: Future<Output = Result<InstallerHandoff, UpdateRunError>> + Send + 'static,` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns startup/admission/acquire-maintenance AppError before detaching; preparation, launch, cancellation, panic, and finalization are handled by the detached task."
       ],
       "ownership": [
         "Consumes Backend, version strings, sinks, actions, and FnOnce preparer; detached task owns lease/tracker/context/store/actions until success exit or failure cleanup."
@@ -5262,7 +5255,7 @@
         "Emits one launching UpdateInstallProgress, invokes InstallerActions.launch with the borrowed verified handoff, and commits publication only after launch succeeds."
       ],
       "errors": [
-        "Returns the `Result<(), UpdateRunError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns cancellation from enter_publication or the InstallerActions.launch UpdateRunError; progress emission and publication commit are infallible here."
       ],
       "ownership": [
         "Borrows InstallerHandoff, UpdateTaskContext, progress sink, and InstallerActions for this synchronous call; owns only its local PublicationGuard."
@@ -5373,21 +5366,20 @@
         "Waits boundedly until the verified installer file becomes write-openable after the exit callback."
       ],
       "errors": [
-        "Timeout/assertion or fixture Result is consumed by the enclosing test with unwrap/expect."
+        "The enclosing two-second timeout and expect expose failure to release the installer file lease."
       ],
       "ownership": [
-        "Owns only the cloned test fixture path or borrowed Backend used by this bounded test wait; the parent test drops all retained owners before root cleanup."
+        "Borrows installer_path from the enclosing test while yielding until the verified file lease is released."
       ],
       "locks": [
         "Uses the real lease/state owner named by the enclosing test and adds no mock lock."
       ],
-      "cancellation": "No external cancellation; bounded waits yield until the asserted cleanup condition.",
+      "cancellation": "No external cancellation; the enclosing timeout bounds this polling block.",
       "invariants": [
         "Waits boundedly until the verified installer file becomes write-openable after the exit callback."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit"
       ],
       "findingStatus": "none",
       "evidence": [
@@ -5429,21 +5421,20 @@
         "Uses the real updater test fixture to return an InstallerHandoff for expected 0.6.0."
       ],
       "errors": [
-        "Timeout/assertion or fixture Result is consumed by the enclosing test with unwrap/expect."
+        "Returns the test_installer_handoff UpdateRunError to the app-update workflow."
       ],
       "ownership": [
-        "Owns only the cloned test fixture path or borrowed Backend used by this bounded test wait; the parent test drops all retained owners before root cleanup."
+        "Owns fixture_root and expected version supplied to the injected FnOnce preparer until test_installer_handoff returns."
       ],
       "locks": [
         "Uses the real lease/state owner named by the enclosing test and adds no mock lock."
       ],
-      "cancellation": "No external cancellation; bounded waits yield until the asserted cleanup condition.",
+      "cancellation": "Cancellation behavior is delegated to test_installer_handoff; this injected preparer adds no cancellation check.",
       "invariants": [
         "Uses the real updater test fixture to return an InstallerHandoff for expected 0.6.0."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit"
       ],
       "findingStatus": "none",
       "evidence": [
@@ -5540,20 +5531,19 @@
         "Uses the real updater test fixture to return an InstallerHandoff before the injected launch failure."
       ],
       "errors": [
-        "Timeout/assertion or fixture Result is consumed by the enclosing test with unwrap/expect."
+        "Returns the test_installer_handoff UpdateRunError to the app-update workflow before the injected launch failure."
       ],
       "ownership": [
-        "Owns only the cloned test fixture path or borrowed Backend used by this bounded test wait; the parent test drops all retained owners before root cleanup."
+        "Owns fixture_root and expected version supplied to the injected FnOnce preparer until test_installer_handoff returns."
       ],
       "locks": [
         "Uses the real lease/state owner named by the enclosing test and adds no mock lock."
       ],
-      "cancellation": "No external cancellation; bounded waits yield until the asserted cleanup condition.",
+      "cancellation": "Cancellation behavior is delegated to test_installer_handoff; this injected preparer adds no cancellation check.",
       "invariants": [
         "Uses the real updater test fixture to return an InstallerHandoff before the injected launch failure."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
         "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
       ],
       "findingStatus": "none",
@@ -5596,20 +5586,19 @@
         "Yields boundedly until the failed workflow has cleared durable maintenance state."
       ],
       "errors": [
-        "Timeout/assertion or fixture Result is consumed by the enclosing test with unwrap/expect."
+        "The enclosing two-second timeout and expect expose failure to clear durable maintenance state."
       ],
       "ownership": [
-        "Owns only the cloned test fixture path or borrowed Backend used by this bounded test wait; the parent test drops all retained owners before root cleanup."
+        "Borrows Backend from the enclosing test while polling its StateStore maintenance flag."
       ],
       "locks": [
         "Uses the real lease/state owner named by the enclosing test and adds no mock lock."
       ],
-      "cancellation": "No external cancellation; bounded waits yield until the asserted cleanup condition.",
+      "cancellation": "No external cancellation; the enclosing timeout bounds this maintenance-state polling block.",
       "invariants": [
         "Yields boundedly until the failed workflow has cleared durable maintenance state."
       ],
       "tests": [
-        "services::updates::tests::verified_handoff_is_persisted_and_unregistered_before_exit",
         "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
       ],
       "findingStatus": "none",
@@ -5719,7 +5708,7 @@
         "Never resolves a path or selects a different entry; caller identity checks remain authoritative."
       ],
       "tests": [
-        "publication 19/19, diagnostics 5/5, and runtime_transaction 5/5 caller tests passed when helper was introduced."
+        "Static source and Windows ABI review; no dedicated test in this sidecar directly isolates windows_file::mark_for_deletion."
       ],
       "findingStatus": "none",
       "evidence": [

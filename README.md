@@ -102,6 +102,7 @@ cargo deny check
 cd ..\..
 pwsh -NoProfile -File .\scripts\test-packaging.ps1
 pwsh -NoProfile -File .\scripts\test-e2e-contracts.ps1
+python .\scripts\inventory-backend-methods.py check
 ```
 
 Official release candidates are built only by the protected, manually
@@ -124,8 +125,11 @@ See [docs/quickstart.md](docs/quickstart.md) for the full setup, development, an
 Backend contributors can start with the [ownership and module map](docs/backend-maintainability.md)
 and [feature preservation checklist](docs/backend-feature-preservation.md). The
 [method review ledger workflow](docs/backend-method-review-schema.md) explains how
-to review changed methods and keep their source identities current. These checks
-run before dependency installation in CI; discovery alone never counts as review.
+to review changed methods and keep their source identities current. The ledger now
+covers every current backend review unit and is enforced before dependency installation
+in CI and release-candidate builds; discovery alone never counts as review. This
+completes the source method review, while the Stage 6 two-hour soak and external
+native release acceptance remain separate qualification gates.
 
 ## License
 

@@ -12,8 +12,8 @@ Each entry has these generated fields:
 
 - `id`, `kind`, `classification`, `file`, `line`, `endLine`, `symbol`,
   `qualifiedName`, `signature`, `sourceDigest`, and `cfg`;
-- `ownerCall` for an async or blocking closure that is a direct argument to a
-  task/thread ownership API;
+- `ownerCall`, naming the task/thread ownership API for a directly passed async
+  or blocking closure, or explicit `null` when there is no owning call;
 - `movedFrom`, `previousDigest`, or `staleReason` when reconciliation detects a
   source move or change.
 
@@ -93,7 +93,8 @@ the current source span and its caller/ownership context.
 
 A uniquely moved exact source body is identified, but remains pending because
 callers, visibility, and ownership context may have changed. The final check
-also compares every recorded generated identity with a fresh source scan.
+requires every generated identity key, including nullable ones, and compares
+each value with a fresh source scan.
 
 ## Commands
 

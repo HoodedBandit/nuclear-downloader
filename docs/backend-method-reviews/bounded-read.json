@@ -1,0 +1,501 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/bounded_read.rs",
+    "src/bounded_read/tests.rs"
+  ],
+  "reviewer": "root_bounded_read_review",
+  "entries": [
+    {
+      "id": "src/bounded_read.rs::impl fmt::Display for BoundedReadError[trait-impl,cfg=all]",
+      "kind": "trait_impl",
+      "classification": "production",
+      "file": "src/bounded_read.rs",
+      "line": 12,
+      "endLine": 20,
+      "symbol": "impl fmt::Display for BoundedReadError",
+      "qualifiedName": "impl fmt::Display for BoundedReadError",
+      "signature": "impl fmt::Display for BoundedReadError",
+      "sourceDigest": "24fd9110908bc8dbba7d99ec25ec3d46000ae94d137ea580263a68382cccd84d",
+      "cfg": [],
+      "callers": [
+        "Rust formatting trait selection; runtime behavior is in the associated fmt row."
+      ],
+      "inputs": [
+        "impl declaration"
+      ],
+      "sideEffects": [
+        "Binds the associated fmt implementation; no runtime mutation in this declaration span."
+      ],
+      "errors": [
+        "none"
+      ],
+      "ownership": [
+        "No runtime value is owned by the declaration."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "Every variant is formatted only by the associated method."
+      ],
+      "tests": [
+        "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read"
+      ],
+      "evidence": [
+        "src/bounded_read.rs:12",
+        "impl fmt::Display for BoundedReadError",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Declare Display formatting for every bounded-read error variant.",
+      "output": "Declares trait behavior.",
+      "cancellation": "Synchronous declaration with no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bounded_read.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read.rs::bounded_read::impl fmt::Display for BoundedReadError::fmt[cfg=all]",
+      "kind": "trait_method",
+      "classification": "production",
+      "file": "src/bounded_read.rs",
+      "line": 13,
+      "endLine": 19,
+      "symbol": "fmt",
+      "qualifiedName": "bounded_read::impl fmt::Display for BoundedReadError::fmt",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "sourceDigest": "fcdca41d53af9c35f65da235ce0ca766707d910027b13a53e88037b238c8a511",
+      "cfg": [],
+      "callers": [
+        "std::fmt machinery and error interpolation."
+      ],
+      "inputs": [
+        "&BoundedReadError; &mut Formatter"
+      ],
+      "sideEffects": [
+        "Writes only to the supplied formatter."
+      ],
+      "errors": [
+        "Propagates formatter failure; performs no file I/O."
+      ],
+      "ownership": [
+        "Borrows error and formatter and retains neither."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "LimitExceeded and InvalidLimit use stable text; Io preserves the inner error display."
+      ],
+      "tests": [
+        "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read"
+      ],
+      "evidence": [
+        "src/bounded_read.rs:13",
+        "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Render fixed limit errors or delegate an I/O error to its own formatter.",
+      "output": "Returns formatter fmt::Result.",
+      "cancellation": "Synchronous formatting with no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bounded_read.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read.rs::bounded_read::read_bounded[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/bounded_read.rs",
+      "line": 24,
+      "endLine": 38,
+      "symbol": "read_bounded",
+      "qualifiedName": "bounded_read::read_bounded",
+      "signature": "pub(crate) fn read_bounded<R: Read>( reader: &mut R, limit: u64, ) -> Result<Vec<u8>, BoundedReadError>",
+      "sourceDigest": "cf7719246205bcb6b8cf91fba54e6282058d170344e26da5504c6c331d464f78",
+      "cfg": [],
+      "callers": [
+        "journal, runtime manifest/pointer/marker, promotion marker readers, and named tests."
+      ],
+      "inputs": [
+        "&mut R: Read; u64 limit"
+      ],
+      "sideEffects": [
+        "Advances the borrowed reader and allocates at most limit plus one observed byte."
+      ],
+      "errors": [
+        "InvalidLimit before reading when limit+1 overflows; Io preserves read failure; LimitExceeded when the probe byte is observed."
+      ],
+      "ownership": [
+        "Borrows reader only for the call and returns an owned Vec."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "checked_add prevents probe overflow; exact-limit input succeeds; reading and allocation stop at limit+1."
+      ],
+      "tests": [
+        "bounded_read::tests::exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte",
+        "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read",
+        "runtime_transaction::tests::journal_growth_after_metadata_is_bounded_and_preserved"
+      ],
+      "evidence": [
+        "src/bounded_read.rs:24",
+        "pub(crate) fn read_bounded<R: Read>( reader: &mut R, limit: u64, ) -> Result<Vec<u8>, BoundedReadError>",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Read a synchronous source through an exact limit plus one probe byte.",
+      "output": "Returns owned bytes no longer than limit or BoundedReadError.",
+      "cancellation": "Synchronous; no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bounded_read.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read.rs::bounded_read::read_bounded_async[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/bounded_read.rs",
+      "line": 40,
+      "endLine": 55,
+      "symbol": "read_bounded_async",
+      "qualifiedName": "bounded_read::read_bounded_async",
+      "signature": "pub(crate) async fn read_bounded_async<R: AsyncRead + Unpin>( reader: &mut R, limit: u64, ) -> Result<Vec<u8>, BoundedReadError>",
+      "sourceDigest": "6fe2651fa76a710a1a9343d344ce6aa4be58da8911690b8de43c117877cdd3dc",
+      "cfg": [],
+      "callers": [
+        "promotion and updater async ownership-record readers and named async tests."
+      ],
+      "inputs": [
+        "&mut R: AsyncRead + Unpin; u64 limit"
+      ],
+      "sideEffects": [
+        "Polls and advances the borrowed reader and allocates at most limit plus one observed byte."
+      ],
+      "errors": [
+        "InvalidLimit before polling when limit+1 overflows; Io preserves async read failure; LimitExceeded on the probe byte."
+      ],
+      "ownership": [
+        "Borrows reader across awaits and returns an owned Vec."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "Exact-limit and probe behavior matches read_bounded."
+      ],
+      "tests": [
+        "bounded_read::tests::asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound",
+        "runtime::tests::abandoned_runtime_cleanup_preserves_oversized_marker_and_continues",
+        "runtime::tests::removal_refuses_and_preserves_oversized_runtime_update_marker"
+      ],
+      "evidence": [
+        "src/bounded_read.rs:40",
+        "pub(crate) async fn read_bounded_async<R: AsyncRead + Unpin>( reader: &mut R, limit: u64, ) -> Result<Vec<u8>, BoundedReadError>",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Read an AsyncRead source through an exact limit plus one probe byte.",
+      "output": "Returns owned bytes no longer than limit or BoundedReadError.",
+      "cancellation": "Dropping the future stops further reads; bytes already read remain consumed and no filesystem mutation is owned here.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bounded_read.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read/tests.rs::bounded_read::tests::exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/bounded_read/tests.rs",
+      "line": 5,
+      "endLine": 24,
+      "symbol": "exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte",
+      "qualifiedName": "bounded_read::tests::exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte",
+      "signature": "fn exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte()",
+      "sourceDigest": "8224d7960f4a1b229fb673d247311c1a033a01c37aaf045b6cee02f6774a75e3",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness."
+      ],
+      "inputs": [
+        "none"
+      ],
+      "sideEffects": [
+        "Uses only in-memory Cursor and repeat readers."
+      ],
+      "errors": [
+        "Assertions expose wrong bytes, variant, or reader position."
+      ],
+      "ownership": [
+        "Owns fixture readers and buffers."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "Endless input cannot cause unbounded reading or allocation."
+      ],
+      "tests": [
+        "self: exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte"
+      ],
+      "evidence": [
+        "src/bounded_read/tests.rs:5",
+        "fn exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte()",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Prove exact and zero limits succeed while finite and endless oversized sources stop after one probe byte.",
+      "output": "Returns unit; assertions panic on regression.",
+      "cancellation": "Synchronous bounded test.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/bounded_read/tests.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read/tests.rs::bounded_read::tests::asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/bounded_read/tests.rs",
+      "line": 27,
+      "endLine": 36,
+      "symbol": "asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound",
+      "qualifiedName": "bounded_read::tests::asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound",
+      "signature": "async fn asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound()",
+      "sourceDigest": "45915595d9aa65fb09f2a6db4d20c468b01ff46269b453c71ddf47be351b6797",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Tokio test harness."
+      ],
+      "inputs": [
+        "none"
+      ],
+      "sideEffects": [
+        "Uses in-memory async-compatible Cursor values."
+      ],
+      "errors": [
+        "Assertions expose wrong bytes, variant, or reader position."
+      ],
+      "ownership": [
+        "Owns cursors across awaits."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "Async helper consumes exactly 4097 bytes for a 4096-byte limit."
+      ],
+      "tests": [
+        "self: asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound"
+      ],
+      "evidence": [
+        "src/bounded_read/tests.rs:27",
+        "async fn asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound()",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Prove async exact-limit success and limit-plus-one overflow stopping.",
+      "output": "Returns unit; assertions panic on regression.",
+      "cancellation": "No external cancellation; in-memory waits are bounded by input.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/bounded_read/tests.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read/tests.rs::impl Read for FailingReader[trait-impl,cfg=test]",
+      "kind": "trait_impl",
+      "classification": "test_support",
+      "file": "src/bounded_read/tests.rs",
+      "line": 40,
+      "endLine": 47,
+      "symbol": "impl Read for FailingReader",
+      "qualifiedName": "impl Read for FailingReader",
+      "signature": "impl Read for FailingReader",
+      "sourceDigest": "255837c32fa3c84e74f41b6a4565966cf9fc2b2064c096fda01cf350b9f2ecaa",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust Read trait selection in the named error test."
+      ],
+      "inputs": [
+        "impl declaration"
+      ],
+      "sideEffects": [
+        "Binds the associated read method only."
+      ],
+      "errors": [
+        "none"
+      ],
+      "ownership": [
+        "No runtime value is owned by the declaration."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "The associated method always fails before progress."
+      ],
+      "tests": [
+        "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read"
+      ],
+      "evidence": [
+        "src/bounded_read/tests.rs:40",
+        "impl Read for FailingReader",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Declare deterministic failing Read behavior for the I/O classification fixture.",
+      "output": "Declares trait behavior.",
+      "cancellation": "Synchronous declaration.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/bounded_read/tests.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read/tests.rs::bounded_read::tests::impl Read for FailingReader::read[cfg=test]",
+      "kind": "trait_method",
+      "classification": "test_support",
+      "file": "src/bounded_read/tests.rs",
+      "line": 41,
+      "endLine": 46,
+      "symbol": "read",
+      "qualifiedName": "bounded_read::tests::impl Read for FailingReader::read",
+      "signature": "fn read(&mut self, _buffer: &mut [u8]) -> std::io::Result<usize>",
+      "sourceDigest": "4245749aaa869e8f87955d5e4f804137d661f2da04304148068f2a5b591a4b0b",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "read_bounded from io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read."
+      ],
+      "inputs": [
+        "&mut FailingReader; ignored &mut [u8]"
+      ],
+      "sideEffects": [
+        "Constructs an error and reads zero bytes."
+      ],
+      "errors": [
+        "Always returns PermissionDenied with fixture message."
+      ],
+      "ownership": [
+        "Borrows fixture and buffer and retains neither."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "Reports no successful byte count before failure."
+      ],
+      "tests": [
+        "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read"
+      ],
+      "evidence": [
+        "src/bounded_read/tests.rs:41",
+        "fn read(&mut self, _buffer: &mut [u8]) -> std::io::Result<usize>",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Return PermissionDenied without consuming the supplied buffer.",
+      "output": "Always returns std::io::Error(PermissionDenied).",
+      "cancellation": "Synchronous fixture method.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/bounded_read/tests.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/bounded_read/tests.rs::bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/bounded_read/tests.rs",
+      "line": 50,
+      "endLine": 61,
+      "symbol": "io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read",
+      "qualifiedName": "bounded_read::tests::io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read",
+      "signature": "fn io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read()",
+      "sourceDigest": "6048a8dab8f50f39d0fea0b56817b626f0b243c0d2b8b996c250d3b7fed1ccd2",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness."
+      ],
+      "inputs": [
+        "none"
+      ],
+      "sideEffects": [
+        "Uses FailingReader and an in-memory cursor."
+      ],
+      "errors": [
+        "Assertions expose lost I/O kind, wrong invalid-limit variant, or reader advancement."
+      ],
+      "ownership": [
+        "Owns fixture readers."
+      ],
+      "locks": [
+        "none"
+      ],
+      "invariants": [
+        "InvalidLimit leaves input position zero; Io preserves PermissionDenied kind."
+      ],
+      "tests": [
+        "self: io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read"
+      ],
+      "evidence": [
+        "src/bounded_read/tests.rs:50",
+        "fn io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read()",
+        "Current source body and direct callers reviewed."
+      ],
+      "purpose": "Prove I/O errors remain distinct and u64::MAX is rejected before reading.",
+      "output": "Returns unit; assertions panic on regression.",
+      "cancellation": "Synchronous bounded test.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/bounded_read/tests.rs",
+      "reviewer": "root_bounded_read_review",
+      "reviewedAt": "2026-09-09T01:35:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed against cb616a1 source and authoritative 1,214-entry inventory.",
+      "ownerCall": null
+    }
+  ]
+}

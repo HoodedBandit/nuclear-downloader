@@ -565,6 +565,8 @@ def scan_file(
                 **empty_review(),
             })
             break
+    for entry in entries:
+        entry.setdefault("ownerCall", None)
     return entries
 
 
@@ -755,7 +757,9 @@ def validate(ledger: dict[str, Any], current: dict[str, Any]) -> list[str]:
         source = actual[entry_id]
         entry = recorded[entry_id]
         for identity in IDENTITY_FIELDS:
-            if entry.get(identity) != source.get(identity):
+            if identity not in entry:
+                errors.append(f"missing generated identity {identity}: {entry_id}")
+            elif entry[identity] != source.get(identity):
                 errors.append(f"stale generated identity {identity}: {entry_id}")
         status = entry.get("status")
         if status != "reviewed":

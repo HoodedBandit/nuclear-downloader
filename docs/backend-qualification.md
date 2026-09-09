@@ -9,8 +9,8 @@ fixture test is not a passing packaged-application acceptance case.
 ## Regression coverage
 
 These tests passed in the original overhaul gate (270 passed, zero failures at
-`34d0769`) and remain in the refactor suite (290 passed, zero failures after
-`b3d4602`). Names are unique
+`34d0769`) and remain in the refactor suite (304 passed, zero failures after
+`d1f6571`). Added regressions below passed in that refactor suite. Names are unique
 filters accepted by `scripts/test-backend.ps1 -Filter <name>`.
 
 | Failure mode or required invariant | Representative executed regression |
@@ -36,6 +36,13 @@ filters accepted by `scripts/test-backend.ps1 -Filter <name>`.
 | Runtime promotion interruption cannot recover repeatedly | `recovery_is_idempotent_after_every_durable_checkpoint`; `recovery_resumes_after_rollback_succeeds_but_journal_clear_fails` |
 | Corrupt same-version runtime cannot be repaired, or unrelated data is deleted | `corrupted_marker_owned_same_version_is_authorized_for_repair`; `unowned_same_version_directory_is_preserved`; `quarantined_transaction_remains_fail_closed_and_preserves_unowned_directory` |
 | Concurrent runtime mutation or ambiguous transaction paths are admitted | `operating_system_lock_rejects_a_second_owner`; `mutation_lock_rejects_a_reparse_ancestor_without_creating_the_leaf`; `changed_journal_is_preserved_instead_of_quarantining_stale_state` |
+| A runtime journal grows after metadata inspection and bypasses its read budget | `journal_growth_after_metadata_is_bounded_and_preserved` (observed failing before the bounded read, then passed in the 291-test suite) |
+| A whole-file reader consumes beyond its limit after a file grows | `exact_limits_are_accepted_and_unbounded_sources_stop_after_one_probe_byte`; `asynchronous_reader_enforces_the_same_exact_limit_and_probe_bound`; `io_failure_is_distinct_from_overflow_and_invalid_limits_do_not_read` |
+| Encrypted journal growth loses the oversize error and preservation contract | `encrypted_journal_growth_after_metadata_is_rejected_with_the_size_contract`; `oversized_existing_journal_is_preserved_without_quarantine` |
+| Oversized runtime pointer, manifest, or authentication data is admitted | `managed_runtime_pointer_rejects_content_beyond_its_read_limit`; `runtime_manifest_rejects_content_beyond_its_read_limit`; `regular_runtime_file_reader_rejects_content_beyond_limit` |
+| Oversized ownership markers authorize runtime deletion or block cleanup of other owned residue | `installed_runtime_owner_marker_rejects_oversized_content_without_mutation`; `oversized_runtime_update_owner_marker_is_not_owned`; `abandoned_runtime_cleanup_preserves_oversized_marker_and_continues`; `removal_refuses_and_preserves_oversized_runtime_update_marker` |
+| Installer ownership data grows after the initial metadata observation | `ownership_record_growth_is_bounded_and_unrelated_files_are_preserved` |
+| A failed partial-file deletion erases ownership proof and prevents later cleanup | `failed_partial_removal_retains_ownership_for_startup_retry` (failed before the fix, then passed; forces a Windows sharing failure and verifies normal cleanup after the lease is released) |
 | Invalid installer cache permanently blocks a verified replacement | `invalid_cached_installer_is_quarantined_before_fresh_verification`; `unowned_canonical_collision_is_preserved_while_prepared_path_is_verified` |
 | Installer starts before its recovery marker is durable or never reconciles | `app_update_handoff_does_not_launch_from_an_unpersisted_marker`; `app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent`; `app_update_handoff_mismatch_becomes_retryable_interruption` |
 | Verified executable identity is lost before runtime mutation | `verified_runtime_cache_waits_for_leases_and_blocks_reacquisition`; `managed_runtime_integrity_is_verified_before_trust` |
@@ -68,7 +75,7 @@ on both revisions. Its final matching-host measurements are tracked separately i
 
 | Gate | Required evidence | Current status |
 | --- | --- | --- |
-| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | Original overhaul passed: 7,202.276 seconds, 7,190 operations, 1,440 quiescent samples; all 95 source manifest entries unchanged, journal reopened, fixture directory empty. Evidence: `target/soak/after-20260908T093535Z-afb163eef5e8413c8183957ee05d4693/final-verification.json`. A new refactor soak is still required. |
+| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | The final `d1f6571` refactor soak is running under `target/soak/after-20260909T020321Z-e35c8e5cfdcd499daf3901b16481c134/`; it has not passed until full-duration terminal evidence is verified. The original overhaul's 7,202.276-second run remains historical evidence only at `target/soak/after-20260908T093535Z-afb163eef5e8413c8183957ee05d4693/final-verification.json`. |
 | Native workflows | Successful video and audio, playlist discovery, explicit retry, collision-safe publication, cancellation, forced interruption/restart, and update/repair cases | Acceptance source expanded; pinned yt-dlp validated the two-entry loopback playlist; native app execution remains blocked on the disposable environment |
 | Exact installer and portable artifacts on a clean Windows 11 x64 desktop | Candidate inventory and asset hashes, client OS build, WebView2 and tool versions, executed cases | Blocked: no disposable clean desktop environment supplied |
 | Advertised YouTube and X extractor smoke tests | Maintainer-controlled fixture configuration and candidate-bound results | Blocked: controlled fixture URLs not supplied |

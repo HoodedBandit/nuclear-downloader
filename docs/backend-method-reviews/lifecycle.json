@@ -27,6 +27,7 @@
       "signature": "async fn finish(mut self) -> Result<CancelAllResult, AppError>",
       "sourceDigest": "122829c560ea0c00854f46bd935e45dfb660070afadad0fcf9f6024e90abde55",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Completes the owned cancel-all drain and disarms Drop recovery only after success.",
       "callers": [
         "cancellation::cancel_all::owned_async_closure#1"
@@ -78,6 +79,7 @@
       "signature": "impl Drop for DrainGuard",
       "sourceDigest": "5f5492a63c43903478cddd5337ac2eda6efe3138ed4e1f53ef92546516836675",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares RAII recovery for an armed cancel-all drain through DrainGuard::drop.",
       "callers": [
         "Rust drop glue for DrainGuard owned by cancellation::cancel_all or its finish future"
@@ -131,6 +133,7 @@
       "signature": "fn drop(&mut self)",
       "sourceDigest": "75776f7e90f8757859fe3c2e64fbbeffa31b96e216a1c97382a6848b77f0b268",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Provides cancellation-safe recovery for an unfinished cancel-all drain.",
       "callers": [
         "Rust drop glue for DrainGuard owned by cancellation::cancel_all or its finish future"
@@ -237,6 +240,7 @@
       "signature": "async fn complete_drain(cleanup: &DrainCleanup) -> Result<CancelAllResult, AppError>",
       "sourceDigest": "06461f770d134d7ee0a2dc71719cc3d5ed27c6341ba69ad0332256e803a7050c",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Reconciles every job owned by one cancel-all generation, waits for idle, and reopens admission only for that generation.",
       "callers": [
         "cancellation::impl DrainGuard::finish",
@@ -292,6 +296,7 @@
       "signature": "pub(crate) async fn cancel_all( store: StateStore, manager: DownloadManager, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
       "sourceDigest": "9b0d56acab4727e360cd5c84021bcba482dbcdd76f286d841d7eea49eec0a6fd",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Starts an owned cancel-all transaction and bounds how long the IPC caller waits for its result.",
       "callers": [
         "services::operations::cancel_all_downloads"
@@ -447,6 +452,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Builds a persisted cancel-all fixture, injects panic after drain acquisition, and verifies detached recovery before and after restart.",
       "callers": [
         "abandoned_empty_drain_reopens_admission",
@@ -558,6 +564,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies that panic after acquiring an empty drain ticket transfers cleanup to Drop and reopens admission.",
       "callers": [
         "Rust test harness"
@@ -610,6 +617,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies Drop recovery terminalizes a pending durable operation before reopening admission.",
       "callers": [
         "Rust test harness"
@@ -662,6 +670,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies repeated Drop recovery releases a pending registration whose durable operation was terminalized before panic.",
       "callers": [
         "Rust test harness"
@@ -712,6 +721,7 @@
       "signature": "impl Display for TrackedTaskTimeout",
       "sourceDigest": "8c63b8acc957cc115986a1021a17f66ada780fb1d760d1a2fd9954cb0e3dbc54",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares Display for shutdown timeout diagnostics by delegating to the inventoried fmt method.",
       "callers": [
         "std::fmt::Display dispatch for TrackedTaskTimeout"
@@ -763,6 +773,7 @@
       "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result",
       "sourceDigest": "dd488537619df5a54c6356cda35628508e289d806a035168888fa1cf69bd463e",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Formats the number of outstanding backend tasks in a shutdown-timeout sentence.",
       "callers": [
         "std::fmt::Display dispatch for TrackedTaskTimeout"
@@ -814,6 +825,7 @@
       "signature": "impl std::error::Error for TrackedTaskTimeout",
       "sourceDigest": "c2de7c7751dc038d4c958a8a2b279e9a31421c2fc840524a4fab9c31d0fab961",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Marks TrackedTaskTimeout as a standard Rust error without custom source data.",
       "callers": [
         "std::error::Error consumers of LifecycleCoordinator::wait_for_shutdown_tasks failures"
@@ -865,6 +877,7 @@
       "signature": "impl Display for UpdateRunError",
       "sourceDigest": "d2a32b33032e3c3abaebeb9f001e4552d5af6b78d8a7542f2acd1c5876db9589",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares Display for typed update cancellation/failure results through the inventoried fmt method.",
       "callers": [
         "std::fmt::Display dispatch for UpdateRunError returned by runtime, updater, and services::updates"
@@ -916,6 +929,7 @@
       "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result",
       "sourceDigest": "670a27fa1925f1ce424ee0cda5bfab9e14b916907bb7b3be2b7bc71bb5b1f7eb",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Formats Cancelled with a fixed sentence and delegates Failed formatting to the contained AppError.",
       "callers": [
         "std::fmt::Display dispatch for UpdateRunError returned by runtime, updater, and services::updates"
@@ -967,6 +981,7 @@
       "signature": "impl std::error::Error for UpdateRunError",
       "sourceDigest": "b15c0b8108743bd568fcb9a68daef542148086968eac7aa5ae252ff9e987398b",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Marks UpdateRunError as a standard Rust error without overriding Error trait methods.",
       "callers": [
         "std::error::Error consumers of runtime::update_downloader_runtime and updater::prepare_app_update failures"
@@ -1018,6 +1033,7 @@
       "signature": "impl From<AppError> for UpdateRunError",
       "sourceDigest": "b52969564d91b9dfff36ddc685bbcb97fa365d3b97c5c8fb48f3002a7a48289f",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares the conversion from AppError into UpdateRunError; the from method preserves the supplied AppError.",
       "callers": [
         "question-mark conversion in runtime, updater, updater::artifact, and services::updates update futures"
@@ -1069,6 +1085,7 @@
       "signature": "fn from(error: AppError) -> Self",
       "sourceDigest": "86ed6562a2631f519e081857a5e95afc6ad00b53f255467d71f1311d5875df2f",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Converts AppError into UpdateRunError::Failed and preserves the supplied AppError.",
       "callers": [
         "question-mark conversion in runtime, updater, updater::artifact, and services::updates update futures"
@@ -1120,6 +1137,7 @@
       "signature": "impl From<String> for UpdateRunError",
       "sourceDigest": "11ac931a29696633defe9042146141c7f6e50323e3e323ee50321cb0cff3fdd8",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares the conversion from String into UpdateRunError; the from method wraps the owned summary with AppError::internal.",
       "callers": [
         "question-mark conversion in runtime and updater update futures returning String errors"
@@ -1171,6 +1189,7 @@
       "signature": "fn from(summary: String) -> Self",
       "sourceDigest": "288f7737a05d9734257ced7249b927ee4a843494e175315227ed3a7549f4018c",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Converts String into UpdateRunError::Failed and wraps the owned summary with AppError::internal.",
       "callers": [
         "question-mark conversion in runtime and updater update futures returning String errors"
@@ -1222,6 +1241,7 @@
       "signature": "impl From<&str> for UpdateRunError",
       "sourceDigest": "61938f551679362f15c0f7a2443f72fd9cf4736e2bb2897307b48db27fd3ead6",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares the conversion from &str into UpdateRunError; the from method wraps the borrowed summary with AppError::internal.",
       "callers": [
         "Into/From conversion sites that supply a borrowed static update-failure summary"
@@ -1273,6 +1293,7 @@
       "signature": "fn from(summary: &str) -> Self",
       "sourceDigest": "6e14cfb7ad2b77cc9862717b4bd314ab2980b5b9b2343cc56508e7bf30803980",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Converts &str into UpdateRunError::Failed and wraps the borrowed summary with AppError::internal.",
       "callers": [
         "Into/From conversion sites that supply a borrowed static update-failure summary"
@@ -1324,6 +1345,7 @@
       "signature": "pub(crate) fn new( max_downloads: usize, max_inspections: usize, max_conversions: usize, ) -> Self",
       "sourceDigest": "ff5444bbf923a0bcb934cefdf04a6a2087a1fe436dbf5104496391af8c01774b",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Constructs lifecycle state, capacity limits, cancellation tokens, registries, and startup gate.",
       "callers": [
         "lifecycle::create_download_manager",
@@ -1379,6 +1401,7 @@
       "signature": "pub(crate) async fn wait_for_startup(&self) -> Result<(), AppError>",
       "sourceDigest": "752207e910fc3a26c9df4975861c9cd0c76d2010211bdc543713886286f84701",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Waits for the single startup task to publish success/failure or for shutdown to begin.",
       "callers": [
         "services::commands::run_tracked_command",
@@ -1432,6 +1455,7 @@
       "signature": "pub(crate) async fn open_after_startup(&self) -> Result<(), AppError>",
       "sourceDigest": "831e8af1f460c84ed17c62832dfc0e8abbd435a1f91bc8c4ef676231ad5bd6b3",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Atomically opens admission only after the full fixed worker pool exists and startup still owns the Starting state.",
       "callers": [
         "lifecycle::task_tracking::impl LifecycleCoordinator::spawn_startup::owned_async_closure#1"
@@ -1485,6 +1509,7 @@
       "signature": "pub(crate) async fn begin_shutdown(&self)",
       "sourceDigest": "8c1cd4f537a2e4056582a62e1b1d550f24f24084b4cb920b701745a18cf86e15",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Publishes global shutdown immediately, requests eligible update cancellation, cancels all jobs, and closes lifecycle mode.",
       "callers": [
         "bootstrap::shutdown",
@@ -1543,6 +1568,7 @@
       "signature": "pub(crate) fn shutdown_token(&self) -> CancellationToken",
       "sourceDigest": "fedf2e15f2219e4d94592560215609824f456fc81d56d2060baeac25011cdbab",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Returns a child-observable clone of the global shutdown token.",
       "callers": [
         "bootstrap::start",
@@ -1600,6 +1626,7 @@
       "signature": "pub(crate) fn create_download_manager() -> DownloadManager",
       "sourceDigest": "6a7bce96d5919019420870a833a7e479799e6d9ddedfb4ad0a8c442782096485",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Constructs the production lifecycle coordinator from the shared five-download capacity and single inspection/conversion capacities.",
       "callers": [
         "lib::run application setup",
@@ -1654,6 +1681,7 @@
       "signature": "pub(crate) async fn begin_job_admission(&self, count: usize) -> Result<JobAdmission, AppError>",
       "sourceDigest": "ae4a7cd0e451824dd1fc4ecacd40a3fd47e5bc2fdc95b53c81d79aea359ab584",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Reserves cancellation handles while holding the admission transition across the caller's durable operation creation.",
       "callers": [
         "services::inspection::begin_inspection",
@@ -1713,6 +1741,7 @@
       "signature": "pub(crate) async fn wait_worker_claim(&self) -> Result<Option<WorkerClaim>, String>",
       "sourceDigest": "36dd3835acf4e32478ab53353f9e00d459d27de3dce1a9e258396ea1ddd2c75f",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Waits until queue claims are allowed, then returns a transition lease that spans dequeue and job lookup.",
       "callers": [
         "services::downloads::spawn_download_workers::owned_async_closure#1",
@@ -1769,6 +1798,7 @@
       "signature": "pub(crate) async fn cancel(&self, id: &str) -> Result<(), AppError>",
       "sourceDigest": "d57abe181aa7795c4b2b27ce6c6fde374add2e77e94602bb2c4457657c900e37",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Signals a registered download immediately, or serializes with admission/worker claim before falling back to update cancellation.",
       "callers": [
         "services::operations::cancel_operation",
@@ -1825,6 +1855,7 @@
       "signature": "pub(crate) async fn finish(&self, id: &str)",
       "sourceDigest": "91b9f9153241e5b07ced560bdd450966c9f1e389d87664cee32bb34345e8f3f0",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Removes a completed or terminalized download registration and wakes drain waiters.",
       "callers": [
         "services::downloads::spawn_download_workers::owned_async_closure#1",
@@ -1885,6 +1916,7 @@
       "signature": "pub(crate) async fn active_ids(&self) -> Vec<String>",
       "sourceDigest": "c1a99692510564378770564df61361a47ad4c88388517e2e37b0e7e814da2718",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Returns a deterministic snapshot of registered download operation IDs.",
       "callers": [
         "cancellation::complete_drain",
@@ -1940,6 +1972,7 @@
       "signature": "pub(crate) async fn acquire_maintenance(&self) -> Result<MaintenanceLease, AppError>",
       "sourceDigest": "ce756a5c59214671268c64711af2ac811cf779dd419aeeb28874b150ff70dae1",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Atomically pauses new work for exclusive update maintenance when no jobs are active.",
       "callers": [
         "services::maintenance::acquire_app_maintenance"
@@ -1995,6 +2028,7 @@
       "signature": "pub(crate) async fn begin_cancel_all(&self) -> Result<DrainTicket, AppError>",
       "sourceDigest": "4d840884453076388ccec45e2068904a365cdcb32a4ffbaf17e26ea0a517df87",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Atomically enters a generation-scoped draining mode and immediately signals all registered jobs.",
       "callers": [
         "cancellation::cancel_all::async_block#1"
@@ -2049,6 +2083,7 @@
       "signature": "pub(crate) async fn wait_for_drain(&self, ticket: DrainTicket) -> DrainCompletion",
       "sourceDigest": "655e85c4147cb1a127ad54b5a0d3087b51b0beefcb96afdfb9eab88fb614ec20",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Waits until the owned drain generation has no registered jobs or is superseded.",
       "callers": [
         "cancellation::complete_drain"
@@ -2103,6 +2138,7 @@
       "signature": "pub(crate) async fn owns_drain(&self, ticket: DrainTicket) -> bool",
       "sourceDigest": "848ca2711ca3f42ea71eff92eed149fd4f7041afd0c1b475b436bb34e7335942",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Checks whether a ticket still names the active drain generation.",
       "callers": [
         "cancellation::complete_drain"
@@ -2155,6 +2191,7 @@
       "signature": "pub(crate) async fn resume_after_drain(&self, ticket: DrainTicket) -> bool",
       "sourceDigest": "b8f52dde406a440d1d4852153b0aaafc03a82aee34916dea034f7c2284969730",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Reopens admission after an empty owned drain unless shutdown/handoff/generation change superseded it.",
       "callers": [
         "cancellation::complete_drain"
@@ -2209,6 +2246,7 @@
       "signature": "pub(crate) async fn publish(mut self, ids: &[String]) -> Result<Vec<DownloadJob>, AppError>",
       "sourceDigest": "75cf3b193722fd5c71b4a178f439d1849288e85d2ac9fab5166b88839399a287",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Publishes durable operation IDs and their preallocated jobs atomically while retaining the admission transition lease.",
       "callers": [
         "services::inspection::begin_inspection",
@@ -2267,6 +2305,7 @@
       "signature": "pub(crate) async fn registered_job(&self, id: &str) -> Result<DownloadJob, AppError>",
       "sourceDigest": "71e856865bdd1bffa7c7231f4cd5d6f0c7bfa52e57e0b7e3fdeea51f6541e6fe",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Resolves the dequeued durable ID to its lifecycle job while the worker still owns the transition claim.",
       "callers": [
         "services::downloads::spawn_download_workers::owned_async_closure#1",
@@ -2320,6 +2359,7 @@
       "signature": "pub(crate) async fn release(mut self)",
       "sourceDigest": "4915dabf5802a4f74027fd7f9017d5a226cfcbb82596223c5b1e8e89932fe6f5",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Explicitly consumes and releases a maintenance lease.",
       "callers": [
         "services::maintenance::release_app_maintenance",
@@ -2376,6 +2416,7 @@
       "signature": "async fn release_inner(&mut self)",
       "sourceDigest": "ae2aa1e201b55994f20cd0ef0767b9f55a6a3578d433a16f37ddd7d9e7fb26c0",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Resumes Accepting only if this active lease still owns the Paused generation and no installer handoff committed.",
       "callers": [
         "lifecycle::admission::impl MaintenanceLease::release"
@@ -2428,6 +2469,7 @@
       "signature": "impl Drop for MaintenanceLease",
       "sourceDigest": "edeabb1b468818008d21a73a99643687599d5a93fa4a2c473ecea86415f563c6",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares RAII release for an active generation-scoped maintenance lease through MaintenanceLease::drop.",
       "callers": [
         "Rust drop glue for ManagerMaintenanceLease held by services::maintenance::AppMaintenanceLeaseInner"
@@ -2479,6 +2521,7 @@
       "signature": "fn drop(&mut self)",
       "sourceDigest": "3128652d3176c4e790d982a8d24c38762e42e7dddebc3320dab4505bf5e019b6",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Schedules generation-safe maintenance release if the lease leaves scope while still active.",
       "callers": [
         "Rust drop glue for ManagerMaintenanceLease held by services::maintenance::AppMaintenanceLeaseInner"
@@ -2581,6 +2624,7 @@
       "signature": "pub(crate) async fn acquire_download_slot(&self) -> Result<OwnedSemaphorePermit, String>",
       "sourceDigest": "0192fa5ec7b510a83003ce7eef86adf4d120a31879850056b204b83227097e94",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Acquires one download capacity permit unless shutdown wins.",
       "callers": [
         "scheduling::run_registered_download",
@@ -2633,6 +2677,7 @@
       "signature": "pub(crate) async fn acquire_inspection( &self, job: &DownloadJob, ) -> Result<Option<OwnedSemaphorePermit>, String>",
       "sourceDigest": "83ede2297352cc7c45c2a465d41d4d3e462cb8abe3aa2c65d4fbdbd0baa2a5b5",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Acquires one inspection permit unless job cancellation or shutdown wins.",
       "callers": [
         "services::inspection::execute_inspection"
@@ -2683,6 +2728,7 @@
       "signature": "pub(crate) async fn acquire_conversion( &self, job: &DownloadJob, ) -> Result<Option<OwnedSemaphorePermit>, String>",
       "sourceDigest": "9fd24f75014b9070f9875004fca9f212d4d04b371dc5d2f3fbdfc74fa94b30be",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Acquires one WebM conversion permit unless job cancellation or shutdown wins.",
       "callers": [
         "downloader::engine::run_webm_download"
@@ -2733,6 +2779,7 @@
       "signature": "pub(crate) fn register_update( &self, operation_id: String, kind: OperationKind, ) -> Result<(TrackedUpdate, UpdateTaskContext), AppError>",
       "sourceDigest": "0a6b564bf8e28b770d43ef7974586de297300283ab794f6b7e7d501ea4342d9d",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Atomically registers one tracked update task and its cancellation/publication record before durable update creation.",
       "callers": [
         "services::maintenance::acquire_app_maintenance"
@@ -2787,6 +2834,7 @@
       "signature": "pub(crate) fn cancel_update(&self, operation_id: &str) -> Result<UpdateCancellation, AppError>",
       "sourceDigest": "928c467b7b1b91d23d75b4d0808dd8b9961bc101e7f5ffcef7f5b4353f3a43d2",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Records update cancellation and signals immediately unless an active or committed publication protects it.",
       "callers": [
         "lifecycle::admission::impl LifecycleCoordinator::cancel",
@@ -2840,6 +2888,7 @@
       "signature": "pub(crate) fn is_cancelled(&self) -> bool",
       "sourceDigest": "8b9516c8a78fcd09d50a425caded3ea15cfdffafcb4bb87ff93097892c9b169d",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Reads the update-specific cancellation token.",
       "callers": [
         "runtime update checkpoints",
@@ -2894,6 +2943,7 @@
       "signature": "pub(crate) async fn cancelled(&self)",
       "sourceDigest": "2f22a7a1200b40c21469d6e4c1833b1c4c0df89fad113709e8f41893ef89d3b9",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Waits for update-specific cancellation.",
       "callers": [
         "runtime::update_downloader_runtime_inner",
@@ -2948,6 +2998,7 @@
       "signature": "pub(crate) fn check_cancelled(&self) -> Result<(), UpdateRunError>",
       "sourceDigest": "ab799254c79070a72b259874b8ba146b7b2287dfdcbf61584f72ba5666177c1d",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Converts update-token state into typed UpdateRunError.",
       "callers": [
         "runtime::update_downloader_runtime_inner",
@@ -3003,6 +3054,7 @@
       "signature": "pub(crate) fn enter_publication( &self, kind: PublicationKind, ) -> Result<PublicationGuard, UpdateRunError>",
       "sourceDigest": "2d075dce61653c94162b7f03a6b8b1553d698684e2969d7e08dcbb1cd7510f3a",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Validates the update/publication pairing and acquires registry protection for a commit or handoff transaction.",
       "callers": [
         "runtime::update_downloader_runtime_inner RuntimeCommit",
@@ -3058,6 +3110,7 @@
       "signature": "pub(crate) fn commit(mut self)",
       "sourceDigest": "99f866b18f9ed96135b83b617f15d4e676f3f82bc614d8799e8a17de23a34c83",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Latches successful runtime publication or installer handoff, then releases publication protection.",
       "callers": [
         "runtime::update_downloader_runtime_inner after pointer publication",
@@ -3112,6 +3165,7 @@
       "signature": "fn release_inner(&mut self)",
       "sourceDigest": "0fd9b469dbc14ee3229e6dd7ed78a9d1d549c455b3fbd48281f84d8cb813127b",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Releases one publication count, applies deferred cancellation for an uncommitted update, and removes inactive records.",
       "callers": [
         "lifecycle::publication::impl PublicationGuard::commit",
@@ -3167,6 +3221,7 @@
       "signature": "impl Drop for PublicationGuard",
       "sourceDigest": "e0c7301f8f9c91db574d578578d7043ff48b2207f411d76e3cf1a6cc149fe54e",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares RAII release for an uncommitted publication count through PublicationGuard::drop.",
       "callers": [
         "Rust drop glue for guards created by UpdateTaskContext::enter_publication"
@@ -3218,6 +3273,7 @@
       "signature": "fn drop(&mut self)",
       "sourceDigest": "f8372f75ec41a17f244410c45e5f27a09b72517c34793e7b04bb9852b8a5ee1a",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "RAII rollback of publication protection when commit is not reached.",
       "callers": [
         "Rust drop glue for guards created by UpdateTaskContext::enter_publication"
@@ -3269,6 +3325,7 @@
       "signature": "pub(crate) fn spawn_tracked<F>(&self, kind: TrackedTaskKind, future: F) -> Result<(), AppError> where F: Future<Output = ()> + Send + 'static,",
       "sourceDigest": "101cae8651a43bf8eb910be193e3652d61f2eb01979d8695f012fdad59b6349a",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Registers ordinary backend work before spawning it so shutdown accounts for the full task lifetime.",
       "callers": [
         "services::commands::run_tracked_command",
@@ -3379,6 +3436,7 @@
       "signature": "pub(crate) fn spawn_startup<F, C>(&self, future: F, on_complete: C) -> Result<(), AppError> where F: Future<Output = Result<(), AppError>> + Send + 'static, C: FnOnce(Result<(), AppError>) + Send + 'static,",
       "sourceDigest": "825195d715c31729ed8f19a68738c02a41386732b93fe4b5dacb2c18d2095873",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Registers and runs the unique startup cleanup, captures panics, publishes one terminal startup outcome, then invokes completion callback.",
       "callers": [
         "bootstrap::start"
@@ -3488,6 +3546,7 @@
       "signature": "pub(crate) fn spawn_cleanup_continuation<F>(&self, future: F) -> Result<(), AppError> where F: Future<Output = ()> + Send + 'static,",
       "sourceDigest": "40685dce8d43d89f6072f916fbcac0e47ab7b73d161bbe352e9f68f3dda48aa9",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Registers recovery work that is allowed to start after shutdown so Drop paths can finish ownership transactions.",
       "callers": [
         "cancellation::impl Drop for DrainGuard::drop",
@@ -3597,6 +3656,7 @@
       "signature": "pub(crate) async fn wait_for_shutdown_tasks( &self, grace: Duration, ) -> Result<(), TrackedTaskTimeout>",
       "sourceDigest": "4dfcfb507a9ebca5e5757b9bcd66c410391aa4e45936ffb7662b777731f2bd39",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Applies the ordinary shutdown grace to tracked work, then waits without a deadline for protected publication commit/rollback before reporting remaining tasks.",
       "callers": [
         "bootstrap::shutdown",
@@ -3654,6 +3714,7 @@
       "signature": "pub(crate) async fn wait_for_all_producers_done_on_shutdown(&self)",
       "sourceDigest": "66d3ecb60e6eae50c5c25b7ebf97fb412332945189e8f059441edb9c8741dbbe",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Lets the event pump wait for every tracked producer while excluding Events tasks to avoid self-wait.",
       "callers": [
         "state_events::publish_state_events"
@@ -3707,6 +3768,7 @@
       "signature": "pub(super) fn register_task( &self, kind: TrackedTaskKind, operation_id: Option<String>, allow_during_shutdown: bool, ) -> Result<TrackedTaskGuard, AppError>",
       "sourceDigest": "1af9067f13450f39af3df3b6043e89c96d6830de781ab9806a3777b101d5a66d",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Creates a registry record and RAII guard for one tracked backend task.",
       "callers": [
         "lifecycle::task_tracking::impl LifecycleCoordinator::spawn_tracked",
@@ -3763,6 +3825,7 @@
       "signature": "async fn wait_for_all_tasks(&self)",
       "sourceDigest": "6e2eaa0e2d0afed320945019594c0dfe58ec697344c77a71879e50b99fc29ce5",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Waits until the tracked-task registry is empty.",
       "callers": [
         "lifecycle::task_tracking::impl LifecycleCoordinator::wait_for_shutdown_tasks"
@@ -3814,6 +3877,7 @@
       "signature": "pub(super) fn task_diagnostics(&self) -> Vec<TrackedTaskDiagnostic>",
       "sourceDigest": "c51aa0f46db12b963b8e08de3fcd7fc41da37b431e1cdd947f1037bf5a314812",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Returns a stable ID-sorted snapshot of tracked work for shutdown timeout evidence.",
       "callers": [
         "lifecycle::task_tracking::impl LifecycleCoordinator::wait_for_shutdown_tasks"
@@ -3865,6 +3929,7 @@
       "signature": "pub(super) fn registry(&self) -> Result<std::sync::MutexGuard<'_, TaskRegistry>, AppError>",
       "sourceDigest": "d1e02375a061024d18cdf881fd27360d4fa104c761a54e42642e668f02e819d5",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Centralizes fallible access to the synchronous task/update registry.",
       "callers": [
         "open_after_startup",
@@ -3932,6 +3997,7 @@
       "signature": "impl Drop for TrackedTaskGuard",
       "sourceDigest": "bc1abb64ea3ae18d9535d6295b7f768fd4820a0bb16c532d5f544f41c9473779",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares RAII task unregistration through TrackedTaskGuard::drop.",
       "callers": [
         "Rust drop glue for guards returned by register_task and embedded in TrackedUpdate"
@@ -3984,6 +4050,7 @@
       "signature": "fn drop(&mut self)",
       "sourceDigest": "7a51570532bea31204fd4881f6ec0b82b78b9b57d262c2be58df292f036aa82c",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Unregisters a completed/aborted tracked task and reconciles its update record before waking shutdown waiters.",
       "callers": [
         "Rust drop glue for guards returned by register_task and embedded in TrackedUpdate"
@@ -4039,6 +4106,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Opens a fresh test coordinator directly from Starting without requiring production worker publication.",
       "callers": [
         "lifecycle::tests cancellation/admission/maintenance/publication/shutdown cases listed in tests",
@@ -4114,6 +4182,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Test-only one-item wrapper around begin_job_admission followed by JobAdmission::publish.",
       "callers": [
         "lifecycle::tests registration/backpressure/drain/publication cases listed in tests",
@@ -4179,6 +4248,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Returns the current number of lifecycle-registered jobs for test assertions.",
       "callers": [
         "lifecycle::tests::cancellation_waits_for_atomic_job_publication",
@@ -4239,6 +4309,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies Starting rejects job admission and blocks a worker claim until the expected worker record exists and startup opens.",
       "callers": [
         "Rust test harness"
@@ -4344,6 +4415,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies the tracked startup future opens admission, reports success, and remains accounted through its completion callback.",
       "callers": [
         "Rust test harness"
@@ -4555,6 +4627,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies wait_for_startup remains pending while startup cleanup is running and returns the exact stored failure afterward.",
       "callers": [
         "Rust test harness"
@@ -4766,6 +4839,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies shutdown wakes a pre-startup waiter with the typed shutting_down error.",
       "callers": [
         "Rust test harness"
@@ -4818,6 +4892,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies shutdown during Starting prevents explicit open, new admission, and worker claims.",
       "callers": [
         "Rust test harness"
@@ -4870,6 +4945,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies absent-ID cancellation waits behind JobAdmission and cancels the job immediately after atomic publication.",
       "callers": [
         "Rust test harness"
@@ -4975,6 +5051,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies fast-path cancellation of an existing job does not wait for a WorkerClaim transition guard.",
       "callers": [
         "Rust test harness"
@@ -5027,6 +5104,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies shutdown bypasses a held JobAdmission transition and makes subsequent publication fail atomically.",
       "callers": [
         "Rust test harness"
@@ -5079,6 +5157,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies a WorkerClaim held across shutdown may resolve only the already registered job and returns it cancelled.",
       "callers": [
         "Rust test harness"
@@ -5131,6 +5210,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies a three-job admission batch publishes atomically before competing maintenance can inspect active jobs.",
       "callers": [
         "Rust test harness"
@@ -5236,6 +5316,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies repeated cancellation is idempotent while a job is registered and becomes not-found after finish.",
       "callers": [
         "Rust test harness"
@@ -5288,6 +5369,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies duplicate job IDs and active jobs reject registration/maintenance, while lease release restores admission.",
       "callers": [
         "Rust test harness"
@@ -5340,6 +5422,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies two download permits and one conversion permit enforce independent configured backpressure.",
       "callers": [
         "Rust test harness"
@@ -5392,6 +5475,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies cancel-all cannot enter or reopen admission while a maintenance lease owns Paused mode.",
       "callers": [
         "Rust test harness"
@@ -5444,6 +5528,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies the owning drain ticket resumes admission only after its registered job finishes.",
       "callers": [
         "Rust test harness"
@@ -5496,6 +5581,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies a second cancel-all is rejected and cannot obtain authority over the active drain generation.",
       "callers": [
         "Rust test harness"
@@ -5548,6 +5634,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies shutdown supersedes a live drain ticket and permanently prevents late resumption/admission.",
       "callers": [
         "Rust test harness"
@@ -5600,6 +5687,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies releasing a pre-shutdown maintenance generation cannot overwrite ShuttingDown mode.",
       "callers": [
         "Rust test harness"
@@ -5652,6 +5740,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies an active RuntimeCommit guard defers update cancellation and extends shutdown waiting until rollback releases it.",
       "callers": [
         "Rust test harness"
@@ -5757,6 +5846,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies committed RuntimeCommit latches publication so a late cancel request does not signal the update context.",
       "callers": [
         "Rust test harness"
@@ -5809,6 +5899,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies InstallerCache is non-latching while committed InstallerHandoff permanently closes all new work.",
       "callers": [
         "Rust test harness"
@@ -5861,6 +5952,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies shutdown rejects ordinary late tasks, permits tracked cleanup continuation, and waits for both existing cleanup guards.",
       "callers": [
         "Rust test harness"
@@ -5966,6 +6058,7 @@
       "cfg": [
         "test"
       ],
+      "ownerCall": null,
       "purpose": "Verifies producer shutdown waiting excludes the Events task itself but waits for an Admission producer.",
       "callers": [
         "Rust test harness"
@@ -6069,6 +6162,7 @@
       "signature": "pub(crate) fn new(store: StateStore, manager: DownloadManager, operation_id: String) -> Self",
       "sourceDigest": "b3c2ae0f83981fa9eb712c214255aa59b70f882b71d36c1c226de7896198b896",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Arms cleanup for a durably created inspection before publication can complete.",
       "callers": [
         "services::inspection::begin_inspection"
@@ -6119,6 +6213,7 @@
       "signature": "pub(crate) async fn finalize(mut self, error: AppError) -> AppError",
       "sourceDigest": "6793d10df888d9bd78a182420c4391f50539129364e9351cc39c8bdfd438e8d4",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Runs synchronous async cleanup for a known inspection admission failure and returns the original error.",
       "callers": [
         "services::inspection::begin_inspection publication and task-registration error paths"
@@ -6169,6 +6264,7 @@
       "signature": "pub(crate) fn disarm(mut self)",
       "sourceDigest": "ea0812116fabfd6fd55e8a939482d257d70192d7f92d69d1d9a024d1057e3569",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Transfers cleanup responsibility to the normal published inspection path.",
       "callers": [
         "services::inspection::begin_inspection after tracked inspection task publication"
@@ -6219,6 +6315,7 @@
       "signature": "impl Drop for InspectionAdmissionGuard",
       "sourceDigest": "03e89214a250b26b019d3a69fb67639ad84264249e10f784e57b2c8cafeb1cf6",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Declares RAII cleanup for a durable inspection admission that was not disarmed.",
       "callers": [
         "Rust drop glue for the guard owned by services::inspection::begin_inspection"
@@ -6270,6 +6367,7 @@
       "signature": "fn drop(&mut self)",
       "sourceDigest": "ecb2c1b4772ef94d3b03b089ec69b039061ba6e5be555fd44294c869509a95d9",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Schedules detached recovery when inspection admission unwinds before disarm.",
       "callers": [
         "Rust drop glue for the guard owned by services::inspection::begin_inspection"
@@ -6321,6 +6419,7 @@
       "signature": "async fn cleanup_inspection_admission(cleanup: InspectionAdmissionCleanup, error: AppError)",
       "sourceDigest": "5fe72be7d78fda7b31de8bbaca56841ff53bdec2a4a3147fd1fe8f6debb8c698",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Cancels, terminalizes as Failed, and deregisters an inspection that did not finish admission.",
       "callers": [
         "lifecycle_cleanup::impl InspectionAdmissionGuard::finalize",
@@ -6373,6 +6472,7 @@
       "signature": "pub(crate) async fn run_registered_download<F, Fut>( store: &StateStore, manager: &DownloadManager, operation_id: &str, job: downloader::process::DownloadJob, run: F, ) -> downloader::DownloadOutcome where F: FnOnce(downloader::process::DownloadJob) -> Fut, Fut: Future<Output = downloader::DownloadOutcome>,",
       "sourceDigest": "f634c01015a1692af2baa8f7743901ca9c9eec94dbe69a2b24a4f8bf87f50095",
       "cfg": [],
+      "ownerCall": null,
       "purpose": "Runs one registered download under capacity, cancellation, durable Running transition, and panic containment.",
       "callers": [
         "services::downloads::spawn_download_workers::owned_async_closure#1",

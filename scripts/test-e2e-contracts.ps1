@@ -59,7 +59,8 @@ $backendSourceGateContracts = @(
     'Verify backend source architecture',
     'python -m unittest scripts/test_inventory_backend_methods.py',
     'python -m unittest scripts/test_backend_architecture.py',
-    'python scripts/check-backend-architecture.py'
+    'python scripts/check-backend-architecture.py',
+    'python scripts/inventory-backend-methods.py check'
 )
 foreach ($required in $backendSourceGateContracts) {
     if (-not $ciWorkflow.Contains($required) -or -not $candidateWorkflow.Contains($required)) {

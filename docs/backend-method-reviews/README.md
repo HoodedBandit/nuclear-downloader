@@ -1,10 +1,13 @@
-# Draft method-review checkpoint
+# Backend method reviews
 
-These sidecars are saved work in progress from the backend maintainability review.
-They are not a completed audit, even where individual entries say `reviewed`.
-Final source-identity reconciliation and substantive cross-review are unfinished.
-Do not enable the final ledger gate or claim complete method coverage from these
-drafts. The canonical ledger still describes the earlier inventory.
+These sidecars contain the completed source review for all 1,215 backend review units
+in source commit `d1f6571ed9da69e7aa63b2cdf47818e22f90161b`. Every entry was
+reconciled to the final inventory and reviewed with explicit callers, effects,
+ownership, cancellation, invariants, and concrete or static-only test evidence.
+The merged canonical ledger is `../backend-method-review.json`.
 
-See `../backend-resume-checkpoint.md` for remaining review corrections, ownership,
-validation receipts and the sequence for safely resuming after the user's reboot.
+CI and release-candidate builds run
+`python scripts/inventory-backend-methods.py check`, which fails when source
+identity changes or a current review unit lacks an accepted review. This completes the
+source method-review gate only. The Stage 6 two-hour soak and external native
+release acceptance remain separate qualification requirements.

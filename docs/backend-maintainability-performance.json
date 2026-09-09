@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-09-09T00:48:42.109765+00:00",
+  "recordedAt": "2026-09-09T02:02:27.455976+00:00",
   "scope": "Isolated debug backend component benchmarks; not native app or installer qualification",
+  "evidenceStatus": "final source-bound candidate performance evidence",
   "provenance": {
     "beforeCommit": "34d07695e984e8e66f4cbef7b70041690114d955",
-    "afterCommit": "b3d460204ac666ac04556720a3f0d5ff179f670f",
+    "afterCommit": "d1f6571ed9da69e7aa63b2cdf47818e22f90161b",
     "rustc": [
       "rustc 1.94.1 (e408947bf 2026-03-25)",
       "binary: rustc",
@@ -23,12 +24,12 @@
     "sourceArchiveSha256": "a99f1a003650451b3b87f457f44d23b5f1f4eff5c6ec791e805d3bd0b7098a98",
     "frozenExecutables": [
       {
-        "Path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\performance-paired\\post-reboot-34d0769-b3d4602\\before-tests.exe",
+        "Path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\performance-paired\\post-reboot-34d0769-d1f6571\\before-tests.exe",
         "Hash": "027D8AA8FED97F7A3D7940808C0B3235BE8492317E825E6F3879EC4DEF79065A"
       },
       {
-        "Path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\performance-paired\\post-reboot-34d0769-b3d4602\\after-tests.exe",
-        "Hash": "28F35F1F4B02E54424FD51C3E239935A02CAE8BA532A6B4BFD223FE4DA63F459"
+        "Path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\performance-paired\\post-reboot-34d0769-d1f6571\\after-tests.exe",
+        "Hash": "D10BB3BE49F5688A3D7B3CC975377D9B1562E9C117CEC3ACD5FAC31A39D8A647"
       }
     ],
     "powerScheme": [
@@ -64,7 +65,10 @@
         "present": false
       }
     ],
-    "recordedAt": "2026-09-09T00:36:48.2449679+00:00"
+    "recordedAt": "2026-09-09T01:50:34.2919390+00:00",
+    "reusedBaselineCompilationEvidence": "J:\\Nuclear AI box\\nuclear-downloader\\target\\performance-paired\\post-reboot-34d0769-b3d4602\\paired-provenance.json",
+    "sourceManifestEntries": 155,
+    "compilerReportedExecutable": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\debug\\deps\\nuclear_app_lib-7c7cc370866e23da.exe"
   },
   "initialUnpairedRun": "target/performance/after-20260909T002958Z-c169a1a785c048f5822175613a2fef67",
   "unpairedComparisonRejectedBecause": "Windows build changed from 26200.9278 to 26200.9445 during user reboot",
@@ -75,7 +79,91 @@
     4
   ],
   "consistentThresholdCrossingsInAllThreeRepeats": [],
-  "assessment": "All hard gates passed. Timing threshold crossings varied across matched repeats; no same metric crossed both thresholds in all three repeats. No overall speedup or constant disk-latency claim.",
+  "thresholdCrossingsInAtLeastTwoRepeats": [
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "repeatCount": 2
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "repeatCount": 2
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "repeatCount": 2
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshotWire",
+      "percentile": "p50",
+      "repeatCount": 2
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshotWire",
+      "percentile": "p95",
+      "repeatCount": 2
+    }
+  ],
+  "assessment": "All 45 hard gates passed in every pair. Five latency rows crossed review thresholds in pairs 3 and 4, but pair 2 cleared all five; no row crossed in both thresholds in all three matched repeat pairs. This series therefore establishes no reproducible threshold regression. It does not establish an overall speedup or constant disk latency.",
+  "sourceContext": {
+    "sourceManifestEntries": 155,
+    "aliasDeletionFinding": "Closed as a false positive by the exact Rust same-file alias proof.",
+    "cleanupOwnershipFix": "d1f6571 includes the regression-backed cleanup owner-record retention fix; this benchmark series was built from that source."
+  },
+  "runnerEvidence": {
+    "receiptCount": 34,
+    "successfulReceiptCount": 34,
+    "beforeReceiptCount": 17,
+    "afterReceiptCount": 17,
+    "uniqueExecutableHashes": {
+      "before": [
+        "027d8aa8fed97f7a3d7940808c0b3235be8492317e825e6f3879ec4def79065a"
+      ],
+      "after": [
+        "d10bb3be49f5688a3d7b3cc975377d9b1562e9c117cec3acd5fac31a39d8a647"
+      ]
+    },
+    "executionReceipts": "target/performance-paired/post-reboot-34d0769-d1f6571/execution-receipts.json",
+    "frozenExecutableFilesMatchProvenance": true
+  },
+  "intermediateSeries": [
+    {
+      "afterCommit": "b3d460204ac666ac04556720a3f0d5ff179f670f",
+      "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-b3d4602",
+      "status": "intermediate maintainability evidence superseded by later source",
+      "result": "45/45 hard gates passed in all four pairs; no same timing threshold crossed in all repeat pairs 2-4"
+    },
+    {
+      "afterCommit": "807ce002144dd96a4116cdc448f8e54f437d95a4",
+      "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-807ce00",
+      "status": "intermediate source-bound evidence superseded by later source",
+      "result": "45/45 hard gates passed in all four pairs; no threshold row crossed in all repeat pairs 2-4"
+    },
+    {
+      "afterCommit": "cb616a1ef5cd29c0d57503df3e707baeda23d646",
+      "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-cb616a1",
+      "status": "intermediate source-bound evidence superseded by d1f6571",
+      "result": "45/45 hard gates passed in all four pairs; review counts 9, 5, 2, and 3; no crossing repeated in pairs 2-4"
+    },
+    {
+      "afterCommit": "d1f6571ed9da69e7aa63b2cdf47818e22f90161b",
+      "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-d1f6571",
+      "status": "current final source-bound candidate performance evidence",
+      "result": "45/45 hard gates passed in all four pairs; review counts 1, 8, 5, and 10; no crossing repeated in all pairs 2-4"
+    }
+  ],
   "pairs": [
     {
       "pair": 1,
@@ -85,761 +173,20 @@
       ],
       "hardGateStatus": "passed",
       "hardGateCount": 45,
-      "reviewRequiredCount": 6,
-      "reviewRows": [
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "journalSave",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 10288.0,
-          "after": 13609.0,
-          "absoluteDelta": 3321.0,
-          "ratio": 1.322803265940902,
-          "percentChange": 32.28032659409019,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "enqueueBatch",
-          "percentile": "p50",
-          "unit": "microseconds",
-          "baseline": 13245.0,
-          "after": 15429.0,
-          "absoluteDelta": 2184.0,
-          "ratio": 1.1648924122310307,
-          "percentChange": 16.48924122310307,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "enqueueBatch",
-          "percentile": "p95",
-          "unit": "microseconds",
-          "baseline": 13245.0,
-          "after": 15429.0,
-          "absoluteDelta": 2184.0,
-          "ratio": 1.1648924122310307,
-          "percentChange": 16.48924122310307,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "enqueueBatch",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 13245.0,
-          "after": 15429.0,
-          "absoluteDelta": 2184.0,
-          "ratio": 1.1648924122310307,
-          "percentChange": 16.48924122310307,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "p95",
-          "unit": "microseconds",
-          "baseline": 1183.0,
-          "after": 1367.0,
-          "absoluteDelta": 184.0,
-          "ratio": 1.1555367709213864,
-          "percentChange": 15.55367709213864,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 1400.0,
-          "after": 1681.0,
-          "absoluteDelta": 281.0,
-          "ratio": 1.2007142857142856,
-          "percentChange": 20.071428571428562,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        }
-      ],
-      "runs": {
-        "before": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914240114,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143719759872
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914286591,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914242068,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 68
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 20,
-                  "p95": 23,
-                  "p99": 38,
-                  "max": 52
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4351,
-                  "p95": 5168,
-                  "p99": 5876,
-                  "max": 25784
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 4196,
-                  "p95": 4890,
-                  "p99": 5844,
-                  "max": 6519
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 5005,
-                  "p95": 5005,
-                  "p99": 5005,
-                  "max": 5005
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 9,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8388608,
-                "workingSetAfterSamples": 10534912,
-                "privateAfterLoad": 1404928,
-                "privateAfterSamples": 1961984
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914248198,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 90,
-                  "p95": 144,
-                  "p99": 188,
-                  "max": 413
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1309,
-                  "p95": 1643,
-                  "p99": 1983,
-                  "max": 2806
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8850,
-                  "p95": 10954,
-                  "p99": 11652,
-                  "max": 12854
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8260,
-                  "p95": 9764,
-                  "p99": 10288,
-                  "max": 16008
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 13245,
-                  "p95": 13245,
-                  "p99": 13245,
-                  "max": 13245
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 127,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8642560,
-                "workingSetAfterSamples": 11780096,
-                "privateAfterLoad": 1761280,
-                "privateAfterSamples": 3371008
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914286468,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 938,
-                  "p95": 1183,
-                  "p99": 1400,
-                  "max": 2156
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 12782,
-                  "p95": 14686,
-                  "p99": 16448,
-                  "max": 41976
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 42775,
-                  "p95": 52305,
-                  "p99": 53776,
-                  "max": 54861
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 40654,
-                  "p95": 46726,
-                  "p99": 52317,
-                  "max": 56174
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 63644,
-                  "p95": 63644,
-                  "p99": 63644,
-                  "max": 63644
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 992,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10600448,
-                "workingSetAfterSamples": 20336640,
-                "privateAfterLoad": 4042752,
-                "privateAfterSamples": 11984896
-              }
-            }
-          }
-        ],
-        "after": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914286633,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143718670336
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914333946,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914288443,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 42
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 19,
-                  "p95": 25,
-                  "p99": 33,
-                  "max": 52
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4000,
-                  "p95": 4985,
-                  "p99": 5655,
-                  "max": 6228
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 4021,
-                  "p95": 5018,
-                  "p99": 5729,
-                  "max": 8094
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 4318,
-                  "p95": 4318,
-                  "p99": 4318,
-                  "max": 4318
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 9,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8380416,
-                "workingSetAfterSamples": 10608640,
-                "privateAfterLoad": 1400832,
-                "privateAfterSamples": 2056192
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914294506,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 98,
-                  "p95": 152,
-                  "p99": 221,
-                  "max": 464
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1235,
-                  "p95": 1529,
-                  "p99": 1781,
-                  "max": 2948
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8528,
-                  "p95": 10260,
-                  "p99": 10977,
-                  "max": 12849
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8178,
-                  "p95": 9964,
-                  "p99": 13609,
-                  "max": 26064
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 15429,
-                  "p95": 15429,
-                  "p99": 15429,
-                  "max": 15429
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 170,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8630272,
-                "workingSetAfterSamples": 12001280,
-                "privateAfterLoad": 1667072,
-                "privateAfterSamples": 3674112
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914333836,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1031,
-                  "p95": 1367,
-                  "p99": 1681,
-                  "max": 3176
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 12812,
-                  "p95": 14704,
-                  "p99": 16196,
-                  "max": 18422
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 43539,
-                  "p95": 51451,
-                  "p99": 54195,
-                  "max": 55631
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 41350,
-                  "p95": 46567,
-                  "p99": 48202,
-                  "max": 50548
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 59225,
-                  "p95": 59225,
-                  "p99": 59225,
-                  "max": 59225
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 1021,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10584064,
-                "workingSetAfterSamples": 19812352,
-                "privateAfterLoad": 3616768,
-                "privateAfterSamples": 11612160
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "pair": 2,
-      "order": [
-        "after",
-        "before"
-      ],
-      "hardGateStatus": "passed",
-      "hardGateCount": 45,
-      "reviewRequiredCount": 3,
+      "hardGatesPassed": 45,
+      "reviewRequiredCount": 1,
       "reviewRows": [
         {
           "category": "latency",
           "scope": "queue-1",
-          "metric": "journalSave",
+          "metric": "durableCommand",
           "percentile": "p99",
           "unit": "microseconds",
-          "baseline": 5008.0,
-          "after": 5591.0,
-          "absoluteDelta": 583.0,
-          "ratio": 1.1164137380191694,
-          "percentChange": 11.641373801916943,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "journalSave",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 10596.0,
-          "after": 12944.0,
-          "absoluteDelta": 2348.0,
-          "ratio": 1.221593053982635,
-          "percentChange": 22.159305398263495,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "blocked_io",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "",
-          "unit": "microseconds",
-          "baseline": 964.0,
-          "after": 1155.0,
-          "absoluteDelta": 191.0,
-          "ratio": 1.1981327800829875,
-          "percentChange": 19.813278008298752,
+          "baseline": 6783.0,
+          "after": 10232.0,
+          "absoluteDelta": 3449.0,
+          "ratio": 1.5084770750405425,
+          "percentChange": 50.84770750405425,
           "direction": "increased",
           "reviewRequired": true,
           "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
@@ -853,14 +200,14 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "host",
-            "recordedAtUnixMs": 1788914451282,
+            "recordedAtUnixMs": 1788918704498,
             "metrics": {
               "windowsDisplayVersion": "25H2",
               "windowsBuild": "26200.9445",
               "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
               "logicalProcessors": 16,
               "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143715729408
+              "repositoryVolumeAvailableBytes": 143558602752
             }
           },
           {
@@ -881,7 +228,7 @@
               }
             },
             "profile": "debug",
-            "recordedAtUnixMs": 1788914497862,
+            "recordedAtUnixMs": 1788918761950,
             "schemaVersion": 1,
             "workload": {
               "healthValidations": 1,
@@ -899,7 +246,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914453101,
+            "recordedAtUnixMs": 1788918706671,
             "workload": {
               "queueSize": 1,
               "snapshotSamples": 10000,
@@ -912,41 +259,41 @@
                 "snapshot": {
                   "samples": 10000,
                   "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 34
+                  "p95": 3,
+                  "p99": 7,
+                  "max": 357
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 19,
-                  "p95": 38,
-                  "p99": 58,
-                  "max": 76
+                  "p50": 22,
+                  "p95": 60,
+                  "p99": 117,
+                  "max": 677
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 4238,
-                  "p95": 5071,
-                  "p99": 5619,
-                  "max": 6865
+                  "p50": 4992,
+                  "p95": 5914,
+                  "p99": 6783,
+                  "max": 6885
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 3934,
-                  "p95": 4729,
-                  "p99": 5008,
-                  "max": 6107
+                  "p50": 4519,
+                  "p95": 5339,
+                  "p99": 6214,
+                  "max": 12166
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 4923,
-                  "p95": 4923,
-                  "p99": 4923,
-                  "max": 4923
+                  "p50": 5349,
+                  "p95": 5349,
+                  "p99": 5349,
+                  "max": 5349
                 }
               },
               "blockedJournalSnapshot": {
-                "latencyMicros": 28,
+                "latencyMicros": 27,
                 "observedPreCommitState": true
               },
               "eventBacklog": {
@@ -971,10 +318,10 @@
                 "journalAfterEnqueue": 1190
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 8372224,
-                "workingSetAfterSamples": 10584064,
-                "privateAfterLoad": 1400832,
-                "privateAfterSamples": 2035712
+                "workingSetAfterLoad": 8470528,
+                "workingSetAfterSamples": 10776576,
+                "privateAfterLoad": 1404928,
+                "privateAfterSamples": 2125824
               }
             }
           },
@@ -983,7 +330,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914459244,
+            "recordedAtUnixMs": 1788918713667,
             "workload": {
               "queueSize": 100,
               "snapshotSamples": 10000,
@@ -995,42 +342,42 @@
               "latencyMicros": {
                 "snapshot": {
                   "samples": 10000,
-                  "p50": 90,
-                  "p95": 145,
-                  "p99": 189,
-                  "max": 383
+                  "p50": 116,
+                  "p95": 227,
+                  "p99": 318,
+                  "max": 823
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 1233,
-                  "p95": 1567,
-                  "p99": 1724,
-                  "max": 2469
+                  "p50": 1573,
+                  "p95": 2141,
+                  "p99": 2470,
+                  "max": 2792
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 8821,
-                  "p95": 10501,
-                  "p99": 11534,
-                  "max": 49451
+                  "p50": 9534,
+                  "p95": 10781,
+                  "p99": 11218,
+                  "max": 19893
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 8473,
-                  "p95": 9825,
-                  "p99": 10596,
-                  "max": 43694
+                  "p50": 8892,
+                  "p95": 9954,
+                  "p99": 10746,
+                  "max": 10764
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 13459,
-                  "p95": 13459,
-                  "p99": 13459,
-                  "max": 13459
+                  "p50": 16225,
+                  "p95": 16225,
+                  "p99": 16225,
+                  "max": 16225
                 }
               },
               "blockedJournalSnapshot": {
-                "latencyMicros": 123,
+                "latencyMicros": 122,
                 "observedPreCommitState": true
               },
               "eventBacklog": {
@@ -1055,9 +402,9 @@
                 "journalAfterEnqueue": 89590
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 8646656,
-                "workingSetAfterSamples": 12263424,
-                "privateAfterLoad": 1662976,
+                "workingSetAfterLoad": 8728576,
+                "workingSetAfterSamples": 11976704,
+                "privateAfterLoad": 1679360,
                 "privateAfterSamples": 3772416
               }
             }
@@ -1067,7 +414,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914497739,
+            "recordedAtUnixMs": 1788918761807,
             "workload": {
               "queueSize": 1000,
               "snapshotSamples": 10000,
@@ -1079,42 +426,42 @@
               "latencyMicros": {
                 "snapshot": {
                   "samples": 10000,
-                  "p50": 951,
-                  "p95": 1286,
-                  "p99": 1607,
-                  "max": 3754
+                  "p50": 1307,
+                  "p95": 1910,
+                  "p99": 2264,
+                  "max": 5700
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 12750,
-                  "p95": 14533,
-                  "p99": 15512,
-                  "max": 16941
+                  "p50": 15987,
+                  "p95": 18154,
+                  "p99": 20751,
+                  "max": 24401
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 42644,
-                  "p95": 50843,
-                  "p99": 52376,
-                  "max": 54439
+                  "p50": 50478,
+                  "p95": 55085,
+                  "p99": 57415,
+                  "max": 59471
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 41042,
-                  "p95": 48122,
-                  "p99": 52281,
-                  "max": 57056
+                  "p50": 47458,
+                  "p95": 51535,
+                  "p99": 54332,
+                  "max": 59936
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 57908,
-                  "p95": 57908,
-                  "p99": 57908,
-                  "max": 57908
+                  "p50": 75981,
+                  "p95": 75981,
+                  "p99": 75981,
+                  "max": 75981
                 }
               },
               "blockedJournalSnapshot": {
-                "latencyMicros": 964,
+                "latencyMicros": 1504,
                 "observedPreCommitState": true
               },
               "eventBacklog": {
@@ -1139,10 +486,10 @@
                 "journalAfterEnqueue": 895686
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 10240000,
-                "workingSetAfterSamples": 17092608,
-                "privateAfterLoad": 3248128,
-                "privateAfterSamples": 8732672
+                "workingSetAfterLoad": 10682368,
+                "workingSetAfterSamples": 21655552,
+                "privateAfterLoad": 3608576,
+                "privateAfterSamples": 13418496
               }
             }
           }
@@ -1153,14 +500,14 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "host",
-            "recordedAtUnixMs": 1788914403987,
+            "recordedAtUnixMs": 1788918762017,
             "metrics": {
               "windowsDisplayVersion": "25H2",
               "windowsBuild": "26200.9445",
               "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
               "logicalProcessors": 16,
               "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143716564992
+              "repositoryVolumeAvailableBytes": 143557513216
             }
           },
           {
@@ -1181,7 +528,7 @@
               }
             },
             "profile": "debug",
-            "recordedAtUnixMs": 1788914451239,
+            "recordedAtUnixMs": 1788918820014,
             "schemaVersion": 1,
             "workload": {
               "healthValidations": 1,
@@ -1199,7 +546,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914405802,
+            "recordedAtUnixMs": 1788918764162,
             "workload": {
               "queueSize": 1,
               "snapshotSamples": 10000,
@@ -1212,1361 +559,37 @@
                 "snapshot": {
                   "samples": 10000,
                   "p50": 1,
-                  "p95": 1,
+                  "p95": 3,
                   "p99": 4,
-                  "max": 48
+                  "max": 136
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 19,
-                  "p95": 35,
-                  "p99": 50,
-                  "max": 68
+                  "p50": 21,
+                  "p95": 51,
+                  "p99": 87,
+                  "max": 579
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 3997,
-                  "p95": 4781,
-                  "p99": 5356,
-                  "max": 8449
+                  "p50": 4913,
+                  "p95": 6170,
+                  "p99": 10232,
+                  "max": 12785
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 3874,
-                  "p95": 4541,
-                  "p99": 5591,
-                  "max": 5858
+                  "p50": 4604,
+                  "p95": 5418,
+                  "p99": 5968,
+                  "max": 6582
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 4552,
-                  "p95": 4552,
-                  "p99": 4552,
-                  "max": 4552
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 10,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8388608,
-                "workingSetAfterSamples": 10592256,
-                "privateAfterLoad": 1413120,
-                "privateAfterSamples": 2039808
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914412189,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 110,
-                  "p95": 188,
-                  "p99": 254,
-                  "max": 501
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1315,
-                  "p95": 1629,
-                  "p99": 1762,
-                  "max": 2614
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8967,
-                  "p95": 10590,
-                  "p99": 11315,
-                  "max": 17937
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8319,
-                  "p95": 10004,
-                  "p99": 12944,
-                  "max": 13487
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 13950,
-                  "p95": 13950,
-                  "p99": 13950,
-                  "max": 13950
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 126,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8630272,
-                "workingSetAfterSamples": 11550720,
-                "privateAfterLoad": 1695744,
-                "privateAfterSamples": 3039232
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914451118,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 949,
-                  "p95": 1325,
-                  "p99": 1626,
-                  "max": 2911
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 12713,
-                  "p95": 15454,
-                  "p99": 16631,
-                  "max": 17192
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 44417,
-                  "p95": 52449,
-                  "p99": 55916,
-                  "max": 57251
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 40543,
-                  "p95": 45688,
-                  "p99": 51346,
-                  "max": 52080
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 57355,
-                  "p95": 57355,
-                  "p99": 57355,
-                  "max": 57355
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 1155,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10227712,
-                "workingSetAfterSamples": 17600512,
-                "privateAfterLoad": 3239936,
-                "privateAfterSamples": 9146368
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "pair": 3,
-      "order": [
-        "before",
-        "after"
-      ],
-      "hardGateStatus": "passed",
-      "hardGateCount": 45,
-      "reviewRequiredCount": 3,
-      "reviewRows": [
-        {
-          "category": "latency",
-          "scope": "queue-1",
-          "metric": "journalSave",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 5625.0,
-          "after": 6525.0,
-          "absoluteDelta": 900.0,
-          "ratio": 1.16,
-          "percentChange": 15.999999999999993,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "snapshot",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 190.0,
-          "after": 342.0,
-          "absoluteDelta": 152.0,
-          "ratio": 1.8,
-          "percentChange": 80.0,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-100",
-          "metric": "durableCommand",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 11026.0,
-          "after": 12538.0,
-          "absoluteDelta": 1512.0,
-          "ratio": 1.1371304190096136,
-          "percentChange": 13.713041900961365,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        }
-      ],
-      "runs": {
-        "before": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914498171,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143714566144
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914545164,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914500005,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 2,
-                  "p99": 3,
-                  "max": 37
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 19,
-                  "p95": 22,
-                  "p99": 37,
-                  "max": 44
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4225,
-                  "p95": 5182,
-                  "p99": 5864,
-                  "max": 6902
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 3965,
-                  "p95": 4968,
-                  "p99": 5625,
-                  "max": 14635
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 4565,
-                  "p95": 4565,
-                  "p99": 4565,
-                  "max": 4565
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 10,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8388608,
-                "workingSetAfterSamples": 10567680,
-                "privateAfterLoad": 1409024,
-                "privateAfterSamples": 2019328
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914506034,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 90,
-                  "p95": 140,
-                  "p99": 190,
-                  "max": 506
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1233,
-                  "p95": 1588,
-                  "p99": 1774,
-                  "max": 2450
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8744,
-                  "p95": 10273,
-                  "p99": 11026,
-                  "max": 11805
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8317,
-                  "p95": 9931,
-                  "p99": 10498,
-                  "max": 12180
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 13695,
-                  "p95": 13695,
-                  "p99": 13695,
-                  "max": 13695
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 80,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8646656,
-                "workingSetAfterSamples": 12345344,
-                "privateAfterLoad": 1634304,
-                "privateAfterSamples": 3837952
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914545048,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 969,
-                  "p95": 1279,
-                  "p99": 1601,
-                  "max": 3327
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 13039,
-                  "p95": 15068,
-                  "p99": 16701,
-                  "max": 19047
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 43503,
-                  "p95": 50916,
-                  "p99": 55477,
-                  "max": 56161
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 41072,
-                  "p95": 46990,
-                  "p99": 52953,
-                  "max": 59317
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 74163,
-                  "p95": 74163,
-                  "p99": 74163,
-                  "max": 74163
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 1005,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10260480,
-                "workingSetAfterSamples": 19152896,
-                "privateAfterLoad": 3260416,
-                "privateAfterSamples": 10821632
-              }
-            }
-          }
-        ],
-        "after": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914545195,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143713472512
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914592733,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914546971,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 24
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 19,
-                  "p95": 21,
-                  "p99": 37,
-                  "max": 88
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4073,
-                  "p95": 5080,
-                  "p99": 5846,
-                  "max": 6985
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 3707,
-                  "p95": 4701,
-                  "p99": 6525,
-                  "max": 7746
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 4610,
-                  "p95": 4610,
-                  "p99": 4610,
-                  "max": 4610
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 58,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8388608,
-                "workingSetAfterSamples": 10534912,
-                "privateAfterLoad": 1413120,
-                "privateAfterSamples": 1974272
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914553318,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 106,
-                  "p95": 173,
-                  "p99": 342,
-                  "max": 499
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1263,
-                  "p95": 1585,
-                  "p99": 1802,
-                  "max": 3000
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8874,
-                  "p95": 10464,
-                  "p99": 12538,
-                  "max": 17497
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8685,
-                  "p95": 9964,
-                  "p99": 10728,
-                  "max": 12005
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 14509,
-                  "p95": 14509,
-                  "p99": 14509,
-                  "max": 14509
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 145,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8642560,
-                "workingSetAfterSamples": 11624448,
-                "privateAfterLoad": 1695744,
-                "privateAfterSamples": 3121152
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914592610,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 968,
-                  "p95": 1305,
-                  "p99": 1603,
-                  "max": 2612
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 12729,
-                  "p95": 14624,
-                  "p99": 15911,
-                  "max": 19023
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 44246,
-                  "p95": 54529,
-                  "p99": 55631,
-                  "max": 58275
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 42668,
-                  "p95": 50711,
-                  "p99": 54878,
-                  "max": 58833
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 61800,
-                  "p95": 61800,
-                  "p99": 61800,
-                  "max": 61800
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 994,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10240000,
-                "workingSetAfterSamples": 20193280,
-                "privateAfterLoad": 3248128,
-                "privateAfterSamples": 11960320
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "pair": 4,
-      "order": [
-        "after",
-        "before"
-      ],
-      "hardGateStatus": "passed",
-      "hardGateCount": 45,
-      "reviewRequiredCount": 3,
-      "reviewRows": [
-        {
-          "category": "latency",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "p95",
-          "unit": "microseconds",
-          "baseline": 1248.0,
-          "after": 1489.0,
-          "absoluteDelta": 241.0,
-          "ratio": 1.1931089743589745,
-          "percentChange": 19.310897435897445,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "latency",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "p99",
-          "unit": "microseconds",
-          "baseline": 1595.0,
-          "after": 1936.0,
-          "absoluteDelta": 341.0,
-          "ratio": 1.2137931034482758,
-          "percentChange": 21.379310344827584,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        },
-        {
-          "category": "blocked_io",
-          "scope": "queue-1000",
-          "metric": "snapshot",
-          "percentile": "",
-          "unit": "microseconds",
-          "baseline": 955.0,
-          "after": 1239.0,
-          "absoluteDelta": 284.0,
-          "ratio": 1.2973821989528795,
-          "percentChange": 29.738219895287955,
-          "direction": "increased",
-          "reviewRequired": true,
-          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
-          "releaseGate": false
-        }
-      ],
-      "runs": {
-        "before": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914677064,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143719022592
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914724905,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914678999,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 32
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 19,
-                  "p95": 37,
-                  "p99": 42,
-                  "max": 68
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4500,
-                  "p95": 5539,
-                  "p99": 6375,
-                  "max": 8481
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 4138,
-                  "p95": 4966,
-                  "p99": 6303,
-                  "max": 15636
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 4732,
-                  "p95": 4732,
-                  "p99": 4732,
-                  "max": 4732
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 22,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2,
-                "serializedBytes": 1088,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 208,
-                "estimatedBytes": 81647,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 635,
-                "journalAfterDurable": 742,
-                "journalAfterEnqueue": 1190
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8384512,
-                "workingSetAfterSamples": 10604544,
-                "privateAfterLoad": 1404928,
-                "privateAfterSamples": 2043904
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914685219,
-            "workload": {
-              "queueSize": 100,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 97,
-                  "p95": 151,
-                  "p99": 204,
-                  "max": 464
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 1274,
-                  "p95": 1608,
-                  "p99": 1935,
-                  "max": 3153
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 8916,
-                  "p95": 10515,
-                  "p99": 11809,
-                  "max": 12041
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 8470,
-                  "p95": 10293,
-                  "p99": 11435,
-                  "max": 20639
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 13879,
-                  "p95": 13879,
-                  "p99": 13879,
-                  "max": 13879
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 127,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 200,
-                "serializedBytes": 108980,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 406,
-                "estimatedBytes": 160235,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 44276,
-                "journalAfterDurable": 44390,
-                "journalAfterEnqueue": 89590
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 8646656,
-                "workingSetAfterSamples": 11595776,
-                "privateAfterLoad": 1736704,
-                "privateAfterSamples": 3084288
-              }
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914724779,
-            "workload": {
-              "queueSize": 1000,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 935,
-                  "p95": 1248,
-                  "p99": 1595,
-                  "max": 3626
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 13250,
-                  "p95": 15081,
-                  "p99": 17280,
-                  "max": 26407
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 45172,
-                  "p95": 55252,
-                  "p99": 56976,
-                  "max": 57843
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 42587,
-                  "p95": 47767,
-                  "p99": 52625,
-                  "max": 54024
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 62343,
-                  "p95": 62343,
-                  "p99": 62343,
-                  "max": 62343
-                }
-              },
-              "blockedJournalSnapshot": {
-                "latencyMicros": 955,
-                "observedPreCommitState": true
-              },
-              "eventBacklog": {
-                "deltaCount": 2000,
-                "serializedBytes": 1093592,
-                "sequencesContiguous": true
-              },
-              "outbox": {
-                "queuedBatches": 207,
-                "queuedDeltas": 2206,
-                "estimatedBytes": 876635,
-                "coalescedResyncs": 0,
-                "limits": {
-                  "maxBatches": 256,
-                  "maxDeltas": 4096,
-                  "maxEstimatedBytes": 16777216
-                }
-              },
-              "storageBytes": {
-                "snapshotJson": 442976,
-                "journalAfterDurable": 443094,
-                "journalAfterEnqueue": 895686
-              },
-              "memoryBytes": {
-                "workingSetAfterLoad": 10575872,
-                "workingSetAfterSamples": 20328448,
-                "privateAfterLoad": 3964928,
-                "privateAfterSamples": 12062720
-              }
-            }
-          }
-        ],
-        "after": [
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "host",
-            "recordedAtUnixMs": 1788914628732,
-            "metrics": {
-              "windowsDisplayVersion": "25H2",
-              "windowsBuild": "26200.9445",
-              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
-              "logicalProcessors": 16,
-              "repositoryVolumeFormat": "NTFS",
-              "repositoryVolumeAvailableBytes": 143711727616
-            }
-          },
-          {
-            "benchmark": "runtime_hash",
-            "label": "after",
-            "metrics": {
-              "hashes": {
-                "manifestBytes": 610,
-                "manifestInvocations": 1,
-                "toolBytes": 83,
-                "toolInvocations": 4,
-                "totalBytes": 693,
-                "totalInvocations": 5
-              },
-              "leases": {
-                "resolutionCalls": 408,
-                "successfulResolutions": 408
-              }
-            },
-            "profile": "debug",
-            "recordedAtUnixMs": 1788914677021,
-            "schemaVersion": 1,
-            "workload": {
-              "healthValidations": 1,
-              "operations": 100,
-              "toolNames": [
-                "yt-dlp",
-                "ffmpeg",
-                "ffprobe",
-                "deno"
-              ]
-            }
-          },
-          {
-            "schemaVersion": 1,
-            "label": "after",
-            "profile": "debug",
-            "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914630685,
-            "workload": {
-              "queueSize": 1,
-              "snapshotSamples": 10000,
-              "snapshotWireSamples": 1000,
-              "durableCommandSamples": 200,
-              "journalSamples": 200
-            },
-            "metrics": {
-              "latencyMicros": {
-                "snapshot": {
-                  "samples": 10000,
-                  "p50": 1,
-                  "p95": 1,
-                  "p99": 2,
-                  "max": 29
-                },
-                "snapshotWire": {
-                  "samples": 1000,
-                  "p50": 19,
-                  "p95": 28,
-                  "p99": 37,
-                  "max": 53
-                },
-                "durableCommand": {
-                  "samples": 200,
-                  "p50": 4310,
-                  "p95": 5155,
-                  "p99": 5490,
-                  "max": 6434
-                },
-                "journalSave": {
-                  "samples": 200,
-                  "p50": 4305,
-                  "p95": 5292,
-                  "p99": 5728,
-                  "max": 6164
-                },
-                "enqueueBatch": {
-                  "samples": 1,
-                  "p50": 5084,
-                  "p95": 5084,
-                  "p99": 5084,
-                  "max": 5084
+                  "p50": 5407,
+                  "p95": 5407,
+                  "p99": 5407,
+                  "max": 5407
                 }
               },
               "blockedJournalSnapshot": {
@@ -2595,10 +618,10 @@
                 "journalAfterEnqueue": 1190
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 8392704,
-                "workingSetAfterSamples": 10600448,
-                "privateAfterLoad": 1413120,
-                "privateAfterSamples": 2048000
+                "workingSetAfterLoad": 8548352,
+                "workingSetAfterSamples": 10887168,
+                "privateAfterLoad": 1396736,
+                "privateAfterSamples": 2125824
               }
             }
           },
@@ -2607,7 +630,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914636988,
+            "recordedAtUnixMs": 1788918771109,
             "workload": {
               "queueSize": 100,
               "snapshotSamples": 10000,
@@ -2619,42 +642,42 @@
               "latencyMicros": {
                 "snapshot": {
                   "samples": 10000,
-                  "p50": 101,
-                  "p95": 153,
-                  "p99": 192,
-                  "max": 404
+                  "p50": 112,
+                  "p95": 211,
+                  "p99": 300,
+                  "max": 861
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 1258,
-                  "p95": 1568,
-                  "p99": 1753,
-                  "max": 3603
+                  "p50": 1577,
+                  "p95": 2141,
+                  "p99": 2483,
+                  "max": 2868
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 8993,
-                  "p95": 10691,
-                  "p99": 11319,
-                  "max": 12241
+                  "p50": 9266,
+                  "p95": 10504,
+                  "p99": 10976,
+                  "max": 25584
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 8601,
-                  "p95": 10218,
-                  "p99": 12340,
-                  "max": 17210
+                  "p50": 9027,
+                  "p95": 10304,
+                  "p99": 10945,
+                  "max": 11541
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 15067,
-                  "p95": 15067,
-                  "p99": 15067,
-                  "max": 15067
+                  "p50": 16331,
+                  "p95": 16331,
+                  "p99": 16331,
+                  "max": 16331
                 }
               },
               "blockedJournalSnapshot": {
-                "latencyMicros": 110,
+                "latencyMicros": 134,
                 "observedPreCommitState": true
               },
               "eventBacklog": {
@@ -2679,10 +702,10 @@
                 "journalAfterEnqueue": 89590
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 8622080,
-                "workingSetAfterSamples": 11866112,
-                "privateAfterLoad": 1638400,
-                "privateAfterSamples": 3407872
+                "workingSetAfterLoad": 8814592,
+                "workingSetAfterSamples": 12140544,
+                "privateAfterLoad": 1753088,
+                "privateAfterSamples": 4018176
               }
             }
           },
@@ -2691,7 +714,7 @@
             "label": "after",
             "profile": "debug",
             "benchmark": "state_journal",
-            "recordedAtUnixMs": 1788914676901,
+            "recordedAtUnixMs": 1788918819875,
             "workload": {
               "queueSize": 1000,
               "snapshotSamples": 10000,
@@ -2703,42 +726,42 @@
               "latencyMicros": {
                 "snapshot": {
                   "samples": 10000,
-                  "p50": 1008,
-                  "p95": 1489,
-                  "p99": 1936,
-                  "max": 3950
+                  "p50": 1296,
+                  "p95": 1943,
+                  "p99": 2229,
+                  "max": 3038
                 },
                 "snapshotWire": {
                   "samples": 1000,
-                  "p50": 13235,
-                  "p95": 15371,
-                  "p99": 17551,
-                  "max": 19412
+                  "p50": 16628,
+                  "p95": 19040,
+                  "p99": 20281,
+                  "max": 22827
                 },
                 "durableCommand": {
                   "samples": 200,
-                  "p50": 43758,
-                  "p95": 53467,
-                  "p99": 57756,
-                  "max": 58463
+                  "p50": 51623,
+                  "p95": 54880,
+                  "p99": 56632,
+                  "max": 57784
                 },
                 "journalSave": {
                   "samples": 200,
-                  "p50": 40973,
-                  "p95": 46269,
-                  "p99": 52289,
-                  "max": 56079
+                  "p50": 47758,
+                  "p95": 52711,
+                  "p99": 55019,
+                  "max": 69175
                 },
                 "enqueueBatch": {
                   "samples": 1,
-                  "p50": 57527,
-                  "p95": 57527,
-                  "p99": 57527,
-                  "max": 57527
+                  "p50": 75424,
+                  "p95": 75424,
+                  "p99": 75424,
+                  "max": 75424
                 }
               },
               "blockedJournalSnapshot": {
-                "latencyMicros": 1239,
+                "latencyMicros": 1038,
                 "observedPreCommitState": true
               },
               "eventBacklog": {
@@ -2763,17 +786,2240 @@
                 "journalAfterEnqueue": 895686
               },
               "memoryBytes": {
-                "workingSetAfterLoad": 10584064,
-                "workingSetAfterSamples": 20123648,
-                "privateAfterLoad": 3620864,
-                "privateAfterSamples": 11923456
+                "workingSetAfterLoad": 10756096,
+                "workingSetAfterSamples": 17596416,
+                "privateAfterLoad": 4018176,
+                "privateAfterSamples": 9015296
               }
             }
           }
         ]
-      }
+      },
+      "comparisonArtifact": "target/performance-paired/post-reboot-34d0769-d1f6571/comparison-1/comparison.json"
+    },
+    {
+      "pair": 2,
+      "order": [
+        "after",
+        "before"
+      ],
+      "hardGateStatus": "passed",
+      "hardGateCount": 45,
+      "hardGatesPassed": 45,
+      "reviewRequiredCount": 8,
+      "reviewRows": [
+        {
+          "category": "latency",
+          "scope": "queue-1000",
+          "metric": "enqueueBatch",
+          "percentile": "p50",
+          "unit": "microseconds",
+          "baseline": 76475.0,
+          "after": 88812.0,
+          "absoluteDelta": 12337.0,
+          "ratio": 1.1613206930369402,
+          "percentChange": 16.132069303694017,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1000",
+          "metric": "enqueueBatch",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 76475.0,
+          "after": 88812.0,
+          "absoluteDelta": 12337.0,
+          "ratio": 1.1613206930369402,
+          "percentChange": 16.132069303694017,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1000",
+          "metric": "enqueueBatch",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 76475.0,
+          "after": 88812.0,
+          "absoluteDelta": 12337.0,
+          "ratio": 1.1613206930369402,
+          "percentChange": 16.132069303694017,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "blocked_io",
+          "scope": "queue-1000",
+          "metric": "snapshot",
+          "percentile": "",
+          "unit": "microseconds",
+          "baseline": 1062.0,
+          "after": 1395.0,
+          "absoluteDelta": 333.0,
+          "ratio": 1.3135593220338984,
+          "percentChange": 31.355932203389834,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "memory",
+          "scope": "queue-1000",
+          "metric": "workingSetAfterSamples",
+          "percentile": "",
+          "unit": "bytes",
+          "baseline": 17543168.0,
+          "after": 19652608.0,
+          "absoluteDelta": 2109440.0,
+          "ratio": 1.1202428204529535,
+          "percentChange": 12.024282045295354,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "memory",
+          "scope": "queue-1000",
+          "metric": "privateAfterSamples",
+          "percentile": "",
+          "unit": "bytes",
+          "baseline": 8933376.0,
+          "after": 11108352.0,
+          "absoluteDelta": 2174976.0,
+          "ratio": 1.2434662998624484,
+          "percentChange": 24.34662998624484,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "memory",
+          "scope": "queue-1000",
+          "metric": "privateGrowth",
+          "percentile": "",
+          "unit": "bytes",
+          "baseline": 4886528.0,
+          "after": 7868416.0,
+          "absoluteDelta": 2981888.0,
+          "ratio": 1.6102263202011735,
+          "percentChange": 61.02263202011735,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "memory",
+          "scope": "queue-1000",
+          "metric": "workingSetGrowth",
+          "percentile": "",
+          "unit": "bytes",
+          "baseline": 6877184.0,
+          "after": 9248768.0,
+          "absoluteDelta": 2371584.0,
+          "ratio": 1.344848123883264,
+          "percentChange": 34.48481238832639,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        }
+      ],
+      "runs": {
+        "before": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788918879052,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143548813312
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788918939827,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918881262,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 6,
+                  "max": 536
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 24,
+                  "p95": 62,
+                  "p99": 116,
+                  "max": 610
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 5005,
+                  "p95": 6597,
+                  "p99": 6898,
+                  "max": 18662
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4652,
+                  "p95": 5881,
+                  "p99": 6268,
+                  "max": 7795
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4832,
+                  "p95": 4832,
+                  "p99": 4832,
+                  "max": 4832
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 20,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8466432,
+                "workingSetAfterSamples": 10817536,
+                "privateAfterLoad": 1396736,
+                "privateAfterSamples": 2162688
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918888603,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 119,
+                  "p95": 239,
+                  "p99": 508,
+                  "max": 945
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1665,
+                  "p95": 2564,
+                  "p99": 2928,
+                  "max": 3266
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 9724,
+                  "p95": 11315,
+                  "p99": 11960,
+                  "max": 12232
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 9105,
+                  "p95": 10393,
+                  "p99": 10992,
+                  "max": 11070
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 15255,
+                  "p95": 15255,
+                  "p99": 15255,
+                  "max": 15255
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 244,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8724480,
+                "workingSetAfterSamples": 11988992,
+                "privateAfterLoad": 1650688,
+                "privateAfterSamples": 3596288
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918939686,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1367,
+                  "p95": 2332,
+                  "p99": 2873,
+                  "max": 5985
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16733,
+                  "p95": 19567,
+                  "p99": 20679,
+                  "max": 23235
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 53883,
+                  "p95": 59612,
+                  "p99": 64311,
+                  "max": 78555
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 49112,
+                  "p95": 53656,
+                  "p99": 56189,
+                  "max": 57670
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 76475,
+                  "p95": 76475,
+                  "p99": 76475,
+                  "max": 76475
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1062,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10665984,
+                "workingSetAfterSamples": 17543168,
+                "privateAfterLoad": 4046848,
+                "privateAfterSamples": 8933376
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788918820495,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143549902848
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788918879009,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918822676,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 7,
+                  "max": 355
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 22,
+                  "p95": 49,
+                  "p99": 77,
+                  "max": 103
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 5068,
+                  "p95": 5873,
+                  "p99": 6659,
+                  "max": 7085
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4675,
+                  "p95": 5838,
+                  "p99": 6337,
+                  "max": 7043
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4976,
+                  "p95": 4976,
+                  "p99": 4976,
+                  "max": 4976
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 13,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8548352,
+                "workingSetAfterSamples": 10907648,
+                "privateAfterLoad": 1404928,
+                "privateAfterSamples": 2154496
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918829728,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 115,
+                  "p95": 233,
+                  "p99": 421,
+                  "max": 4451
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1586,
+                  "p95": 2185,
+                  "p99": 2518,
+                  "max": 2951
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 9564,
+                  "p95": 10686,
+                  "p99": 11209,
+                  "max": 11304
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 8755,
+                  "p95": 10026,
+                  "p99": 11018,
+                  "max": 22010
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 15415,
+                  "p95": 15415,
+                  "p99": 15415,
+                  "max": 15415
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 193,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8810496,
+                "workingSetAfterSamples": 12800000,
+                "privateAfterLoad": 1662976,
+                "privateAfterSamples": 4284416
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918878854,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1268,
+                  "p95": 1911,
+                  "p99": 2283,
+                  "max": 4128
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16631,
+                  "p95": 18701,
+                  "p99": 20531,
+                  "max": 21642
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 53219,
+                  "p95": 57898,
+                  "p99": 63130,
+                  "max": 71432
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 49266,
+                  "p95": 53871,
+                  "p99": 54897,
+                  "max": 60721
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 88812,
+                  "p95": 88812,
+                  "p99": 88812,
+                  "max": 88812
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1395,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10403840,
+                "workingSetAfterSamples": 19652608,
+                "privateAfterLoad": 3239936,
+                "privateAfterSamples": 11108352
+              }
+            }
+          }
+        ]
+      },
+      "comparisonArtifact": "target/performance-paired/post-reboot-34d0769-d1f6571/comparison-2/comparison.json"
+    },
+    {
+      "pair": 3,
+      "order": [
+        "before",
+        "after"
+      ],
+      "hardGateStatus": "passed",
+      "hardGateCount": 45,
+      "hardGatesPassed": 45,
+      "reviewRequiredCount": 5,
+      "reviewRows": [
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p50",
+          "unit": "microseconds",
+          "baseline": 4909.0,
+          "after": 6043.0,
+          "absoluteDelta": 1134.0,
+          "ratio": 1.2310042778569974,
+          "percentChange": 23.10042778569974,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 4909.0,
+          "after": 6043.0,
+          "absoluteDelta": 1134.0,
+          "ratio": 1.2310042778569974,
+          "percentChange": 23.10042778569974,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 4909.0,
+          "after": 6043.0,
+          "absoluteDelta": 1134.0,
+          "ratio": 1.2310042778569974,
+          "percentChange": 23.10042778569974,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "snapshotWire",
+          "percentile": "p50",
+          "unit": "microseconds",
+          "baseline": 1552.0,
+          "after": 1708.0,
+          "absoluteDelta": 156.0,
+          "ratio": 1.1005154639175259,
+          "percentChange": 10.051546391752586,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "snapshotWire",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 2217.0,
+          "after": 2518.0,
+          "absoluteDelta": 301.0,
+          "ratio": 1.1357690572846189,
+          "percentChange": 13.576905728461885,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        }
+      ],
+      "runs": {
+        "before": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788918939995,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143544627200
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788919000102,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918942227,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 4,
+                  "max": 505
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 22,
+                  "p95": 55,
+                  "p99": 96,
+                  "max": 451
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 5168,
+                  "p95": 6325,
+                  "p99": 6953,
+                  "max": 11967
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4722,
+                  "p95": 5880,
+                  "p99": 6226,
+                  "max": 11071
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4909,
+                  "p95": 4909,
+                  "p99": 4909,
+                  "max": 4909
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 28,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8462336,
+                "workingSetAfterSamples": 10792960,
+                "privateAfterLoad": 1400832,
+                "privateAfterSamples": 2154496
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918949279,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 117,
+                  "p95": 225,
+                  "p99": 485,
+                  "max": 963
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1552,
+                  "p95": 2217,
+                  "p99": 2557,
+                  "max": 2987
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 9532,
+                  "p95": 10824,
+                  "p99": 11156,
+                  "max": 11648
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 8855,
+                  "p95": 9984,
+                  "p99": 10795,
+                  "max": 10968
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 16315,
+                  "p95": 16315,
+                  "p99": 16315,
+                  "max": 16315
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 266,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8732672,
+                "workingSetAfterSamples": 11939840,
+                "privateAfterLoad": 1671168,
+                "privateAfterSamples": 3375104
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788918999960,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1351,
+                  "p95": 2204,
+                  "p99": 2711,
+                  "max": 5099
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16477,
+                  "p95": 19311,
+                  "p99": 21014,
+                  "max": 23600
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 53738,
+                  "p95": 61172,
+                  "p99": 74067,
+                  "max": 75574
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 48191,
+                  "p95": 53615,
+                  "p99": 56415,
+                  "max": 60018
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 76732,
+                  "p95": 76732,
+                  "p99": 76732,
+                  "max": 76732
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1291,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10682368,
+                "workingSetAfterSamples": 19931136,
+                "privateAfterLoad": 3612672,
+                "privateAfterSamples": 11591680
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788919000136,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143543533568
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788919059703,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919002282,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 5,
+                  "max": 315
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 21,
+                  "p95": 44,
+                  "p99": 68,
+                  "max": 545
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4873,
+                  "p95": 5870,
+                  "p99": 6335,
+                  "max": 6855
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4696,
+                  "p95": 5898,
+                  "p99": 6409,
+                  "max": 7173
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 6043,
+                  "p95": 6043,
+                  "p99": 6043,
+                  "max": 6043
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 24,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8548352,
+                "workingSetAfterSamples": 10924032,
+                "privateAfterLoad": 1400832,
+                "privateAfterSamples": 2162688
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919009711,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 126,
+                  "p95": 254,
+                  "p99": 523,
+                  "max": 763
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1708,
+                  "p95": 2518,
+                  "p99": 2771,
+                  "max": 3360
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 9516,
+                  "p95": 10816,
+                  "p99": 11501,
+                  "max": 12518
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 9199,
+                  "p95": 10715,
+                  "p99": 11312,
+                  "max": 12475
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 17039,
+                  "p95": 17039,
+                  "p99": 17039,
+                  "max": 17039
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 288,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8814592,
+                "workingSetAfterSamples": 12009472,
+                "privateAfterLoad": 1757184,
+                "privateAfterSamples": 3526656
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919059557,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1299,
+                  "p95": 2241,
+                  "p99": 2708,
+                  "max": 9237
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16598,
+                  "p95": 18768,
+                  "p99": 20150,
+                  "max": 26278
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 52204,
+                  "p95": 61170,
+                  "p99": 72182,
+                  "max": 73222
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 48326,
+                  "p95": 52842,
+                  "p99": 55591,
+                  "max": 59747
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 78594,
+                  "p95": 78594,
+                  "p99": 78594,
+                  "max": 78594
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1143,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10743808,
+                "workingSetAfterSamples": 17686528,
+                "privateAfterLoad": 4014080,
+                "privateAfterSamples": 9191424
+              }
+            }
+          }
+        ]
+      },
+      "comparisonArtifact": "target/performance-paired/post-reboot-34d0769-d1f6571/comparison-3/comparison.json"
+    },
+    {
+      "pair": 4,
+      "order": [
+        "after",
+        "before"
+      ],
+      "hardGateStatus": "passed",
+      "hardGateCount": 45,
+      "hardGatesPassed": 45,
+      "reviewRequiredCount": 10,
+      "reviewRows": [
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p50",
+          "unit": "microseconds",
+          "baseline": 4145.0,
+          "after": 6792.0,
+          "absoluteDelta": 2647.0,
+          "ratio": 1.6386007237635705,
+          "percentChange": 63.860072376357046,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 4145.0,
+          "after": 6792.0,
+          "absoluteDelta": 2647.0,
+          "ratio": 1.6386007237635705,
+          "percentChange": 63.860072376357046,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1",
+          "metric": "enqueueBatch",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 4145.0,
+          "after": 6792.0,
+          "absoluteDelta": 2647.0,
+          "ratio": 1.6386007237635705,
+          "percentChange": 63.860072376357046,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "snapshotWire",
+          "percentile": "p50",
+          "unit": "microseconds",
+          "baseline": 1604.0,
+          "after": 1770.0,
+          "absoluteDelta": 166.0,
+          "ratio": 1.1034912718204488,
+          "percentChange": 10.349127182044882,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "snapshotWire",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 2377.0,
+          "after": 2750.0,
+          "absoluteDelta": 373.0,
+          "ratio": 1.1569204880100967,
+          "percentChange": 15.692048801009673,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "snapshotWire",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 2695.0,
+          "after": 3187.0,
+          "absoluteDelta": 492.0,
+          "ratio": 1.1825602968460112,
+          "percentChange": 18.256029684601117,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "durableCommand",
+          "percentile": "p95",
+          "unit": "microseconds",
+          "baseline": 10733.0,
+          "after": 11843.0,
+          "absoluteDelta": 1110.0,
+          "ratio": 1.1034193608497158,
+          "percentChange": 10.341936084971582,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "durableCommand",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 11146.0,
+          "after": 15610.0,
+          "absoluteDelta": 4464.0,
+          "ratio": 1.400502422393684,
+          "percentChange": 40.050242239368394,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-100",
+          "metric": "journalSave",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 11426.0,
+          "after": 12961.0,
+          "absoluteDelta": 1535.0,
+          "ratio": 1.1343427271136006,
+          "percentChange": 13.434272711360062,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        },
+        {
+          "category": "latency",
+          "scope": "queue-1000",
+          "metric": "durableCommand",
+          "percentile": "p99",
+          "unit": "microseconds",
+          "baseline": 57849.0,
+          "after": 65577.0,
+          "absoluteDelta": 7728.0,
+          "ratio": 1.1335891718093658,
+          "percentChange": 13.35891718093658,
+          "direction": "increased",
+          "reviewRequired": true,
+          "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+          "releaseGate": false
+        }
+      ],
+      "runs": {
+        "before": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788919120003,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143549640704
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788919178464,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919122222,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 5,
+                  "max": 279
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 21,
+                  "p95": 48,
+                  "p99": 90,
+                  "max": 381
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4905,
+                  "p95": 6192,
+                  "p99": 7111,
+                  "max": 7861
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4632,
+                  "p95": 6231,
+                  "p99": 12309,
+                  "max": 20030
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4145,
+                  "p95": 4145,
+                  "p99": 4145,
+                  "max": 4145
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 28,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8470528,
+                "workingSetAfterSamples": 10817536,
+                "privateAfterLoad": 1409024,
+                "privateAfterSamples": 2170880
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919129401,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 114,
+                  "p95": 219,
+                  "p99": 408,
+                  "max": 830
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1604,
+                  "p95": 2377,
+                  "p99": 2695,
+                  "max": 3115
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 9475,
+                  "p95": 10733,
+                  "p99": 11146,
+                  "max": 30214
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 9365,
+                  "p95": 10892,
+                  "p99": 11426,
+                  "max": 11895
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 15893,
+                  "p95": 15893,
+                  "p99": 15893,
+                  "max": 15893
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 143,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8728576,
+                "workingSetAfterSamples": 12206080,
+                "privateAfterLoad": 1662976,
+                "privateAfterSamples": 4235264
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919178316,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1331,
+                  "p95": 2187,
+                  "p99": 2697,
+                  "max": 4047
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16121,
+                  "p95": 17799,
+                  "p99": 19254,
+                  "max": 29228
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 51312,
+                  "p95": 55628,
+                  "p99": 57849,
+                  "max": 59156
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 47783,
+                  "p95": 51878,
+                  "p99": 53044,
+                  "max": 53976
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 76640,
+                  "p95": 76640,
+                  "p99": 76640,
+                  "max": 76640
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1712,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10674176,
+                "workingSetAfterSamples": 20828160,
+                "privateAfterLoad": 4022272,
+                "privateAfterSamples": 12394496
+              }
+            }
+          }
+        ],
+        "after": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "host",
+            "recordedAtUnixMs": 1788919059834,
+            "metrics": {
+              "windowsDisplayVersion": "25H2",
+              "windowsBuild": "26200.9445",
+              "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+              "logicalProcessors": 16,
+              "repositoryVolumeFormat": "NTFS",
+              "repositoryVolumeAvailableBytes": 143550730240
+            }
+          },
+          {
+            "benchmark": "runtime_hash",
+            "label": "after",
+            "metrics": {
+              "hashes": {
+                "manifestBytes": 610,
+                "manifestInvocations": 1,
+                "toolBytes": 83,
+                "toolInvocations": 4,
+                "totalBytes": 693,
+                "totalInvocations": 5
+              },
+              "leases": {
+                "resolutionCalls": 408,
+                "successfulResolutions": 408
+              }
+            },
+            "profile": "debug",
+            "recordedAtUnixMs": 1788919119967,
+            "schemaVersion": 1,
+            "workload": {
+              "healthValidations": 1,
+              "operations": 100,
+              "toolNames": [
+                "yt-dlp",
+                "ffmpeg",
+                "ffprobe",
+                "deno"
+              ]
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919062037,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 4,
+                  "max": 384
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 21,
+                  "p95": 52,
+                  "p99": 99,
+                  "max": 609
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 5093,
+                  "p95": 6115,
+                  "p99": 6958,
+                  "max": 29141
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4654,
+                  "p95": 5804,
+                  "p99": 6217,
+                  "max": 6526
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 6792,
+                  "p95": 6792,
+                  "p99": 6792,
+                  "max": 6792
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 20,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8572928,
+                "workingSetAfterSamples": 10932224,
+                "privateAfterLoad": 1425408,
+                "privateAfterSamples": 2166784
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919069821,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 126,
+                  "p95": 255,
+                  "p99": 496,
+                  "max": 892
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1770,
+                  "p95": 2750,
+                  "p99": 3187,
+                  "max": 3519
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 10376,
+                  "p95": 11843,
+                  "p99": 15610,
+                  "max": 19780
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 9470,
+                  "p95": 11646,
+                  "p99": 12961,
+                  "max": 19209
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 15866,
+                  "p95": 15866,
+                  "p99": 15866,
+                  "max": 15866
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 123,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 8806400,
+                "workingSetAfterSamples": 11902976,
+                "privateAfterLoad": 1667072,
+                "privateAfterSamples": 3178496
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788919119825,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1325,
+                  "p95": 2186,
+                  "p99": 2625,
+                  "max": 9701
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 16624,
+                  "p95": 18722,
+                  "p99": 19888,
+                  "max": 22424
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 53553,
+                  "p95": 59910,
+                  "p99": 65577,
+                  "max": 74551
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 48652,
+                  "p95": 52649,
+                  "p99": 53797,
+                  "max": 55826
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 81610,
+                  "p95": 81610,
+                  "p99": 81610,
+                  "max": 81610
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1031,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 10403840,
+                "workingSetAfterSamples": 17727488,
+                "privateAfterLoad": 3248128,
+                "privateAfterSamples": 9166848
+              }
+            }
+          }
+        ]
+      },
+      "comparisonArtifact": "target/performance-paired/post-reboot-34d0769-d1f6571/comparison-4/comparison.json"
     }
   ],
-  "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-b3d4602",
-  "wrapperCorrection": "After pair 1 completed, the PowerShell wrapper stopped while reading unset LASTEXITCODE after the successful comparator. Initialize LASTEXITCODE before the comparator; preserved pair 1 and resumed at pair 2. No test executable failed or was retried."
+  "rawEvidenceRoot": "target/performance-paired/post-reboot-34d0769-d1f6571",
+  "limitations": [
+    "These are isolated Rust debug component benchmarks, not native Windows UI, installer, portable-bundle, or clean-desktop acceptance.",
+    "Threshold review requires both a greater-than-10-percent and greater-than-100-microsecond latency increase, or both a greater-than-10-percent and greater-than-2-MiB memory increase.",
+    "enqueueBatch has one sample per queue size in each run, so its p50, p95, and p99 are the same observation.",
+    "Disk and scheduler variation remains visible between pairs; an exact metric must repeat across all three matched repeats to establish a reproducible threshold regression.",
+    "Any source change after d1f6571 invalidates this receipt as final candidate evidence and requires a fresh matched comparison."
+  ]
 }

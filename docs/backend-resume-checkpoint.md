@@ -1,5 +1,10 @@
 # Backend maintainability reboot checkpoint
 
+Historical checkpoint: the user authorized continuation after reboot. Current
+implementation, review, benchmark and soak status is in
+[`backend-maintainability.md`](backend-maintainability.md). The instructions and
+unfinished counts below describe the saved pre-reboot state, not current status.
+
 Saved 2026-09-08 on `codex/backend-maintainability` at the user's request to
 checkpoint and stop before reboot. The checkpoint commit follows `ebc23f1`.
 Do not resume implementation or tests until the user asks. No push or publishing

@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/artifact_contract.rs"
+  ],
+  "reviewer": "state_queue_review",
+  "entries": [
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::is_canonical_sha256[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/artifact_contract.rs",
+      "line": 10,
+      "endLine": 15,
+      "symbol": "is_canonical_sha256",
+      "qualifiedName": "artifact_contract::is_canonical_sha256",
+      "signature": "pub(crate) fn is_canonical_sha256(value: &str) -> bool",
+      "sourceDigest": "bcecd820ce4df893b9b913c9c68b26c5ec76303d17e8ca13d446eba14ea6ebae",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Accepts only the canonical lowercase 64-hex SHA-256 text used by build-time sidecar locks and runtime manifests.",
+      "callers": [
+        "build.rs::validate_sidecar_lock",
+        "runtime::manifest::validate_sha256_hex"
+      ],
+      "inputs": [
+        "borrowed digest text"
+      ],
+      "output": "bool.",
+      "sideEffects": [
+        "none"
+      ],
+      "errors": [
+        "none"
+      ],
+      "ownership": [
+        "borrows text and retains nothing"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous byte predicate; no cancellation point.",
+      "invariants": [
+        "length is exactly 64 bytes",
+        "every byte is ASCII 0-9 or lowercase a-f",
+        "uppercase and non-ASCII text are rejected"
+      ],
+      "tests": [
+        "sidecar_digest_policy_rejects_noncanonical_case",
+        "installer_hash_requires_canonical_lowercase_hex"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:10-15 at cb616a1"
+      ],
+      "disposition": "keep",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "Shared predicate prevents build/runtime digest-policy drift."
+    },
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::is_canonical_update_key_id[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/artifact_contract.rs",
+      "line": 17,
+      "endLine": 23,
+      "symbol": "is_canonical_update_key_id",
+      "qualifiedName": "artifact_contract::is_canonical_update_key_id",
+      "signature": "pub(crate) fn is_canonical_update_key_id(value: &str) -> bool",
+      "sourceDigest": "734db28b13611c186ec12bc63976c1bd80afaed12d686ed216344aec6a9f2111",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates bounded update signing-key identifiers for build configuration and runtime release selection.",
+      "callers": [
+        "build_config::apply_release_key_configuration",
+        "updater::release::validate_manifest",
+        "updater::release::trusted_public_key",
+        "updater::release::is_canonical_update_key_id"
+      ],
+      "inputs": [
+        "borrowed key identifier"
+      ],
+      "output": "bool.",
+      "sideEffects": [
+        "none"
+      ],
+      "errors": [
+        "none"
+      ],
+      "ownership": [
+        "borrows text and retains nothing"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous byte predicate; no cancellation point.",
+      "invariants": [
+        "identifier is nonempty and at most 64 bytes",
+        "only ASCII alphanumeric, period, underscore, and hyphen are accepted"
+      ],
+      "tests": [
+        "key_rotation_selects_by_id_and_rejects_bad_configuration",
+        "release_key_configuration_rejects_malformed_optional_next_key"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:17-23 at cb616a1"
+      ],
+      "disposition": "keep",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "Does not select or authenticate a key; callers enforce configured-key relationships."
+    },
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::parse_tauri_update_public_key[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/artifact_contract.rs",
+      "line": 25,
+      "endLine": 32,
+      "symbol": "parse_tauri_update_public_key",
+      "qualifiedName": "artifact_contract::parse_tauri_update_public_key",
+      "signature": "pub(crate) fn parse_tauri_update_public_key(input: &str) -> Result<PublicKey, String>",
+      "sourceDigest": "f3d0c73e7ab887a0f6aeec7acdc6346e3280bcb9a7437938fc3f21ddc2182cb0",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Decodes the Tauri base64 wrapper, validates UTF-8, and parses the embedded minisign public key.",
+      "callers": [
+        "build_config::apply_release_key_configuration",
+        "updater::release::verify_release_signature_for_key"
+      ],
+      "inputs": [
+        "borrowed base64 wrapper text"
+      ],
+      "output": "Result<minisign_verify::PublicKey, String>.",
+      "sideEffects": [
+        "allocates decoded wrapper bytes and error strings"
+      ],
+      "errors": [
+        "wrapper-invalid message for strict base64 or 8 KiB decoded-limit failure",
+        "UTF-8-invalid message",
+        "public-key-invalid message from minisign decode failure"
+      ],
+      "ownership": [
+        "borrows input and returns an owned parsed PublicKey"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous decode and parse; no cancellation point.",
+      "invariants": [
+        "wrapper decoding uses the shared strict decoder with an 8 KiB limit",
+        "error text does not echo key material"
+      ],
+      "tests": [
+        "release_key_configuration_rejects_malformed_public_key_wrapper",
+        "release_key_configuration_accepts_valid_public_key_wrapper",
+        "minisign_verification_covers_exact_manifest_bytes"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:25-32 at cb616a1"
+      ],
+      "disposition": "keep",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "Parsing establishes key syntax; trust comes from caller-controlled key IDs/configuration."
+    },
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::decode_tauri_base64_wrapper[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/artifact_contract.rs",
+      "line": 34,
+      "endLine": 98,
+      "symbol": "decode_tauri_base64_wrapper",
+      "qualifiedName": "artifact_contract::decode_tauri_base64_wrapper",
+      "signature": "pub(crate) fn decode_tauri_base64_wrapper( input: &[u8], decoded_limit: usize, ) -> Result<Vec<u8>, ()>",
+      "sourceDigest": "4e4c6ff359da85939ad909e953994b9bd5f28d071a4d174b8e4e4cc90e771cf5",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Strictly decodes a bounded standard-base64 wrapper while permitting only one trailing line ending.",
+      "callers": [
+        "parse_tauri_update_public_key",
+        "updater::release::verify_release_signature_for_key"
+      ],
+      "inputs": [
+        "borrowed encoded bytes",
+        "maximum decoded byte count"
+      ],
+      "output": "Result<Vec<u8>, ()>.",
+      "sideEffects": [
+        "allocates output only after validated decoded length"
+      ],
+      "errors": [
+        "unit error for empty input, invalid length, embedded whitespace, misplaced/excess padding, overflow, decoded-limit excess, invalid alphabet, noncanonical padding bits, or decoded-length mismatch"
+      ],
+      "ownership": [
+        "borrows input and returns an owned exact-length byte vector"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous bounded decode; no cancellation point.",
+      "invariants": [
+        "strips at most one terminal LF or CRLF",
+        "padding occurs only in the last quartet and is at most two bytes",
+        "unused padding bits are zero",
+        "output length equals the precomputed checked length and never exceeds decoded_limit"
+      ],
+      "tests": [
+        "release_key_configuration_rejects_malformed_public_key_wrapper",
+        "release_key_configuration_accepts_valid_public_key_wrapper",
+        "key_rotation_selects_by_id_and_rejects_bad_configuration",
+        "minisign_verification_covers_exact_manifest_bytes"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:34-98 at cb616a1"
+      ],
+      "disposition": "keep",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "The strict decoder rejects MIME-style internal whitespace and noncanonical base64 encodings."
+    },
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::decode_base64_digit[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/artifact_contract.rs",
+      "line": 100,
+      "endLine": 109,
+      "symbol": "decode_base64_digit",
+      "qualifiedName": "artifact_contract::decode_base64_digit",
+      "signature": "fn decode_base64_digit(byte: u8) -> Option<u8>",
+      "sourceDigest": "e5517fdf1cd81bea24c213d2ccf98cd529df61faee7962082bba232483c4d95f",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Maps one standard-base64 alphabet byte to its six-bit value.",
+      "callers": [
+        "decode_tauri_base64_wrapper for each non-padding quartet position"
+      ],
+      "inputs": [
+        "one byte"
+      ],
+      "output": "Option<u8>.",
+      "sideEffects": [
+        "none"
+      ],
+      "errors": [
+        "returns None for padding or any byte outside A-Z, a-z, 0-9, plus, and slash"
+      ],
+      "ownership": [
+        "Copy input and output; retains nothing"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous match; no cancellation point.",
+      "invariants": [
+        "accepted values cover exactly 0 through 63",
+        "equals sign is handled only by the wrapper and never accepted here"
+      ],
+      "tests": [
+        "static-only: alphabet mapping is exercised through wrapper parsing but has no isolated named test"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:100-109 at cb616a1"
+      ],
+      "disposition": "keep",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "Kept private to the strict wrapper decoder."
+    },
+    {
+      "id": "src/artifact_contract.rs::artifact_contract::tests::sidecar_digest_policy_rejects_noncanonical_case[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/artifact_contract.rs",
+      "line": 116,
+      "endLine": 119,
+      "symbol": "sidecar_digest_policy_rejects_noncanonical_case",
+      "qualifiedName": "artifact_contract::tests::sidecar_digest_policy_rejects_noncanonical_case",
+      "signature": "fn sidecar_digest_policy_rejects_noncanonical_case()",
+      "sourceDigest": "0dc87a8d50c9ef9575cd679db0c7c30825d9c1ba653da45d29cb6d97e754b2a1",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Proves the shared SHA-256 predicate accepts canonical lowercase hex and rejects uppercase hex.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "generated 64-character lowercase and uppercase digest strings"
+      ],
+      "output": "Test assertion outcome.",
+      "sideEffects": [
+        "allocates two test strings"
+      ],
+      "errors": [
+        "panics if canonical lowercase is rejected or uppercase is accepted"
+      ],
+      "ownership": [
+        "owns generated test strings"
+      ],
+      "locks": [
+        "none"
+      ],
+      "cancellation": "Synchronous test; no cancellation point.",
+      "invariants": [
+        "lowercase 64-hex passes",
+        "same-length uppercase hex fails"
+      ],
+      "tests": [
+        "self: sidecar_digest_policy_rejects_noncanonical_case"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "final src/artifact_contract.rs:116-119 at cb616a1"
+      ],
+      "disposition": "test_only",
+      "destination": "src/artifact_contract.rs",
+      "reviewer": "state_queue_review",
+      "reviewedAt": "2026-09-09T01:31:59Z",
+      "status": "reviewed",
+      "notes": "Directly covers case canonicality; runtime updater tests cover additional digest integration."
+    }
+  ]
+}

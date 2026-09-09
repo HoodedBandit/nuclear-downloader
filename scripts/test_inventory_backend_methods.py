@@ -197,6 +197,62 @@ async fn command() {
                 with self.assertRaisesRegex(ValueError, f"missing generated identity {missing}"):
                     MODULE.merge_sidecars(current, reviews)
 
+    def test_scan_merge_round_trip_preserves_every_explicit_identity_field(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "src").mkdir()
+            (root / "src" / "fixture.rs").write_text(
+                "fn ordinary(value: u8) -> u8 { value }\n",
+                encoding="utf-8",
+            )
+            current = MODULE.scan(root)
+            source = current["entries"][0]
+            self.assertIsNone(source.get("ownerCall"))
+
+            reviews = root / "reviews"
+            reviews.mkdir()
+            review = {
+                "id": source["id"],
+                **{field: source.get(field) for field in MODULE.IDENTITY_FIELDS},
+            }
+            (reviews / "review.json").write_text(
+                json.dumps({"schemaVersion": 1, "entries": [review]}),
+                encoding="utf-8",
+            )
+            MODULE.merge_sidecars(current, reviews)
+
+            ledger_path = root / "ledger.json"
+            MODULE.write_json(ledger_path, current)
+            loaded = MODULE.load_json(ledger_path)
+            recorded = loaded["entries"][0]
+            for field in MODULE.IDENTITY_FIELDS:
+                with self.subTest(field=field):
+                    self.assertIn(field, recorded)
+                    self.assertEqual(recorded[field], source.get(field))
+            self.assertIsNone(recorded["ownerCall"])
+
+    def test_final_validation_rejects_omitted_identity_even_when_expected_is_null(self):
+        source = {
+            "id": "src/lib.rs::run[cfg=all]",
+            "kind": "free_function", "classification": "production",
+            "file": "src/lib.rs", "line": 1, "endLine": 1,
+            "symbol": "run", "qualifiedName": "run", "signature": "fn run()",
+            "sourceDigest": "digest", "cfg": [], "ownerCall": None,
+            **MODULE.empty_review(),
+        }
+        for missing in MODULE.IDENTITY_FIELDS:
+            with self.subTest(missing=missing):
+                recorded = dict(source)
+                del recorded[missing]
+                errors = MODULE.validate(
+                    {"entries": [recorded]},
+                    {"entries": [source]},
+                )
+                self.assertIn(
+                    f"missing generated identity {missing}: {source['id']}",
+                    errors,
+                )
+
     def test_final_validation_requires_explicit_review_evidence_for_test_rows(self):
         entry = {
             "id": "src/tests.rs::case[cfg=test]",

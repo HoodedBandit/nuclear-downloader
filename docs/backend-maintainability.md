@@ -1,8 +1,9 @@
 # Backend maintainability refactor
 
 Implementation baseline: `34d0769` (backend reliability overhaul), Windows 11 x64.
-The application remains one Rust/Tauri crate. All supported workflows and public
-contracts are preserved. Confirmed defects receive separate regression-backed
+The application remains one Rust/Tauri crate. Existing features and public
+contracts are retained in source and covered by the automated checks below;
+external native workflow qualification remains pending. Confirmed defects receive separate regression-backed
 fixes; mechanical moves do not also change behavior.
 
 ## Stage gates
@@ -14,7 +15,7 @@ fixes; mechanical moves do not also change behavior.
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
 | 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
 | 5. Runtime/updater/lifecycle internals | Passed | 290 Rust tests, strict Clippy, formatting, unchanged bindings, architecture checks and independent runtime/updater extraction review |
-| 6. Integrated qualification | In progress after reboot | Final method-ledger reconciliation, matched performance comparisons and new two-hour soak remain; external native acceptance remains blocked |
+| 6. Integrated qualification | Final soak running | 304 Rust tests, strict Clippy, 1,215 reconciled source reviews, source/CI contract checks and four matched performance comparisons passed; new two-hour soak running; external native acceptance remains blocked |
 
 Every production method and ownership-bearing asynchronous closure is recorded in
 `backend-method-review.json`. Reviewer sidecars record actual inspection outcomes;
@@ -24,8 +25,9 @@ in `backend-feature-preservation.md` links observable behavior to retained check
 The initial inventory contains 671 production entries (including declarations,
 trait implementations and async blocks), 300 test entries, and 141 test-support
 entries. These are review units, not a claim of 671 independent business methods.
-Per-method review continues through each owning subsystem's refactor and final
-source reconciliation.
+The final reconciled inventory contains 1,215 reviewed entries across 88 files:
+726 production, 327 test and 162 test-support units. CI now requires an accepted
+review matching every current source identity.
 The structural inventory was cross-checked against all 961 masked Rust `fn`
 tokens: 960 declarations and one explicitly excluded function-pointer type.
 A lexer regression for paired lifetime annotations added one previously missed
@@ -53,14 +55,14 @@ a proof of semantic correctness; its limitations are documented in the schema.
   schema 1, error/event contracts, concurrency, timeouts, retention and resource
   budgets remain unchanged. No actor rewrite or generalized framework is added.
 
-The intended navigation map is: `lib.rs` for the public command registry and
+The implemented navigation map is: `lib.rs` for the public command registry and
 Tauri wiring; `desktop.rs` for native events, dialogs and installer launch;
 `bootstrap.rs` for recovery and shutdown; `services/` for complete operations;
 `state/` for data, transitions and durable commits; `lifecycle/` for admission,
 task tracking and protected publication; `downloader/` for validation, arguments,
 processes and file publication; and `runtime/`, `updater/` and
 `runtime_transaction/` for authenticated runtime and installer management.
-This map is a target until the corresponding stage gate passes.
+These module boundaries passed their corresponding stage gates.
 
 ## Validation policy
 
@@ -214,7 +216,7 @@ installer, native application, or external service was launched by those checks.
 The architecture policy is now active in CI and release-candidate checks. The
 WebDriver exclusion guard scans every crate-owned Rust source plus build inputs,
 so moving code cannot silently remove that coverage. The final per-method review
-gate will be enabled only after the final source identities are reconciled.
+gate was enabled after the final source identities were reconciled, as recorded below.
 
 A separate finalizer regression then demonstrated that aborting the awaiting
 caller could abandon panic compensation in an otherwise detached finalizer. The
@@ -258,10 +260,10 @@ before the fix and passed afterward; inventory fixtures passed 9/9 and architect
 fixtures 8/8. Production npm audit reported zero vulnerabilities. Cargo deny
 passed advisories, bans, licenses and sources, with policy-allowed warnings.
 
-The user requested a checkpoint and stop before reboot. Source and draft sidecars
-are saved, but those sidecars are not yet reconciled or finally accepted. No new
-two-hour soak has started and final qualification remains incomplete. Resume only
-when requested, following `backend-resume-checkpoint.md`.
+At the user's pre-reboot checkpoint, source and draft sidecars were saved, but
+the sidecars had not yet been reconciled or finally accepted and no new two-hour
+soak had started. `backend-resume-checkpoint.md` preserves that historical stop
+state; the user subsequently authorized continuation.
 
 Work resumed after the user rebooted and explicitly requested continuation. The
 two recorded extraction cleanup items were addressed in `b3d4602`: release intake
@@ -276,8 +278,8 @@ The reboot updated Windows from build 26200.9278 to 26200.9445. The comparator
 correctly rejected the first new benchmark against the earlier host. That run is
 retained as unpaired evidence at
 `target/performance/after-20260909T002958Z-c169a1a785c048f5822175613a2fef67/`.
-Final comparisons therefore use newly compiled, frozen pre-refactor (`34d0769`)
-and current (`b3d4602`) test executables on the same updated host. Their identical
+The first matching-host comparisons used newly compiled, frozen pre-refactor
+(`34d0769`) and intermediate (`b3d4602`) test executables on the updated host. Their identical
 state benchmark source, locked sidecars, exact executable hashes, compilation
 records and alternating run order are retained under
 `target/performance-paired/post-reboot-34d0769-b3d4602/`.
@@ -291,7 +293,8 @@ snapshot p99 ranged from 1.603 to 1.936 ms, and snapshots during deliberately
 blocked journal writes took 0.994 to 1.239 ms while observing precommit state.
 Current durable-command p50 ranged from 43.539 to 44.417 ms. Raw records for both
 versions, all review-threshold crossings, executable hashes and build provenance
-are tracked in `backend-maintainability-performance.json`.
+are preserved in the raw intermediate evidence. The current final measurements
+are tracked in `backend-maintainability-performance.json` and described below.
 
 The paired wrapper stopped after the first successful comparison because its
 PowerShell exit-code variable had not been initialized. That wrapper was corrected
@@ -305,4 +308,129 @@ Its frozen executable SHA-256 is
 `28f35f1f4b02e54424fd51c3e239935a02cae8ba532a6b4bfd223fe4da63f459`.
 Evidence is retained under
 `target/soak/after-20260909T004626Z-347020e391234944b2a2a12009d93407/`.
-This run remains in progress; partial samples are not a passing two-hour result.
+This run was intentionally stopped after approximately six minutes when the
+method review confirmed another journal bound defect. Its exit code -1 reflects
+termination of the exact owned process tree; `intentional-stop.json` records the
+reason and process identity. These partial samples are not two-hour qualification.
+
+`807ce00` fixes the active runtime transaction journal's metadata/read race. A
+metadata size check followed by an unbounded read allowed another writer to grow
+the journal beyond 64 KiB. The separate application mutation lock does not lock
+that journal file. `load` now opens once and validates that handle; its reader
+consumes at most 65,537 bytes and rejects overflow before parsing. The deterministic
+`journal_growth_after_metadata_is_bounded_and_preserved` regression appends valid
+JSON whitespace after a small metadata observation while holding the mutation
+lock, then checks the read cap, error, unchanged file and regular reload rejection.
+It failed before the byte cap (0 passed, 1 failed, 0.04 seconds) because the grown
+journal was accepted. The fixed integrated suite passed 291 tests with three
+explicit ignores in 40.09 seconds. Clippy passed in 8.70 seconds; a formatting-only
+wrap was applied, then formatting, unchanged bindings, architecture and whitespace
+checks passed. Independent source review accepted the fix and regression.
+
+The inventory after that correction contained 1,191 entries across 86 files:
+717 production, 314 test and 160 test-support review units. All four intermediate
+matching-host benchmark pairs against `807ce00` passed their 45 hard gates; timing
+review counts were 17, 7, 16 and 4. No exact row exceeded both thresholds in all
+three repeat pairs. These intermediate records remain under
+`target/performance-paired/post-reboot-34d0769-807ce00/`.
+
+The same metadata/read pattern was then found in encrypted journal intake,
+runtime pointers/manifests/authentication data, and installer ownership records.
+`cb616a1` adds shared synchronous and asynchronous bounded readers and applies
+them to those paths and exact runtime ownership markers. The shared readers
+consume at most the limit plus one probe byte, distinguish overflow from I/O
+errors, and accept exact-limit content. Callers retain their path, ownership,
+authentication, error and preservation rules. Existing bounded publication and
+runtime transaction readers remain intact. Independent review found no analogous
+unbounded metadata-then-whole-file production read remaining.
+
+The integrated suite passed 303 tests with zero failures and three explicit
+ignores in 38.91 seconds. This includes twelve new tests covering exact limits,
+endless/oversized readers, async parity, journal error mapping, runtime metadata,
+and preservation of ambiguous markers and unrelated installer files. Strict
+Clippy passed in 14.92 seconds; formatting, unchanged generated bindings,
+architecture and whitespace checks passed. That intermediate source inventory contained
+1,214 entries across 88 files: 726 production, 326 test and 162 test-support review
+units. Neither interrupted nor earlier-revision runs qualified that correction;
+the final measurements and new full-duration soak use the later corrected source.
+
+The installer review raised a possible hard-link deletion conflict with its
+verified read lease. Direct Windows testing disproved that premise: an isolated
+Rust test using the production share/reparse flags could delete the partial hard
+link while the final link remained protected against writes and last-link
+deletion. Discovery and the exact test both passed; no publication reorder was
+made. The standalone evidence and source are retained under
+`target/regression-evidence/installer-hardlink-lease-47d819603c9c467fb83476fb3ce77c23/`.
+
+A separate cleanup failure was reproduced: when removal of a partial's last link
+was blocked, `cleanup_current_artifact` deleted its owner record anyway. The new
+`failed_partial_removal_retains_ownership_for_startup_retry` test failed at the
+missing-owner assertion (0 passed, 1 failed, 0.02 seconds). `d1f6571` retains the
+record unless a post-cleanup metadata check confirms the artifact is absent.
+Successful installer publication likewise retains the partial record when unlink
+fails. That warning does not turn a verified published installer into a failed
+download. Publication order, verified leases and cancellation boundaries are
+unchanged. The regression releases the blocking lease and then verifies that the
+ordinary owned-partial cleanup removes both file and record. RED source and
+receipts are under `target/regression-evidence/installer-partial-owner-red/`.
+
+Independent review accepted this narrow correction. The full suite passed 304
+tests with zero failures and three explicit ignores in 37.62 seconds; strict
+Clippy passed in 6.77 seconds. Formatting, unchanged generated bindings,
+architecture and whitespace checks passed. The source inventory is now 1,215
+entries across 88 files: 726 production, 327 test and 162 test-support review units.
+
+Final source-review reconciliation accepted all 1,215 unique entries, with no
+unreviewed entries or unresolved findings. Reviews include concrete executed test
+coverage where available and explicitly identify static-only evidence elsewhere.
+The canonical ledger and accepted subsystem sidecars now carry every generated
+identity key, including explicit `ownerCall: null` where no owning call applies.
+This fixes a format inconsistency between generated canonical rows and the strict
+sidecar contract; missing null keys did not previously authorize a different body.
+Two new inventory fixtures failed before the format correction, then all eleven
+inventory fixtures and eight architecture fixtures passed (19 tests, 1.075 seconds).
+
+The actual canonical check reported `review ledger covers 1215 current entries`.
+The actual architecture check also passed. CI and release-candidate workflows now
+require that canonical check; changed source identities invalidate old reviews.
+The updated PowerShell acceptance/publish-contract fixtures passed with an isolated
+TEMP and closed fake CLI. Those fixtures neither published an artifact nor ran
+native application acceptance. Receipts are retained under
+`target/qualification-final/source-tools-b16c3e19bbca4e31ae7440692c6697cf/` and
+`target/qualification-final/contracts-c5a8ee2e9b2241dc8fee5090c7b593cd/`.
+
+Final matching-host performance uses source `d1f6571` against `34d0769` on Windows
+11 25H2 build 26200.9445, with the same debug workloads and locked dependencies.
+The four pairs alternate before/after execution order. All 34 discovery/workload
+executions exited zero, and each comparison passed all 45 hard gates. Both versions
+used five runtime hashes for 408 successful executable-lease resolutions. Timing
+review counts were 1, 8, 5 and 10. Five latency rows crossed both review thresholds
+in repeat pairs 3 and 4, but all five cleared pair 2; no row crossed both thresholds
+in all three required repeats. The single enqueue observation per run is not an
+independently measured tail percentile. These results close the specified repeat
+review without claiming an overall speedup or constant disk latency.
+
+Current-version ranges across the four matching pairs, in milliseconds:
+
+| Queue items | Snapshot p99 | Serialized snapshot p99 | Durable command p50 | Journal save p50 | Snapshot while journal write is deliberately blocked |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 0.004-0.007 | 0.068-0.099 | 4.873-5.093 | 4.604-4.696 | 0.013-0.024 |
+| 100 | 0.300-0.523 | 2.483-3.187 | 9.266-10.376 | 8.755-9.470 | 0.123-0.288 |
+| 1,000 | 2.229-2.708 | 19.888-20.531 | 51.623-53.553 | 47.758-49.266 | 1.031-1.395 |
+
+Blocked-write snapshots observed precommit state and completed independently of
+the held disk-write barrier. Raw p50/p95/p99 results, memory, event backlogs, review
+rows, hashes and host/build provenance are in
+[`backend-maintainability-performance.json`](backend-maintainability-performance.json)
+and `target/performance-paired/post-reboot-34d0769-d1f6571/`. These are isolated
+backend component measurements, not native packaged-application timing.
+
+The final 120-minute soak started at approximately 2026-09-09 02:03 UTC from
+`d1f6571`. All 156 source/build/runner manifest entries matched before and after
+compilation. Its frozen executable SHA-256 is
+`d10bb3be49f5688a3d7b3cc975377d9b1562e9c117cec3acd5fac31a39d8a647`, identical
+to the final performance executable. Exact test discovery passed. The run is
+still in progress and cannot count as qualification until its full-duration
+terminal evidence is verified. No compiled inputs or soak runner may change
+during the run. Evidence root:
+`target/soak/after-20260909T020321Z-e35c8e5cfdcd499daf3901b16481c134/`.
