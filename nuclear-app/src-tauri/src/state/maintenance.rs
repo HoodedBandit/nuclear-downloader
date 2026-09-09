@@ -1,7 +1,5 @@
-use super::reducers::{
-    canonical_app_version, ensure_operation_capacity, next_delta, next_operation_delta,
-};
-use super::{StateStore, MAX_ACTIVE_OPERATIONS};
+use super::reducers::{canonical_app_version, next_delta, next_operation_delta};
+use super::StateStore;
 use crate::app_error::AppError;
 use crate::journal::now_ms;
 use crate::models::{

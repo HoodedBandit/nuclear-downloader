@@ -8,6 +8,7 @@
     "src/downloader/inspection/tests.rs",
     "src/downloader/naming.rs",
     "src/downloader/process.rs",
+    "src/downloader/process/output.rs",
     "src/downloader/process/tests.rs",
     "src/downloader/progress.rs",
     "src/downloader/publication.rs",
@@ -4607,14 +4608,14 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl TailBuffer::new[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl TailBuffer::new[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 43,
-      "endLine": 48,
+      "file": "src/downloader/process/output.rs",
+      "line": 16,
+      "endLine": 21,
       "symbol": "new",
-      "qualifiedName": "downloader::process::impl TailBuffer::new",
+      "qualifiedName": "downloader::process::output::impl TailBuffer::new",
       "signature": "fn new() -> Self",
       "sourceDigest": "7cb068c1b29be730b0fdaa631b0b91c64da875246055d476f55df19ed3ac0d27",
       "cfg": [],
@@ -4643,29 +4644,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:43-48: fn new() -> Self { Self { lines: VecDeque::new(), bytes: 0, } }"
+        "Source review src/downloader/process.rs:43-48: fn new() -> Self { Self { lines: VecDeque::new(), bytes: 0, } }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Create an empty bounded stderr tail buffer.",
       "output": "Empty TailBuffer.",
       "cancellation": "Not applicable; synchronous constructor.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl TailBuffer::push[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl TailBuffer::push[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 50,
-      "endLine": 61,
+      "file": "src/downloader/process/output.rs",
+      "line": 23,
+      "endLine": 34,
       "symbol": "push",
-      "qualifiedName": "downloader::process::impl TailBuffer::push",
+      "qualifiedName": "downloader::process::output::impl TailBuffer::push",
       "signature": "fn push(&mut self, line: String)",
       "sourceDigest": "d56e379364daefdbd4b713adcf2c20dc0b5e8927797b3600a9b91471094865ad",
       "cfg": [],
@@ -4694,29 +4697,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:50-61: fn push(&mut self, line: String) { self.bytes += line.len(); self.lines.push_back(line); while self.lines.len() > MAX_STDERR_LINES || self.bytes > MAX_STDERR_BYTES { if let Some(removed) = self.lines.pop_front() { self.bytes = self.bytes.saturating_sub(removed"
+        "Source review src/downloader/process.rs:50-61: fn push(&mut self, line: String) { self.bytes += line.len(); self.lines.push_back(line); while self.lines.len() > MAX_STDERR_LINES || self.bytes > MAX_STDERR_BYTES { if let Some(removed) = self.lines.pop_front() { self.bytes = self.bytes.saturating_sub(removed",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Append one stderr line and evict oldest lines until both line and byte budgets hold.",
       "output": "Unit after in-place bounded retention.",
       "cancellation": "Not applicable; synchronous task-local mutation.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl TailBuffer::into_string[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl TailBuffer::into_string[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 63,
-      "endLine": 65,
+      "file": "src/downloader/process/output.rs",
+      "line": 36,
+      "endLine": 38,
       "symbol": "into_string",
-      "qualifiedName": "downloader::process::impl TailBuffer::into_string",
+      "qualifiedName": "downloader::process::output::impl TailBuffer::into_string",
       "signature": "fn into_string(self) -> String",
       "sourceDigest": "b71fee269eea4a6150c24b373755698966afe50e819ae1b96aa999c20fbd1ba5",
       "cfg": [],
@@ -4745,18 +4750,20 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:63-65: fn into_string(self) -> String { self.lines.into_iter().collect::<Vec<_>>().join(\"\\n\") }"
+        "Source review src/downloader/process.rs:63-65: fn into_string(self) -> String { self.lines.into_iter().collect::<Vec<_>>().join(\"\\n\") }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Consume the retained stderr tail and join lines for error classification.",
       "output": "Owned newline-joined String.",
       "cancellation": "Not applicable; synchronous conversion.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -4764,8 +4771,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 86,
-      "endLine": 86,
+      "line": 59,
+      "endLine": 59,
       "symbol": "impl Send for WindowsProcessJob",
       "qualifiedName": "impl Send for WindowsProcessJob",
       "signature": "impl Send for WindowsProcessJob",
@@ -4798,7 +4805,9 @@
         "process cancellation/reap tests and two-hour isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:86: unsafe marker is limited to the HANDLE-owning wrapper."
+        "Source review src/downloader/process.rs:86: unsafe marker is limited to the HANDLE-owning wrapper.",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Assert impl Send for WindowsProcessJob safety for the owned Windows job HANDLE wrapper.",
       "output": "Marker trait implementation.",
@@ -4806,10 +4815,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Unsafe Send/Sync boundary reviewed with the WindowsProcessJob methods and Drop implementation.",
+      "notes": "Unsafe Send/Sync boundary reviewed with the WindowsProcessJob methods and Drop implementation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -4817,8 +4826,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 88,
-      "endLine": 88,
+      "line": 61,
+      "endLine": 61,
       "symbol": "impl Sync for WindowsProcessJob",
       "qualifiedName": "impl Sync for WindowsProcessJob",
       "signature": "impl Sync for WindowsProcessJob",
@@ -4851,7 +4860,9 @@
         "process cancellation/reap tests and two-hour isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:88: unsafe marker is limited to the HANDLE-owning wrapper."
+        "Source review src/downloader/process.rs:88: unsafe marker is limited to the HANDLE-owning wrapper.",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Assert impl Sync for WindowsProcessJob safety for the owned Windows job HANDLE wrapper.",
       "output": "Marker trait implementation.",
@@ -4859,10 +4870,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Unsafe Send/Sync boundary reviewed with the WindowsProcessJob methods and Drop implementation.",
+      "notes": "Unsafe Send/Sync boundary reviewed with the WindowsProcessJob methods and Drop implementation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -4870,8 +4881,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 92,
-      "endLine": 121,
+      "line": 65,
+      "endLine": 94,
       "symbol": "new",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::new",
       "signature": "fn new() -> Result<Self, String>",
@@ -4905,7 +4916,9 @@
         "process::tests::supervised_process_cancels_and_reaps_promptly"
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:92-121 (79d7d0fad2a0f4128aca674fc8e42554b86c35f750efaff4d58bd76b3045c101): fn new() -> Result<Self, String> { let handle = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) }; if handle.is_null() { return Err(format!( \"Failed to create Windows process job: {}\", std::io::Error::last_os_error() )); } let mut information = J"
+        "Source review src/downloader/process.rs:92-121 (79d7d0fad2a0f4128aca674fc8e42554b86c35f750efaff4d58bd76b3045c101): fn new() -> Result<Self, String> { let handle = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) }; if handle.is_null() { return Err(format!( \"Failed to create Windows process job: {}\", std::io::Error::last_os_error() )); } let mut information = J",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Create and configure a Windows job object with kill-on-close.",
       "output": "Owned WindowsProcessJob or String error.",
@@ -4913,10 +4926,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -4924,8 +4937,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 123,
-      "endLine": 136,
+      "line": 96,
+      "endLine": 109,
       "symbol": "assign",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::assign",
       "signature": "fn assign(&self, child: &tokio::process::Child) -> Result<(), String>",
@@ -4959,7 +4972,9 @@
         "process::tests::supervised_process_cancels_and_reaps_promptly"
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:123-136 (7ffe3ca04ed2c46b9f0155739240924d811654945cb202e890b29b5f9e8d6c7a): fn assign(&self, child: &tokio::process::Child) -> Result<(), String> { let process_handle = child .raw_handle() .ok_or_else(|| \"Downloader process did not expose a Windows handle.\".to_string())?; let assigned = unsafe { AssignProcessToJobObject(self.handle, p"
+        "Source review src/downloader/process.rs:123-136 (7ffe3ca04ed2c46b9f0155739240924d811654945cb202e890b29b5f9e8d6c7a): fn assign(&self, child: &tokio::process::Child) -> Result<(), String> { let process_handle = child .raw_handle() .ok_or_else(|| \"Downloader process did not expose a Windows handle.\".to_string())?; let assigned = unsafe { AssignProcessToJobObject(self.handle, p",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Assign a newly spawned suspended child to the job before it can execute.",
       "output": "Result<(), String>.",
@@ -4967,10 +4982,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -4978,8 +4993,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 138,
-      "endLine": 184,
+      "line": 111,
+      "endLine": 157,
       "symbol": "resume",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::resume",
       "signature": "fn resume(&self, child: &tokio::process::Child) -> Result<(), String>",
@@ -5013,7 +5028,9 @@
         "process::tests::supervised_process_cancels_and_reaps_promptly"
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:138-184 (d66340336dac38722038868363e6d4fa20f57f93023517f8171ab537de8982a9): fn resume(&self, child: &tokio::process::Child) -> Result<(), String> { let process_id = child .id() .ok_or_else(|| \"Downloader process did not expose a process ID.\".to_string())?; let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) }; if sn"
+        "Source review src/downloader/process.rs:138-184 (d66340336dac38722038868363e6d4fa20f57f93023517f8171ab537de8982a9): fn resume(&self, child: &tokio::process::Child) -> Result<(), String> { let process_id = child .id() .ok_or_else(|| \"Downloader process did not expose a process ID.\".to_string())?; let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0) }; if sn",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Enumerate and resume every thread belonging to the assigned suspended child.",
       "output": "Result<(), String>.",
@@ -5021,10 +5038,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5032,8 +5049,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 186,
-      "endLine": 190,
+      "line": 159,
+      "endLine": 163,
       "symbol": "terminate",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::terminate",
       "signature": "fn terminate(&self)",
@@ -5067,7 +5084,9 @@
         "process::tests::supervised_process_cancels_and_reaps_promptly"
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:186-190 (2dede94db5dc136278f1073fc701962b5073505884d0b72133145aff11af5972): fn terminate(&self) { unsafe { TerminateJobObject(self.handle, 1); } }"
+        "Source review src/downloader/process.rs:186-190 (2dede94db5dc136278f1073fc701962b5073505884d0b72133145aff11af5972): fn terminate(&self) { unsafe { TerminateJobObject(self.handle, 1); } }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Terminate every process assigned to the job object.",
       "output": "Unit.",
@@ -5075,10 +5094,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5086,8 +5105,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 194,
-      "endLine": 200,
+      "line": 167,
+      "endLine": 173,
       "symbol": "impl Drop for WindowsProcessJob",
       "qualifiedName": "impl Drop for WindowsProcessJob",
       "signature": "impl Drop for WindowsProcessJob",
@@ -5120,7 +5139,9 @@
         "process cancellation/reap tests and soak descendant-count gate."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:194-200 (4748184e17454c2f042e971d00ff41098584085b3d12ef741119c3e223311837): impl Drop for WindowsProcessJob { fn drop(&mut self) { unsafe { CloseHandle(self.handle); } } }"
+        "Source review src/downloader/process.rs:194-200 (4748184e17454c2f042e971d00ff41098584085b3d12ef741119c3e223311837): impl Drop for WindowsProcessJob { fn drop(&mut self) { unsafe { CloseHandle(self.handle); } } }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Define/perform final close of the uniquely owned Windows job HANDLE.",
       "output": "Unit/destructor completion.",
@@ -5128,10 +5149,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5139,8 +5160,8 @@
       "kind": "destructor",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 195,
-      "endLine": 199,
+      "line": 168,
+      "endLine": 172,
       "symbol": "drop",
       "qualifiedName": "downloader::process::impl Drop for WindowsProcessJob::drop",
       "signature": "fn drop(&mut self)",
@@ -5173,7 +5194,9 @@
         "process cancellation/reap tests and soak descendant-count gate."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:195-199 (bad81689e72401f889c95f5829f901bf11c7c0b81929fc437ad020766eeb6fea): fn drop(&mut self) { unsafe { CloseHandle(self.handle); } }"
+        "Source review src/downloader/process.rs:195-199 (bad81689e72401f889c95f5829f901bf11c7c0b81929fc437ad020766eeb6fea): fn drop(&mut self) { unsafe { CloseHandle(self.handle); } }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Define/perform final close of the uniquely owned Windows job HANDLE.",
       "output": "Unit/destructor completion.",
@@ -5181,10 +5204,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5192,8 +5215,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 203,
-      "endLine": 212,
+      "line": 176,
+      "endLine": 185,
       "symbol": "new",
       "qualifiedName": "downloader::process::impl DownloadJob::new",
       "signature": "pub(crate) fn new() -> Result<Self, String>",
@@ -5224,7 +5247,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:203-212 (8e2cc1120c209ecaf31e6eb0a9a89be6eca76101440d991687477b42b0273132): pub(crate) fn new() -> Result<Self, String> { Ok(Self { supervisor: Arc::new(ProcessSupervisor { cancellation: CancellationToken::new(), runtime_tools: std::sync::Mutex::new(HashMap::new()), #[cfg(windows)] process_job: Arc::new(WindowsProcessJob::new()?), }),"
+        "Source review src/downloader/process.rs:203-212 (8e2cc1120c209ecaf31e6eb0a9a89be6eca76101440d991687477b42b0273132): pub(crate) fn new() -> Result<Self, String> { Ok(Self { supervisor: Arc::new(ProcessSupervisor { cancellation: CancellationToken::new(), runtime_tools: std::sync::Mutex::new(HashMap::new()), #[cfg(windows)] process_job: Arc::new(WindowsProcessJob::new()?), }),",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Create one cancellation/process/runtime-lease supervisor for a download or inspection.",
       "output": "Result<DownloadJob, String>.",
@@ -5232,10 +5257,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5243,8 +5268,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 214,
-      "endLine": 216,
+      "line": 187,
+      "endLine": 189,
       "symbol": "is_cancelled",
       "qualifiedName": "downloader::process::impl DownloadJob::is_cancelled",
       "signature": "pub(crate) fn is_cancelled(&self) -> bool",
@@ -5275,7 +5300,9 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:214-216: pub(crate) fn is_cancelled(&self) -> bool { self.supervisor.cancellation.is_cancelled() }"
+        "Source review src/downloader/process.rs:214-216: pub(crate) fn is_cancelled(&self) -> bool { self.supervisor.cancellation.is_cancelled() }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Read the DownloadJob cancellation-token state.",
       "output": "Boolean cancellation state.",
@@ -5283,10 +5310,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5294,8 +5321,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 218,
-      "endLine": 220,
+      "line": 191,
+      "endLine": 193,
       "symbol": "cancelled",
       "qualifiedName": "downloader::process::impl DownloadJob::cancelled",
       "signature": "pub(crate) async fn cancelled(&self)",
@@ -5326,7 +5353,9 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:218-220: pub(crate) async fn cancelled(&self) { self.supervisor.cancellation.cancelled().await; }"
+        "Source review src/downloader/process.rs:218-220: pub(crate) async fn cancelled(&self) { self.supervisor.cancellation.cancelled().await; }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Await DownloadJob cancellation.",
       "output": "Unit when the token becomes cancelled.",
@@ -5334,10 +5363,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5345,8 +5374,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 222,
-      "endLine": 225,
+      "line": 195,
+      "endLine": 198,
       "symbol": "cancel",
       "qualifiedName": "downloader::process::impl DownloadJob::cancel",
       "signature": "pub(crate) fn cancel(&self)",
@@ -5377,7 +5406,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:222-225 (4533b7132ccd1e911e109f10a03e91f1956bddabb54d8032ceb29b67c9b47580): pub(crate) fn cancel(&self) { self.supervisor.cancellation.cancel(); self.terminate_processes(); }"
+        "Source review src/downloader/process.rs:222-225 (4533b7132ccd1e911e109f10a03e91f1956bddabb54d8032ceb29b67c9b47580): pub(crate) fn cancel(&self) { self.supervisor.cancellation.cancel(); self.terminate_processes(); }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Mark the job cancelled and terminate all supervised descendants.",
       "output": "Unit.",
@@ -5385,10 +5416,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5396,8 +5427,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 227,
-      "endLine": 230,
+      "line": 200,
+      "endLine": 203,
       "symbol": "terminate_processes",
       "qualifiedName": "downloader::process::impl DownloadJob::terminate_processes",
       "signature": "pub(crate) fn terminate_processes(&self)",
@@ -5428,7 +5459,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:227-230 (e6be2aaa914d73b89aa0056b439e215794b9ecbb17ad391bfdde2a704c6b407a): pub(crate) fn terminate_processes(&self) { #[cfg(windows)] self.supervisor.process_job.terminate(); }"
+        "Source review src/downloader/process.rs:227-230 (e6be2aaa914d73b89aa0056b439e215794b9ecbb17ad391bfdde2a704c6b407a): pub(crate) fn terminate_processes(&self) { #[cfg(windows)] self.supervisor.process_job.terminate(); }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Terminate supervised descendants without changing user-cancellation state.",
       "output": "Unit.",
@@ -5436,10 +5469,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5447,8 +5480,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 232,
-      "endLine": 250,
+      "line": 205,
+      "endLine": 223,
       "symbol": "runtime_tool",
       "qualifiedName": "downloader::process::impl DownloadJob::runtime_tool",
       "signature": "fn runtime_tool(&self, name: &str, required: bool) -> Result<Option<PathBuf>, String>",
@@ -5479,7 +5512,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:232-250 (563dbba0bb007c75fbdfe46794b17043cbd851db19851cc5691e48e46cc847e7): fn runtime_tool(&self, name: &str, required: bool) -> Result<Option<PathBuf>, String> { let mut leases = self .supervisor .runtime_tools .lock() .map_err(|_| \"Runtime executable lease registry was poisoned.\".to_string())?; if let Some(lease) = leases.get(name)"
+        "Source review src/downloader/process.rs:232-250 (563dbba0bb007c75fbdfe46794b17043cbd851db19851cc5691e48e46cc847e7): fn runtime_tool(&self, name: &str, required: bool) -> Result<Option<PathBuf>, String> { let mut leases = self .supervisor .runtime_tools .lock() .map_err(|_| \"Runtime executable lease registry was poisoned.\".to_string())?; if let Some(lease) = leases.get(name)",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Resolve once and retain an authenticated runtime tool lease by name.",
       "output": "Result<Option<PathBuf>, String>.",
@@ -5487,10 +5522,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5498,8 +5533,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 252,
-      "endLine": 255,
+      "line": 225,
+      "endLine": 228,
       "symbol": "required_runtime_tool",
       "qualifiedName": "downloader::process::impl DownloadJob::required_runtime_tool",
       "signature": "pub(super) fn required_runtime_tool(&self, name: &str) -> Result<PathBuf, String>",
@@ -5530,7 +5565,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:252-255 (c6bd4c4a9fa06da8cb5529a0c50470efee7122538d5e0b87f07599b0d62aaa0e): pub(super) fn required_runtime_tool(&self, name: &str) -> Result<PathBuf, String> { self.runtime_tool(name, true)? .ok_or_else(|| format!(\"Required runtime executable {name} was not found.\")) }"
+        "Source review src/downloader/process.rs:252-255 (c6bd4c4a9fa06da8cb5529a0c50470efee7122538d5e0b87f07599b0d62aaa0e): pub(super) fn required_runtime_tool(&self, name: &str) -> Result<PathBuf, String> { self.runtime_tool(name, true)? .ok_or_else(|| format!(\"Required runtime executable {name} was not found.\")) }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Resolve a required authenticated runtime tool path.",
       "output": "Tool PathBuf or String error.",
@@ -5538,10 +5575,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5549,8 +5586,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 257,
-      "endLine": 265,
+      "line": 230,
+      "endLine": 238,
       "symbol": "ytdlp_runtime_config",
       "qualifiedName": "downloader::process::impl DownloadJob::ytdlp_runtime_config",
       "signature": "pub(super) fn ytdlp_runtime_config(&self) -> Result<YtdlpCommandConfig, String>",
@@ -5581,7 +5618,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:257-265 (c8c114ed13d6340ec0d3406035f2c4280e25cf87468017dff053710fb1029886): pub(super) fn ytdlp_runtime_config(&self) -> Result<YtdlpCommandConfig, String> { let ffmpeg = self.runtime_tool(\"ffmpeg\", true)?; let deno = self.runtime_tool(\"deno\", false)?; Ok(YtdlpCommandConfig { ffmpeg_dir: ffmpeg.and_then(|path| path.parent().map(Path::"
+        "Source review src/downloader/process.rs:257-265 (c8c114ed13d6340ec0d3406035f2c4280e25cf87468017dff053710fb1029886): pub(super) fn ytdlp_runtime_config(&self) -> Result<YtdlpCommandConfig, String> { let ffmpeg = self.runtime_tool(\"ffmpeg\", true)?; let deno = self.runtime_tool(\"deno\", false)?; Ok(YtdlpCommandConfig { ffmpeg_dir: ffmpeg.and_then(|path| path.parent().map(Path::",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Build yt-dlp runtime arguments from retained ffmpeg/deno leases and managed plugin directory.",
       "output": "YtdlpCommandConfig or runtime error.",
@@ -5589,10 +5628,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5600,8 +5639,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 267,
-      "endLine": 277,
+      "line": 240,
+      "endLine": 250,
       "symbol": "attach_process",
       "qualifiedName": "downloader::process::impl DownloadJob::attach_process",
       "signature": "fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String>",
@@ -5632,7 +5671,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:267-277 (9eb5c6766c3724ef04ccaae621f2488db362818f44b77699dbc495ab722ac8a0): fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> { #[cfg(windows)] { self.supervisor.process_job.assign(child)?; if self.is_cancelled() { return Ok(false); } self.supervisor.process_job.resume(child)?; } Ok(!self.is_cancelled()) "
+        "Source review src/downloader/process.rs:267-277 (9eb5c6766c3724ef04ccaae621f2488db362818f44b77699dbc495ab722ac8a0): fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> { #[cfg(windows)] { self.supervisor.process_job.assign(child)?; if self.is_cancelled() { return Ok(false); } self.supervisor.process_job.resume(child)?; } Ok(!self.is_cancelled()) ",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Assign a suspended child to the Windows job, recheck cancellation, then resume it.",
       "output": "Result<bool, String> indicating whether execution may continue.",
@@ -5640,10 +5681,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5651,8 +5692,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 279,
-      "endLine": 306,
+      "line": 252,
+      "endLine": 279,
       "symbol": "spawn",
       "qualifiedName": "downloader::process::impl DownloadJob::spawn",
       "signature": "pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, String>",
@@ -5683,7 +5724,9 @@
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:279-306 (04369c93fef52d58302604793fefeb9c7e9923f47a15d810c8b57953efd364d5): pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, String> { if self.is_cancelled() { return Err(format!(\"{process_name} operation was cancelled.\")); } #[cfg(windows)] co"
+        "Source review src/downloader/process.rs:279-306 (04369c93fef52d58302604793fefeb9c7e9923f47a15d810c8b57953efd364d5): pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, String> { if self.is_cancelled() { return Err(format!(\"{process_name} operation was cancelled.\")); } #[cfg(windows)] co",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Spawn one command under the job supervisor and guarantee failed/cancelled attachment is terminated and reaped.",
       "output": "Owned tokio Child or String error.",
@@ -5691,10 +5734,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5702,8 +5745,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 309,
-      "endLine": 332,
+      "line": 282,
+      "endLine": 305,
       "symbol": "run_supervised_probe",
       "qualifiedName": "downloader::process::run_supervised_probe",
       "signature": "pub(crate) async fn run_supervised_probe( binary: &Path, arguments: &[&str], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String>",
@@ -5734,7 +5777,9 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:309-332 (ae1904eb49779ba4121343254d6ad0958fb3578e23b2e51596429e9ce37f3ed8): pub(crate) async fn run_supervised_probe( binary: &Path, arguments: &[&str], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { let job = DownloadJob::new()?; let mut command = Command::new(binary); command"
+        "Source review src/downloader/process.rs:309-332 (ae1904eb49779ba4121343254d6ad0958fb3578e23b2e51596429e9ce37f3ed8): pub(crate) async fn run_supervised_probe( binary: &Path, arguments: &[&str], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { let job = DownloadJob::new()?; let mut command = Command::new(binary); command",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Run an absolute/verified runtime probe with bounded stdout, stderr, timeout, cancellation, and process-tree cleanup.",
       "output": "std::process::Output or String error.",
@@ -5742,10 +5787,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5753,8 +5798,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process.rs",
-      "line": 335,
-      "endLine": 362,
+      "line": 308,
+      "endLine": 335,
       "symbol": "test_run_supervised_absolute_child",
       "qualifiedName": "downloader::process::test_run_supervised_absolute_child",
       "signature": "pub(crate) async fn test_run_supervised_absolute_child( job: &DownloadJob, executable: &Path, arguments: &[String], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String>",
@@ -5787,7 +5832,9 @@
         "soak_harness::run_cycle_job exercises success and exit-7 failure; soak_harness::exercise_process_cancellation exercises cancellation and prompt reap."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:335-362: pub(crate) async fn test_run_supervised_absolute_child( job: &DownloadJob, executable: &Path, arguments: &[String], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { if !executable.is_absolute() { return E"
+        "Source review src/downloader/process.rs:335-362: pub(crate) async fn test_run_supervised_absolute_child( job: &DownloadJob, executable: &Path, arguments: &[String], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { if !executable.is_absolute() { return E",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Run a caller-selected absolute regular executable through the real DownloadJob supervisor for the isolated soak.",
       "output": "Returns bounded std::process::Output or a setup/supervision String error.",
@@ -5795,10 +5842,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5806,8 +5853,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process.rs",
-      "line": 376,
-      "endLine": 398,
+      "line": 349,
+      "endLine": 371,
       "symbol": "test_run_supervised_inherited_pipe_fixture",
       "qualifiedName": "downloader::process::test_run_supervised_inherited_pipe_fixture",
       "signature": "pub(crate) async fn test_run_supervised_inherited_pipe_fixture( job: &DownloadJob, options: TestInheritedPipeFixtureOptions<'_>, ) -> Result<std::process::Output, String>",
@@ -5840,7 +5887,9 @@
         "soak_harness::exercise_inherited_pipe verifies the inherited descendant cannot keep the call alive beyond the drain deadline."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:376-398: pub(crate) async fn test_run_supervised_inherited_pipe_fixture( job: &DownloadJob, options: TestInheritedPipeFixtureOptions<'_>, ) -> Result<std::process::Output, String> { let (child, fixture_root) = tests::spawn_inherited_pipe_fixture( job, options.caller_ro"
+        "Source review src/downloader/process.rs:376-398: pub(crate) async fn test_run_supervised_inherited_pipe_fixture( job: &DownloadJob, options: TestInheritedPipeFixtureOptions<'_>, ) -> Result<std::process::Output, String> { let (child, fixture_root) = tests::spawn_inherited_pipe_fixture( job, options.caller_ro",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Run the real Windows inherited-pipe supervisor fixture and remove its UUID-owned fixture directory afterward.",
       "output": "Returns bounded std::process::Output or a fixture/supervision String error.",
@@ -5848,10 +5897,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
@@ -5859,8 +5908,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 400,
-      "endLine": 408,
+      "line": 373,
+      "endLine": 381,
       "symbol": "supervised_process_flags",
       "qualifiedName": "downloader::process::supervised_process_flags",
       "signature": "fn supervised_process_flags(below_normal_priority: bool) -> u32",
@@ -5891,7 +5940,9 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:400-408: fn supervised_process_flags(below_normal_priority: bool) -> u32 { CREATE_NO_WINDOW | CREATE_SUSPENDED | if below_normal_priority { BELOW_NORMAL_PRIORITY_CLASS } else { 0 } }"
+        "Source review src/downloader/process.rs:400-408: fn supervised_process_flags(below_normal_priority: bool) -> u32 { CREATE_NO_WINDOW | CREATE_SUSPENDED | if below_normal_priority { BELOW_NORMAL_PRIORITY_CLASS } else { 0 } }",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Combine no-window, suspended-start, and optional below-normal-priority Windows flags.",
       "output": "Win32 creation-flags bitmask.",
@@ -5899,21 +5950,21 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::spawn_stderr_tail_reader[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::spawn_stderr_tail_reader[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 410,
-      "endLine": 447,
+      "file": "src/downloader/process/output.rs",
+      "line": 41,
+      "endLine": 78,
       "symbol": "spawn_stderr_tail_reader",
-      "qualifiedName": "downloader::process::spawn_stderr_tail_reader",
+      "qualifiedName": "downloader::process::output::spawn_stderr_tail_reader",
       "signature": "fn spawn_stderr_tail_reader( mut stderr: tokio::process::ChildStderr, ) -> tokio::task::JoinHandle<Result<String, String>>",
       "sourceDigest": "7597a638979ee014d3e2c7d11c81a1c323c4039a8a378f88eb000fdea424f196",
       "cfg": [],
@@ -5942,29 +5993,31 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:410-447 (7597a638979ee014d3e2c7d11c81a1c323c4039a8a378f88eb000fdea424f196): fn spawn_stderr_tail_reader( mut stderr: tokio::process::ChildStderr, ) -> tokio::task::JoinHandle<Result<String, String>> { tokio::spawn(async move { let mut tail = TailBuffer::new(); let mut buffer = [0_u8; 8 * 1024]; let mut line = Vec::new(); loop { let re"
+        "Source review src/downloader/process.rs:410-447 (7597a638979ee014d3e2c7d11c81a1c323c4039a8a378f88eb000fdea424f196): fn spawn_stderr_tail_reader( mut stderr: tokio::process::ChildStderr, ) -> tokio::task::JoinHandle<Result<String, String>> { tokio::spawn(async move { let mut tail = TailBuffer::new(); let mut buffer = [0_u8; 8 * 1024]; let mut line = Vec::new(); loop { let re",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Spawn an owned stderr reader that enforces per-line and retained-tail budgets.",
       "output": "Tokio JoinHandle<Result<String, String>>.",
       "cancellation": "Aborting/dropping the returned owned task cancels reading.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::spawn_stderr_tail_reader::owned_async_closure#1@413[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::spawn_stderr_tail_reader::owned_async_closure#1@44[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 413,
-      "endLine": 446,
+      "file": "src/downloader/process/output.rs",
+      "line": 44,
+      "endLine": 77,
       "symbol": "owned_async_closure#1",
-      "qualifiedName": "downloader::process::spawn_stderr_tail_reader::owned_async_closure#1",
+      "qualifiedName": "downloader::process::output::spawn_stderr_tail_reader::owned_async_closure#1",
       "signature": "async move",
       "sourceDigest": "e8cd7de84af45ab9ed32db69d0ce1abc565534721c1112dde2f4326ff9d8700f",
       "cfg": [],
@@ -5994,28 +6047,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:413-446 (e8cd7de84af45ab9ed32db69d0ce1abc565534721c1112dde2f4326ff9d8700f): tokio::spawn(async move { let mut tail = TailBuffer::new(); let mut buffer = [0_u8; 8 * 1024]; let mut line = Vec::new(); loop { let read = stderr.read(&mut buffer).await.map_err(|error| { format!(\"process_output_failed: could not read stderr: {error}\") })?; i"
+        "Source review src/downloader/process.rs:413-446 (e8cd7de84af45ab9ed32db69d0ce1abc565534721c1112dde2f4326ff9d8700f): tokio::spawn(async move { let mut tail = TailBuffer::new(); let mut buffer = [0_u8; 8 * 1024]; let mut line = Vec::new(); loop { let read = stderr.read(&mut buffer).await.map_err(|error| { format!(\"process_output_failed: could not read stderr: {error}\") })?; i",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Own the stderr pipe reader until EOF or bounded-line/I/O failure.",
       "output": "Result<String, String> returned through its JoinHandle.",
       "cancellation": "Dropping/aborting its OwnedReaderTask cancels the read future.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::flatten_stderr_result[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::flatten_stderr_result[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 449,
-      "endLine": 453,
+      "file": "src/downloader/process/output.rs",
+      "line": 80,
+      "endLine": 84,
       "symbol": "flatten_stderr_result",
-      "qualifiedName": "downloader::process::flatten_stderr_result",
+      "qualifiedName": "downloader::process::output::flatten_stderr_result",
       "signature": "fn flatten_stderr_result( result: Result<Result<String, String>, tokio::task::JoinError>, ) -> Result<String, String>",
       "sourceDigest": "7914a53750e9abe873bd73c65188849b39a7b1c8ba3b21c4288c4521eee67ae8",
       "cfg": [],
@@ -6044,29 +6099,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:449-453: fn flatten_stderr_result( result: Result<Result<String, String>, tokio::task::JoinError>, ) -> Result<String, String> { result.map_err(|_| \"process_output_failed: stderr reader stopped unexpectedly\".to_string())? }"
+        "Source review src/downloader/process.rs:449-453: fn flatten_stderr_result( result: Result<Result<String, String>, tokio::task::JoinError>, ) -> Result<String, String> { result.map_err(|_| \"process_output_failed: stderr reader stopped unexpectedly\".to_string())? }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Flatten the stderr reader JoinHandle result without losing its explicit inner output error.",
       "output": "Bounded stderr String or String error.",
       "cancellation": "Not applicable; synchronous result conversion.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::new[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::new[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 466,
-      "endLine": 470,
+      "file": "src/downloader/process/output.rs",
+      "line": 97,
+      "endLine": 101,
       "symbol": "new",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::new",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::new",
       "signature": "fn new(handle: tokio::task::JoinHandle<T>) -> Self",
       "sourceDigest": "5e555a2cdaab173a13c490f6a5b2186fb375c069972356757d12cf6731bb762f",
       "cfg": [],
@@ -6095,29 +6152,31 @@
         "process blocked-callback and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:466-470: fn new(handle: tokio::task::JoinHandle<T>) -> Self { Self { handle: Some(handle), } }"
+        "Source review src/downloader/process.rs:466-470: fn new(handle: tokio::task::JoinHandle<T>) -> Self { Self { handle: Some(handle), } }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Wrap one Tokio reader JoinHandle so every exit path joins, aborts-and-waits, or aborts on drop.",
       "output": "OwnedReaderTask containing that handle.",
       "cancellation": "The wrapper enables explicit abort-and-wait and abort-on-drop cancellation.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::handle_mut[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::handle_mut[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 472,
-      "endLine": 474,
+      "file": "src/downloader/process/output.rs",
+      "line": 103,
+      "endLine": 105,
       "symbol": "handle_mut",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::handle_mut",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::handle_mut",
       "signature": "fn handle_mut(&mut self) -> &mut tokio::task::JoinHandle<T>",
       "sourceDigest": "bc9b15d94b9b72372913a0c0739e5c9b38af68fd3f5255bfc4ffff8ffd8d56db",
       "cfg": [],
@@ -6146,29 +6205,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:472-474: fn handle_mut(&mut self) -> &mut tokio::task::JoinHandle<T> { self.handle.as_mut().expect(\"reader task is still active\") }"
+        "Source review src/downloader/process.rs:472-474: fn handle_mut(&mut self) -> &mut tokio::task::JoinHandle<T> { self.handle.as_mut().expect(\"reader task is still active\") }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Borrow the still-active owned reader JoinHandle for select polling.",
       "output": "Mutable JoinHandle reference.",
       "cancellation": "Cancellation is handled by the owning select loop, not this accessor.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::is_active[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::is_active[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 476,
-      "endLine": 478,
+      "file": "src/downloader/process/output.rs",
+      "line": 107,
+      "endLine": 109,
       "symbol": "is_active",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::is_active",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::is_active",
       "signature": "fn is_active(&self) -> bool",
       "sourceDigest": "54c95ab7a342698356922c8c140e5549abb74d6e88ca785f656ed7d23fed76f8",
       "cfg": [],
@@ -6197,29 +6258,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:476-478: fn is_active(&self) -> bool { self.handle.is_some() }"
+        "Source review src/downloader/process.rs:476-478: fn is_active(&self) -> bool { self.handle.is_some() }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Report whether the owned reader task still retains its JoinHandle.",
       "output": "Boolean active-handle state.",
       "cancellation": "Not applicable; synchronous state observation.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::disarm_completed[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::disarm_completed[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 480,
-      "endLine": 482,
+      "file": "src/downloader/process/output.rs",
+      "line": 111,
+      "endLine": 113,
       "symbol": "disarm_completed",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::disarm_completed",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::disarm_completed",
       "signature": "fn disarm_completed(&mut self)",
       "sourceDigest": "116b8e4146d222fa97c3a360c32db0db03a117c9432c56b71d22dc4e1da0f2f6",
       "cfg": [],
@@ -6248,29 +6311,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:480-482: fn disarm_completed(&mut self) { let _ = self.handle.take(); }"
+        "Source review src/downloader/process.rs:480-482: fn disarm_completed(&mut self) { let _ = self.handle.take(); }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Drop JoinHandle ownership after a select branch already observed task completion.",
       "output": "Unit.",
       "cancellation": "No cancellation is requested because completion was already observed.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::join[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::join[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 484,
-      "endLine": 489,
+      "file": "src/downloader/process/output.rs",
+      "line": 115,
+      "endLine": 120,
       "symbol": "join",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::join",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::join",
       "signature": "async fn join(&mut self) -> Result<T, tokio::task::JoinError>",
       "sourceDigest": "555c14c1872709cf8e319c0375317345d8781c02ad17689148b824a1815aac00",
       "cfg": [],
@@ -6299,29 +6364,31 @@
         "process blocked-callback and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:484-489 (555c14c1872709cf8e319c0375317345d8781c02ad17689148b824a1815aac00): async fn join(&mut self) -> Result<T, tokio::task::JoinError> { self.handle .take() .expect(\"reader task is still active\") .await }"
+        "Source review src/downloader/process.rs:484-489 (555c14c1872709cf8e319c0375317345d8781c02ad17689148b824a1815aac00): async fn join(&mut self) -> Result<T, tokio::task::JoinError> { self.handle .take() .expect(\"reader task is still active\") .await }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Take and await the sole owned reader JoinHandle.",
       "output": "Reader task output T or Tokio JoinError.",
       "cancellation": "Does not cancel the task; waits for its existing completion.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> OwnedReaderTask<T>::abort_and_wait[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> OwnedReaderTask<T>::abort_and_wait[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 491,
-      "endLine": 496,
+      "file": "src/downloader/process/output.rs",
+      "line": 122,
+      "endLine": 127,
       "symbol": "abort_and_wait",
-      "qualifiedName": "downloader::process::impl<T> OwnedReaderTask<T>::abort_and_wait",
+      "qualifiedName": "downloader::process::output::impl<T> OwnedReaderTask<T>::abort_and_wait",
       "signature": "async fn abort_and_wait(&mut self)",
       "sourceDigest": "534adaf00427ec1c13e5077a653e716770268f10c7f7119d1df06ea3c843754a",
       "cfg": [],
@@ -6350,27 +6417,29 @@
         "process blocked-callback, output-limit, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:491-496 (534adaf00427ec1c13e5077a653e716770268f10c7f7119d1df06ea3c843754a): async fn abort_and_wait(&mut self) { if let Some(handle) = self.handle.take() { handle.abort(); let _ = handle.await; } }"
+        "Source review src/downloader/process.rs:491-496 (534adaf00427ec1c13e5077a653e716770268f10c7f7119d1df06ea3c843754a): async fn abort_and_wait(&mut self) { if let Some(handle) = self.handle.take() { handle.abort(); let _ = handle.await; } }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Abort an unfinished reader task and await its termination.",
       "output": "Unit after the task is absent or terminated.",
       "cancellation": "Explicitly requests cancellation and waits for it to take effect.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::impl<T> Drop for OwnedReaderTask<T>[trait-impl,cfg=all]",
+      "id": "src/downloader/process/output.rs::impl<T> Drop for OwnedReaderTask<T>[trait-impl,cfg=all]",
       "kind": "trait_impl",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 499,
-      "endLine": 505,
+      "file": "src/downloader/process/output.rs",
+      "line": 130,
+      "endLine": 136,
       "symbol": "impl<T> Drop for OwnedReaderTask<T>",
       "qualifiedName": "impl<T> Drop for OwnedReaderTask<T>",
       "signature": "impl<T> Drop for OwnedReaderTask<T>",
@@ -6401,29 +6470,31 @@
         "process blocked-callback and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:499-505 (8e69bc72106358a6fe6180e23fc9241bdeaba88f61c9e7dec3d7ddeb9e415338): impl<T> Drop for OwnedReaderTask<T> { fn drop(&mut self) { if let Some(handle) = &self.handle { handle.abort(); } } }"
+        "Source review src/downloader/process.rs:499-505 (8e69bc72106358a6fe6180e23fc9241bdeaba88f61c9e7dec3d7ddeb9e415338): impl<T> Drop for OwnedReaderTask<T> { fn drop(&mut self) { if let Some(handle) = &self.handle { handle.abort(); } } }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Define/perform abort-on-drop for an unfinished stdout/stderr reader task.",
       "output": "Unit/destructor completion.",
       "cancellation": "Drop requests cancellation of the reader task.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::impl<T> Drop for OwnedReaderTask<T>::drop[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::impl<T> Drop for OwnedReaderTask<T>::drop[cfg=all]",
       "kind": "destructor",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 500,
-      "endLine": 504,
+      "file": "src/downloader/process/output.rs",
+      "line": 131,
+      "endLine": 135,
       "symbol": "drop",
-      "qualifiedName": "downloader::process::impl<T> Drop for OwnedReaderTask<T>::drop",
+      "qualifiedName": "downloader::process::output::impl<T> Drop for OwnedReaderTask<T>::drop",
       "signature": "fn drop(&mut self)",
       "sourceDigest": "a454e40409c2f4f551d44905ef8867b960a77be153133ca70855f4429a3592fc",
       "cfg": [],
@@ -6452,29 +6523,31 @@
         "process blocked-callback and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:500-504 (a454e40409c2f4f551d44905ef8867b960a77be153133ca70855f4429a3592fc): fn drop(&mut self) { if let Some(handle) = &self.handle { handle.abort(); } }"
+        "Source review src/downloader/process.rs:500-504 (a454e40409c2f4f551d44905ef8867b960a77be153133ca70855f4429a3592fc): fn drop(&mut self) { if let Some(handle) = &self.handle { handle.abort(); } }",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Define/perform abort-on-drop for an unfinished stdout/stderr reader task.",
       "output": "Unit/destructor completion.",
       "cancellation": "Drop requests cancellation of the reader task.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation.",
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::spawn_stdout_line_reader[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::spawn_stdout_line_reader[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 507,
-      "endLine": 531,
+      "file": "src/downloader/process/output.rs",
+      "line": 138,
+      "endLine": 162,
       "symbol": "spawn_stdout_line_reader",
-      "qualifiedName": "downloader::process::spawn_stdout_line_reader",
+      "qualifiedName": "downloader::process::output::spawn_stdout_line_reader",
       "signature": "fn spawn_stdout_line_reader( stdout: tokio::process::ChildStdout, ) -> ( tokio::sync::mpsc::Receiver<StdoutEvent>, OwnedReaderTask<()>, )",
       "sourceDigest": "7f512d30eae279d64ea460291ecdc6a485e7bf1a8ae29fc83c643ce889c8f1e0",
       "cfg": [],
@@ -6503,29 +6576,31 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:507-531 (7f512d30eae279d64ea460291ecdc6a485e7bf1a8ae29fc83c643ce889c8f1e0): fn spawn_stdout_line_reader( stdout: tokio::process::ChildStdout, ) -> ( tokio::sync::mpsc::Receiver<StdoutEvent>, OwnedReaderTask<()>, ) { let (sender, receiver) = tokio::sync::mpsc::channel(1); let handle = tokio::spawn(async move { let mut stdout = BufReade"
+        "Source review src/downloader/process.rs:507-531 (7f512d30eae279d64ea460291ecdc6a485e7bf1a8ae29fc83c643ce889c8f1e0): fn spawn_stdout_line_reader( stdout: tokio::process::ChildStdout, ) -> ( tokio::sync::mpsc::Receiver<StdoutEvent>, OwnedReaderTask<()>, ) { let (sender, receiver) = tokio::sync::mpsc::channel(1); let handle = tokio::spawn(async move { let mut stdout = BufReade",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Spawn an owned line reader and deliver lines/terminal state through a capacity-one channel.",
       "output": "Capacity-one StdoutEvent receiver and OwnedReaderTask<()>.",
       "cancellation": "Receiver closure or wrapper abort ends the task.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::spawn_stdout_line_reader::owned_async_closure#1@514[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::spawn_stdout_line_reader::owned_async_closure#1@145[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 514,
-      "endLine": 529,
+      "file": "src/downloader/process/output.rs",
+      "line": 145,
+      "endLine": 160,
       "symbol": "owned_async_closure#1",
-      "qualifiedName": "downloader::process::spawn_stdout_line_reader::owned_async_closure#1",
+      "qualifiedName": "downloader::process::output::spawn_stdout_line_reader::owned_async_closure#1",
       "signature": "async move",
       "sourceDigest": "5777fa75e4fd8aa1b2a5ef06592c83f2522dd83a84e2846c7d60c3fa18889aaa",
       "cfg": [],
@@ -6555,26 +6630,28 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:514-529 (5777fa75e4fd8aa1b2a5ef06592c83f2522dd83a84e2846c7d60c3fa18889aaa): let handle = tokio::spawn(async move { let mut stdout = BufReader::new(stdout); loop { let event = match read_bounded_line(&mut stdout, MAX_PROCESS_LINE_BYTES).await { Ok(Some(line)) => StdoutEvent::Line(line), Ok(None) => StdoutEvent::End, Err(error) => Stdou"
+        "Source review src/downloader/process.rs:514-529 (5777fa75e4fd8aa1b2a5ef06592c83f2522dd83a84e2846c7d60c3fa18889aaa): let handle = tokio::spawn(async move { let mut stdout = BufReader::new(stdout); loop { let event = match read_bounded_line(&mut stdout, MAX_PROCESS_LINE_BYTES).await { Ok(Some(line)) => StdoutEvent::Line(line), Ok(None) => StdoutEvent::End, Err(error) => Stdou",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Own the stdout line reader and send capacity-one Line/End/Error events.",
       "output": "Unit when the terminal event is sent or receiver closes.",
       "cancellation": "Dropping/aborting its OwnedReaderTask cancels pipe reading; receiver closure ends it.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
       "id": "src/downloader/process.rs::downloader::process::terminate_and_reap_child[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 540,
-      "endLine": 556,
+      "line": 383,
+      "endLine": 399,
       "symbol": "terminate_and_reap_child",
       "qualifiedName": "downloader::process::terminate_and_reap_child",
       "signature": "async fn terminate_and_reap_child( child: &mut tokio::process::Child, job: &DownloadJob, process_name: &str, ) -> Result<std::process::ExitStatus, String>",
@@ -6605,7 +6682,9 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:540-556 (1915f9df564e51c82968398fc6f39e454bb65a77ad8c3aead368fe8b7b2fb69b): async fn terminate_and_reap_child( child: &mut tokio::process::Child, job: &DownloadJob, process_name: &str, ) -> Result<std::process::ExitStatus, String> { job.terminate_processes(); let _ = child.start_kill(); match tokio::time::timeout(PROCESS_DRAIN_TIMEOUT"
+        "Source review src/downloader/process.rs:540-556 (1915f9df564e51c82968398fc6f39e454bb65a77ad8c3aead368fe8b7b2fb69b): async fn terminate_and_reap_child( child: &mut tokio::process::Child, job: &DownloadJob, process_name: &str, ) -> Result<std::process::ExitStatus, String> { job.terminate_processes(); let _ = child.start_kill(); match tokio::time::timeout(PROCESS_DRAIN_TIMEOUT",
+        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Terminate the whole job and bound the wait that reaps the direct child.",
       "output": "ExitStatus or String reap error.",
@@ -6613,23 +6692,23 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_streamed_stdout[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 558,
-      "endLine": 766,
+      "file": "src/downloader/process/output.rs",
+      "line": 171,
+      "endLine": 379,
       "symbol": "wait_with_streamed_stdout",
-      "qualifiedName": "downloader::process::wait_with_streamed_stdout",
-      "signature": "pub(super) async fn wait_with_streamed_stdout<F, Fut>( mut child: tokio::process::Child, job: &DownloadJob, process_name: &str, mut on_stdout_line: F, ) -> Result<StreamedProcessOutput, String> where F: FnMut(String) -> Fut, Fut: Future<Output = Result<(), String>>,",
-      "sourceDigest": "2bcda8dc838f6498b8c03896fa91dc846ec5e390ed7f1892e7180a8736e64ea0",
+      "qualifiedName": "downloader::process::output::wait_with_streamed_stdout",
+      "signature": "pub(in crate::downloader) async fn wait_with_streamed_stdout<F, Fut>( mut child: tokio::process::Child, job: &DownloadJob, process_name: &str, mut on_stdout_line: F, ) -> Result<StreamedProcessOutput, String> where F: FnMut(String) -> Fut, Fut: Future<Output = Result<(), String>>,",
+      "sourceDigest": "eeeaeeee758c2ca157c70f0f327280a265505625bdff02e84c287109419faa3d",
       "cfg": [],
       "callers": [
         "engine yt-dlp and FFmpeg progress paths."
@@ -6656,29 +6735,31 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:558-766 (2bcda8dc838f6498b8c03896fa91dc846ec5e390ed7f1892e7180a8736e64ea0): pub(super) async fn wait_with_streamed_stdout<F, Fut>( mut child: tokio::process::Child, job: &DownloadJob, process_name: &str, mut on_stdout_line: F, ) -> Result<StreamedProcessOutput, String> where F: FnMut(String) -> Fut, Fut: Future<Output = Result<(), Str"
+        "Source review src/downloader/process.rs:558-766 (2bcda8dc838f6498b8c03896fa91dc846ec5e390ed7f1892e7180a8736e64ea0): pub(super) async fn wait_with_streamed_stdout<F, Fut>( mut child: tokio::process::Child, job: &DownloadJob, process_name: &str, mut on_stdout_line: F, ) -> Result<StreamedProcessOutput, String> where F: FnMut(String) -> Fut, Fut: Future<Output = Result<(), Str",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Concurrently supervise child exit, cancellation, stdout callbacks, stderr capture, and a five-second post-exit drain.",
       "output": "StreamedProcessOutput or String error.",
       "cancellation": "Cancellation is a live select branch even while callback is pending and terminates the process job.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_streamed_stdout::async_block#1@595[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout::async_block#1@208[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 595,
-      "endLine": 600,
+      "file": "src/downloader/process/output.rs",
+      "line": 208,
+      "endLine": 213,
       "symbol": "async_block#1",
-      "qualifiedName": "downloader::process::wait_with_streamed_stdout::async_block#1",
+      "qualifiedName": "downloader::process::output::wait_with_streamed_stdout::async_block#1",
       "signature": "async",
       "sourceDigest": "086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619",
       "cfg": [],
@@ -6708,28 +6789,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:595-600 (086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619): callback_result = async { pending_callback .as_mut() .expect(\"guarded pending callback\") .await }, if pending_callback.is_some() => {"
+        "Source review src/downloader/process.rs:595-600 (086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619): callback_result = async { pending_callback .as_mut() .expect(\"guarded pending callback\") .await }, if pending_callback.is_some() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the one pending progress callback during the pre-exit supervision loop.",
       "output": "Result<(), String> from the callback future.",
       "cancellation": "The sibling job.cancelled select branch remains live while this future is pending.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_streamed_stdout::async_block#2@651[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout::async_block#2@264[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 651,
-      "endLine": 651,
+      "file": "src/downloader/process/output.rs",
+      "line": 264,
+      "endLine": 264,
       "symbol": "async_block#2",
-      "qualifiedName": "downloader::process::wait_with_streamed_stdout::async_block#2",
+      "qualifiedName": "downloader::process::output::wait_with_streamed_stdout::async_block#2",
       "signature": "async",
       "sourceDigest": "b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8",
       "cfg": [],
@@ -6759,28 +6842,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:651-651 (b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8): result = async { stderr_task.handle_mut().await }, if stderr_output.is_none() => {"
+        "Source review src/downloader/process.rs:651-651 (b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8): result = async { stderr_task.handle_mut().await }, if stderr_output.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the owned stderr reader during the pre-exit supervision loop.",
       "output": "Nested JoinHandle result for bounded stderr.",
       "cancellation": "The sibling cancellation branch remains live.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_streamed_stdout::async_block#3@682[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout::async_block#3@295[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 682,
-      "endLine": 687,
+      "file": "src/downloader/process/output.rs",
+      "line": 295,
+      "endLine": 300,
       "symbol": "async_block#3",
-      "qualifiedName": "downloader::process::wait_with_streamed_stdout::async_block#3",
+      "qualifiedName": "downloader::process::output::wait_with_streamed_stdout::async_block#3",
       "signature": "async",
       "sourceDigest": "086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619",
       "cfg": [],
@@ -6810,28 +6895,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:682-687 (086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619): callback_result = async { pending_callback .as_mut() .expect(\"guarded pending callback\") .await }, if pending_callback.is_some() => {"
+        "Source review src/downloader/process.rs:682-687 (086b7b56b1b61d82fe59f732a000e9b8b70f6f0918b92bd044d46b9691911619): callback_result = async { pending_callback .as_mut() .expect(\"guarded pending callback\") .await }, if pending_callback.is_some() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll a pending progress callback during the fixed post-exit drain interval.",
       "output": "Result<(), String> from the callback future.",
       "cancellation": "The drain deadline bounds this future after direct-child exit.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_streamed_stdout::async_block#4@716[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout::async_block#4@329[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 716,
-      "endLine": 716,
+      "file": "src/downloader/process/output.rs",
+      "line": 329,
+      "endLine": 329,
       "symbol": "async_block#4",
-      "qualifiedName": "downloader::process::wait_with_streamed_stdout::async_block#4",
+      "qualifiedName": "downloader::process::output::wait_with_streamed_stdout::async_block#4",
       "signature": "async",
       "sourceDigest": "b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8",
       "cfg": [],
@@ -6861,28 +6948,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:716-716 (b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8): result = async { stderr_task.handle_mut().await }, if stderr_output.is_none() => {"
+        "Source review src/downloader/process.rs:716-716 (b8228409329b298b6df12a86f0733339fab1ca5ab230e2f3b641f78b6ff11ce8): result = async { stderr_task.handle_mut().await }, if stderr_output.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the owned stderr reader during the fixed post-exit drain interval.",
       "output": "Nested JoinHandle result for bounded stderr.",
       "cancellation": "The drain deadline cancels/aborts unfinished reading.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::read_bounded_line[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::read_bounded_line[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 767,
-      "endLine": 806,
+      "file": "src/downloader/process/output.rs",
+      "line": 380,
+      "endLine": 419,
       "symbol": "read_bounded_line",
-      "qualifiedName": "downloader::process::read_bounded_line",
+      "qualifiedName": "downloader::process::output::read_bounded_line",
       "signature": "async fn read_bounded_line<R>(reader: &mut R, max_bytes: usize) -> std::io::Result<Option<String>> where R: AsyncBufRead + Unpin,",
       "sourceDigest": "4587f836feb33dc73d29866285779b5882fab712225a3700013b770f83edfd6f",
       "cfg": [],
@@ -6911,31 +7000,33 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:767-806 (4587f836feb33dc73d29866285779b5882fab712225a3700013b770f83edfd6f): async fn read_bounded_line<R>(reader: &mut R, max_bytes: usize) -> std::io::Result<Option<String>> where R: AsyncBufRead + Unpin, { let mut bytes = Vec::new(); loop { let available = reader.fill_buf().await?; if available.is_empty() { return if bytes.is_empty("
+        "Source review src/downloader/process.rs:767-806 (4587f836feb33dc73d29866285779b5882fab712225a3700013b770f83edfd6f): async fn read_bounded_line<R>(reader: &mut R, max_bytes: usize) -> std::io::Result<Option<String>> where R: AsyncBufRead + Unpin, { let mut bytes = Vec::new(); loop { let available = reader.fill_buf().await?; if available.is_empty() { return if bytes.is_empty(",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Read one newline-delimited record while enforcing a byte limit across buffer fills.",
       "output": "Option<String> for line/EOF or std::io::Error.",
       "cancellation": "Cancellation occurs when the owning reader task is aborted.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::record_streamed_output_bytes[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::record_streamed_output_bytes[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 808,
-      "endLine": 821,
+      "file": "src/downloader/process/output.rs",
+      "line": 421,
+      "endLine": 434,
       "symbol": "record_streamed_output_bytes",
-      "qualifiedName": "downloader::process::record_streamed_output_bytes",
-      "signature": "pub(super) fn record_streamed_output_bytes( total: &mut usize, line_bytes: usize, limit: usize, ) -> Result<(), String>",
-      "sourceDigest": "ac34edb275ee45f35e2e88d9d2491035641bc12ca844b05e1c9a5883d8e3bc9f",
+      "qualifiedName": "downloader::process::output::record_streamed_output_bytes",
+      "signature": "pub(in crate::downloader) fn record_streamed_output_bytes( total: &mut usize, line_bytes: usize, limit: usize, ) -> Result<(), String>",
+      "sourceDigest": "2e7916dacf10b9633995d5d11efba08d8e07b451a3a2db58351ab6e5dd06a50a",
       "cfg": [],
       "callers": [
         "read_stream_bounded for stdout and stderr."
@@ -6962,29 +7053,31 @@
         "process child-module supervisor/output-limit tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:808-821: pub(super) fn record_streamed_output_bytes( total: &mut usize, line_bytes: usize, limit: usize, ) -> Result<(), String> { *total = total.saturating_add(line_bytes.saturating_add(1)); if *total > limit { Err(format!( \"process_output_limit: inspection output exc"
+        "Source review src/downloader/process.rs:808-821: pub(super) fn record_streamed_output_bytes( total: &mut usize, line_bytes: usize, limit: usize, ) -> Result<(), String> { *total = total.saturating_add(line_bytes.saturating_add(1)); if *total > limit { Err(format!( \"process_output_limit: inspection output exc",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Atomically reserve bytes from the shared cumulative inspection output budget.",
       "output": "Unit or process_output_limit String error.",
       "cancellation": "Not applicable; bounded atomic accounting step.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Reviewed against the current source body and its direct ownership boundary.",
+      "notes": "Reviewed against the current source body and its direct ownership boundary. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::read_stream_bounded[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::read_stream_bounded[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 823,
-      "endLine": 861,
+      "file": "src/downloader/process/output.rs",
+      "line": 436,
+      "endLine": 474,
       "symbol": "read_stream_bounded",
-      "qualifiedName": "downloader::process::read_stream_bounded",
+      "qualifiedName": "downloader::process::output::read_stream_bounded",
       "signature": "async fn read_stream_bounded<R>(mut reader: R, max_bytes: usize) -> Result<Vec<u8>, String> where R: AsyncRead + Unpin,",
       "sourceDigest": "957e824296d1c4f63b1df132a10ab8de9d154522e9bafbbf20b5bde18b526f1e",
       "cfg": [],
@@ -7013,31 +7106,33 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:823-861 (957e824296d1c4f63b1df132a10ab8de9d154522e9bafbbf20b5bde18b526f1e): async fn read_stream_bounded<R>(mut reader: R, max_bytes: usize) -> Result<Vec<u8>, String> where R: AsyncRead + Unpin, { let mut retained = Vec::new(); let mut buffer = [0_u8; 8 * 1024]; let mut total = 0usize; let mut current_line = 0usize; loop { let read ="
+        "Source review src/downloader/process.rs:823-861 (957e824296d1c4f63b1df132a10ab8de9d154522e9bafbbf20b5bde18b526f1e): async fn read_stream_bounded<R>(mut reader: R, max_bytes: usize) -> Result<Vec<u8>, String> where R: AsyncRead + Unpin, { let mut retained = Vec::new(); let mut buffer = [0_u8; 8 * 1024]; let mut total = 0usize; let mut current_line = 0usize; loop { let read =",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Read one stream into a bounded byte vector under a shared cumulative counter.",
       "output": "Vec<u8> or String error.",
       "cancellation": "Cancellation occurs when the owning Tokio task is aborted.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 863,
-      "endLine": 879,
+      "file": "src/downloader/process/output.rs",
+      "line": 476,
+      "endLine": 492,
       "symbol": "wait_with_bounded_output",
-      "qualifiedName": "downloader::process::wait_with_bounded_output",
-      "signature": "pub(super) async fn wait_with_bounded_output( child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, ) -> Result<std::process::Output, String>",
-      "sourceDigest": "a4f2b4c483b037be4d94cbf9646c9d088d143f1fc9054c5a16d236f5703c1715",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output",
+      "signature": "pub(in crate::downloader) async fn wait_with_bounded_output( child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, ) -> Result<std::process::Output, String>",
+      "sourceDigest": "c436fbee8a1903b0c6603947e7e0dad9ebe267c5b5ac103d7bb1efe6186fda79",
       "cfg": [],
       "callers": [
         "engine ffprobe and inspection command paths; run_supervised_probe."
@@ -7064,31 +7159,33 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:863-879 (a4f2b4c483b037be4d94cbf9646c9d088d143f1fc9054c5a16d236f5703c1715): pub(super) async fn wait_with_bounded_output( child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, ) -> Result<std::process::Output, String> { wait_with_bounded_output_and_drain( child, job, stdout_limit"
+        "Source review src/downloader/process.rs:863-879 (a4f2b4c483b037be4d94cbf9646c9d088d143f1fc9054c5a16d236f5703c1715): pub(super) async fn wait_with_bounded_output( child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, ) -> Result<std::process::Output, String> { wait_with_bounded_output_and_drain( child, job, stdout_limit",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Collect bounded stdout/stderr under the standard five-second post-exit drain.",
       "output": "std::process::Output or String error.",
       "cancellation": "DownloadJob cancellation terminates/reaps through the delegated waiter.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output_and_drain[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain[cfg=all]",
       "kind": "free_function",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 881,
-      "endLine": 1028,
+      "file": "src/downloader/process/output.rs",
+      "line": 494,
+      "endLine": 641,
       "symbol": "wait_with_bounded_output_and_drain",
-      "qualifiedName": "downloader::process::wait_with_bounded_output_and_drain",
-      "signature": "async fn wait_with_bounded_output_and_drain( mut child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, drain_timeout: Duration, ) -> Result<std::process::Output, String>",
-      "sourceDigest": "35e7095dc9865be9408f11b4db26de1ad4d188e92b75800cf40f5a8a1cdd8b65",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output_and_drain",
+      "signature": "pub(super) async fn wait_with_bounded_output_and_drain( mut child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, drain_timeout: Duration, ) -> Result<std::process::Output, String>",
+      "sourceDigest": "cbf7a111867272040734c94e2b85b3e663581b98d574e1bee0b2e0f4516e64f0",
       "cfg": [],
       "callers": [
         "wait_with_bounded_output and Windows inherited-pipe test seam."
@@ -7115,29 +7212,31 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:881-1028 (35e7095dc9865be9408f11b4db26de1ad4d188e92b75800cf40f5a8a1cdd8b65): async fn wait_with_bounded_output_and_drain( mut child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, drain_timeout: Duration, ) -> Result<std::process::Output, String> { let stdout = match child.stdout."
+        "Source review src/downloader/process.rs:881-1028 (35e7095dc9865be9408f11b4db26de1ad4d188e92b75800cf40f5a8a1cdd8b65): async fn wait_with_bounded_output_and_drain( mut child: tokio::process::Child, job: &DownloadJob, stdout_limit: usize, stderr_limit: usize, timeout: Duration, drain_timeout: Duration, ) -> Result<std::process::Output, String> { let stdout = match child.stdout.",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Race child exit/cancellation/timeout/output readers, terminate descendants when needed, and reap every owned task/child within explicit deadlines.",
       "output": "std::process::Output or String error.",
       "cancellation": "Job cancellation is a biased select branch and process termination precedes reap; post-exit drain has a fixed deadline.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "Process ownership and cancellation boundary retained in the process leaf module.",
+      "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output_and_drain::async_block#1@926[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain::async_block#1@539[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 926,
-      "endLine": 926,
+      "file": "src/downloader/process/output.rs",
+      "line": 539,
+      "endLine": 539,
       "symbol": "async_block#1",
-      "qualifiedName": "downloader::process::wait_with_bounded_output_and_drain::async_block#1",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output_and_drain::async_block#1",
       "signature": "async",
       "sourceDigest": "63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f",
       "cfg": [],
@@ -7167,28 +7266,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:926-926 (63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f): result = async { stdout_reader.handle_mut().await }, if stdout_result.is_none() => {"
+        "Source review src/downloader/process.rs:926-926 (63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f): result = async { stdout_reader.handle_mut().await }, if stdout_result.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the bounded stdout reader before direct-child exit/termination selection.",
       "output": "Nested JoinHandle result containing stdout Vec<u8>.",
       "cancellation": "Sibling job-cancel and timeout branches remain live.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output_and_drain::async_block#2@942[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain::async_block#2@555[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 942,
-      "endLine": 942,
+      "file": "src/downloader/process/output.rs",
+      "line": 555,
+      "endLine": 555,
       "symbol": "async_block#2",
-      "qualifiedName": "downloader::process::wait_with_bounded_output_and_drain::async_block#2",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output_and_drain::async_block#2",
       "signature": "async",
       "sourceDigest": "248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf",
       "cfg": [],
@@ -7218,28 +7319,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:942-942 (248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf): result = async { stderr_reader.handle_mut().await }, if stderr_result.is_none() => {"
+        "Source review src/downloader/process.rs:942-942 (248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf): result = async { stderr_reader.handle_mut().await }, if stderr_result.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the bounded stderr reader before direct-child exit/termination selection.",
       "output": "Nested JoinHandle result containing stderr Vec<u8>.",
       "cancellation": "Sibling job-cancel and timeout branches remain live.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output_and_drain::async_block#3@972[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain::async_block#3@585[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 972,
-      "endLine": 972,
+      "file": "src/downloader/process/output.rs",
+      "line": 585,
+      "endLine": 585,
       "symbol": "async_block#3",
-      "qualifiedName": "downloader::process::wait_with_bounded_output_and_drain::async_block#3",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output_and_drain::async_block#3",
       "signature": "async",
       "sourceDigest": "63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f",
       "cfg": [],
@@ -7269,28 +7372,30 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:972-972 (63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f): result = async { stdout_reader.handle_mut().await }, if stdout_result.is_none() => {"
+        "Source review src/downloader/process.rs:972-972 (63e2eb0bcbb7894f946782aacb407222fd00b56db94da9dc5a1e361ea713fb7f): result = async { stdout_reader.handle_mut().await }, if stdout_result.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the bounded stdout reader during the configured post-exit drain interval.",
       "output": "Nested JoinHandle result containing stdout Vec<u8>.",
       "cancellation": "The drain deadline aborts unfinished inherited-pipe reading.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
-      "id": "src/downloader/process.rs::downloader::process::wait_with_bounded_output_and_drain::async_block#4@988[cfg=all]",
+      "id": "src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain::async_block#4@601[cfg=all]",
       "kind": "async_block",
       "classification": "production",
-      "file": "src/downloader/process.rs",
-      "line": 988,
-      "endLine": 988,
+      "file": "src/downloader/process/output.rs",
+      "line": 601,
+      "endLine": 601,
       "symbol": "async_block#4",
-      "qualifiedName": "downloader::process::wait_with_bounded_output_and_drain::async_block#4",
+      "qualifiedName": "downloader::process::output::wait_with_bounded_output_and_drain::async_block#4",
       "signature": "async",
       "sourceDigest": "248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf",
       "cfg": [],
@@ -7320,18 +7425,20 @@
         "process child-module blocked-callback, split-line, oversized-output, and inherited-pipe tests."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:988-988 (248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf): result = async { stderr_reader.handle_mut().await }, if stderr_result.is_none() => {"
+        "Source review src/downloader/process.rs:988-988 (248b7f8b5d77562fa255ad0061edf6437454e714c072f122e97ec4858da34bdf): result = async { stderr_reader.handle_mut().await }, if stderr_result.is_none() => {",
+        "Stage 5 static assembly proof preserved the callable body exactly while moving output buffering, reader-task ownership, concurrent drains, and bounded wait logic into the private process::output child; only narrow module visibility and imports changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
       ],
       "purpose": "Poll the bounded stderr reader during the configured post-exit drain interval.",
       "output": "Nested JoinHandle result containing stderr Vec<u8>.",
       "cancellation": "The drain deadline aborts unfinished inherited-pipe reading.",
       "findingStatus": "none",
       "disposition": "keep",
-      "destination": "src/downloader/process.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "destination": "src/downloader/process/output.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T09:12:01Z",
       "status": "reviewed",
-      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation."
+      "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary."
     },
     {
       "id": "src/downloader/process/tests.rs::downloader::process::tests::spawn_powershell_fixture[cfg=test,windows]",
