@@ -1,7 +1,7 @@
 <script lang="ts">
+  import QueueTable from '$lib/components/QueueTable.svelte';
   import '$lib/styles/app.css';
   import StatusFooter from '$lib/components/StatusFooter.svelte';
-  import QueueRow from '$lib/components/QueueRow.svelte';
   import { getVersion } from '@tauri-apps/api/app';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { onMount, tick } from 'svelte';
@@ -738,78 +738,29 @@
   </section>
 
   <!-- Queue Table -->
-  <section
-    class="queue"
-    bind:this={queueViewport}
-    onscroll={handleQueueScroll}
-    data-queue-count={queueState.items.length}
-  >
-    {#if queueState.items.length === 0}
-      <div class="empty-state">
-        <p>No videos in queue. Paste a video URL above to get started.</p>
-      </div>
-    {:else}
-      <table aria-rowcount={queueState.items.length + 1}>
-        <thead>
-          <tr>
-            <th class="col-check">
-              <input
-                bind:this={queueSelectAll}
-                type="checkbox"
-                checked={queueSelectionState === 'all'}
-                onchange={handleQueueSelectionChange}
-                aria-label="Select all queue items"
-              />
-            </th>
-            <th class="col-title">Title</th>
-            <th class="col-status">Status</th>
-            <th class="col-quality">Quality</th>
-            <th class="col-format">Format</th>
-            <th class="col-progress">Progress</th>
-            <th class="col-speed">Speed</th>
-            <th class="col-eta">ETA</th>
-            <th class="col-actions"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#if queueWindow.topSpacerHeight > 0}
-            <tr class="virtual-spacer" aria-hidden="true">
-              <td colspan="9" style={`height: ${queueWindow.topSpacerHeight}px`}></td>
-            </tr>
-          {/if}
-          {#each queueWindow.rows as row (row.item.id)}
-            <QueueRow
-              item={row.item}
-              index={row.index}
-              selected={queueState.items[row.index].selected}
-              editing={queueState.editing.itemId === row.item.id}
-              draft={queueState.editing.draft}
-              editingError={queueState.editing.error}
-              bind:titleEditorInput
-              {canStartDownloads}
-              setSelected={(itemId, selected) => queuePresentation.setSelected(itemId, selected)}
-              setDraft={(draft) => (queueState.editing.draft = draft)}
-              {beginFilenameEdit}
-              {commitFilenameEdit}
-              {handleFilenameEditorKeydown}
-              {toggleDiagnostics}
-              changeQuality={handleItemQualityChange}
-              changeFormat={handleItemFormatChange}
-              {downloadItem}
-              {cancelItem}
-              {retryItem}
-              {copyDiagnostics}
-            />
-          {/each}
-          {#if queueWindow.bottomSpacerHeight > 0}
-            <tr class="virtual-spacer" aria-hidden="true">
-              <td colspan="9" style={`height: ${queueWindow.bottomSpacerHeight}px`}></td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
-    {/if}
-  </section>
+  <QueueTable
+    state={queueState}
+    window={queueWindow}
+    selectionState={queueSelectionState}
+    {canStartDownloads}
+    bind:viewport={queueViewport}
+    bind:selectAll={queueSelectAll}
+    bind:titleEditorInput
+    onScroll={handleQueueScroll}
+    onSelectionChange={handleQueueSelectionChange}
+    setSelected={(itemId, selected) => queuePresentation.setSelected(itemId, selected)}
+    setDraft={(draft) => (queueState.editing.draft = draft)}
+    {beginFilenameEdit}
+    {commitFilenameEdit}
+    {handleFilenameEditorKeydown}
+    {toggleDiagnostics}
+    changeQuality={handleItemQualityChange}
+    changeFormat={handleItemFormatChange}
+    {downloadItem}
+    {cancelItem}
+    {retryItem}
+    {copyDiagnostics}
+  />
 
   <!-- Status Bar -->
   <StatusFooter counts={queueSummary.counts} />
