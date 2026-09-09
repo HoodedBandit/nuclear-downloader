@@ -6,7 +6,7 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stage 1 is in progress. Production frontend and backend sources remain unchanged. The current changes add source inventory, independent renderer workflows, repeatable visual captures, and comparison/evidence tooling.
+Stage 1 reproducibility gates passed before production changes. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Stage 2 lifecycle implementation is next. Performance and native qualification remain open as described below.
 
 The user deferred the disposable Windows 11 environment on September 8, 2026 because licensed installation media or a clean VM image is unavailable. Hyper-V enumeration also requires an administrator token unavailable in this session. No VM, account, desktop permission, or host display setting has been changed. Native installer/portable qualification and real 100%/150% Windows scaling remain incomplete.
 
@@ -46,7 +46,9 @@ All three runs verified that inputs and executable identities remained unchanged
 
 ## Remaining gates
 
-1. Finish Stage 1: corrected and expanded workflow runs, stable visual captures at both browser scales, deliberate comparator mutation tests, and 1/100/1,000-item frontend measurements. Investigate the existing frame-time failure without weakening its threshold.
+The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.json`. Its paired captures are `target/renderer-checks/visual-20260909T060041Z-885155a599d74d619e7da52667d0c328/visual-100.json` and `target/renderer-checks/visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d/visual-150.json`. All 60 scenarios had identical decoded pixels and semantic evidence across two independent repeats. The final comparator reported zero errors and verified archived source, harness, executable, receipt, and screenshot identities. Its 21 synthetic cases passed, including deliberate pixel, text, geometry, enabled-state, focus-order, provenance, and malformed-input failures. This is baseline stability evidence, not a candidate comparison. Browser scale emulation does not qualify native Windows scaling.
+
+1. Investigate the existing frame-time failure with matched repeats and candidate measurements, without weakening its threshold.
 2. Implement and test generation-aware startup and one page resource owner.
 3. Extract queue presentation and workflow ownership, preserving IPC order, payloads, progress precedence, and existing errors.
 4. Extract Svelte components individually and compare output, controls, focus, geometry, and workflows after each extraction.
