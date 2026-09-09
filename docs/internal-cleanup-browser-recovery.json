@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "browser-recovery-receipt/v1",
+  "browser": {
+    "name": "Google Chrome",
+    "version": "152.0.7977.76",
+    "sourceUrl": "https://edgedl.me.gvt1.com/dl/release2/chrome/acjhfpyjgspz3vyycvrpc3zsj4da_152.0.7977.76/152.0.7977.76_chrome_installer_uncompressed.exe"
+  },
+  "package": {
+    "path": "152.0.7977.76_chrome_installer_uncompressed.exe",
+    "size": 516629928,
+    "sha256": "23558133eccb12e77b268fe3ff3a46735077b9042b79481ac8ba489729907671",
+    "version": "152.0.7977.76",
+    "authenticodeStatus": "Valid",
+    "signerSubject": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
+    "signerThumbprint": "607A3EDAA64933E94422FC8F0C80388E0590986C"
+  },
+  "bundle": {
+    "root": "frozen-152.0.7977.76/Chrome-bin",
+    "manifest": "frozen-152.0.7977.76.manifest.json",
+    "manifestSha256": "7b745ae8a183aad3f76a4f699042dbcca2a43a4ea04229254a5a7890f86f5961",
+    "aggregateHash": "c3330d76414f22ff1484f1af42679fffeaab680f0da3858ba8d07c999c62741b",
+    "fileCount": 267,
+    "reparseEntryCount": 0
+  },
+  "baselineIdentity": {
+    "chromeExeSha256": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0",
+    "chromeExeSize": 4484760,
+    "matchesFrozenBaseline": true
+  },
+  "verifiedCoreFiles": [
+    {
+      "path": "chrome.exe",
+      "size": 4484760,
+      "sha256": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0",
+      "version": "152.0.7977.76",
+      "authenticodeStatus": "Valid",
+      "signerSubject": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
+      "signerThumbprint": "607A3EDAA64933E94422FC8F0C80388E0590986C"
+    },
+    {
+      "path": "chrome_proxy.exe",
+      "size": 2538648,
+      "sha256": "51a48abc08f022d3aa6edc1453f361367aa59d8136cdcd06777568310523fac4",
+      "version": "152.0.7977.76",
+      "authenticodeStatus": "Valid",
+      "signerSubject": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
+      "signerThumbprint": "607A3EDAA64933E94422FC8F0C80388E0590986C"
+    },
+    {
+      "path": "152.0.7977.76/chrome.dll",
+      "size": 298202776,
+      "sha256": "95b7df3559563533ddd0b56d15a3f3d9f922554c55fc8b6cf884498ae9c4c698",
+      "version": "152.0.7977.76",
+      "authenticodeStatus": "Valid",
+      "signerSubject": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
+      "signerThumbprint": "607A3EDAA64933E94422FC8F0C80388E0590986C"
+    },
+    {
+      "path": "152.0.7977.76/chrome_elf.dll",
+      "size": 2719896,
+      "sha256": "79c0323b10b47dc9a3ea1caeb03c5cabe8e7f098e964b042e40fe68a8b1f5762",
+      "version": "152.0.7977.76",
+      "authenticodeStatus": "Valid",
+      "signerSubject": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
+      "signerThumbprint": "607A3EDAA64933E94422FC8F0C80388E0590986C"
+    }
+  ]
+}

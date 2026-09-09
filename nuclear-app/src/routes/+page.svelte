@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PlaylistDialog from '$lib/components/PlaylistDialog.svelte';
   import HeaderRuntime from '$lib/components/HeaderRuntime.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
   import UrlBar from '$lib/components/UrlBar.svelte';
@@ -77,7 +78,6 @@
   let startupSubsystems = $state(createStartupSubsystems());
   let startupIssues = $state<string[]>([]);
   let queueSelectAll = $state<HTMLInputElement | null>(null);
-  let playlistSelectAll = $state<HTMLInputElement | null>(null);
   let queueViewport = $state<HTMLElement | null>(null);
   let backendStateError = $state<string | null>(null);
   let persistenceHealthError = $state<string | null>(null);
@@ -366,11 +366,6 @@
     queueState.viewport.scrollTop = (event.currentTarget as HTMLElement).scrollTop;
   }
 
-  function handlePlaylistSelectionToggle(event: Event): void {
-    const checked = (event.currentTarget as HTMLInputElement).checked;
-    inspectionWorkflow.toggleAll(checked);
-  }
-
   async function handleItemQualityChange(item: QueueItem, event: Event): Promise<void> {
     const quality = (event.currentTarget as HTMLSelectElement).value;
     await updateQueueItemSettings(item, { quality });
@@ -424,9 +419,6 @@
   $effect(() => {
     if (queueSelectAll) {
       queueSelectAll.indeterminate = queueSelectionState === 'some';
-    }
-    if (playlistSelectAll) {
-      playlistSelectAll.indeterminate = playlistSelectionState === 'some';
     }
   });
 
@@ -591,109 +583,22 @@
 
 <!-- Playlist Picker Modal -->
 {#if inspectionState.playlistModal}
-  <div class="modal-layer">
-    <button
-      type="button"
-      class="modal-backdrop"
-      aria-label="Close playlist picker"
-      onclick={closePlaylistModal}
-    ></button>
-    <div
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="playlist-modal-title"
-      tabindex="-1"
-      use:accessibleDialog={{ onClose: closePlaylistModal }}
-    >
-      <div class="modal-header">
-        <div>
-          <h2 id="playlist-modal-title">{inspectionState.playlistModal.info.title}</h2>
-          {#if inspectionState.playlistModal.info.channel}
-            <span class="modal-channel">{inspectionState.playlistModal.info.channel}</span>
-          {/if}
-          <span class="modal-count">
-            {inspectionState.playlistModal.info.truncated
-              ? `Showing first ${inspectionState.playlistModal.info.entry_count} videos`
-              : `${inspectionState.playlistModal.info.entry_count} videos`}
-          </span>
-        </div>
-        <button class="small" onclick={closePlaylistModal} data-dialog-initial-focus
-          >Close playlist picker</button
-        >
-      </div>
-      <div class="modal-controls">
-        <label class="select-all-label">
-          <input
-            bind:this={playlistSelectAll}
-            type="checkbox"
-            checked={playlistSelectionState === 'all'}
-            onchange={handlePlaylistSelectionToggle}
-          />
-          Select All
-        </label>
-        <span class="muted">
-          {inspectionState.playlistModal.entries.filter((entry) => entry.selected).length} of {inspectionState
-            .playlistModal.entries.length} selected
-        </span>
-      </div>
-      <div class="modal-list">
-        {#each getVisiblePlaylistEntries() as row (row.entry.url)}
-          {@const entry = row.entry}
-          <label class="playlist-entry" class:entry-selected={entry.selected}>
-            <input
-              type="checkbox"
-              bind:checked={inspectionState.playlistModal.entries[row.index].selected}
-            />
-            {#if entry.thumbnail}
-              <img
-                src={entry.thumbnail}
-                alt=""
-                class="entry-thumb"
-                loading="lazy"
-                decoding="async"
-                referrerpolicy="no-referrer"
-              />
-            {/if}
-            <div class="entry-info">
-              <span class="entry-title">{entry.title || entry.id}</span>
-              {#if entry.duration}
-                <span class="entry-duration">{formatDuration(entry.duration)}</span>
-              {/if}
-            </div>
-          </label>
-        {/each}
-      </div>
-      {#if getPlaylistPageCount() > 1}
-        <div class="modal-pagination">
-          <button
-            class="small"
-            onclick={() => changePlaylistPage(-1)}
-            disabled={inspectionState.playlistPage === 0}>Previous</button
-          >
-          <span class="muted"
-            >Page {inspectionState.playlistPage + 1} of {getPlaylistPageCount()}</span
-          >
-          <button
-            class="small"
-            onclick={() => changePlaylistPage(1)}
-            disabled={inspectionState.playlistPage >= getPlaylistPageCount() - 1}>Next</button
-          >
-        </div>
-      {/if}
-      <div class="modal-footer">
-        <button
-          class="primary"
-          onclick={addPlaylistSelection}
-          disabled={!inspectionState.playlistModal.entries.some((entry) => entry.selected)}
-        >
-          Add {inspectionState.playlistModal.entries.filter((entry) => entry.selected).length} Videos
-          to Queue
-        </button>
-        <button onclick={closePlaylistModal}>Cancel</button>
-      </div>
-    </div>
-  </div>
+  <PlaylistDialog
+    modal={inspectionState.playlistModal}
+    page={inspectionState.playlistPage}
+    pageCount={getPlaylistPageCount()}
+    visibleEntries={getVisiblePlaylistEntries()}
+    selectionState={playlistSelectionState}
+    {formatDuration}
+    onClose={closePlaylistModal}
+    onToggleAll={(checked) => inspectionWorkflow.toggleAll(checked)}
+    onToggleEntry={(index, checked) => {
+      if (inspectionState.playlistModal)
+        inspectionState.playlistModal.entries[index].selected = checked;
+    }}
+    onChangePage={changePlaylistPage}
+    onAddSelection={addPlaylistSelection}
+  />
 {/if}
 
 <!-- Update Modal -->
