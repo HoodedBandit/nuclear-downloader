@@ -3,36 +3,58 @@ import type { OperationSnapshot } from '$lib/bindings/OperationSnapshot';
 interface PendingOperationWait {
   resolve: (operation: OperationSnapshot) => void;
   reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
+  timeout?: ReturnType<typeof setTimeout>;
+  refreshTimeout?: ReturnType<typeof setTimeout>;
 }
 
 export class OperationWaitRegistry {
   private readonly pending = new Map<string, PendingOperationWait>();
+  private disposedError: Error | undefined;
 
   wait(
     operationId: string,
     operations: readonly OperationSnapshot[],
     timeoutMs: number
   ): Promise<OperationSnapshot> {
-    const existing = operations.find((operation) => operation.id === operationId);
-    if (existing && isTerminalOperation(existing)) return Promise.resolve(existing);
+    return this.register(operationId, operations, timeoutMs).promise;
+  }
 
-    return new Promise((resolve, reject) => {
+  private register(
+    operationId: string,
+    operations: readonly OperationSnapshot[],
+    timeoutMs: number
+  ): { promise: Promise<OperationSnapshot>; waiter?: PendingOperationWait } {
+    if (this.disposedError) return { promise: Promise.reject(this.disposedError) };
+    const existing = operations.find((operation) => operation.id === operationId);
+    if (existing && isTerminalOperation(existing)) {
+      const previous = this.pending.get(operationId);
+      if (previous && this.release(operationId, previous)) previous.resolve(existing);
+      return { promise: Promise.resolve(existing) };
+    }
+
+    let registered: PendingOperationWait | undefined;
+    const promise = new Promise<OperationSnapshot>((resolve, reject) => {
       const previous = this.pending.get(operationId);
       if (previous) {
-        clearTimeout(previous.timeout);
-        previous.reject(new Error(`Operation ${operationId} was already being awaited.`));
+        this.reject(
+          operationId,
+          previous,
+          new Error(`Operation ${operationId} was already being awaited.`)
+        );
       }
 
-      const timeout = setTimeout(() => {
-        this.pending.delete(operationId);
-        reject(
+      const waiter: PendingOperationWait = { resolve, reject };
+      this.pending.set(operationId, waiter);
+      registered = waiter;
+      waiter.timeout = setTimeout(() => {
+        this.reject(
+          operationId,
+          waiter,
           new Error(`Timed out waiting for operation ${operationId} to reach a terminal state.`)
         );
       }, timeoutMs);
-      this.pending.set(operationId, { resolve, reject, timeout });
-      this.settle(operations);
     });
+    return { promise, waiter: registered };
   }
 
   /**
@@ -48,28 +70,36 @@ export class OperationWaitRegistry {
     refresh: () => Promise<void>,
     refreshIntervalMs = 1_000
   ): Promise<OperationSnapshot> {
-    const wait = this.wait(operationId, readOperations(), timeoutMs);
-    let waiting = true;
-
-    const reconcile = async (): Promise<void> => {
-      while (waiting) {
-        await delay(refreshIntervalMs);
-        if (!waiting) return;
-
-        await refresh();
-        this.settle(readOperations());
-      }
-    };
-
-    void reconcile().catch((error: unknown) => {
-      this.reject(operationId, toError(error));
-    });
-
-    try {
-      return await wait;
-    } finally {
-      waiting = false;
+    if (this.disposedError) throw this.disposedError;
+    const { promise, waiter } = this.register(operationId, readOperations(), timeoutMs);
+    if (waiter) {
+      this.scheduleRefresh(operationId, waiter, readOperations, refresh, refreshIntervalMs);
     }
+    return promise;
+  }
+
+  private scheduleRefresh(
+    operationId: string,
+    waiter: PendingOperationWait,
+    readOperations: () => readonly OperationSnapshot[],
+    refresh: () => Promise<void>,
+    intervalMs: number
+  ): void {
+    waiter.refreshTimeout = setTimeout(() => {
+      waiter.refreshTimeout = undefined;
+      const reconcile = async (): Promise<void> => {
+        if (this.pending.get(operationId) !== waiter) return;
+        await refresh();
+        // An in-flight refresh belongs only to the waiter that started it.
+        // Replacement or disposal cannot transfer its result to a new wait.
+        if (this.pending.get(operationId) !== waiter) return;
+        this.settle(readOperations());
+        if (this.pending.get(operationId) === waiter) {
+          this.scheduleRefresh(operationId, waiter, readOperations, refresh, intervalMs);
+        }
+      };
+      void reconcile().catch((error: unknown) => this.reject(operationId, waiter, toError(error)));
+    }, intervalMs);
   }
 
   settle(operations: readonly OperationSnapshot[]): void {
@@ -77,36 +107,38 @@ export class OperationWaitRegistry {
       const operation = operations.find((candidate) => candidate.id === operationId);
       if (!operation || !isTerminalOperation(operation)) continue;
 
-      this.pending.delete(operationId);
-      clearTimeout(waiter.timeout);
-      waiter.resolve(operation);
+      if (this.release(operationId, waiter)) waiter.resolve(operation);
     }
   }
 
   rejectAll(error: Error): void {
-    for (const waiter of this.pending.values()) {
-      clearTimeout(waiter.timeout);
-      waiter.reject(error);
+    for (const [operationId, waiter] of this.pending) {
+      this.reject(operationId, waiter, error);
     }
-    this.pending.clear();
   }
 
-  private reject(operationId: string, error: Error): void {
-    const waiter = this.pending.get(operationId);
-    if (!waiter) return;
+  /** Closes renderer-owned waits without cancelling their backend operations. */
+  dispose(error: Error): void {
+    if (this.disposedError) return;
+    this.disposedError = error;
+    this.rejectAll(error);
+  }
 
+  private release(operationId: string, waiter: PendingOperationWait): boolean {
+    if (this.pending.get(operationId) !== waiter) return false;
     this.pending.delete(operationId);
     clearTimeout(waiter.timeout);
-    waiter.reject(error);
+    clearTimeout(waiter.refreshTimeout);
+    return true;
+  }
+
+  private reject(operationId: string, waiter: PendingOperationWait, error: Error): void {
+    if (this.release(operationId, waiter)) waiter.reject(error);
   }
 
   get size(): number {
     return this.pending.size;
   }
-}
-
-function delay(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function toError(error: unknown): Error {
