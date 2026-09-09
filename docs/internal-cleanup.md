@@ -6,7 +6,7 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stages 1 through 4 passed their reproducibility, lifecycle, workflow, and component extraction gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Each of the ten component/style extractions passed its own gate; the final candidate passed 167 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. The opt-in soak remained skipped. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, and `frontend-components-review.md` record the changes and evidence. Backend extraction, integrated performance, soak, and native qualification remain open.
+Stages 1 through 5 passed their source and regression gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Each of the ten component/style extractions passed its own gate. The integrated candidate passed 304 Rust tests, strict Clippy, 167 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. The opt-in soaks remained skipped in those short suites. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, `frontend-components-review.md`, and `backend-internal-cleanup-review.md` record the changes and evidence. Matched performance, fresh soaks, and native qualification remain open.
 
 An installed Chrome update invalidated one playlist visual run. The original browser executable was recovered from Google's signed static package and matched the original baseline SHA-256 exactly. A fresh full playlist gate and the final update-dialog gate passed against the unchanged baseline. `internal-cleanup-browser-recovery.md` records the recovery and retained invalid receipt; no replacement baseline was approved.
 
@@ -56,7 +56,7 @@ The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.js
 2. Completed: generation-aware startup, one page resource owner, waiter cleanup, and their focused/integrated regression gates.
 3. Completed: queue presentation/workflow extraction and the separately regression-tested metadata/display-timestamp lifetime corrections.
 4. Completed: ten component/style extractions with individual output, controls, focus, geometry, and workflow comparisons.
-5. Mechanically separate the specified StateStore, process, and publication modules, retaining ownership and lock boundaries; update source-matched reviews.
+5. Completed: mechanical StateStore, process, and publication extractions, retaining ownership and lock boundaries; all 1,215 backend review units match current sources.
 6. Run integrated checks and fresh candidate-bound performance/soak validation. Complete native qualification when its prerequisites are available.
 
-No structural implementation, identical-UX qualification, or release qualification is claimed complete by this record.
+Structural implementation and its source/regression gates are complete. Integrated performance and long-run validation remain open. Native identical-UX and release qualification are not complete.
