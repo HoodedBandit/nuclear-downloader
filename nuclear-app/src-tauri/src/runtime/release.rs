@@ -1,4 +1,7 @@
-use super::manifest::{validate_canonical_sha256, validate_runtime_version};
+use super::manifest::{
+    validate_canonical_sha256, validate_runtime_version, RUNTIME_DESCRIPTOR_LIMIT,
+    RUNTIME_SIGNATURE_LIMIT,
+};
 use futures_util::StreamExt;
 use reqwest::header::ACCEPT;
 use reqwest::Client;
@@ -11,8 +14,6 @@ const GITHUB_RELEASES_LATEST_URL: &str =
 const NETWORK_CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const NETWORK_READ_TIMEOUT: Duration = Duration::from_secs(30);
 const METADATA_REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
-const RUNTIME_DESCRIPTOR_LIMIT: u64 = 64 * 1024;
-const RUNTIME_SIGNATURE_LIMIT: u64 = 8 * 1024;
 const RELEASE_METADATA_LIMIT: u64 = 1024 * 1024;
 pub(super) const RUNTIME_ARCHIVE_LIMIT: u64 = 1024 * 1024 * 1024;
 

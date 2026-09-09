@@ -1,4 +1,6 @@
-use std::fs::{File, OpenOptions};
+use std::fs::File;
+#[cfg(windows)]
+use std::fs::OpenOptions;
 use std::path::Path;
 
 pub(super) fn ensure_regular_path(path: &Path, directory: bool, label: &str) -> Result<(), String> {
