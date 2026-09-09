@@ -14,7 +14,7 @@ fixes; mechanical moves do not also change behavior.
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
 | 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
 | 5. Runtime/updater/lifecycle internals | Passed | 290 Rust tests, strict Clippy, formatting, unchanged bindings, architecture checks and independent runtime/updater extraction review |
-| 6. Integrated qualification | Paused for user reboot | Final method-ledger reconciliation, remaining local gates, final performance comparison and new two-hour soak remain; see backend-resume-checkpoint.md |
+| 6. Integrated qualification | In progress after reboot | Final method-ledger reconciliation, matched performance comparisons and new two-hour soak remain; external native acceptance remains blocked |
 
 Every production method and ownership-bearing asynchronous closure is recorded in
 `backend-method-review.json`. Reviewer sidecars record actual inspection outcomes;
@@ -262,3 +262,47 @@ The user requested a checkpoint and stop before reboot. Source and draft sidecar
 are saved, but those sidecars are not yet reconciled or finally accepted. No new
 two-hour soak has started and final qualification remains incomplete. Resume only
 when requested, following `backend-resume-checkpoint.md`.
+
+Work resumed after the user rebooted and explicitly requested continuation. The
+two recorded extraction cleanup items were addressed in `b3d4602`: release intake
+and persisted runtime authentication now use the same descriptor/signature limits,
+and the transaction filesystem helper imports OpenOptions only on Windows. The
+fresh integrated suite passed 290 tests with three explicit ignores in 34.30
+seconds. Strict Clippy passed in 9.66 seconds; formatting, unchanged bindings,
+architecture and whitespace gates passed. Packaging parser and signed fixture
+tests also passed with an isolated temporary directory.
+
+The reboot updated Windows from build 26200.9278 to 26200.9445. The comparator
+correctly rejected the first new benchmark against the earlier host. That run is
+retained as unpaired evidence at
+`target/performance/after-20260909T002958Z-c169a1a785c048f5822175613a2fef67/`.
+Final comparisons therefore use newly compiled, frozen pre-refactor (`34d0769`)
+and current (`b3d4602`) test executables on the same updated host. Their identical
+state benchmark source, locked sidecars, exact executable hashes, compilation
+records and alternating run order are retained under
+`target/performance-paired/post-reboot-34d0769-b3d4602/`.
+
+All four matching-host pairs passed all 45 hard gates. Both versions retained five
+runtime hashes and 408 successful leases. Timing review counts were 6, 3, 3 and 3;
+no single row exceeded both its relative and absolute thresholds in all three
+repeat pairs (2, 3 and 4). This supports closing the required repeat review without
+claiming an overall speedup or constant disk latency. At 1,000 items, the current
+snapshot p99 ranged from 1.603 to 1.936 ms, and snapshots during deliberately
+blocked journal writes took 0.994 to 1.239 ms while observing precommit state.
+Current durable-command p50 ranged from 43.539 to 44.417 ms. Raw records for both
+versions, all review-threshold crossings, executable hashes and build provenance
+are tracked in `backend-maintainability-performance.json`.
+
+The paired wrapper stopped after the first successful comparison because its
+PowerShell exit-code variable had not been initialized. That wrapper was corrected
+and resumed at pair 2; pair 1 data was retained. No test executable failed or was
+retried during these matching-host runs.
+
+The new 120-minute isolated soak started on 2026-09-09 at approximately 00:46 UTC
+from source `b3d4602`, with all 154 build/source manifest entries identical before
+and after compilation. Exact test discovery passed before workload execution.
+Its frozen executable SHA-256 is
+`28f35f1f4b02e54424fd51c3e239935a02cae8ba532a6b4bfd223fe4da63f459`.
+Evidence is retained under
+`target/soak/after-20260909T004626Z-347020e391234944b2a2a12009d93407/`.
+This run remains in progress; partial samples are not a passing two-hour result.

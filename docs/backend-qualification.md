@@ -1,12 +1,16 @@
 # Backend finding-to-test checklist
 
 This checklist links the overhaul's failure modes to executable evidence. The phase
-results and measurements are recorded in `backend-overhaul.md`. A passing unit or
+results and measurements are recorded in `backend-overhaul.md`. The subsequent
+maintainability refactor is tracked in `backend-maintainability.md`; its final
+qualification is still in progress. A passing unit or
 fixture test is not a passing packaged-application acceptance case.
 
 ## Regression coverage
 
-These tests passed in the final integrated gate (270 passed, zero failures). Names are unique
+These tests passed in the original overhaul gate (270 passed, zero failures at
+`34d0769`) and remain in the refactor suite (290 passed, zero failures after
+`b3d4602`). Names are unique
 filters accepted by `scripts/test-backend.ps1 -Filter <name>`.
 
 | Failure mode or required invariant | Representative executed regression |
@@ -51,17 +55,20 @@ not simulate physical power loss, a real NSIS handoff, or a maintainer-signed up
 
 ## Performance evidence
 
-The recorded baseline and after run use the same host, development profile, queue
+The original overhaul's recorded baseline and after run use the same host, development profile, queue
 sizes, and sample counts. The comparison checks all 39 hard requirements, including
 snapshots during blocked real journal I/O, contiguous event sequences, outbox
 bounds, and 408 successful runtime lease resolutions without repeated tool hashes.
 Timing changes and memory tradeoffs are explicitly reviewed in `backend-overhaul.md`.
+The maintainability comparison has 45 hard gates and uses current-mode workloads
+on both revisions. Its final matching-host measurements are tracked separately in
+`backend-maintainability.md`; historical comparisons do not qualify the refactor.
 
 ## Integrated qualification status
 
 | Gate | Required evidence | Current status |
 | --- | --- | --- |
-| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | Passed: 7,202.276 seconds, 7,190 operations, 1,440 quiescent samples; all 95 source manifest entries unchanged, journal reopened, fixture directory empty. Evidence: `target/soak/after-20260908T093535Z-afb163eef5e8413c8183957ee05d4693/final-verification.json` |
+| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | Original overhaul passed: 7,202.276 seconds, 7,190 operations, 1,440 quiescent samples; all 95 source manifest entries unchanged, journal reopened, fixture directory empty. Evidence: `target/soak/after-20260908T093535Z-afb163eef5e8413c8183957ee05d4693/final-verification.json`. A new refactor soak is still required. |
 | Native workflows | Successful video and audio, playlist discovery, explicit retry, collision-safe publication, cancellation, forced interruption/restart, and update/repair cases | Acceptance source expanded; pinned yt-dlp validated the two-entry loopback playlist; native app execution remains blocked on the disposable environment |
 | Exact installer and portable artifacts on a clean Windows 11 x64 desktop | Candidate inventory and asset hashes, client OS build, WebView2 and tool versions, executed cases | Blocked: no disposable clean desktop environment supplied |
 | Advertised YouTube and X extractor smoke tests | Maintainer-controlled fixture configuration and candidate-bound results | Blocked: controlled fixture URLs not supplied |
