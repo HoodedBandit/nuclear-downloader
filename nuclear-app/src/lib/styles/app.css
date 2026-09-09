@@ -1,0 +1,1008 @@
+/* -- Catppuccin Mocha Palette -- */
+:root {
+  --crust: #11111b;
+  --mantle: #181825;
+  --base: #1e1e2e;
+  --surface0: #313244;
+  --surface1: #45475a;
+  --surface2: #585b70;
+  --overlay0: #6c7086;
+  --text: #cdd6f4;
+  --subtext0: #a6adc8;
+  --subtext1: #bac2de;
+  --blue: #89b4fa;
+  --green: #a6e3a1;
+  --red: #f38ba8;
+  --yellow: #f9e2af;
+  --mauve: #cba6f7;
+  --teal: #94e2d5;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--base);
+  color: var(--text);
+  font-family:
+    'Segoe UI',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+  height: 100vh;
+}
+
+:root main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0;
+}
+
+/* Header */
+:root header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--mantle);
+  border-bottom: 1px solid var(--surface0);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+:root header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+:root .header-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+:root .status-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+:root .badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+:root .badge.neutral {
+  background: color-mix(in srgb, var(--surface1) 55%, transparent);
+  color: var(--subtext1);
+}
+:root .badge.ok {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+}
+:root .badge.warn {
+  background: color-mix(in srgb, var(--yellow) 20%, transparent);
+  color: var(--yellow);
+}
+:root .badge.err {
+  background: color-mix(in srgb, var(--red) 20%, transparent);
+  color: var(--red);
+}
+
+:root .badge-button {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--blue) 20%, transparent);
+  color: var(--blue);
+}
+
+:root .badge-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--blue) 30%, transparent);
+}
+
+:root .header-action {
+  white-space: nowrap;
+}
+
+:root .startup-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--surface0);
+  background: color-mix(in srgb, var(--yellow) 10%, var(--base));
+  color: var(--yellow);
+  font-size: 12px;
+}
+
+:root .startup-status.error {
+  background: color-mix(in srgb, var(--red) 10%, var(--base));
+  color: var(--red);
+}
+
+:root .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* URL Bar */
+:root .url-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--mantle);
+  flex-wrap: wrap;
+}
+
+:root .url-bar input {
+  flex: 1;
+  min-width: 200px;
+}
+
+:root .error-text {
+  color: var(--red);
+  font-size: 12px;
+}
+
+/* Inputs */
+:root input[type='text'],
+:root select {
+  background: var(--surface0);
+  border: 1px solid var(--surface1);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+:root input[type='text']:focus {
+  border-color: var(--blue);
+}
+
+:root button:focus-visible,
+:root input:focus-visible,
+:root select:focus-visible,
+:root [tabindex]:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+:root input.input-error {
+  border-color: var(--red);
+}
+
+:root select {
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+/* Buttons */
+:root button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--surface0);
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+:root button:hover:not(:disabled) {
+  background: var(--surface1);
+}
+
+:root button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+:root button.primary {
+  background: var(--blue);
+  color: var(--crust);
+}
+:root button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--blue) 85%, white);
+}
+
+:root button.danger {
+  background: var(--red);
+  color: var(--crust);
+}
+:root button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 85%, white);
+}
+
+:root button.small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* Settings Row */
+:root .settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--base);
+  border-bottom: 1px solid var(--surface0);
+  flex-wrap: wrap;
+}
+
+:root .setting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:root .setting label {
+  font-size: 12px;
+  color: var(--subtext0);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+:root .output-dir {
+  flex: 1;
+  min-width: 200px;
+}
+
+:root .output-dir input {
+  flex: 1;
+  min-width: 120px;
+}
+
+:root .cookie-setting label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* Actions */
+:root .actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px;
+  flex-wrap: wrap;
+}
+
+/* Queue */
+:root .queue {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+:root .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--overlay0);
+  font-size: 15px;
+}
+
+:root table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+:root thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--mantle);
+}
+
+:root th {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--subtext0);
+  border-bottom: 1px solid var(--surface0);
+}
+
+:root td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--surface0);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:root .queue-item {
+  height: 53px;
+}
+
+:root .virtual-spacer,
+:root .virtual-spacer:hover {
+  background: transparent;
+}
+
+:root .virtual-spacer td {
+  padding: 0;
+  border: 0;
+}
+
+:root tr:hover {
+  background: color-mix(in srgb, var(--surface0) 40%, transparent);
+}
+
+:root tr.downloading {
+  background: color-mix(in srgb, var(--blue) 5%, transparent);
+}
+
+:root .col-check {
+  width: 36px;
+  text-align: center;
+}
+:root .col-title {
+  width: auto;
+}
+:root .col-status {
+  width: 180px;
+}
+:root .col-quality {
+  width: 80px;
+}
+:root .col-format {
+  width: 80px;
+}
+:root .col-progress {
+  width: 130px;
+}
+:root .col-speed {
+  width: 85px;
+}
+:root .col-eta {
+  width: 65px;
+}
+:root .col-actions {
+  width: 64px;
+}
+
+/* Title cell */
+:root .title-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+:root .thumb {
+  width: 48px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+:root .title-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+:root .title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+:root .title-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+}
+
+:root .title-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--blue);
+}
+
+:root .title-button .title-text {
+  display: block;
+  cursor: text;
+}
+
+:root .title-editor {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 13px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+:root .filename-error {
+  color: var(--red);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+:root .channel {
+  font-size: 11px;
+  color: var(--subtext0);
+}
+
+:root .duration {
+  font-size: 11px;
+  color: var(--overlay0);
+}
+
+/* Status pills */
+:root .status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+:root .status-pill.fetching {
+  background: color-mix(in srgb, var(--mauve) 20%, transparent);
+  color: var(--mauve);
+}
+:root .status-pill.ready {
+  background: color-mix(in srgb, var(--blue) 20%, transparent);
+  color: var(--blue);
+}
+:root .status-pill.queued {
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+  color: var(--teal);
+}
+:root .status-pill.downloading {
+  background: color-mix(in srgb, var(--teal) 20%, transparent);
+  color: var(--teal);
+}
+:root .status-pill.postprocessing {
+  background: color-mix(in srgb, var(--yellow) 20%, transparent);
+  color: var(--yellow);
+}
+:root .status-pill.completed {
+  background: color-mix(in srgb, var(--green) 20%, transparent);
+  color: var(--green);
+}
+:root .status-pill.error {
+  background: color-mix(in srgb, var(--red) 20%, transparent);
+  color: var(--red);
+}
+:root .status-pill.cancelled {
+  background: color-mix(in srgb, var(--overlay0) 20%, transparent);
+  color: var(--overlay0);
+}
+
+:root .error-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--crust);
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 4px;
+  padding: 0;
+  cursor: help;
+}
+
+:root .error-summary {
+  display: inline-block;
+  max-width: 110px;
+  margin-left: 4px;
+  color: var(--red);
+  font-size: 11px;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root .diagnostics-row:hover {
+  background: transparent;
+}
+
+:root .diagnostics-panel {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+  border-radius: 6px;
+}
+
+:root .diagnostics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+:root .diagnostics-panel pre {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: var(--subtext1);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Progress bar */
+:root .progress-bar {
+  position: relative;
+  height: 20px;
+  background: var(--surface0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+:root .progress-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+:root .progress-fill.convert {
+  background: var(--yellow);
+}
+
+:root .progress-fill.complete {
+  background: var(--green);
+}
+
+:root .progress-fill.error {
+  background: var(--red);
+}
+
+:root .progress-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+:root .phase-progress {
+  display: grid;
+  gap: 3px;
+}
+
+:root .phase-progress-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+
+:root .phase-progress-row .progress-bar {
+  height: 12px;
+}
+
+:root .phase-progress-row .progress-text {
+  font-size: 9px;
+}
+
+:root .phase-label {
+  color: var(--subtext0);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+:root .muted {
+  color: var(--subtext0);
+  font-size: 12px;
+}
+
+/* Inline selects in table */
+:root td select {
+  width: 100%;
+  padding: 3px 4px;
+  font-size: 12px;
+}
+
+:root input[type='checkbox'] {
+  accent-color: var(--blue);
+  cursor: pointer;
+}
+
+/* Footer */
+:root footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--mantle);
+  border-top: 1px solid var(--surface0);
+  font-size: 12px;
+  color: var(--subtext0);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+:root .sep {
+  color: var(--surface2);
+}
+
+/* Scrollbar */
+:root .queue::-webkit-scrollbar {
+  width: 8px;
+}
+:root .queue::-webkit-scrollbar-track {
+  background: var(--base);
+}
+:root .queue::-webkit-scrollbar-thumb {
+  background: var(--surface1);
+  border-radius: 4px;
+}
+:root .queue::-webkit-scrollbar-thumb:hover {
+  background: var(--surface2);
+}
+
+/* Cookie controls */
+:root .cookie-mode-select {
+  min-width: 110px;
+}
+
+:root .cookie-browse {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: var(--surface0);
+  color: var(--text);
+  border: 1px solid var(--surface1);
+  border-radius: 4px;
+  cursor: pointer;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root .cookie-browse:hover {
+  background: var(--surface1);
+}
+
+:root .advanced-config {
+  min-width: 220px;
+}
+
+:root .cookie-hint {
+  font-size: 10px;
+  color: var(--overlay0);
+  font-style: italic;
+}
+
+:root .cookie-warn {
+  display: none;
+}
+
+:root .cookie-warn-clean {
+  font-size: 10px;
+  color: var(--red);
+  font-style: italic;
+}
+
+/* Playlist Modal */
+:root .modal-layer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+:root .modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+:root .modal-backdrop:hover:not(:disabled),
+:root .modal-backdrop:focus-visible {
+  background: rgba(0, 0, 0, 0.6);
+  outline: none;
+}
+
+:root .modal {
+  position: relative;
+  z-index: 1;
+  background: var(--base);
+  border: 1px solid var(--surface1);
+  border-radius: 12px;
+  width: min(700px, 90vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+:root .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--surface0);
+}
+
+:root .modal-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+:root .modal-channel {
+  font-size: 12px;
+  color: var(--subtext0);
+  margin-right: 8px;
+}
+
+:root .modal-count {
+  font-size: 12px;
+  color: var(--overlay0);
+}
+
+:root .modal-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--surface0);
+}
+
+:root .select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--subtext0);
+  font-weight: 500;
+}
+
+:root .modal-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+:root .modal-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--surface0);
+}
+
+:root .playlist-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 20px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+:root .playlist-entry:hover {
+  background: color-mix(in srgb, var(--surface0) 50%, transparent);
+}
+
+:root .playlist-entry.entry-selected {
+  background: color-mix(in srgb, var(--blue) 8%, transparent);
+}
+
+:root .entry-thumb {
+  width: 64px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: var(--surface0);
+}
+
+:root .entry-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+:root .entry-title {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root .entry-duration {
+  font-size: 11px;
+  color: var(--overlay0);
+}
+
+:root .modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 20px;
+  border-top: 1px solid var(--surface0);
+}
+
+:root .update-modal {
+  width: min(760px, 92vw);
+}
+
+:root .update-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+:root .update-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+:root .update-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+  border-radius: 8px;
+}
+
+:root .update-meta-label {
+  color: var(--subtext0);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+:root .update-meta-value {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:root .update-summary {
+  margin: 0;
+  color: var(--subtext0);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root .update-progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+  border-radius: 8px;
+}
+
+:root .update-progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--subtext0);
+  font-size: 12px;
+}
+
+:root .update-progress-bar {
+  height: 12px;
+  background: var(--surface0);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+:root .update-progress-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.2s ease;
+}
+
+:root .update-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+  font-size: 12px;
+}
+
+:root .update-notes-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:root .update-notes-block h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+:root .update-notes {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--mantle);
+  border: 1px solid var(--surface0);
+  border-radius: 8px;
+  color: var(--subtext0);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+:root .modal-list::-webkit-scrollbar {
+  width: 8px;
+}
+:root .modal-list::-webkit-scrollbar-track {
+  background: var(--base);
+}
+:root .modal-list::-webkit-scrollbar-thumb {
+  background: var(--surface1);
+  border-radius: 4px;
+}

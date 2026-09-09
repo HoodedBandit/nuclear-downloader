@@ -24,6 +24,76 @@ const { parse: parseSvelte } = requireFromFrontend("svelte/compiler");
 
 const OWNERSHIP = new Map([
   [
+    "src/lib/components/StatusFooter.svelte",
+    {
+      responsibility: "Render the existing queue counts and status announcement.",
+      workflows: ["queue", "download", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/components/RowDiagnostics.svelte",
+    {
+      responsibility: "Render one row's redacted error details and copy action.",
+      workflows: ["diagnostics", "queue"],
+    },
+  ],
+  [
+    "src/lib/components/QueueRow.svelte",
+    {
+      responsibility: "Render a queue row and forward selection, filename, and download actions.",
+      workflows: ["queue", "download", "cancellation", "diagnostics"],
+    },
+  ],
+  [
+    "src/lib/components/QueueTable.svelte",
+    {
+      responsibility: "Compose the queue viewport, table controls, and virtual rows.",
+      workflows: ["queue", "download", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/components/QueueToolbar.svelte",
+    {
+      responsibility: "Render queue and diagnostic actions with their existing admission states.",
+      workflows: ["queue", "cancellation", "diagnostics"],
+    },
+  ],
+  [
+    "src/lib/components/UrlBar.svelte",
+    {
+      responsibility: "Render URL entry, inspection cancellation, and runtime progress.",
+      workflows: ["inspection", "runtime-update"],
+    },
+  ],
+  [
+    "src/lib/components/SettingsRow.svelte",
+    {
+      responsibility: "Render existing format, output, cookie, and compatibility settings.",
+      workflows: ["settings", "queue"],
+    },
+  ],
+  [
+    "src/lib/components/HeaderRuntime.svelte",
+    {
+      responsibility: "Render version, readiness, maintenance, and update controls.",
+      workflows: ["startup", "runtime-update", "app-update"],
+    },
+  ],
+  [
+    "src/lib/components/PlaylistDialog.svelte",
+    {
+      responsibility: "Render the playlist picker and own its local select-all DOM reference.",
+      workflows: ["inspection", "queue", "dialogs", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/components/AppUpdateDialog.svelte",
+    {
+      responsibility: "Render update details and forward update and dismissal actions.",
+      workflows: ["app-update", "dialogs", "accessibility"],
+    },
+  ],
+  [
     "src/lib/frontend-types.ts",
     {
       responsibility:

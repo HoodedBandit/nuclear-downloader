@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **411 callables across 21 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **411 callables across 22 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -14,6 +14,7 @@ The compiler-backed inventory contains **411 callables across 21 production file
 | --- | ---: | --- | --- |
 | `src/routes/+page.svelte` | 124 | Compose controller state, lifecycle/event wiring, and visible UI. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
 | `src/routes/+layout.js` | 0 | Declare renderer-only static layout mode. | startup |
+| `src/lib/components/StatusFooter.svelte` | 0 | Render queue counts and the status announcement. | queue, download, accessibility |
 | `src/lib/accessible-dialog.ts` | 6 | Own dialog focus, keyboard dismissal, and cleanup. | dialogs, accessibility |
 | `src/lib/app-state-controller.ts` | 24 | Apply snapshots and deltas and sequence resynchronization. | startup, state-sync |
 | `src/lib/app-update-workflow.ts` | 11 | Own app version, update checks, installation, and modal state. | startup, app-update |
