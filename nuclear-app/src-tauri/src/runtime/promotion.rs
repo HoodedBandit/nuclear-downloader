@@ -8,6 +8,7 @@ use super::manifest::{
 use super::verified::{
     build_verified_runtime_snapshot_async, VerifiedRuntimeSnapshot, VERIFIED_RUNTIME_CACHE,
 };
+use crate::bounded_read::{read_bounded, read_bounded_async};
 use crate::lifecycle::{PublicationKind, UpdateRunError, UpdateTaskContext};
 use crate::runtime_transaction::{
     self, RuntimeMutationLock, RuntimeTransaction, RuntimeTransactionCheckpoint,
@@ -16,6 +17,8 @@ use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio_util::sync::CancellationToken;
+
+const RUNTIME_UPDATE_OWNER_MARKER_BYTES: &[u8] = b"schemaVersion=1\n";
 
 pub(super) async fn recover_runtime_update_transaction_at<F>(
     managed_root: &Path,
@@ -217,7 +220,28 @@ pub(super) fn runtime_update_work_root_is_owned(path: &Path) -> bool {
     let marker = path.join(RUNTIME_UPDATE_OWNER_MARKER);
     marker.is_file()
         && is_reparse_or_symlink(&marker).ok() == Some(false)
-        && std::fs::read(marker).ok().as_deref() == Some(b"schemaVersion=1\n")
+        && runtime_update_owner_marker_is_exact(&marker)
+}
+
+fn runtime_update_owner_marker_is_exact(path: &Path) -> bool {
+    let Ok(mut file) = std::fs::File::open(path) else {
+        return false;
+    };
+    read_bounded(&mut file, RUNTIME_UPDATE_OWNER_MARKER_BYTES.len() as u64)
+        .ok()
+        .as_deref()
+        == Some(RUNTIME_UPDATE_OWNER_MARKER_BYTES)
+}
+
+async fn runtime_update_owner_marker_is_exact_async(path: &Path) -> bool {
+    let Ok(mut file) = fs::File::open(path).await else {
+        return false;
+    };
+    read_bounded_async(&mut file, RUNTIME_UPDATE_OWNER_MARKER_BYTES.len() as u64)
+        .await
+        .ok()
+        .as_deref()
+        == Some(RUNTIME_UPDATE_OWNER_MARKER_BYTES)
 }
 
 pub(super) fn quarantine_runtime_transaction(
@@ -268,7 +292,7 @@ pub(super) async fn cleanup_abandoned_runtime_updates_at(
         let marker = path.join(RUNTIME_UPDATE_OWNER_MARKER);
         if !marker.is_file()
             || is_reparse_or_symlink(&marker)?
-            || fs::read(&marker).await.ok().as_deref() != Some(b"schemaVersion=1\n")
+            || !runtime_update_owner_marker_is_exact_async(&marker).await
         {
             continue;
         }
@@ -734,7 +758,7 @@ pub(super) async fn remove_owned_runtime_update_dir(path: &Path) -> Result<(), S
     let marker = path.join(RUNTIME_UPDATE_OWNER_MARKER);
     if !marker.is_file()
         || is_reparse_or_symlink(&marker)?
-        || fs::read(&marker).await.ok().as_deref() != Some(b"schemaVersion=1\n")
+        || !runtime_update_owner_marker_is_exact_async(&marker).await
     {
         return Err(
             "Refusing to remove runtime staging without its exact ownership marker.".into(),

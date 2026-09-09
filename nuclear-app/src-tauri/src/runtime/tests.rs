@@ -377,6 +377,70 @@ async fn abandoned_runtime_cleanup_requires_uuid_and_owner_marker() {
 }
 
 #[test]
+fn oversized_runtime_update_owner_marker_is_not_owned() {
+    let root = unique_test_root("runtime-update-marker-bounded");
+    fs::create_dir_all(&root).unwrap();
+    let marker = root.join(RUNTIME_UPDATE_OWNER_MARKER);
+    fs::write(&marker, b"schemaVersion=1\n").unwrap();
+    assert!(promotion::runtime_update_work_root_is_owned(&root));
+
+    fs::write(&marker, b"schemaVersion=1\nextra").unwrap();
+    assert!(!promotion::runtime_update_work_root_is_owned(&root));
+    assert_eq!(fs::read(&marker).unwrap(), b"schemaVersion=1\nextra");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn abandoned_runtime_cleanup_preserves_oversized_marker_and_continues() {
+    let root = unique_test_root("runtime-cleanup-oversized-marker");
+    let updates = root.join(".updates");
+    let oversized = updates.join("550e8400-e29b-41d4-a716-446655440000");
+    let owned = updates.join("550e8400-e29b-41d4-a716-446655440001");
+    fs::create_dir_all(&oversized).unwrap();
+    fs::create_dir_all(&owned).unwrap();
+    fs::write(
+        oversized.join(RUNTIME_UPDATE_OWNER_MARKER),
+        b"schemaVersion=1\nextra",
+    )
+    .unwrap();
+    fs::write(
+        owned.join(RUNTIME_UPDATE_OWNER_MARKER),
+        b"schemaVersion=1\n",
+    )
+    .unwrap();
+
+    cleanup_abandoned_runtime_updates_at(&updates, &std::collections::HashSet::new())
+        .await
+        .unwrap();
+    assert!(oversized.exists());
+    assert!(!owned.exists());
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn removal_refuses_and_preserves_oversized_runtime_update_marker() {
+    let root = unique_test_root("runtime-remove-oversized-marker");
+    let work = root.join("550e8400-e29b-41d4-a716-446655440000");
+    fs::create_dir_all(&work).unwrap();
+    fs::write(
+        work.join(RUNTIME_UPDATE_OWNER_MARKER),
+        b"schemaVersion=1\nextra",
+    )
+    .unwrap();
+
+    let error = promotion::remove_owned_runtime_update_dir(&work)
+        .await
+        .unwrap_err();
+    assert!(error.contains("exact ownership marker"));
+    assert!(work.exists());
+    assert_eq!(
+        fs::read(work.join(RUNTIME_UPDATE_OWNER_MARKER)).unwrap(),
+        b"schemaVersion=1\nextra"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn managed_runtime_integrity_is_verified_before_trust() {
     let root = unique_test_root("runtime-integrity");
     let runtime_dir = write_test_runtime_tree(&root, "2026.06.09", false, true);
@@ -424,6 +488,63 @@ fn marker_owned_runtime_requires_current_pointer() {
     write_test_runtime_tree(&root, "2026.06.09", true, false);
     let error = discover_managed_runtime_at(&root, true).unwrap_err();
     assert!(error.contains("current.json is missing"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn managed_runtime_pointer_rejects_content_beyond_its_read_limit() {
+    let root = unique_test_root("runtime-pointer-bounded");
+    write_test_runtime_tree(&root, "2026.06.09", false, true);
+    fs::write(
+        root.join(RUNTIME_CURRENT_POINTER),
+        vec![b'x'; manifest::RUNTIME_MANIFEST_LIMIT as usize + 1],
+    )
+    .unwrap();
+
+    let error = discover_managed_runtime_at(&root, true).unwrap_err();
+    assert!(error.contains("pointer exceeds the 64 KiB limit"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn runtime_manifest_rejects_content_beyond_its_read_limit() {
+    let root = unique_test_root("runtime-manifest-bounded");
+    let runtime_dir = write_test_runtime_tree(&root, "2026.06.09", false, false);
+    fs::write(
+        runtime_dir.join("runtime-manifest.json"),
+        vec![b'x'; manifest::RUNTIME_MANIFEST_LIMIT as usize + 1],
+    )
+    .unwrap();
+
+    let error = validate_manifest_at(&runtime_dir, false).unwrap_err();
+    assert!(error.contains("no larger than 64 KiB"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn regular_runtime_file_reader_rejects_content_beyond_limit() {
+    let root = unique_test_root("runtime-regular-file-bounded");
+    fs::create_dir_all(&root).unwrap();
+    let path = root.join("descriptor.json");
+    fs::write(&path, b"12345").unwrap();
+
+    let error = manifest::read_regular_bounded_file(&path, 4, "fixture descriptor").unwrap_err();
+    assert!(error.contains("no larger than 4 bytes"));
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn installed_runtime_owner_marker_rejects_oversized_content_without_mutation() {
+    let root = unique_test_root("runtime-install-marker-bounded");
+    let version = "2026.06.09";
+    let runtime_dir = write_test_runtime_tree(&root, version, true, false);
+    assert!(installed_runtime_is_owned(&runtime_dir, version).unwrap());
+    let marker = runtime_dir.join(manifest::RUNTIME_INSTALL_OWNER_MARKER);
+    let oversized = format!("schemaVersion=1\nruntimeVersion={version}\nextra");
+    fs::write(&marker, oversized.as_bytes()).unwrap();
+
+    assert!(!installed_runtime_is_owned(&runtime_dir, version).unwrap());
+    assert_eq!(fs::read(&marker).unwrap(), oversized.as_bytes());
     let _ = fs::remove_dir_all(root);
 }
 

@@ -3,6 +3,7 @@ mod artifact_contract;
 #[cfg(test)]
 mod backend_lifecycle_tests;
 mod bootstrap;
+mod bounded_read;
 #[cfg(test)]
 #[path = "../build_config.rs"]
 mod build_config;

@@ -421,6 +421,37 @@ async fn partial_cleanup_removes_only_owned_regular_files() {
 }
 
 #[tokio::test]
+async fn ownership_record_growth_is_bounded_and_unrelated_files_are_preserved() {
+    let root = unique_test_root("updater-owner-record-growth");
+    std::fs::create_dir_all(&root).unwrap();
+    let artifact = root
+        .join("Nuclear.Downloader_0.6.0_x64-setup.exe.550e8400-e29b-41d4-a716-446655440000.part");
+    let unrelated = root.join("unrelated.txt");
+    std::fs::write(&artifact, b"partial").unwrap();
+    std::fs::write(&unrelated, b"keep").unwrap();
+    let record_path = write_owner_record(&artifact, 7, &"a".repeat(64))
+        .await
+        .unwrap();
+    let stale_small_metadata = std::fs::symlink_metadata(&record_path).unwrap();
+    let mut oversized = std::fs::read(&record_path).unwrap();
+    oversized.resize(4 * 1024 + 1, b' ');
+    std::fs::write(&record_path, &oversized).unwrap();
+
+    let error = artifact::read_owner_record_bytes(&record_path, &stale_small_metadata)
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error,
+        "The updater ownership data is not a regular bounded file."
+    );
+    assert_eq!(std::fs::read(&record_path).unwrap(), oversized);
+    assert_eq!(std::fs::read(&artifact).unwrap(), b"partial");
+    assert_eq!(std::fs::read(&unrelated).unwrap(), b"keep");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[tokio::test]
 async fn old_installer_cleanup_keeps_current_and_unrelated_files() {
     let root = unique_test_root("updater-old-installers");
     std::fs::create_dir_all(&root).unwrap();

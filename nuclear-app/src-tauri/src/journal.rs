@@ -1,4 +1,5 @@
 use crate::app_error::AppError;
+use crate::bounded_read::{read_bounded, BoundedReadError};
 use crate::models::{
     OperationKind, OperationSnapshot, OperationState, PendingAppUpdateRecovery, QueueItemRecord,
     QueueItemState, APP_SCHEMA_VERSION,
@@ -6,7 +7,7 @@ use crate::models::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 #[cfg(test)]
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -386,15 +387,19 @@ impl JournalStore {
     }
 
     fn read(&self) -> Result<PersistentJournal, AppError> {
-        if fs::metadata(&self.path)
+        let mut input = OpenOptions::new()
+            .read(true)
+            .open(&self.path)
+            .map_err(|_| AppError::internal("Could not read the application journal."))?;
+        if input
+            .metadata()
             .map_err(|_| AppError::internal("Could not inspect the application journal."))?
             .len()
             > MAX_ENCRYPTED_JOURNAL_BYTES
         {
             return Err(journal_too_large());
         }
-        let protected = fs::read(&self.path)
-            .map_err(|_| AppError::internal("Could not read the application journal."))?;
+        let protected = read_encrypted_journal(&mut input)?;
         let json = unprotect_for_current_user(&protected)?;
         if json.len() > MAX_DECRYPTED_JOURNAL_BYTES {
             return Err(journal_too_large());
@@ -413,6 +418,19 @@ impl JournalStore {
                 .with_detail(error.kind().to_string())
         })?;
         Ok(quarantine)
+    }
+}
+
+fn read_encrypted_journal<R: Read>(reader: &mut R) -> Result<Vec<u8>, AppError> {
+    match read_bounded(reader, MAX_ENCRYPTED_JOURNAL_BYTES) {
+        Ok(bytes) => Ok(bytes),
+        Err(BoundedReadError::LimitExceeded) => Err(journal_too_large()),
+        Err(BoundedReadError::Io(_)) => Err(AppError::internal(
+            "Could not read the application journal.",
+        )),
+        Err(BoundedReadError::InvalidLimit) => Err(AppError::internal(
+            "The application journal read limit was invalid.",
+        )),
     }
 }
 

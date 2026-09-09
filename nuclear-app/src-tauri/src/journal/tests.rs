@@ -1,15 +1,29 @@
 use super::{
-    protect_for_current_user, JournalStore, LatestReferencePolicy, PersistentJournal,
-    PreparedJournal, MAX_DECRYPTED_JOURNAL_BYTES, MAX_ENCRYPTED_JOURNAL_BYTES,
+    protect_for_current_user, read_encrypted_journal, JournalStore, LatestReferencePolicy,
+    PersistentJournal, PreparedJournal, MAX_DECRYPTED_JOURNAL_BYTES, MAX_ENCRYPTED_JOURNAL_BYTES,
     MAX_TERMINAL_ATTEMPTS, TERMINAL_RETENTION_MS,
 };
 use crate::models::{
     OperationKind, OperationSnapshot, OperationState, PendingAppUpdateRecovery, QueueItemRecord,
     QueueItemState, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
 };
+use std::io::Read;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Condvar, Mutex};
 use tokio::sync::Notify;
+
+#[test]
+fn encrypted_journal_growth_after_metadata_is_rejected_with_the_size_contract() {
+    let mut grown_reader = std::io::repeat(0).take(MAX_ENCRYPTED_JOURNAL_BYTES + 1);
+
+    let error = read_encrypted_journal(&mut grown_reader).unwrap_err();
+
+    assert_eq!(error.code, "journal_too_large");
+    assert_eq!(
+        error.summary,
+        "The saved application state is too large to load safely. The existing journal was preserved."
+    );
+}
 
 #[derive(Debug)]
 pub(crate) struct TestJournalSavePause {

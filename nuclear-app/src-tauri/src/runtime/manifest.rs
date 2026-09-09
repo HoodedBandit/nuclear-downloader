@@ -5,6 +5,7 @@ use super::{
     record_scoped_hash_bytes, record_scoped_hash_invocation, TEST_MANIFEST_HASH_BYTES,
     TEST_MANIFEST_HASH_INVOCATIONS, TEST_TOOL_HASH_BYTES, TEST_TOOL_HASH_INVOCATIONS,
 };
+use crate::bounded_read::{read_bounded, BoundedReadError};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -129,8 +130,23 @@ pub(super) fn discover_managed_runtime_at_with_verifier(
         if metadata.len() > RUNTIME_MANIFEST_LIMIT {
             return Err("Managed runtime pointer exceeds the 64 KiB limit.".into());
         }
-        let pointer_bytes = std::fs::read(&pointer_path)
+        let mut pointer_file = File::open(&pointer_path)
             .map_err(|error| format!("Failed to read managed runtime pointer: {error}"))?;
+        let opened_metadata = pointer_file
+            .metadata()
+            .map_err(|error| format!("Failed to inspect managed runtime pointer: {error}"))?;
+        if !opened_metadata.is_file() || metadata_is_reparse(&opened_metadata) {
+            return Err("Managed runtime pointer must be a regular non-reparse file.".into());
+        }
+        let pointer_bytes = match read_bounded(&mut pointer_file, RUNTIME_MANIFEST_LIMIT) {
+            Ok(bytes) => bytes,
+            Err(BoundedReadError::LimitExceeded | BoundedReadError::InvalidLimit) => {
+                return Err("Managed runtime pointer exceeds the 64 KiB limit.".into())
+            }
+            Err(BoundedReadError::Io(error)) => {
+                return Err(format!("Failed to read managed runtime pointer: {error}"))
+            }
+        };
         let pointer: RuntimeCurrentPointer = serde_json::from_slice(&pointer_bytes)
             .map_err(|error| format!("Failed to parse managed runtime pointer: {error}"))?;
         if pointer.schema_version != 1
@@ -235,9 +251,28 @@ pub(super) fn validate_manifest_at(
             "Runtime manifest must be a regular non-reparse file no larger than 64 KiB.".into(),
         );
     }
-    let manifest_text = std::fs::read_to_string(&manifest_path)
+    let mut manifest_file = File::open(&manifest_path)
         .map_err(|error| format!("Failed to read runtime manifest: {error}"))?;
-    let manifest = serde_json::from_str::<RuntimeManifest>(&manifest_text)
+    let opened_metadata = manifest_file
+        .metadata()
+        .map_err(|error| format!("Failed to inspect runtime manifest: {error}"))?;
+    if !opened_metadata.is_file() || metadata_is_reparse(&opened_metadata) {
+        return Err(
+            "Runtime manifest must be a regular non-reparse file no larger than 64 KiB.".into(),
+        );
+    }
+    let manifest_bytes = match read_bounded(&mut manifest_file, RUNTIME_MANIFEST_LIMIT) {
+        Ok(bytes) => bytes,
+        Err(BoundedReadError::LimitExceeded | BoundedReadError::InvalidLimit) => {
+            return Err(
+                "Runtime manifest must be a regular non-reparse file no larger than 64 KiB.".into(),
+            )
+        }
+        Err(BoundedReadError::Io(error)) => {
+            return Err(format!("Failed to read runtime manifest: {error}"))
+        }
+    };
+    let manifest = serde_json::from_slice::<RuntimeManifest>(&manifest_bytes)
         .map_err(|error| format!("Failed to parse runtime manifest: {error}"))?;
 
     if manifest.schema_version != 1 {
@@ -382,7 +417,35 @@ pub(super) fn read_regular_bounded_file(
             "{label} must be a regular non-reparse file no larger than {limit} bytes."
         ));
     }
-    std::fs::read(path).map_err(|error| format!("Failed to read {label}: {error}"))
+    let mut file = File::open(path).map_err(|error| format!("Failed to read {label}: {error}"))?;
+    let opened_metadata = file
+        .metadata()
+        .map_err(|error| format!("Failed to inspect {label}: {error}"))?;
+    if !opened_metadata.is_file() || metadata_is_reparse(&opened_metadata) {
+        return Err(format!(
+            "{label} must be a regular non-reparse file no larger than {limit} bytes."
+        ));
+    }
+    match read_bounded(&mut file, limit) {
+        Ok(bytes) => Ok(bytes),
+        Err(BoundedReadError::LimitExceeded | BoundedReadError::InvalidLimit) => Err(format!(
+            "{label} must be a regular non-reparse file no larger than {limit} bytes."
+        )),
+        Err(BoundedReadError::Io(error)) => Err(format!("Failed to read {label}: {error}")),
+    }
+}
+
+fn metadata_is_reparse(metadata: &std::fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
+    }
+    #[cfg(not(windows))]
+    {
+        metadata.file_type().is_symlink()
+    }
 }
 
 pub(super) fn validate_relative_manifest_path(path: &str) -> Result<(), String> {
@@ -604,7 +667,17 @@ pub(super) fn installed_runtime_is_owned(dir: &Path, version: &str) -> Result<bo
         return Ok(false);
     }
     let expected = format!("schemaVersion=1\nruntimeVersion={version}\n");
-    Ok(std::fs::read(&marker)
-        .map(|contents| contents == expected.as_bytes())
-        .unwrap_or(false))
+    let Ok(mut marker_file) = File::open(&marker) else {
+        return Ok(false);
+    };
+    let Ok(opened_metadata) = marker_file.metadata() else {
+        return Ok(false);
+    };
+    if !opened_metadata.is_file() || metadata_is_reparse(&opened_metadata) {
+        return Ok(false);
+    }
+    Ok(read_bounded(&mut marker_file, expected.len() as u64)
+        .ok()
+        .as_deref()
+        == Some(expected.as_bytes()))
 }

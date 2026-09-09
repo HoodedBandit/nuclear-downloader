@@ -1,4 +1,5 @@
 use super::release::{parse_semver, validate_sha256};
+use crate::bounded_read::{read_bounded_async, BoundedReadError};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -414,13 +415,7 @@ async fn read_owner_record(
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(error) => return Err(format!("Failed to inspect updater ownership data: {error}")),
     };
-    if !metadata.is_file() || metadata.len() > 4 * 1024 || is_reparse_or_symlink(&record_path)? {
-        return Err("The updater ownership data is not a regular bounded file.".into());
-    }
-    ensure_no_reparse_components(&record_path)?;
-    let bytes = fs::read(&record_path)
-        .await
-        .map_err(|error| format!("Failed to read updater ownership data: {error}"))?;
+    let bytes = read_owner_record_bytes(&record_path, &metadata).await?;
     let record: OwnedArtifactRecord = serde_json::from_slice(&bytes)
         .map_err(|error| format!("Failed to parse updater ownership data: {error}"))?;
     let artifact_name = artifact_path
@@ -436,6 +431,36 @@ async fn read_owner_record(
         return Err("The updater ownership data does not match its artifact.".into());
     }
     Ok(Some((record_path, record)))
+}
+
+pub(super) async fn read_owner_record_bytes(
+    record_path: &Path,
+    metadata: &std::fs::Metadata,
+) -> Result<Vec<u8>, String> {
+    if !metadata.is_file() || metadata.len() > 4 * 1024 || is_reparse_or_symlink(record_path)? {
+        return Err("The updater ownership data is not a regular bounded file.".into());
+    }
+    ensure_no_reparse_components(record_path)?;
+    let mut file = fs::File::open(record_path)
+        .await
+        .map_err(|error| format!("Failed to read updater ownership data: {error}"))?;
+    let opened_metadata = file
+        .metadata()
+        .await
+        .map_err(|error| format!("Failed to inspect updater ownership data: {error}"))?;
+    if !opened_metadata.is_file() || opened_metadata.len() > 4 * 1024 {
+        return Err("The updater ownership data is not a regular bounded file.".into());
+    }
+    let bytes = match read_bounded_async(&mut file, 4 * 1024).await {
+        Ok(bytes) => bytes,
+        Err(BoundedReadError::LimitExceeded | BoundedReadError::InvalidLimit) => {
+            return Err("The updater ownership data is not a regular bounded file.".into());
+        }
+        Err(BoundedReadError::Io(error)) => {
+            return Err(format!("Failed to read updater ownership data: {error}"));
+        }
+    };
+    Ok(bytes)
 }
 
 pub(super) async fn write_owner_record(
