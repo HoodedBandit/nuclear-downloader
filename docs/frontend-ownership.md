@@ -1,8 +1,8 @@
 # Frontend source ownership
 
-This document assigns the current production TypeScript and Svelte script callables to concrete responsibilities and workflows before internal extraction begins. The generated companion inventory is [`frontend-source-inventory.json`](frontend-source-inventory.json).
+This document assigns the current production TypeScript and Svelte script callables to concrete responsibilities and workflows as internal ownership changes. The generated companion inventory is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The inventory is automated compiler-backed discovery. Its 280 entries are **not source reviews**, and generation does not mark any entry reviewed, accepted, or behaviorally correct. Substantive review must inspect each current source-bound entry, its callers, effects, cleanup, ordering, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The inventory is automated compiler-backed discovery. Its 302 entries are **not source reviews**, and generation does not mark any entry reviewed, accepted, or behaviorally correct. Substantive review must inspect each current source-bound entry, its callers, effects, cleanup, ordering, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -16,14 +16,15 @@ Each entry records the repository-relative path, lexical owner, symbol, exact st
 
 | Source                               | Entries | Responsibility                                                                           | Workflows                                                                                   |
 | ------------------------------------ | ------: | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`            |     194 | Compose the main window, user actions, backend workflows, and visible application state. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
+| `src/routes/+page.svelte`            |     197 | Compose the main window, user actions, backend workflows, and visible application state. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
 | `src/routes/+layout.js`              |       0 | Declare the renderer-only static application layout mode.                                | startup                                                                                     |
 | `src/lib/accessible-dialog.ts`       |       6 | Provide keyboard focus, dismissal, and cleanup behavior for accessible dialogs.          | dialogs, accessibility                                                                      |
-| `src/lib/app-state-controller.ts`    |      14 | Own renderer snapshot/delta application and resynchronization sequencing.                | startup, state-sync                                                                         |
+| `src/lib/app-state-controller.ts`    |      24 | Own renderer snapshot/delta application and resynchronization sequencing.                | startup, state-sync                                                                         |
 | `src/lib/backend-state.ts`           |      17 | Derive stable operation and published-output facts from backend contracts.               | state-sync, queue, download                                                                 |
 | `src/lib/ipc-client.ts`              |       5 | Provide the typed command and event boundary used by renderer workflows.                 | ipc, state-sync                                                                             |
 | `src/lib/operation-reducer.ts`       |       6 | Order and reduce operation progress without regressing terminal state.                   | download, cancellation, state-sync                                                          |
-| `src/lib/operation-wait-registry.ts` |      16 | Own bounded renderer waiters for operation completion and teardown.                      | download, cancellation, runtime-update, app-update                                          |
+| `src/lib/operation-wait-registry.ts` |      19 | Own bounded renderer waiters for operation completion and teardown.                      | download, cancellation, runtime-update, app-update                                          |
+| `src/lib/page-lifetime.ts`           |       6 | Own page resources and suppress callbacks after renderer disposal.                       | startup, state-sync, cancellation                                                           |
 | `src/lib/queue-logic.ts`             |       7 | Validate and derive queue, format, selection, and redacted display behavior.             | queue, download, diagnostics                                                                |
 | `src/lib/startup-state.ts`           |       6 | Derive startup readiness and subsystem recovery state.                                   | startup, runtime-update                                                                     |
 | `src/lib/state-reconciler.ts`        |       9 | Coordinate ordered state-delta delivery, gap recovery, and listener disposal.            | startup, state-sync                                                                         |
@@ -44,17 +45,17 @@ Each entry records the repository-relative path, lexical owner, symbol, exact st
 
 | Compiler classification                 |   Count |
 | --------------------------------------- | ------: |
-| Function declarations                   |     142 |
-| Methods                                 |      21 |
-| Constructors                            |       3 |
-| Getters                                 |       1 |
+| Function declarations                   |     141 |
+| Methods                                 |      36 |
+| Constructors                            |       4 |
+| Getters                                 |       2 |
 | Function-valued declarations/properties |       6 |
-| Synchronous callbacks                   |      90 |
+| Synchronous callbacks                   |      96 |
 | Async callbacks                         |       1 |
 | Markup callbacks                        |      16 |
 | Markup async callbacks                  |       0 |
 | Snippet callables                       |       0 |
-| **Total**                               | **280** |
+| **Total**                               | **302** |
 
 The inventory should be regenerated from a frozen source tree before assigning manual reviewers. Review evidence should refer to the exact `id`, `sourceHash`, and `spanHash` from that generation. Discovery counts, compiler parsing, and fixture tests establish coverage mechanics only; they do not establish that the discovered code has been substantively reviewed or that a workflow passed.
 

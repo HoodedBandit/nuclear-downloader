@@ -6,7 +6,7 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stage 1 reproducibility gates passed before production changes. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Stage 2 lifecycle implementation is next. Performance and native qualification remain open as described below.
+Stages 1 and 2 passed their reproducibility and lifecycle regression gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. The lifecycle candidate passed 100 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios with the baseline. `frontend-lifecycle-review.md` records the demonstrated defects and validation; `internal-cleanup-lifecycle-visual.json` binds the visual evidence. Stage 3 ownership extraction is next. Performance and native qualification remain open as described below.
 
 The user deferred the disposable Windows 11 environment on September 8, 2026 because licensed installation media or a clean VM image is unavailable. Hyper-V enumeration also requires an administrator token unavailable in this session. No VM, account, desktop permission, or host display setting has been changed. Native installer/portable qualification and real 100%/150% Windows scaling remain incomplete.
 
@@ -32,6 +32,8 @@ The strengthened runner now archives exact production and harness inputs, includ
 
 Svelte/TypeScript checking, strict ESLint, frontend formatting, a fresh production build, and production-bundle test-hook exclusion checks passed after the Stage 1 harness additions.
 
+The unchanged backend test executable was subsequently exercised: all 270 non-export tests passed and three long-running harness tests remained ignored. The 34 binding-export tests initially failed because the direct executable was launched from the repository root, so their relative output path fell outside the workspace. Running those 34 tests from `nuclear-app/src-tauri` passed, and generated bindings remained byte-identical in Git. Both executions are retained as `backend-tests.log` and `backend-binding-tests.log` in the baseline evidence directory. This accounts for all 304 ordinary tests without concealing the runner working-directory error.
+
 The expanded workflow rerun at `target/renderer-checks/workflows-20260909T053917Z-c5e3a95f30b44b4396aa5a2f1e5a0383/` passed nine cases and failed two new test interactions. Filename editing was affected by WebDriver's clear-value behavior, which triggers the application's existing blur commit. The test now uses actual keyboard selection and typing. The update dialog test now reacquires its element after Escape removes and reopening recreates it. The corrected run at `target/renderer-checks/workflows-20260909T054758Z-8d5d9a9d93ba4bebabd08a49f8b877eb/` passed all 11 cases and verified unchanged inputs. `frontend-behavior-baseline.md` maps these cases to their observable workflows and complementary unit tests.
 
 The timing runs with raw samples and an idle-renderer control retained the existing failure:
@@ -49,7 +51,7 @@ All three runs verified that inputs and executable identities remained unchanged
 The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.json`. Its paired captures are `target/renderer-checks/visual-20260909T060041Z-885155a599d74d619e7da52667d0c328/visual-100.json` and `target/renderer-checks/visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d/visual-150.json`. All 60 scenarios had identical decoded pixels and semantic evidence across two independent repeats. The final comparator reported zero errors and verified archived source, harness, executable, receipt, and screenshot identities. Its 21 synthetic cases passed, including deliberate pixel, text, geometry, enabled-state, focus-order, provenance, and malformed-input failures. This is baseline stability evidence, not a candidate comparison. Browser scale emulation does not qualify native Windows scaling.
 
 1. Investigate the existing frame-time failure with matched repeats and candidate measurements, without weakening its threshold.
-2. Implement and test generation-aware startup and one page resource owner.
+2. Completed: generation-aware startup, one page resource owner, waiter cleanup, and their focused/integrated regression gates.
 3. Extract queue presentation and workflow ownership, preserving IPC order, payloads, progress precedence, and existing errors.
 4. Extract Svelte components individually and compare output, controls, focus, geometry, and workflows after each extraction.
 5. Mechanically separate the specified StateStore, process, and publication modules, retaining ownership and lock boundaries; update source-matched reviews.

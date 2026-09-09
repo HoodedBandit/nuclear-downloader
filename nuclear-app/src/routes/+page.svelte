@@ -26,6 +26,7 @@
   import { invokeCommand as invoke, listenEvent as listen, type EventMap } from '$lib/ipc-client';
   import { reduceOperationProgress, shouldIgnoreOperationProgress } from '$lib/operation-reducer';
   import { OperationWaitRegistry } from '$lib/operation-wait-registry';
+  import { PageLifetime } from '$lib/page-lifetime';
   import {
     canStartWork,
     deriveSelectionState,
@@ -444,24 +445,28 @@
     Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
   >();
   const operationWaiters = new OperationWaitRegistry();
+  const pageLifetime = new PageLifetime((error) => globalThis.reportError(error));
+  const rendererUnloadError = new Error('Renderer was unloaded before the operation completed.');
   const appStateController = new AppStateController(
     () => invoke('get_app_snapshot'),
-    applyBackendSnapshot,
-    handleBackendStateError
+    pageLifetime.guard(applyBackendSnapshot),
+    pageLifetime.guard(handleBackendStateError)
   );
 
   // -- Lifecycle --
   onMount(() => {
-    let unlistenState: (() => void) | undefined;
-    let unlistenProgress: (() => void) | undefined;
-    let unlistenUpdateProgress: (() => void) | undefined;
-    let unlistenRuntimeProgress: (() => void) | undefined;
+    let stateListening = false;
+    pageLifetime.own(() => appStateController.stop());
+    pageLifetime.own(() => operationWaiters.dispose(rendererUnloadError));
     const queueResizeObserver =
       typeof ResizeObserver === 'undefined'
         ? undefined
-        : new ResizeObserver(([entry]) => {
-            if (entry) queueViewportHeight = entry.contentRect.height;
-          });
+        : new ResizeObserver(
+            pageLifetime.guard(([entry]) => {
+              if (entry) queueViewportHeight = entry.contentRect.height;
+            })
+          );
+    if (queueResizeObserver) pageLifetime.own(() => queueResizeObserver.disconnect());
     if (queueViewport) {
       queueViewportHeight = queueViewport.clientHeight || queueViewportHeight;
       queueResizeObserver?.observe(queueViewport);
@@ -472,89 +477,121 @@
 
       try {
         await appStateController.start(
-          (handler) => listen('app-state-changed', (event) => handler(event.payload)),
-          (handler) => listen('app-state-resync-required', (event) => handler(event.payload))
+          (handler) =>
+            listen(
+              'app-state-changed',
+              pageLifetime.guard((event) => handler(event.payload))
+            ),
+          (handler) =>
+            listen(
+              'app-state-resync-required',
+              pageLifetime.guard((event) => handler(event.payload))
+            )
         );
-        unlistenState = () => appStateController.stop();
+        stateListening = true;
       } catch (error) {
+        if (!pageLifetime.isActive) return;
         listenerErrors.push(`App state: ${normalizeAppError(error)}`);
       }
+      if (!pageLifetime.isActive) return;
 
       try {
-        unlistenProgress = await listen('download-progress', (event) => {
-          const progress = event.payload;
-          const idx = queue.findIndex((item) => item.downloadId === progress.download_id);
-          if (idx === -1) return;
+        const unlisten = await listen(
+          'download-progress',
+          pageLifetime.guard((event) => {
+            const progress = event.payload;
+            const idx = queue.findIndex((item) => item.downloadId === progress.download_id);
+            if (idx === -1) return;
 
-          const item = queue[idx];
-          if (shouldIgnoreOperationProgress(item, progress)) return;
-          const statusChanged = item.status !== progress.status;
-          const terminal = isTerminalStatus(progress.status);
-          const shouldRefreshDisplay = shouldRefreshDownloadDisplay(item, progress, statusChanged);
-          if (
-            !shouldRefreshDisplay &&
-            !statusChanged &&
-            !terminal &&
-            !progress.error &&
-            !progress.filename
-          ) {
-            return;
-          }
-          const reduced = reduceOperationProgress(item, progress);
-          const next = {
-            ...reduced,
-            progress: getDisplayProgress(item, progress, shouldRefreshDisplay),
-            downloadProgress: terminal
-              ? reduced.downloadProgress
-              : getDisplayDownloadProgress(item, progress, shouldRefreshDisplay),
-            conversionProgress: terminal
-              ? reduced.conversionProgress
-              : getDisplayConversionProgress(item, progress, shouldRefreshDisplay),
-            eta: terminal ? reduced.eta : getDisplayEta(item, progress, shouldRefreshDisplay),
-            error: progress.error
-              ? normalizeDownloadError(progress.error, progress.error_code ?? null)
-              : null,
-            errorCode: progress.error_code ?? null,
-            errorDetail: progress.error_detail ?? null,
-            filename: progress.filename ?? item.filename
-          };
-          assignChangedQueueFields(queue[idx], next, OPERATION_PROJECTION_FIELDS);
+            const item = queue[idx];
+            if (shouldIgnoreOperationProgress(item, progress)) return;
+            const statusChanged = item.status !== progress.status;
+            const terminal = isTerminalStatus(progress.status);
+            const shouldRefreshDisplay = shouldRefreshDownloadDisplay(
+              item,
+              progress,
+              statusChanged
+            );
+            if (
+              !shouldRefreshDisplay &&
+              !statusChanged &&
+              !terminal &&
+              !progress.error &&
+              !progress.filename
+            ) {
+              return;
+            }
+            const reduced = reduceOperationProgress(item, progress);
+            const next = {
+              ...reduced,
+              progress: getDisplayProgress(item, progress, shouldRefreshDisplay),
+              downloadProgress: terminal
+                ? reduced.downloadProgress
+                : getDisplayDownloadProgress(item, progress, shouldRefreshDisplay),
+              conversionProgress: terminal
+                ? reduced.conversionProgress
+                : getDisplayConversionProgress(item, progress, shouldRefreshDisplay),
+              eta: terminal ? reduced.eta : getDisplayEta(item, progress, shouldRefreshDisplay),
+              error: progress.error
+                ? normalizeDownloadError(progress.error, progress.error_code ?? null)
+                : null,
+              errorCode: progress.error_code ?? null,
+              errorDetail: progress.error_detail ?? null,
+              filename: progress.filename ?? item.filename
+            };
+            assignChangedQueueFields(queue[idx], next, OPERATION_PROJECTION_FIELDS);
 
-          if (terminal) {
-            clearProgressDisplayState(item.id);
-          } else if (shouldRefreshDisplay && isActiveStatus(progress.status)) {
-            downloadDisplayUpdatedAt.set(item.id, Date.now());
-          }
-        });
+            if (terminal) {
+              clearProgressDisplayState(item.id);
+            } else if (shouldRefreshDisplay && isActiveStatus(progress.status)) {
+              downloadDisplayUpdatedAt.set(item.id, Date.now());
+            }
+          })
+        );
+        pageLifetime.own(unlisten);
       } catch (error) {
+        if (!pageLifetime.isActive) return;
         listenerErrors.push(`Download progress: ${normalizeAppError(error)}`);
       }
+      if (!pageLifetime.isActive) return;
 
       try {
-        unlistenUpdateProgress = await listen('update-install-progress', (event) => {
-          updateInstallProgress = event.payload;
-          if (event.payload.status === 'error') {
-            updateInstallRunning = false;
-            updateError = event.payload.message ?? 'Update installation failed.';
-          }
-        });
+        const unlisten = await listen(
+          'update-install-progress',
+          pageLifetime.guard((event) => {
+            updateInstallProgress = event.payload;
+            if (event.payload.status === 'error') {
+              updateInstallRunning = false;
+              updateError = event.payload.message ?? 'Update installation failed.';
+            }
+          })
+        );
+        pageLifetime.own(unlisten);
       } catch (error) {
+        if (!pageLifetime.isActive) return;
         listenerErrors.push(`App update progress: ${normalizeAppError(error)}`);
       }
+      if (!pageLifetime.isActive) return;
 
       try {
-        unlistenRuntimeProgress = await listen('downloader-runtime-update-progress', (event) => {
-          runtimeUpdateProgress = event.payload;
-          if (event.payload.status === 'error') {
-            runtimeUpdateRunning = false;
-            runtimeError = event.payload.message ?? 'Downloader runtime update failed.';
-          }
-        });
+        const unlisten = await listen(
+          'downloader-runtime-update-progress',
+          pageLifetime.guard((event) => {
+            runtimeUpdateProgress = event.payload;
+            if (event.payload.status === 'error') {
+              runtimeUpdateRunning = false;
+              runtimeError = event.payload.message ?? 'Downloader runtime update failed.';
+            }
+          })
+        );
+        pageLifetime.own(unlisten);
       } catch (error) {
+        if (!pageLifetime.isActive) return;
         listenerErrors.push(`Runtime update progress: ${normalizeAppError(error)}`);
       }
+      if (!pageLifetime.isActive) return;
 
-      if (!unlistenState || backendStateError) {
+      if (!stateListening || backendStateError) {
         startupIssues = [...startupIssues, ...listenerErrors];
         setStartupSubsystem('listeners', 'error');
       } else if (listenerErrors.length > 0) {
@@ -575,14 +612,7 @@
     void setup();
 
     return () => {
-      unlistenState?.();
-      unlistenProgress?.();
-      unlistenUpdateProgress?.();
-      unlistenRuntimeProgress?.();
-      queueResizeObserver?.disconnect();
-      operationWaiters.rejectAll(
-        new Error('Renderer was unloaded before the operation completed.')
-      );
+      pageLifetime.dispose();
     };
   });
 
@@ -608,6 +638,7 @@
     try {
       await appStateController.reload();
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       handleBackendStateError(error);
       throw error;
     }
@@ -891,9 +922,12 @@
 
   async function initializeAppVersion(): Promise<void> {
     try {
-      appVersion = await getVersion();
+      const version = await getVersion();
+      if (!pageLifetime.isActive) return;
+      appVersion = version;
       setStartupSubsystem('appVersion', 'ready');
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       appVersion = null;
       reportStartupIssue('App version', error);
       setStartupSubsystem('appVersion', 'degraded');
@@ -902,6 +936,7 @@
 
   async function initializeRuntime(): Promise<void> {
     await refreshDownloaderRuntime();
+    if (!pageLifetime.isActive) return;
     if (!runtimeStatus) {
       reportStartupIssue('Downloader runtime', runtimeError ?? 'Unavailable');
     }
@@ -909,6 +944,7 @@
   }
 
   async function validateOutputDirectory(candidate: string): Promise<boolean> {
+    if (!pageLifetime.isActive) return false;
     outputDirError = null;
     if (!candidate.trim()) {
       outputDirValidated = false;
@@ -917,10 +953,13 @@
     }
 
     try {
-      outputDir = await invoke('validate_output_directory', { path: candidate });
+      const validatedOutputDir = await invoke('validate_output_directory', { path: candidate });
+      if (!pageLifetime.isActive) return false;
+      outputDir = validatedOutputDir;
       outputDirValidated = true;
       return true;
     } catch (error) {
+      if (!pageLifetime.isActive) return false;
       outputDirValidated = false;
       outputDirError = normalizeAppError(error);
       return false;
@@ -930,14 +969,18 @@
   async function initializeOutputDirectory(): Promise<void> {
     try {
       const candidate = await invoke('default_download_dir');
+      if (!pageLifetime.isActive) return;
       outputDir = candidate;
       if (await validateOutputDirectory(candidate)) {
+        if (!pageLifetime.isActive) return;
         setStartupSubsystem('outputDirectory', 'ready');
       } else {
+        if (!pageLifetime.isActive) return;
         reportStartupIssue('Output folder', outputDirError ?? 'Invalid folder');
         setStartupSubsystem('outputDirectory', 'error');
       }
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       outputDir = '';
       outputDirValidated = false;
       outputDirError = 'Choose a writable output folder before downloading.';
@@ -951,6 +994,7 @@
       openModal: false,
       showErrors: false
     });
+    if (!pageLifetime.isActive) return;
     if (!succeeded) {
       startupIssues = [
         ...startupIssues,
@@ -1161,25 +1205,32 @@
   }
 
   async function refreshDownloaderRuntime(): Promise<void> {
+    if (!pageLifetime.isActive) return;
     runtimeCheckState = 'checking';
     runtimeError = null;
 
     try {
-      runtimeStatus = await invoke('check_downloader_runtime');
+      const status = await invoke('check_downloader_runtime');
+      if (!pageLifetime.isActive) return;
+      runtimeStatus = status;
       setStartupSubsystem('runtime', runtimeStartupSubsystemState(runtimeStatus.state));
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       runtimeStatus = null;
       runtimeError = normalizeAppError(error);
       setStartupSubsystem('runtime', runtimeStartupSubsystemState(null));
     } finally {
-      runtimeCheckState = 'idle';
+      if (pageLifetime.isActive) runtimeCheckState = 'idle';
     }
   }
 
   async function checkDownloaderRuntimeUpdate(): Promise<void> {
     try {
-      runtimeUpdateCheck = await invoke('check_runtime_update');
+      const updateCheck = await invoke('check_runtime_update');
+      if (!pageLifetime.isActive) return;
+      runtimeUpdateCheck = updateCheck;
     } catch {
+      if (!pageLifetime.isActive) return;
       // Runtime availability is local and remains usable when GitHub is offline.
       runtimeUpdateCheck = null;
     }
@@ -1212,16 +1263,21 @@
 
     try {
       const result = await invoke('begin_runtime_update');
+      if (!pageLifetime.isActive) return;
       const operation = await waitForOperation(result.operationId);
+      if (!pageLifetime.isActive) return;
       if (operation.state === 'failed') {
         throw operation.error ?? new Error('Downloader runtime update failed.');
       }
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       runtimeError = normalizeAppError(error);
     } finally {
-      runtimeUpdateRunning = false;
-      await refreshDownloaderRuntime();
-      await checkDownloaderRuntimeUpdate();
+      if (pageLifetime.isActive) {
+        runtimeUpdateRunning = false;
+        await refreshDownloaderRuntime();
+        if (pageLifetime.isActive) await checkDownloaderRuntimeUpdate();
+      }
     }
   }
 
@@ -1306,6 +1362,7 @@
         priority: prioritize ? 'front' : 'normal'
       });
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       queueActionError = normalizeAppError(error);
     }
   }
@@ -1368,6 +1425,7 @@
 
     if (editingTitleId && editingTitleId !== item.id) {
       await commitFilenameEdit(editingTitleId);
+      if (!pageLifetime.isActive) return;
       if (editingTitleId) return;
     }
 
@@ -1376,6 +1434,7 @@
     filenameEditError = '';
 
     await tick();
+    if (!pageLifetime.isActive) return;
     titleEditorInput?.focus();
     titleEditorInput?.select();
   }
@@ -1404,11 +1463,13 @@
         itemId,
         input: { filenameOverride: customFilename }
       });
+      if (!pageLifetime.isActive) return;
       editingTitleId = null;
       editingTitleDraft = '';
       filenameEditError = '';
       titleEditorInput = null;
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       filenameEditError = normalizeAppError(error);
     }
   }
@@ -1436,6 +1497,7 @@
     playlistPage = 0;
     if (inspectionOperationId) {
       void invoke('dismiss_operation', { operationId: inspectionOperationId }).catch((error) => {
+        if (!pageLifetime.isActive) return;
         queueActionError = `Could not dismiss completed inspection: ${normalizeAppError(error)}`;
       });
     }
@@ -1489,6 +1551,7 @@
         filters: [{ name: 'Cookie Files', extensions: ['txt'] }]
       })
     );
+    if (!pageLifetime.isActive) return;
 
     if (file) cookieFilePath = file;
   }
@@ -1505,22 +1568,26 @@
         ]
       })
     );
+    if (!pageLifetime.isActive) return;
 
     if (file) compatConfigPath = file;
   }
 
   async function browseOutputDir(): Promise<void> {
     const dir = pickFirstPath(await open({ directory: true }));
+    if (!pageLifetime.isActive) return;
     if (!dir) return;
 
     outputDir = dir;
     if (await validateOutputDirectory(dir)) {
+      if (!pageLifetime.isActive) return;
       setStartupSubsystem('outputDirectory', 'ready');
       await Promise.all(
         queue
           .filter((item) => isEditablePendingStatus(item.status))
           .map((item) => updateQueueItemSettings(item, { outputDir }))
       );
+      if (!pageLifetime.isActive) return;
     } else {
       setStartupSubsystem('outputDirectory', 'error');
     }
@@ -1533,12 +1600,15 @@
       defaultPath: 'nuclear-downloader-diagnostics.jsonl',
       filters: [{ name: 'JSON Lines', extensions: ['jsonl'] }]
     });
+    if (!pageLifetime.isActive) return;
     if (!destination) return;
 
     try {
       await invoke('export_diagnostics', { destination });
+      if (!pageLifetime.isActive) return;
       diagnosticsMessage = 'Diagnostics exported successfully.';
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       diagnosticsError = normalizeAppError(error);
     }
   }
@@ -1549,8 +1619,10 @@
     if (!window.confirm('Clear all local Nuclear Downloader diagnostics logs?')) return;
     try {
       await invoke('clear_diagnostics');
+      if (!pageLifetime.isActive) return;
       diagnosticsMessage = 'Local diagnostics were cleared.';
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       diagnosticsError = normalizeAppError(error);
     }
   }
@@ -1571,16 +1643,18 @@
 
     try {
       const result = await invoke('check_app_update');
+      if (!pageLifetime.isActive) return false;
       updateInfo = result;
       appVersion = result.currentVersion;
       return true;
     } catch (error) {
+      if (!pageLifetime.isActive) return false;
       if (options.showErrors) {
         updateError = normalizeAppError(error);
       }
       return false;
     } finally {
-      updateCheckState = 'idle';
+      if (pageLifetime.isActive) updateCheckState = 'idle';
     }
   }
 
@@ -1619,14 +1693,17 @@
       const result = await invoke('begin_app_update', {
         expectedVersion: targetVersion
       });
+      if (!pageLifetime.isActive) return;
       const operation = await waitForOperation(result.operationId);
+      if (!pageLifetime.isActive) return;
       if (operation.state === 'failed') {
         throw operation.error ?? new Error('Application update failed.');
       }
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       updateError = normalizeAppError(error);
     } finally {
-      updateInstallRunning = false;
+      if (pageLifetime.isActive) updateInstallRunning = false;
     }
   }
 
@@ -1642,8 +1719,10 @@
         compatConfigPath: getCompatConfigSnapshot()
       }
     });
+    if (!pageLifetime.isActive) throw rendererUnloadError;
     activeInspectionId = result.operationId;
     const operation = await waitForOperation(result.operationId, 5 * 60 * 1000);
+    if (!pageLifetime.isActive) throw rendererUnloadError;
     if (operation.state === 'cancelled') throw new Error('URL inspection was cancelled.');
     if (operation.state !== 'completed' || !operation.inspectionResult) {
       throw operation.error ?? new Error('URL inspection did not produce a result.');
@@ -1678,6 +1757,7 @@
         }
       });
     } catch (error) {
+      if (!pageLifetime.isActive) throw error;
       // The authoritative inspection is single-use. If queue admission fails,
       // release its potentially large transient metadata before surfacing the
       // original error.
@@ -1728,10 +1808,12 @@
 
     try {
       const completedInspection = await inspectWithBackend(url, cookieConfig);
+      if (!pageLifetime.isActive) return;
       const inspection = completedInspection.inspection;
 
       if (inspectionCancelRequested) {
         await invoke('dismiss_operation', { operationId: completedInspection.operationId });
+        if (!pageLifetime.isActive) return;
         return;
       }
 
@@ -1751,14 +1833,17 @@
 
       await addInspectedVideo(inspection.video, completedInspection.operationId, cookieConfig);
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       const message = normalizeDownloadError(normalizeAppError(error));
       if (!inspectionCancelRequested && !message.toLowerCase().includes('cancelled')) {
         urlError = 'Failed to inspect URL: ' + message;
       }
     } finally {
-      activeInspectionId = null;
-      playlistLoading = false;
-      inspectionCancelRequested = false;
+      if (pageLifetime.isActive) {
+        activeInspectionId = null;
+        playlistLoading = false;
+        inspectionCancelRequested = false;
+      }
     }
   }
 
@@ -1770,6 +1855,7 @@
     try {
       await invoke('cancel_operation', { operationId: inspectionId });
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       urlError = 'Failed to cancel inspection: ' + normalizeDownloadError(normalizeAppError(error));
     }
   }
@@ -1793,22 +1879,28 @@
         if (queuedUrls.has(entry.url)) continue;
         try {
           const completedInspection = await inspectWithBackend(entry.url, cookieConfig);
+          if (!pageLifetime.isActive) return;
           const inspection = completedInspection.inspection;
           if (inspection.kind !== 'video') {
             await invoke('dismiss_operation', { operationId: completedInspection.operationId });
+            if (!pageLifetime.isActive) return;
             throw new Error('A selected playlist entry unexpectedly resolved to another playlist.');
           }
           await addInspectedVideo(inspection.video, completedInspection.operationId, cookieConfig);
+          if (!pageLifetime.isActive) return;
           queuedUrls.add(entry.url);
         } catch (error) {
+          if (!pageLifetime.isActive) return;
           if (inspectionCancelRequested) break;
           failures.push(`${entry.title ?? entry.id}: ${normalizeAppError(error)}`);
         }
       }
     } finally {
-      activeInspectionId = null;
-      playlistLoading = false;
-      inspectionCancelRequested = false;
+      if (pageLifetime.isActive) {
+        activeInspectionId = null;
+        playlistLoading = false;
+        inspectionCancelRequested = false;
+      }
     }
 
     if (failures.length > 0) {
@@ -1866,6 +1958,7 @@
     try {
       await invoke('cancel_operation', { operationId: item.downloadId });
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       const currentIdx = queue.findIndex((queueItem) => queueItem.id === item.id);
       if (currentIdx !== -1 && queue[currentIdx].status === 'cancelling') {
         queue[currentIdx] = {
@@ -1885,11 +1978,13 @@
 
     try {
       const result = await invoke('cancel_all_downloads');
+      if (!pageLifetime.isActive) return;
       if (!result.idle) {
         const count = result.remainingOperationIds.length;
         cancelAllError = `Cancellation timed out with ${count} operation${count === 1 ? '' : 's'} still stopping. New work remains paused.`;
       }
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       cancelAllError = `Cancel all did not drain cleanly: ${normalizeAppError(error)}`;
     }
   }
@@ -1908,8 +2003,10 @@
     queueActionError = null;
     try {
       await invoke('remove_queue_items', { itemIds: removableIds });
+      if (!pageLifetime.isActive) return;
       if (editingTitleId && removableIds.includes(editingTitleId)) cancelFilenameEdit();
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       queueActionError = normalizeAppError(error);
     }
   }
@@ -1922,6 +2019,7 @@
     try {
       await invoke('remove_queue_items', { itemIds });
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       queueActionError = normalizeAppError(error);
     }
   }
@@ -1939,6 +2037,7 @@
     try {
       await invoke('update_queue_item', { itemId: item.id, input });
     } catch (error) {
+      if (!pageLifetime.isActive) return;
       queueActionError = normalizeAppError(error);
       await reloadAppSnapshot().catch(() => undefined);
     }
