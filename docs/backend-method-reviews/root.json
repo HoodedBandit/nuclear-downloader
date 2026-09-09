@@ -13,6 +13,7 @@
     "src/services/maintenance.rs",
     "src/services/mod.rs",
     "src/services/operations.rs",
+    "src/services/operations/tests.rs",
     "src/services/queue.rs",
     "src/services/test_support.rs",
     "src/services/updates.rs",
@@ -3258,271 +3259,6 @@
       "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
     },
     {
-      "id": "src/services/operations.rs::services::operations::cancel_all_downloads[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/services/operations.rs",
-      "line": 11,
-      "endLine": 21,
-      "symbol": "cancel_all_downloads",
-      "qualifiedName": "services::operations::cancel_all_downloads",
-      "signature": "pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
-      "sourceDigest": "ed1ab95fc59b48f70817f5a9dad147c69f599b297f29789501d28adf53968dd0",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Delegates cancel-all to the cancellation owner with backend owners and progress sink.",
-      "callers": [
-        "src/lib.rs::cancel_all_downloads"
-      ],
-      "inputs": [
-        "pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>"
-      ],
-      "output": "Returns cancellation drain result from cancellation::cancel_all.",
-      "sideEffects": [
-        "Requests cancellation or dismissal in StateStore/DownloadManager; pending downloads are terminally finalized before manager.finish."
-      ],
-      "errors": [
-        "Returns the `Result<CancelAllResult, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
-      ],
-      "ownership": [
-        "Consumes Backend and DownloadProgressSink into cancellation::cancel_all."
-      ],
-      "locks": [
-        "Tracked Drain/Admission registration spans the command; manager and StateStore own their internal synchronization."
-      ],
-      "cancellation": "cancel_operation issues lifecycle cancellation then waits at most CANCELLATION_WAIT_TIMEOUT for terminal state; dismissal has no independent cancellation point.",
-      "invariants": [
-        "Delegates cancel-all to the cancellation owner with backend owners and progress sink."
-      ],
-      "tests": [
-        "Static call-path review of services::operations::cancel_all_downloads at src/services/operations.rs:11; no dedicated behavioral test targets this helper alone."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/operations.rs:11",
-        "Signature: pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
-        "Direct source call sites for cancel_all_downloads reviewed after Stage4 move."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/operations.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
-    },
-    {
-      "id": "src/services/operations.rs::services::operations::cancel_operation[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/services/operations.rs",
-      "line": 22,
-      "endLine": 102,
-      "symbol": "cancel_operation",
-      "qualifiedName": "services::operations::cancel_operation",
-      "signature": "pub(crate) async fn cancel_operation( publish_progress: DownloadProgressSink, backend: Backend, operation_id: String, ) -> Result<(), AppError>",
-      "sourceDigest": "9aad7fbe4a45008616722438c5919bc0c2ba89ce4dc53280a314392e6db3d478",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Validates an operation ID, requests the correct cancellation mode, finalizes pending downloads, and waits boundedly for terminal state.",
-      "callers": [
-        "src/lib.rs::cancel_operation"
-      ],
-      "inputs": [
-        "pub(crate) async fn cancel_operation( publish_progress: DownloadProgressSink, backend: Backend, operation_id: String, ) -> Result<(), AppError>"
-      ],
-      "output": "Returns unit once terminal state is observed/finalized, or validation/cancellation/timeout AppError.",
-      "sideEffects": [
-        "Requests cancellation or dismissal in StateStore/DownloadManager; pending downloads are terminally finalized before manager.finish."
-      ],
-      "errors": [
-        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
-      ],
-      "ownership": [
-        "Consumes Backend, operation ID, and progress sink into the tracked drain command; no capture survives command completion."
-      ],
-      "locks": [
-        "Tracked Drain/Admission registration spans the command; manager and StateStore own their internal synchronization."
-      ],
-      "cancellation": "cancel_operation issues lifecycle cancellation then waits at most CANCELLATION_WAIT_TIMEOUT for terminal state; dismissal has no independent cancellation point.",
-      "invariants": [
-        "Validates an operation ID, requests the correct cancellation mode, finalizes pending downloads, and waits boundedly for terminal state."
-      ],
-      "tests": [
-        "Static call-path review of services::operations::cancel_operation at src/services/operations.rs:22; no dedicated behavioral test targets this helper alone."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/operations.rs:22",
-        "Signature: pub(crate) async fn cancel_operation( publish_progress: DownloadProgressSink, backend: Backend, operation_id: String, ) -> Result<(), AppError>",
-        "Direct source call sites for cancel_operation reviewed after Stage4 move."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/operations.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
-    },
-    {
-      "id": "src/services/operations.rs::services::operations::cancel_operation::async_block#1@30[cfg=all]",
-      "kind": "async_block",
-      "classification": "production",
-      "file": "src/services/operations.rs",
-      "line": 30,
-      "endLine": 100,
-      "symbol": "async_block#1",
-      "qualifiedName": "services::operations::cancel_operation::async_block#1",
-      "signature": "async move",
-      "sourceDigest": "34fdb8239a8f241ffe8daf80a637c29eeb66678a528dc5753130772e8e0f3753",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Owns Backend, operation ID and progress sink while selecting update/download cancellation, finalizing pending work, and waiting boundedly for terminal state.",
-      "callers": [
-        "Created only by its enclosing callable src/services/operations.rs::services::operations::cancel_operation."
-      ],
-      "inputs": [
-        "async move"
-      ],
-      "output": "Returns Result<(), AppError> after cancellation reaches terminal state or the ten-second wait errors.",
-      "sideEffects": [
-        "Owns Backend, operation ID and progress sink while selecting update/download cancellation, finalizing pending work, and waiting boundedly for terminal state."
-      ],
-      "errors": [
-        "Returns not-found/invalid/lifecycle/state/timeout errors except terminal races explicitly treated as success."
-      ],
-      "ownership": [
-        "Owns Backend and operation ID; cancel block additionally owns the progress sink through any pending-download finalization."
-      ],
-      "locks": [
-        "Tracked Drain registration spans cancellation and terminal wait; pending finalization precedes manager.finish."
-      ],
-      "cancellation": "Issues update or job cancellation; deferred publication deliberately postpones StateStore Cancelling transition.",
-      "invariants": [
-        "Owns Backend, operation ID and progress sink while selecting update/download cancellation, finalizing pending work, and waiting boundedly for terminal state."
-      ],
-      "tests": [
-        "Static source and caller review of services::operations::cancel_operation::async_block#1; no dedicated test directly isolates this service block."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/operations.rs:30",
-        "Enclosing callable: src/services/operations.rs::services::operations::cancel_operation.",
-        "Owns Backend, operation ID and progress sink while selecting update/download cancellation, finalizing pending work, and waiting boundedly for terminal state."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/operations.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
-    },
-    {
-      "id": "src/services/operations.rs::services::operations::dismiss_operation[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/services/operations.rs",
-      "line": 104,
-      "endLine": 114,
-      "symbol": "dismiss_operation",
-      "qualifiedName": "services::operations::dismiss_operation",
-      "signature": "pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>",
-      "sourceDigest": "f51d4fa780188881a85bd7d4176d791ed7517b2daa47aebb400a8c89ca35f4f0",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Runs durable terminal-operation dismissal as tracked admission work.",
-      "callers": [
-        "src/lib.rs::dismiss_operation"
-      ],
-      "inputs": [
-        "pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>"
-      ],
-      "output": "Returns unit after durable dismissal or AppError.",
-      "sideEffects": [
-        "Requests cancellation or dismissal in StateStore/DownloadManager; pending downloads are terminally finalized before manager.finish."
-      ],
-      "errors": [
-        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
-      ],
-      "ownership": [
-        "Consumes Backend and operation ID into the tracked admission command."
-      ],
-      "locks": [
-        "Tracked Drain/Admission registration spans the command; manager and StateStore own their internal synchronization."
-      ],
-      "cancellation": "cancel_operation issues lifecycle cancellation then waits at most CANCELLATION_WAIT_TIMEOUT for terminal state; dismissal has no independent cancellation point.",
-      "invariants": [
-        "Runs durable terminal-operation dismissal as tracked admission work."
-      ],
-      "tests": [
-        "Static call-path review of services::operations::dismiss_operation at src/services/operations.rs:104; no dedicated behavioral test targets this helper alone."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/operations.rs:104",
-        "Signature: pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>",
-        "Direct source call sites for dismiss_operation reviewed after Stage4 move."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/operations.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
-    },
-    {
-      "id": "src/services/operations.rs::services::operations::dismiss_operation::async_block#1@109[cfg=all]",
-      "kind": "async_block",
-      "classification": "production",
-      "file": "src/services/operations.rs",
-      "line": 109,
-      "endLine": 112,
-      "symbol": "async_block#1",
-      "qualifiedName": "services::operations::dismiss_operation::async_block#1",
-      "signature": "async move",
-      "sourceDigest": "abcddb8b7d4b6e667b23afb11fde89fc630e3ebc12fe547ba138222165ed14b3",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Owns Backend and operation ID and awaits the single durable dismiss_operation mutation.",
-      "callers": [
-        "Created only by its enclosing callable src/services/operations.rs::services::operations::dismiss_operation."
-      ],
-      "inputs": [
-        "async move"
-      ],
-      "output": "Returns Result<(), AppError> from one durable dismissal.",
-      "sideEffects": [
-        "Owns Backend and operation ID and awaits the single durable dismiss_operation mutation."
-      ],
-      "errors": [
-        "Propagates StateStore dismissal error."
-      ],
-      "ownership": [
-        "Owns Backend and operation ID through the single StateStore dismissal mutation; captures no progress sink."
-      ],
-      "locks": [
-        "Tracked Admission registration spans the StateStore mutation."
-      ],
-      "cancellation": "Runs mutation to completion after startup admission.",
-      "invariants": [
-        "Owns Backend and operation ID and awaits the single durable dismiss_operation mutation."
-      ],
-      "tests": [
-        "Static source and caller review of services::operations::dismiss_operation::async_block#1; no dedicated test directly isolates this service block."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/operations.rs:109",
-        "Enclosing callable: src/services/operations.rs::services::operations::dismiss_operation.",
-        "Owns Backend and operation ID and awaits the single durable dismiss_operation mutation."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/operations.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
-    },
-    {
       "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue[cfg=all]",
       "kind": "free_function",
       "classification": "production",
@@ -5455,16 +5191,16 @@
       "classification": "test",
       "file": "src/services/updates/tests.rs",
       "line": 141,
-      "endLine": 202,
+      "endLine": 204,
       "symbol": "failed_installer_launch_finalizes_and_reopens_admission_without_exit",
       "qualifiedName": "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit",
       "signature": "async fn failed_installer_launch_finalizes_and_reopens_admission_without_exit()",
-      "sourceDigest": "713a377591f438ad7721979a2acf3d4e7bdb7c0b49f83c5b7c1c56d6de802d7e",
+      "sourceDigest": "fa68af1a20ddd12fb7fbe99639d24ba1417021247ba098911e0b0d37871a8b32",
       "cfg": [
         "all(test, windows)"
       ],
       "ownerCall": null,
-      "purpose": "Proves launch failure produces durable Failed state, no exit, maintenance cleanup, and reopened admission.",
+      "purpose": "Prove an installer launch failure durably finalizes Failed without process exit, then releases both coordinator admission and StateStore maintenance ownership.",
       "callers": [
         "Windows cargo test discovery for services::updates tests"
       ],
@@ -5473,36 +5209,44 @@
       ],
       "output": "Returns unit and fails on any violated assertion or timeout.",
       "sideEffects": [
-        "Creates/removes only its UUID-named isolated test tree and exercises the real StateStore, DownloadManager, or updater leases named by the test."
+        "runs a prepared app-update handoff with injected launch failure",
+        "waits for durable Failed state and confirms exit callback was not invoked",
+        "retries job admission only while busy, then confirms maintenance_active is false",
+        "shuts down tracked work and removes the isolated root"
       ],
       "errors": [
-        "Assertions and bounded timeouts expose ordering, persistence, lease, or cleanup failure."
+        "two-second admission, terminal, lease-release, and shutdown bounds fail the test",
+        "unexpected non-busy admission errors panic immediately",
+        "state/result assertions and fixture cleanup use unwrap"
       ],
       "ownership": [
         "Owns the isolated Backend/root/callback values constructed by this named test until its explicit drop and cleanup assertions."
       ],
       "locks": [
-        "Uses the real StateStore journal and DownloadManager registry; installer tests also hold real updater directory/file leases."
+        "real AppMaintenanceLease and StateStore mutation ownership are exercised",
+        "the second admission handle proves coordinator release before maintenance state is asserted"
       ],
       "cancellation": "No external cancellation; every asynchronous wait in the test has an explicit two-second bound where liveness matters.",
       "invariants": [
-        "Proves launch failure produces durable Failed state, no exit, maintenance cleanup, and reopened admission."
+        "launch failure yields durable Failed with forced-launch summary and no exit",
+        "job admission eventually succeeds within two seconds after maintenance release",
+        "only busy is retryable; unexpected admission errors fail",
+        "maintenance_active is false while the new admission handle is held"
       ],
       "tests": [
         "failed_installer_launch_finalizes_and_reopens_admission_without_exit"
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/updates/tests.rs:141",
-        "Signature: async fn failed_installer_launch_finalizes_and_reopens_admission_without_exit()",
-        "Direct source call sites for failed_installer_launch_finalizes_and_reopens_admission_without_exit reviewed after Stage4 move."
+        "Current exact test span src/services/updates/tests.rs:141-204 reviewed after bounded coordinator-admission synchronization replaced snapshot polling.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
       ],
       "disposition": "test_only",
       "destination": "src/services/updates/tests.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T17:01:45Z",
       "status": "reviewed",
-      "notes": "Test/test-support infrastructure reviewed with its production owner."
+      "notes": "The bounded loop synchronizes on actual admission ownership, then checks durable maintenance state; it does not assume task scheduling order."
     },
     {
       "id": "src/services/updates/tests.rs::services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit::async_block#1@158[cfg=all(test, windows)]",
@@ -5550,12 +5294,13 @@
       "evidence": [
         "src/services/updates/tests.rs:158",
         "Enclosing callable: src/services/updates/tests.rs::services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit.",
-        "Uses the real updater test fixture to return an InstallerHandoff before the injected launch failure."
+        "Uses the real updater test fixture to return an InstallerHandoff before the injected launch failure.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
       ],
       "disposition": "test_only",
       "destination": "src/services/updates/tests.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T17:01:45Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
@@ -5565,54 +5310,56 @@
       "classification": "test",
       "file": "src/services/updates/tests.rs",
       "line": 178,
-      "endLine": 182,
+      "endLine": 188,
       "symbol": "async_block#2",
       "qualifiedName": "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit::async_block#2",
       "signature": "async",
-      "sourceDigest": "950e08b6980e49a24b4ee22218130de6e9e0d436e8fc8808772b72703dd70c01",
+      "sourceDigest": "f1cad395ad9de1f0442276d67963f1678b4369a7ab6ce3b94884635011faa0c6",
       "cfg": [
         "all(test, windows)"
       ],
       "ownerCall": null,
-      "purpose": "Yields boundedly until the failed workflow has cleared durable maintenance state.",
+      "purpose": "Wait up to two seconds for real job admission after failed installer handoff, retrying only the expected busy state.",
       "callers": [
-        "Created only by its enclosing callable src/services/updates/tests.rs::services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit."
+        "failed_installer_launch_finalizes_and_reopens_admission_without_exit"
       ],
       "inputs": [
-        "async"
+        "borrowed Backend DownloadManager"
       ],
-      "output": "Returns unit for bounded wait blocks or InstallerHandoff for injected preparer blocks, as used by the enclosing test.",
+      "output": "JobAdmission guard proving the maintenance lease no longer blocks admission.",
       "sideEffects": [
-        "Yields boundedly until the failed workflow has cleared durable maintenance state."
+        "calls begin_job_admission repeatedly",
+        "yields the Tokio task only after busy",
+        "retains the successful admission guard for the enclosing maintenance assertion"
       ],
       "errors": [
-        "The enclosing two-second timeout and expect expose failure to clear durable maintenance state."
+        "unexpected non-busy errors panic",
+        "enclosing timeout fails if busy persists for two seconds"
       ],
       "ownership": [
-        "Borrows Backend from the enclosing test while polling its StateStore maintenance flag."
+        "borrows Backend while polling and returns the owned JobAdmission guard to the enclosing test"
       ],
       "locks": [
-        "Uses the real lease/state owner named by the enclosing test and adds no mock lock."
+        "DownloadManager owns admission/maintenance synchronization; no guard is held across a failed busy retry"
       ],
-      "cancellation": "No external cancellation; the enclosing timeout bounds this maintenance-state polling block.",
+      "cancellation": "The enclosing two-second timeout bounds polling; each busy retry cooperatively yields.",
       "invariants": [
-        "Yields boundedly until the failed workflow has cleared durable maintenance state."
+        "only busy is retried",
+        "success returns actual admission ownership rather than inferring release from StateStore timing"
       ],
       "tests": [
-        "services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit"
+        "failed_installer_launch_finalizes_and_reopens_admission_without_exit"
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/updates/tests.rs:178",
-        "Enclosing callable: src/services/updates/tests.rs::services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit.",
-        "Yields boundedly until the failed workflow has cleared durable maintenance state."
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
       ],
       "disposition": "test_only",
       "destination": "src/services/updates/tests.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T17:01:45Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Test-only synchronization boundary for the coordinator lease release."
     },
     {
       "id": "src/windows_file.rs::windows_file::identity[cfg=windows]",
@@ -5721,6 +5468,755 @@
       "reviewedAt": "2026-09-08T23:45:34Z",
       "status": "reviewed",
       "notes": "Windows ABI uses the pinned windows-sys BOOL field value true."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_all_downloads[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 11,
+      "endLine": 21,
+      "symbol": "cancel_all_downloads",
+      "qualifiedName": "services::operations::cancel_all_downloads",
+      "signature": "pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
+      "sourceDigest": "ed1ab95fc59b48f70817f5a9dad147c69f599b297f29789501d28adf53968dd0",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Delegates cancel-all to the cancellation owner with backend owners and progress sink.",
+      "callers": [
+        "src/lib.rs::cancel_all_downloads"
+      ],
+      "inputs": [
+        "pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>"
+      ],
+      "output": "Returns cancellation drain result from cancellation::cancel_all.",
+      "sideEffects": [
+        "Requests cancellation or dismissal in StateStore/DownloadManager; pending downloads are terminally finalized before manager.finish."
+      ],
+      "errors": [
+        "Returns the `Result<CancelAllResult, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+      ],
+      "ownership": [
+        "Consumes Backend and DownloadProgressSink into cancellation::cancel_all."
+      ],
+      "locks": [
+        "Tracked Drain/Admission registration spans the command; manager and StateStore own their internal synchronization."
+      ],
+      "cancellation": "cancel_operation issues lifecycle cancellation then waits at most CANCELLATION_WAIT_TIMEOUT for terminal state; dismissal has no independent cancellation point.",
+      "invariants": [
+        "Delegates cancel-all to the cancellation owner with backend owners and progress sink."
+      ],
+      "tests": [
+        "Static call-path review of services::operations::cancel_all_downloads at src/services/operations.rs:11; no dedicated behavioral test targets this helper alone."
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "src/services/operations.rs:11",
+        "Signature: pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
+        "Direct source call sites for cancel_all_downloads reviewed after Stage4 move.",
+        "Current exact source span src/services/operations.rs:11-21 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 22,
+      "endLine": 46,
+      "symbol": "cancel_operation",
+      "qualifiedName": "services::operations::cancel_operation",
+      "signature": "pub(crate) async fn cancel_operation( publish_progress: DownloadProgressSink, backend: Backend, operation_id: String, ) -> Result<(), AppError>",
+      "sourceDigest": "5f5841e82ad2006fcade8d21b9f774dbfc41285c554a67b11cf84a9ee88896c4",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validate an operation ID, serialize cancellation as tracked drain work, prove the operation kind, and normalize races where an already-known operation finishes before cancellation reaches its manager registration.",
+      "callers": [
+        "Tauri cancel_operation command wrapper in lib.rs"
+      ],
+      "inputs": [
+        "owned Backend",
+        "owned operation ID string",
+        "shared DownloadProgressSink callback"
+      ],
+      "output": "Unit on completed, already-finished, or dismissed cancellation; AppError otherwise.",
+      "sideEffects": [
+        "validates UUID syntax",
+        "registers tracked Drain work",
+        "reads operation kind and terminal state",
+        "delegates cancellation/finalization/waiting to cancel_known_operation",
+        "rechecks the authoritative snapshot when a previously known operation becomes not_found"
+      ],
+      "errors": [
+        "invalid for malformed UUID",
+        "not_found when the operation was initially unknown or remains live without manager registration",
+        "propagates non-not_found manager, state, snapshot, and timeout errors"
+      ],
+      "ownership": [
+        "owns Backend and ID inside the tracked future",
+        "borrows the progress sink only through cancel_known_operation",
+        "DownloadManager owns update/download registrations and publication deferral state"
+      ],
+      "locks": [
+        "run_tracked_command owns tracked Drain registration",
+        "StateStore and DownloadManager delegates own their internal locks; this wrapper holds none across a delegated await"
+      ],
+      "cancellation": "Requests cancellation or observes a deferred publication, then waits up to CANCELLATION_WAIT_TIMEOUT unless the operation is already terminal/dismissed or a pending download is finalized locally.",
+      "invariants": [
+        "an initially unknown operation remains not_found",
+        "a kind-proven operation may normalize a later not_found only when the authoritative snapshot is terminal or absent",
+        "a live same-ID operation and every non-not_found error remain errors"
+      ],
+      "tests": [
+        "initially_unknown_operation_remains_not_found",
+        "known_terminal_update_treats_missing_registration_as_finished",
+        "known_dismissed_update_treats_missing_registration_as_finished",
+        "live_update_without_registration_preserves_not_found",
+        "live_update_reports_requested_and_deferred_publication"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "Current exact source span src/services/operations.rs:22-46 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "notes": "The outer normalization covers any not_found produced after the initial kind proof, including a completion/dismissal race after cancel_known_operation returns."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_operation::async_block#1@30[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 30,
+      "endLine": 44,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::operations::cancel_operation::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "896c3475670961f0337576d8ea4fc5e3c8774d5f8ca4394fee217b76b4915ecc",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Own the serialized cancellation transaction from authoritative kind lookup through race-normalized completion.",
+      "callers": [
+        "cancel_operation via run_tracked_command"
+      ],
+      "inputs": [
+        "moved Backend, operation ID, and progress callback"
+      ],
+      "output": "Result<(), AppError> consumed by tracked command",
+      "sideEffects": [
+        "reads StateStore operation kind/state",
+        "awaits cancel_known_operation",
+        "normalizes a post-proof not_found against a fresh snapshot"
+      ],
+      "errors": [
+        "initial unknown/live missing registration, snapshot, state, manager, or timeout errors"
+      ],
+      "ownership": [
+        "owns moved cancellation inputs for the future lifetime"
+      ],
+      "locks": [
+        "delegated StateStore/DownloadManager locks only; no guard is held across the whole async block"
+      ],
+      "cancellation": "Same bounded cancellation/wait behavior as cancel_operation.",
+      "invariants": [
+        "the initial kind lookup distinguishes an unknown ID from a later completion race",
+        "normalization runs after the entire delegated cancellation attempt"
+      ],
+      "tests": [
+        "initially_unknown_operation_remains_not_found",
+        "known_terminal_update_treats_missing_registration_as_finished",
+        "known_dismissed_update_treats_missing_registration_as_finished"
+      ],
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "evidence": [
+        "Current exact source span src/services/operations.rs:30-44 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Owned future for the cancel_operation Drain task."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_known_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 48,
+      "endLine": 94,
+      "symbol": "cancel_known_operation",
+      "qualifiedName": "services::operations::cancel_known_operation",
+      "signature": "async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>",
+      "sourceDigest": "3a672666c8a25dc221636b666d93ea9376ec2a9502c463ba6149ce49a2059494",
+      "cfg": [],
+      "ownerCall": null,
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Cancel a kind-proven operation while preserving update publication deferral, pending-download finalization, and the existing bounded wait for terminal state.",
+      "callers": [
+        "cancel_operation"
+      ],
+      "inputs": [
+        "borrowed progress callback",
+        "borrowed Backend",
+        "borrowed operation ID",
+        "previously proven OperationKind"
+      ],
+      "output": "Unit when cancellation reaches terminal state or the known operation has finished; AppError otherwise.",
+      "sideEffects": [
+        "cancels update or ordinary manager registration",
+        "requests StateStore cancellation unless update publication is deferred",
+        "finalizes and finishes a cancelled pending download",
+        "waits for terminal state"
+      ],
+      "errors": [
+        "propagates manager not_found and every other manager error to the outer race normalizer",
+        "propagates nonterminal StateStore cancellation errors and terminal-wait timeout/errors"
+      ],
+      "ownership": [
+        "borrows all inputs",
+        "manager retains cancellation token/update publication ownership",
+        "StateStore owns durable transitions",
+        "finalize_download owns progress publication for a pending download"
+      ],
+      "locks": [
+        "delegated manager and StateStore locks are scoped inside each call",
+        "no local lock guard crosses an await"
+      ],
+      "cancellation": "Update publication may defer cancellation until publication completes; other live operations request cancellation and wait within CANCELLATION_WAIT_TIMEOUT.",
+      "invariants": [
+        "DeferredPublication skips request_cancellation and still waits for terminal state",
+        "pending downloads finalize Cancelled and release manager registration",
+        "this helper never suppresses manager not_found; cancel_operation classifies it after the full attempt"
+      ],
+      "tests": [
+        "known_terminal_update_treats_missing_registration_as_finished",
+        "known_dismissed_update_treats_missing_registration_as_finished",
+        "live_update_without_registration_preserves_not_found",
+        "live_update_reports_requested_and_deferred_publication"
+      ],
+      "evidence": [
+        "Current exact source span src/services/operations.rs:48-94 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Private cancellation workflow extracted from cancel_operation; post-proof result normalization remains solely in the caller."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::normalize_after_known_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 98,
+      "endLine": 118,
+      "symbol": "normalize_after_known_operation",
+      "qualifiedName": "services::operations::normalize_after_known_operation",
+      "signature": "fn normalize_after_known_operation<T>( store: &crate::state::StateStore, operation_id: &str, result: Result<T, AppError>, ) -> Result<Option<T>, AppError>",
+      "sourceDigest": "0ff7aa3d43e255e94d0e26ca7ce3349feaeff6d2f4e3443beaa605e058f6ecb9",
+      "cfg": [],
+      "ownerCall": null,
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Classify a result obtained after an operation was already proven to exist, suppressing only not_found caused by terminal completion or dismissal.",
+      "callers": [
+        "cancel_operation",
+        "services::operations::tests"
+      ],
+      "inputs": [
+        "borrowed StateStore",
+        "borrowed operation ID",
+        "generic Result<T, AppError>"
+      ],
+      "output": "Some(value) on success, None for terminal/absent state after not_found, or preserved error.",
+      "sideEffects": [
+        "takes a full StateStore snapshot only for a not_found result"
+      ],
+      "errors": [
+        "returns the original not_found if the same operation remains live",
+        "returns every non-not_found error unchanged",
+        "snapshot failure replaces the candidate not_found"
+      ],
+      "ownership": [
+        "consumes the generic Result and owns any returned value/error",
+        "borrows StateStore and ID"
+      ],
+      "locks": [
+        "StateStore snapshot briefly locks live state while cloning; no lock survives return"
+      ],
+      "cancellation": "Synchronous classification with no await or cancellation point.",
+      "invariants": [
+        "Ok becomes Some without a snapshot",
+        "not_found becomes None only when the ID is terminal or absent",
+        "live same-ID state and unrelated error codes cannot be converted to success"
+      ],
+      "tests": [
+        "known_terminal_update_treats_missing_registration_as_finished",
+        "known_dismissed_update_treats_missing_registration_as_finished",
+        "live_update_without_registration_preserves_not_found"
+      ],
+      "evidence": [
+        "Current exact source span src/services/operations.rs:98-118 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Generic helper normalizes any not_found returned by the full post-proof cancellation attempt; the initial kind lookup in cancel_operation still prevents an initially unknown ID from becoming success."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::dismiss_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 120,
+      "endLine": 130,
+      "symbol": "dismiss_operation",
+      "qualifiedName": "services::operations::dismiss_operation",
+      "signature": "pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>",
+      "sourceDigest": "f51d4fa780188881a85bd7d4176d791ed7517b2daa47aebb400a8c89ca35f4f0",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Runs durable terminal-operation dismissal as tracked admission work.",
+      "callers": [
+        "src/lib.rs::dismiss_operation"
+      ],
+      "inputs": [
+        "pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>"
+      ],
+      "output": "Returns unit after durable dismissal or AppError.",
+      "sideEffects": [
+        "Requests cancellation or dismissal in StateStore/DownloadManager; pending downloads are terminally finalized before manager.finish."
+      ],
+      "errors": [
+        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+      ],
+      "ownership": [
+        "Consumes Backend and operation ID into the tracked admission command."
+      ],
+      "locks": [
+        "Tracked Drain/Admission registration spans the command; manager and StateStore own their internal synchronization."
+      ],
+      "cancellation": "cancel_operation issues lifecycle cancellation then waits at most CANCELLATION_WAIT_TIMEOUT for terminal state; dismissal has no independent cancellation point.",
+      "invariants": [
+        "Runs durable terminal-operation dismissal as tracked admission work."
+      ],
+      "tests": [
+        "Static call-path review of services::operations::dismiss_operation at src/services/operations.rs:104; no dedicated behavioral test targets this helper alone."
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "src/services/operations.rs:104",
+        "Signature: pub(crate) async fn dismiss_operation( state: Backend, operation_id: String, ) -> Result<(), AppError>",
+        "Direct source call sites for dismiss_operation reviewed after Stage4 move.",
+        "Current exact source span src/services/operations.rs:120-130 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::dismiss_operation::async_block#1@125[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 125,
+      "endLine": 128,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::operations::dismiss_operation::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "abcddb8b7d4b6e667b23afb11fde89fc630e3ebc12fe547ba138222165ed14b3",
+      "cfg": [],
+      "ownerCall": null,
+      "destination": "src/services/operations.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "evidence": [
+        "Current exact source span src/services/operations.rs:125-128 reviewed after final helper simplification.",
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Owned async block for the dismiss_operation Admission task; adjacent cancellation changes did not alter its body contract.",
+      "purpose": "Own the tracked admission task that durably dismisses one terminal operation.",
+      "callers": [
+        "dismiss_operation via run_tracked_command"
+      ],
+      "inputs": [
+        "moved Backend and operation ID"
+      ],
+      "output": "Result<(), AppError> consumed by the tracked command wrapper.",
+      "sideEffects": [
+        "delegates the durable dismissal transition to StateStore"
+      ],
+      "errors": [
+        "propagates StateStore validation and persistence errors"
+      ],
+      "ownership": [
+        "owns the moved Backend and operation ID for the future lifetime"
+      ],
+      "locks": [
+        "StateStore::dismiss_operation owns its mutation gate and internal live-state lock"
+      ],
+      "cancellation": "No local cancellation branch; dropping the outer tracked command does not rewrite the StateStore delegate's ownership semantics.",
+      "invariants": [
+        "success is returned only after StateStore accepts and persists the dismissal"
+      ],
+      "tests": [
+        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
+        "removal_detaches_terminal_history_and_reopens_without_quarantine"
+      ]
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::update_fixture[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/services/operations/tests.rs",
+      "line": 9,
+      "endLine": 30,
+      "symbol": "update_fixture",
+      "qualifiedName": "services::operations::tests::update_fixture",
+      "signature": "async fn update_fixture( label: &str, ) -> ( crate::services::Backend, std::path::PathBuf, String, crate::lifecycle::TrackedUpdate, crate::lifecycle::UpdateTaskContext, )",
+      "sourceDigest": "4859d56a4d6432e9db50e307dd11184cd1f41d8164811b5053cf317779299959",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Construct a live runtime-update StateStore and DownloadManager registration for cancellation race tests.",
+      "callers": [
+        "five services::operations cancellation tests"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Construct a live runtime-update StateStore and DownloadManager registration for cancellation race tests."
+      ],
+      "tests": [
+        "update_fixture"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::known_terminal_update_treats_missing_registration_as_finished[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/operations/tests.rs",
+      "line": 33,
+      "endLine": 54,
+      "symbol": "known_terminal_update_treats_missing_registration_as_finished",
+      "qualifiedName": "services::operations::tests::known_terminal_update_treats_missing_registration_as_finished",
+      "signature": "async fn known_terminal_update_treats_missing_registration_as_finished()",
+      "sourceDigest": "259bca08e8e1b2fbcfb443795284528179db3050a35f8cedabe1df3f0b5bac95",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Assert that a kind-proven terminal update whose manager registration has ended normalizes not_found to finished.",
+      "callers": [
+        "known_terminal_update_treats_missing_registration_as_finished"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Assert that a kind-proven terminal update whose manager registration has ended normalizes not_found to finished."
+      ],
+      "tests": [
+        "known_terminal_update_treats_missing_registration_as_finished"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::known_dismissed_update_treats_missing_registration_as_finished[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/operations/tests.rs",
+      "line": 57,
+      "endLine": 79,
+      "symbol": "known_dismissed_update_treats_missing_registration_as_finished",
+      "qualifiedName": "services::operations::tests::known_dismissed_update_treats_missing_registration_as_finished",
+      "signature": "async fn known_dismissed_update_treats_missing_registration_as_finished()",
+      "sourceDigest": "6a2fd9bb56b1ffa7d680a5c68767f687eaa8cb5db7c3898e8bb309fc7bd22c7c",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Assert that a kind-proven dismissed update normalizes missing manager and StateStore records to finished.",
+      "callers": [
+        "known_dismissed_update_treats_missing_registration_as_finished"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Assert that a kind-proven dismissed update normalizes missing manager and StateStore records to finished."
+      ],
+      "tests": [
+        "known_dismissed_update_treats_missing_registration_as_finished"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::live_update_without_registration_preserves_not_found[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/operations/tests.rs",
+      "line": 82,
+      "endLine": 102,
+      "symbol": "live_update_without_registration_preserves_not_found",
+      "qualifiedName": "services::operations::tests::live_update_without_registration_preserves_not_found",
+      "signature": "async fn live_update_without_registration_preserves_not_found()",
+      "sourceDigest": "ca07d997a64269cb1481d38721b75a028d1fd28ee951d476bc74cd7862bcc6bd",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Assert that a live same-ID update preserves not_found and unrelated busy errors unchanged.",
+      "callers": [
+        "live_update_without_registration_preserves_not_found"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Assert that a live same-ID update preserves not_found and unrelated busy errors unchanged."
+      ],
+      "tests": [
+        "live_update_without_registration_preserves_not_found"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::live_update_reports_requested_and_deferred_publication[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/operations/tests.rs",
+      "line": 105,
+      "endLine": 139,
+      "symbol": "live_update_reports_requested_and_deferred_publication",
+      "qualifiedName": "services::operations::tests::live_update_reports_requested_and_deferred_publication",
+      "signature": "async fn live_update_reports_requested_and_deferred_publication()",
+      "sourceDigest": "653b10a6c444a282e5dad4df5d49c34c092d7caba86bce23d084cad2e4f0cf19",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Assert exact Requested and DeferredPublication results for live update registrations.",
+      "callers": [
+        "live_update_reports_requested_and_deferred_publication"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Assert exact Requested and DeferredPublication results for live update registrations."
+      ],
+      "tests": [
+        "live_update_reports_requested_and_deferred_publication"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
+    },
+    {
+      "id": "src/services/operations/tests.rs::services::operations::tests::initially_unknown_operation_remains_not_found[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/operations/tests.rs",
+      "line": 142,
+      "endLine": 151,
+      "symbol": "initially_unknown_operation_remains_not_found",
+      "qualifiedName": "services::operations::tests::initially_unknown_operation_remains_not_found",
+      "signature": "async fn initially_unknown_operation_remains_not_found()",
+      "sourceDigest": "006521e688199b25a812a843fa84d31809fa74b5f0581f30258e0a81beb1635e",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "destination": "src/services/operations/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-09T16:58:29Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "purpose": "Assert the public cancellation path does not normalize an operation that was unknown at the initial kind lookup.",
+      "callers": [
+        "initially_unknown_operation_remains_not_found"
+      ],
+      "inputs": [
+        "isolated started_backend fixture and operation/update state"
+      ],
+      "output": "Test unit; panics on assertion or setup failure.",
+      "sideEffects": [
+        "creates isolated journal/runtime state",
+        "mutates cancellation/terminal/dismissal state",
+        "removes the isolated root after dropping owners"
+      ],
+      "errors": [
+        "test uses unwrap/unwrap_err and fails on unexpected result"
+      ],
+      "ownership": [
+        "test owns Backend, update registration/context guards, and isolated root until explicit drops"
+      ],
+      "locks": [
+        "production manager and StateStore delegates own synchronization"
+      ],
+      "cancellation": "Tokio test awaits only bounded local state operations; no external cancellation.",
+      "invariants": [
+        "Assert the public cancellation path does not normalize an operation that was unknown at the initial kind lookup."
+      ],
+      "tests": [
+        "initially_unknown_operation_remains_not_found"
+      ],
+      "evidence": [
+        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+      ],
+      "notes": "Nonproduction direct regression; no broader qualification claim."
     }
   ]
 }

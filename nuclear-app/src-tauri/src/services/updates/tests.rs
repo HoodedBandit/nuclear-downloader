@@ -175,18 +175,20 @@ async fn failed_installer_launch_finalizes_and_reopens_admission_without_exit() 
     );
     assert_eq!(exits.load(Ordering::SeqCst), 0);
 
-    tokio::time::timeout(Duration::from_secs(2), async {
-        while backend.state_store.snapshot().unwrap().maintenance_active {
-            tokio::task::yield_now().await;
+    let admission = tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            match backend.download_manager.begin_job_admission(1).await {
+                Ok(admission) => break admission,
+                Err(error) if error.code == "busy" => tokio::task::yield_now().await,
+                Err(error) => {
+                    panic!("failed handoff returned an unexpected admission error: {error:?}")
+                }
+            }
         }
     })
     .await
     .expect("the failed handoff should release its maintenance lease");
-    let admission = backend
-        .download_manager
-        .begin_job_admission(1)
-        .await
-        .unwrap();
+    assert!(!backend.state_store.snapshot().unwrap().maintenance_active);
     drop(admission);
 
     backend.download_manager.begin_shutdown().await;
