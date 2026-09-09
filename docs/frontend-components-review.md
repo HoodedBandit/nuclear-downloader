@@ -18,5 +18,6 @@ Shared styles remain in one route-owned sheet to preserve their interleaved casc
 | --- | --- | --- |
 | Route stylesheet and status footer | Passed: 161 frontend tests, 11 browser workflows, type/lint/format/build/exclusion checks, and all 60 exact visual/semantic comparisons. The opt-in soak was skipped. | `internal-cleanup-footer-visual.json`; `target/frontend-extractions/footer-20260909T073205Z-02c69ace288b4035ba8876b963505e96/` |
 | Row diagnostics | Passed the same 161-test, 11-workflow, and 60-scenario gates with zero visual/semantic differences. | `internal-cleanup-row-diagnostics-visual.json`; `target/frontend-extractions/row-diagnostics-20260909T073852Z-dd10d6060e4444d88718a456af7dce8f/` |
+| Queue row | Passed: 165 frontend tests, 11 browser workflows, type/lint/format/build/exclusion checks, and all 60 exact visual/semantic comparisons. The opt-in soak was skipped. | `internal-cleanup-queue-row-visual.json`; `target/frontend-extractions/queue-row-20260909T075535Z-1ba6be520db64eba9bbef1f18684d25e/` |
 
 Native Windows/WebView2 and actual Windows scaling qualification remain deferred; browser emulation is not a substitute.

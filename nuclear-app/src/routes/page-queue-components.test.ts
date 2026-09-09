@@ -110,7 +110,10 @@ async function mountReadyPage() {
   return view;
 }
 
-async function scrollQueue(view: ReturnType<typeof render>, index: number): Promise<HTMLElement> {
+async function scrollQueue(
+  view: Awaited<ReturnType<typeof mountReadyPage>>,
+  index: number
+): Promise<HTMLElement> {
   const viewport = view.container.querySelector<HTMLElement>('section.queue')!;
   Object.defineProperty(viewport, 'scrollTop', { configurable: true, writable: true, value: 0 });
   viewport.scrollTop = index * 53;
