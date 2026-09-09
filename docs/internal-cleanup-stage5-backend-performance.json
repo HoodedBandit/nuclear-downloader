@@ -1,0 +1,6983 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "df582df4ddc566712729b7006dfb080374c5ef45",
+  "candidateCommit": "fd58050b054f921d315658880a14793fb93fcae6",
+  "profile": "debug",
+  "order": ["A", "B", "B", "A", "A", "B"],
+  "comparisonMode": "maintainability",
+  "receiptBindings": {
+    "receipt.json": "1ec7a84cd829fdd0b2954a803cf0f70f0c3d93e36b054da0bc68de91c6ec5394",
+    "preflight-receipt.json": "26e82784454b191a76d0f4d5b439fe94fe3506932c18913d7e032b6d73f06743",
+    "after-warm-receipt.json": "0ba66ebbe98d8c48f6be60b8bbcc7bfef3024f8cdd7b6c1731541e8343ae505d",
+    "baseline-source-manifest.json": "b645afd45e67c68b7f8782bb592ae1284682dab7b84a1f6ce6c6689d70351f7a",
+    "candidate-source-manifest.json": "5b073ea106f085221011c907e61768cbb63f7bf6bb6e1fc255a16591de9cec68",
+    "matched-harness-manifest.json": "bccf08a1fb16bf689782292fb373e5316d3e11ef51d4c6cea0f61b1ce44075b4"
+  },
+  "executables": [
+    {
+      "side": "baseline",
+      "cargoTarget": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-short-20260909T0943Z\\cargo-targets\\baseline",
+      "passOneRawOutput": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-frozen-20260909T1023Z\\raw-output\\warm-1-baseline.jsonl",
+      "passTwoRawOutput": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-frozen-20260909T1023Z\\raw-output\\warm-2-baseline.jsonl",
+      "executable": {
+        "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-short-20260909T0943Z\\cargo-targets\\baseline\\debug\\deps\\nuclear_app_lib-7c7cc370866e23da.exe",
+        "bytes": 26300928,
+        "sha256": "576c69b4ed574e1243f03b9b14e998713e48b0a78976f3b705ac68a28672b3ad",
+        "fresh": true
+      }
+    },
+    {
+      "side": "candidate",
+      "cargoTarget": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-short-20260909T0943Z\\cargo-targets\\candidate",
+      "passOneRawOutput": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-frozen-20260909T1023Z\\raw-output\\warm-1-candidate.jsonl",
+      "passTwoRawOutput": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-frozen-20260909T1023Z\\raw-output\\warm-2-candidate.jsonl",
+      "executable": {
+        "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-performance-short-20260909T0943Z\\cargo-targets\\candidate\\debug\\deps\\nuclear_app_lib-7c7cc370866e23da.exe",
+        "bytes": 26301440,
+        "sha256": "bb8b15790eadb4073525b28526424e06c29b9d61e8809f7a19f69b771d5baf39",
+        "fresh": true
+      }
+    }
+  ],
+  "hardGateStatuses": ["passed", "passed", "passed"],
+  "reviewCounts": [2, 0, 22],
+  "timingReviewCounts": [0, 0, 22],
+  "memoryReviewCounts": [2, 0, 0],
+  "assessment": {
+    "persistentThresholdRegression": false,
+    "basis": "No metric crossed the maintainability review threshold in two or more matched repeats. Repeat 1 flagged two queue-1 working-set rows; repeat 3 flagged 22 timing rows; repeat 2 flagged none. This supports run-to-run variation rather than a reproduced threshold regression, without proving the candidate has zero performance effect or identifying a cause."
+  },
+  "flaggedRows": [
+    {
+      "repeat": 1,
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "workingSetAfterSamples",
+      "percentile": "",
+      "unit": "bytes",
+      "baseline": 11808768.0,
+      "after": 24793088.0,
+      "absoluteDelta": 12984320.0,
+      "ratio": 2.099549080818592,
+      "percentChange": 109.95490808185919,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 1,
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "workingSetGrowth",
+      "percentile": "",
+      "unit": "bytes",
+      "baseline": 2236416.0,
+      "after": 15212544.0,
+      "absoluteDelta": 12976128.0,
+      "ratio": 6.802197802197802,
+      "percentChange": 580.2197802197802,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >2 MiB increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 4235.0,
+      "after": 5083.0,
+      "absoluteDelta": 848.0,
+      "ratio": 1.2002361275088549,
+      "percentChange": 20.02361275088549,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 4235.0,
+      "after": 5083.0,
+      "absoluteDelta": 848.0,
+      "ratio": 1.2002361275088549,
+      "percentChange": 20.02361275088549,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 4235.0,
+      "after": 5083.0,
+      "absoluteDelta": 848.0,
+      "ratio": 1.2002361275088549,
+      "percentChange": 20.02361275088549,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 8433.0,
+      "after": 18006.0,
+      "absoluteDelta": 9573.0,
+      "ratio": 2.135183208822483,
+      "percentChange": 113.51832088224829,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 9413.0,
+      "after": 23102.0,
+      "absoluteDelta": 13689.0,
+      "ratio": 2.4542653776691807,
+      "percentChange": 145.42653776691807,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 10907.0,
+      "after": 23865.0,
+      "absoluteDelta": 12958.0,
+      "ratio": 2.188044375171908,
+      "percentChange": 118.80443751719079,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 7985.0,
+      "after": 18050.0,
+      "absoluteDelta": 10065.0,
+      "ratio": 2.260488415779587,
+      "percentChange": 126.04884157795868,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 8830.0,
+      "after": 23415.0,
+      "absoluteDelta": 14585.0,
+      "ratio": 2.6517553793884483,
+      "percentChange": 165.17553793884483,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 10838.0,
+      "after": 27224.0,
+      "absoluteDelta": 16386.0,
+      "ratio": 2.511902565048902,
+      "percentChange": 151.1902565048902,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 13662.0,
+      "after": 23760.0,
+      "absoluteDelta": 10098.0,
+      "ratio": 1.7391304347826086,
+      "percentChange": 73.91304347826086,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 13662.0,
+      "after": 23760.0,
+      "absoluteDelta": 10098.0,
+      "ratio": 1.7391304347826086,
+      "percentChange": 73.91304347826086,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 13662.0,
+      "after": 23760.0,
+      "absoluteDelta": 10098.0,
+      "ratio": 1.7391304347826086,
+      "percentChange": 73.91304347826086,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 41302.0,
+      "after": 48385.0,
+      "absoluteDelta": 7083.0,
+      "ratio": 1.1714929059125465,
+      "percentChange": 17.14929059125465,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 44811.0,
+      "after": 54585.0,
+      "absoluteDelta": 9774.0,
+      "ratio": 1.2181160875677848,
+      "percentChange": 21.811608756778476,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 46567.0,
+      "after": 56284.0,
+      "absoluteDelta": 9717.0,
+      "ratio": 1.2086670818390706,
+      "percentChange": 20.866708183907058,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 39835.0,
+      "after": 47394.0,
+      "absoluteDelta": 7559.0,
+      "ratio": 1.1897577507217272,
+      "percentChange": 18.975775072172716,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 42166.0,
+      "after": 52978.0,
+      "absoluteDelta": 10812.0,
+      "ratio": 1.2564151211876868,
+      "percentChange": 25.641512118768684,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 43414.0,
+      "after": 54482.0,
+      "absoluteDelta": 11068.0,
+      "ratio": 1.254940802506104,
+      "percentChange": 25.494080250610395,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "unit": "microseconds",
+      "baseline": 55224.0,
+      "after": 70939.0,
+      "absoluteDelta": 15715.0,
+      "ratio": 1.2845683036361002,
+      "percentChange": 28.45683036361002,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "unit": "microseconds",
+      "baseline": 55224.0,
+      "after": 70939.0,
+      "absoluteDelta": 15715.0,
+      "ratio": 1.2845683036361002,
+      "percentChange": 28.45683036361002,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "unit": "microseconds",
+      "baseline": 55224.0,
+      "after": 70939.0,
+      "absoluteDelta": 15715.0,
+      "ratio": 1.2845683036361002,
+      "percentChange": 28.45683036361002,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    },
+    {
+      "repeat": 3,
+      "category": "blocked_io",
+      "scope": "queue-1000",
+      "metric": "snapshot",
+      "percentile": "",
+      "unit": "microseconds",
+      "baseline": 899.0,
+      "after": 1008.0,
+      "absoluteDelta": 109.0,
+      "ratio": 1.121245828698554,
+      "percentChange": 12.124582869855406,
+      "direction": "increased",
+      "reviewRequired": true,
+      "reviewThreshold": ">10% and >0.1 ms increase; positive-from-zero counts as a relative increase",
+      "releaseGate": false
+    }
+  ],
+  "aggregates": [
+    {
+      "category": "blocked_io",
+      "scope": "queue-1",
+      "metric": "snapshot",
+      "percentile": "",
+      "baseline": {
+        "median": 11.0,
+        "min": 10.0,
+        "max": 18.0
+      },
+      "candidate": {
+        "median": 10.0,
+        "min": 9.0,
+        "max": 14.0
+      },
+      "percentChange": {
+        "median": -9.999999999999998,
+        "min": -44.44444444444444,
+        "max": 27.27272727272727
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 10.0,
+          "candidate": 9.0,
+          "delta": -1.0,
+          "percentChange": -9.999999999999998,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 11.0,
+          "candidate": 14.0,
+          "delta": 3.0,
+          "percentChange": 27.27272727272727,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 18.0,
+          "candidate": 10.0,
+          "delta": -8.0,
+          "percentChange": -44.44444444444444,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "blocked_io",
+      "scope": "queue-100",
+      "metric": "snapshot",
+      "percentile": "",
+      "baseline": {
+        "median": 103.0,
+        "min": 98.0,
+        "max": 191.0
+      },
+      "candidate": {
+        "median": 128.0,
+        "min": 84.0,
+        "max": 129.0
+      },
+      "percentChange": {
+        "median": -14.28571428571429,
+        "min": -32.98429319371727,
+        "max": 25.242718446601952
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 191.0,
+          "candidate": 128.0,
+          "delta": -63.0,
+          "percentChange": -32.98429319371727,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 98.0,
+          "candidate": 84.0,
+          "delta": -14.0,
+          "percentChange": -14.28571428571429,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 103.0,
+          "candidate": 129.0,
+          "delta": 26.0,
+          "percentChange": 25.242718446601952,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "blocked_io",
+      "scope": "queue-1000",
+      "metric": "snapshot",
+      "percentile": "",
+      "baseline": {
+        "median": 945.0,
+        "min": 899.0,
+        "max": 1259.0
+      },
+      "candidate": {
+        "median": 986.0,
+        "min": 906.0,
+        "max": 1008.0
+      },
+      "percentChange": {
+        "median": 4.338624338624331,
+        "min": -28.038125496425735,
+        "max": 12.124582869855406
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1259.0,
+          "candidate": 906.0,
+          "delta": -353.0,
+          "percentChange": -28.038125496425735,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 945.0,
+          "candidate": 986.0,
+          "delta": 41.0,
+          "percentChange": 4.338624338624331,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 899.0,
+          "candidate": 1008.0,
+          "delta": 109.0,
+          "percentChange": 12.124582869855406,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-1",
+      "metric": "deltaCount",
+      "percentile": "",
+      "baseline": {
+        "median": 2.0,
+        "min": 2.0,
+        "max": 2.0
+      },
+      "candidate": {
+        "median": 2.0,
+        "min": 2.0,
+        "max": 2.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2.0,
+          "candidate": 2.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 2.0,
+          "candidate": 2.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2.0,
+          "candidate": 2.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-1",
+      "metric": "serializedBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 1088.0,
+        "min": 1088.0,
+        "max": 1088.0
+      },
+      "candidate": {
+        "median": 1088.0,
+        "min": 1088.0,
+        "max": 1088.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1088.0,
+          "candidate": 1088.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1088.0,
+          "candidate": 1088.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1088.0,
+          "candidate": 1088.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-100",
+      "metric": "deltaCount",
+      "percentile": "",
+      "baseline": {
+        "median": 200.0,
+        "min": 200.0,
+        "max": 200.0
+      },
+      "candidate": {
+        "median": 200.0,
+        "min": 200.0,
+        "max": 200.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 200.0,
+          "candidate": 200.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 200.0,
+          "candidate": 200.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 200.0,
+          "candidate": 200.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-100",
+      "metric": "serializedBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 108980.0,
+        "min": 108980.0,
+        "max": 108980.0
+      },
+      "candidate": {
+        "median": 108980.0,
+        "min": 108980.0,
+        "max": 108980.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 108980.0,
+          "candidate": 108980.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 108980.0,
+          "candidate": 108980.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 108980.0,
+          "candidate": 108980.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-1000",
+      "metric": "deltaCount",
+      "percentile": "",
+      "baseline": {
+        "median": 2000.0,
+        "min": 2000.0,
+        "max": 2000.0
+      },
+      "candidate": {
+        "median": 2000.0,
+        "min": 2000.0,
+        "max": 2000.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2000.0,
+          "candidate": 2000.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 2000.0,
+          "candidate": 2000.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2000.0,
+          "candidate": 2000.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "event_backlog",
+      "scope": "queue-1000",
+      "metric": "serializedBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 1093592.0,
+        "min": 1093592.0,
+        "max": 1093592.0
+      },
+      "candidate": {
+        "median": 1093592.0,
+        "min": 1093592.0,
+        "max": 1093592.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1093592.0,
+          "candidate": 1093592.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1093592.0,
+          "candidate": 1093592.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1093592.0,
+          "candidate": 1093592.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "durableCommand",
+      "percentile": "p50",
+      "baseline": {
+        "median": 4422.0,
+        "min": 4322.0,
+        "max": 4452.0
+      },
+      "candidate": {
+        "median": 4251.0,
+        "min": 4044.0,
+        "max": 4423.0
+      },
+      "percentChange": {
+        "median": -3.8670284938941646,
+        "min": -6.432207311429893,
+        "max": -0.6513926325247055
+      },
+      "directions": ["decreased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 4452.0,
+          "candidate": 4423.0,
+          "delta": -29.0,
+          "percentChange": -0.6513926325247055,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4322.0,
+          "candidate": 4044.0,
+          "delta": -278.0,
+          "percentChange": -6.432207311429893,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4422.0,
+          "candidate": 4251.0,
+          "delta": -171.0,
+          "percentChange": -3.8670284938941646,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "durableCommand",
+      "percentile": "p95",
+      "baseline": {
+        "median": 4954.0,
+        "min": 4866.0,
+        "max": 4977.0
+      },
+      "candidate": {
+        "median": 4888.0,
+        "min": 4741.0,
+        "max": 4998.0
+      },
+      "percentChange": {
+        "median": -1.788225838858748,
+        "min": -2.5688450472667435,
+        "max": 0.8881711748082388
+      },
+      "directions": ["increased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 4954.0,
+          "candidate": 4998.0,
+          "delta": 44.0,
+          "percentChange": 0.8881711748082388,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4866.0,
+          "candidate": 4741.0,
+          "delta": -125.0,
+          "percentChange": -2.5688450472667435,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4977.0,
+          "candidate": 4888.0,
+          "delta": -89.0,
+          "percentChange": -1.788225838858748,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "durableCommand",
+      "percentile": "p99",
+      "baseline": {
+        "median": 5043.0,
+        "min": 5030.0,
+        "max": 5443.0
+      },
+      "candidate": {
+        "median": 5075.0,
+        "min": 4975.0,
+        "max": 5316.0
+      },
+      "percentChange": {
+        "median": -1.0934393638170947,
+        "min": -6.7609774021679225,
+        "max": 5.413444378346233
+      },
+      "directions": ["increased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 5043.0,
+          "candidate": 5316.0,
+          "delta": 273.0,
+          "percentChange": 5.413444378346233,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 5030.0,
+          "candidate": 4975.0,
+          "delta": -55.0,
+          "percentChange": -1.0934393638170947,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 5443.0,
+          "candidate": 5075.0,
+          "delta": -368.0,
+          "percentChange": -6.7609774021679225,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "baseline": {
+        "median": 4235.0,
+        "min": 3878.0,
+        "max": 4543.0
+      },
+      "candidate": {
+        "median": 4669.0,
+        "min": 3994.0,
+        "max": 5083.0
+      },
+      "percentChange": {
+        "median": 2.991232594120685,
+        "min": 2.7734976887519247,
+        "max": 20.02361275088549
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 3878.0,
+          "candidate": 3994.0,
+          "delta": 116.0,
+          "percentChange": 2.991232594120685,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4543.0,
+          "candidate": 4669.0,
+          "delta": 126.0,
+          "percentChange": 2.7734976887519247,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4235.0,
+          "candidate": 5083.0,
+          "delta": 848.0,
+          "percentChange": 20.02361275088549,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "baseline": {
+        "median": 4235.0,
+        "min": 3878.0,
+        "max": 4543.0
+      },
+      "candidate": {
+        "median": 4669.0,
+        "min": 3994.0,
+        "max": 5083.0
+      },
+      "percentChange": {
+        "median": 2.991232594120685,
+        "min": 2.7734976887519247,
+        "max": 20.02361275088549
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 3878.0,
+          "candidate": 3994.0,
+          "delta": 116.0,
+          "percentChange": 2.991232594120685,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4543.0,
+          "candidate": 4669.0,
+          "delta": 126.0,
+          "percentChange": 2.7734976887519247,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4235.0,
+          "candidate": 5083.0,
+          "delta": 848.0,
+          "percentChange": 20.02361275088549,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "baseline": {
+        "median": 4235.0,
+        "min": 3878.0,
+        "max": 4543.0
+      },
+      "candidate": {
+        "median": 4669.0,
+        "min": 3994.0,
+        "max": 5083.0
+      },
+      "percentChange": {
+        "median": 2.991232594120685,
+        "min": 2.7734976887519247,
+        "max": 20.02361275088549
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 3878.0,
+          "candidate": 3994.0,
+          "delta": 116.0,
+          "percentChange": 2.991232594120685,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4543.0,
+          "candidate": 4669.0,
+          "delta": 126.0,
+          "percentChange": 2.7734976887519247,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4235.0,
+          "candidate": 5083.0,
+          "delta": 848.0,
+          "percentChange": 20.02361275088549,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "journalSave",
+      "percentile": "p50",
+      "baseline": {
+        "median": 4034.0,
+        "min": 3870.0,
+        "max": 4264.0
+      },
+      "candidate": {
+        "median": 3907.0,
+        "min": 3721.0,
+        "max": 4129.0
+      },
+      "percentChange": {
+        "median": -3.148239960337129,
+        "min": -12.734521575984992,
+        "max": 6.692506459948322
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 4264.0,
+          "candidate": 3721.0,
+          "delta": -543.0,
+          "percentChange": -12.734521575984992,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4034.0,
+          "candidate": 3907.0,
+          "delta": -127.0,
+          "percentChange": -3.148239960337129,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 3870.0,
+          "candidate": 4129.0,
+          "delta": 259.0,
+          "percentChange": 6.692506459948322,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "journalSave",
+      "percentile": "p95",
+      "baseline": {
+        "median": 4642.0,
+        "min": 4504.0,
+        "max": 5100.0
+      },
+      "candidate": {
+        "median": 4562.0,
+        "min": 4302.0,
+        "max": 4653.0
+      },
+      "percentChange": {
+        "median": -1.723395088323998,
+        "min": -15.647058823529413,
+        "max": 3.308170515097686
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 5100.0,
+          "candidate": 4302.0,
+          "delta": -798.0,
+          "percentChange": -15.647058823529413,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4642.0,
+          "candidate": 4562.0,
+          "delta": -80.0,
+          "percentChange": -1.723395088323998,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4504.0,
+          "candidate": 4653.0,
+          "delta": 149.0,
+          "percentChange": 3.308170515097686,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "journalSave",
+      "percentile": "p99",
+      "baseline": {
+        "median": 4965.0,
+        "min": 4794.0,
+        "max": 5848.0
+      },
+      "candidate": {
+        "median": 4742.0,
+        "min": 4566.0,
+        "max": 4961.0
+      },
+      "percentChange": {
+        "median": -4.4914400805639465,
+        "min": -21.922024623803004,
+        "max": 3.4835210680016715
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 5848.0,
+          "candidate": 4566.0,
+          "delta": -1282.0,
+          "percentChange": -21.922024623803004,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4965.0,
+          "candidate": 4742.0,
+          "delta": -223.0,
+          "percentChange": -4.4914400805639465,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4794.0,
+          "candidate": 4961.0,
+          "delta": 167.0,
+          "percentChange": 3.4835210680016715,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshot",
+      "percentile": "p50",
+      "baseline": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "candidate": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshot",
+      "percentile": "p95",
+      "baseline": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "candidate": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 2.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 100.0
+      },
+      "directions": ["unchanged", "increased", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1.0,
+          "candidate": 2.0,
+          "delta": 1.0,
+          "percentChange": 100.0,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshot",
+      "percentile": "p99",
+      "baseline": {
+        "median": 2.0,
+        "min": 1.0,
+        "max": 2.0
+      },
+      "candidate": {
+        "median": 2.0,
+        "min": 2.0,
+        "max": 14.0
+      },
+      "percentChange": {
+        "median": 100.0,
+        "min": 0.0,
+        "max": 600.0
+      },
+      "directions": ["increased", "increased", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2.0,
+          "candidate": 14.0,
+          "delta": 12.0,
+          "percentChange": 600.0,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1.0,
+          "candidate": 2.0,
+          "delta": 1.0,
+          "percentChange": 100.0,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2.0,
+          "candidate": 2.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshotWire",
+      "percentile": "p50",
+      "baseline": {
+        "median": 19.0,
+        "min": 19.0,
+        "max": 19.0
+      },
+      "candidate": {
+        "median": 19.0,
+        "min": 19.0,
+        "max": 19.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 19.0,
+          "candidate": 19.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 19.0,
+          "candidate": 19.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 19.0,
+          "candidate": 19.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshotWire",
+      "percentile": "p95",
+      "baseline": {
+        "median": 20.0,
+        "min": 20.0,
+        "max": 20.0
+      },
+      "candidate": {
+        "median": 21.0,
+        "min": 20.0,
+        "max": 37.0
+      },
+      "percentChange": {
+        "median": 5.000000000000004,
+        "min": 0.0,
+        "max": 85.00000000000001
+      },
+      "directions": ["increased", "unchanged", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 20.0,
+          "candidate": 37.0,
+          "delta": 17.0,
+          "percentChange": 85.00000000000001,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 20.0,
+          "candidate": 20.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 20.0,
+          "candidate": 21.0,
+          "delta": 1.0,
+          "percentChange": 5.000000000000004,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1",
+      "metric": "snapshotWire",
+      "percentile": "p99",
+      "baseline": {
+        "median": 24.0,
+        "min": 22.0,
+        "max": 34.0
+      },
+      "candidate": {
+        "median": 35.0,
+        "min": 35.0,
+        "max": 50.0
+      },
+      "percentChange": {
+        "median": 47.058823529411775,
+        "min": 45.83333333333333,
+        "max": 59.09090909090908
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 34.0,
+          "candidate": 50.0,
+          "delta": 16.0,
+          "percentChange": 47.058823529411775,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 22.0,
+          "candidate": 35.0,
+          "delta": 13.0,
+          "percentChange": 59.09090909090908,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 24.0,
+          "candidate": 35.0,
+          "delta": 11.0,
+          "percentChange": 45.83333333333333,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p50",
+      "baseline": {
+        "median": 8504.0,
+        "min": 8433.0,
+        "max": 8550.0
+      },
+      "candidate": {
+        "median": 8574.0,
+        "min": 8551.0,
+        "max": 18006.0
+      },
+      "percentChange": {
+        "median": 0.5526810912511726,
+        "min": 0.2807017543859702,
+        "max": 113.51832088224829
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 8550.0,
+          "candidate": 8574.0,
+          "delta": 24.0,
+          "percentChange": 0.2807017543859702,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 8504.0,
+          "candidate": 8551.0,
+          "delta": 47.0,
+          "percentChange": 0.5526810912511726,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 8433.0,
+          "candidate": 18006.0,
+          "delta": 9573.0,
+          "percentChange": 113.51832088224829,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p95",
+      "baseline": {
+        "median": 9408.0,
+        "min": 9304.0,
+        "max": 9413.0
+      },
+      "candidate": {
+        "median": 9389.0,
+        "min": 9256.0,
+        "max": 23102.0
+      },
+      "percentChange": {
+        "median": 0.9135855546001714,
+        "min": -1.6156462585034004,
+        "max": 145.42653776691807
+      },
+      "directions": ["increased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 9304.0,
+          "candidate": 9389.0,
+          "delta": 85.0,
+          "percentChange": 0.9135855546001714,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9408.0,
+          "candidate": 9256.0,
+          "delta": -152.0,
+          "percentChange": -1.6156462585034004,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 9413.0,
+          "candidate": 23102.0,
+          "delta": 13689.0,
+          "percentChange": 145.42653776691807,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "durableCommand",
+      "percentile": "p99",
+      "baseline": {
+        "median": 10907.0,
+        "min": 9780.0,
+        "max": 15005.0
+      },
+      "candidate": {
+        "median": 11127.0,
+        "min": 9701.0,
+        "max": 23865.0
+      },
+      "percentChange": {
+        "median": -0.8077709611451933,
+        "min": -25.844718427190937,
+        "max": 118.80443751719079
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 15005.0,
+          "candidate": 11127.0,
+          "delta": -3878.0,
+          "percentChange": -25.844718427190937,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9780.0,
+          "candidate": 9701.0,
+          "delta": -79.0,
+          "percentChange": -0.8077709611451933,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 10907.0,
+          "candidate": 23865.0,
+          "delta": 12958.0,
+          "percentChange": 118.80443751719079,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "baseline": {
+        "median": 14138.0,
+        "min": 13662.0,
+        "max": 14203.0
+      },
+      "candidate": {
+        "median": 14148.0,
+        "min": 13882.0,
+        "max": 23760.0
+      },
+      "percentChange": {
+        "median": -0.3872421319439545,
+        "min": -1.8107228745225634,
+        "max": 73.91304347826086
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 14138.0,
+          "candidate": 13882.0,
+          "delta": -256.0,
+          "percentChange": -1.8107228745225634,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 14203.0,
+          "candidate": 14148.0,
+          "delta": -55.0,
+          "percentChange": -0.3872421319439545,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 13662.0,
+          "candidate": 23760.0,
+          "delta": 10098.0,
+          "percentChange": 73.91304347826086,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "baseline": {
+        "median": 14138.0,
+        "min": 13662.0,
+        "max": 14203.0
+      },
+      "candidate": {
+        "median": 14148.0,
+        "min": 13882.0,
+        "max": 23760.0
+      },
+      "percentChange": {
+        "median": -0.3872421319439545,
+        "min": -1.8107228745225634,
+        "max": 73.91304347826086
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 14138.0,
+          "candidate": 13882.0,
+          "delta": -256.0,
+          "percentChange": -1.8107228745225634,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 14203.0,
+          "candidate": 14148.0,
+          "delta": -55.0,
+          "percentChange": -0.3872421319439545,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 13662.0,
+          "candidate": 23760.0,
+          "delta": 10098.0,
+          "percentChange": 73.91304347826086,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "baseline": {
+        "median": 14138.0,
+        "min": 13662.0,
+        "max": 14203.0
+      },
+      "candidate": {
+        "median": 14148.0,
+        "min": 13882.0,
+        "max": 23760.0
+      },
+      "percentChange": {
+        "median": -0.3872421319439545,
+        "min": -1.8107228745225634,
+        "max": 73.91304347826086
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 14138.0,
+          "candidate": 13882.0,
+          "delta": -256.0,
+          "percentChange": -1.8107228745225634,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 14203.0,
+          "candidate": 14148.0,
+          "delta": -55.0,
+          "percentChange": -0.3872421319439545,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 13662.0,
+          "candidate": 23760.0,
+          "delta": 10098.0,
+          "percentChange": 73.91304347826086,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p50",
+      "baseline": {
+        "median": 7985.0,
+        "min": 7958.0,
+        "max": 8217.0
+      },
+      "candidate": {
+        "median": 8336.0,
+        "min": 8181.0,
+        "max": 18050.0
+      },
+      "percentChange": {
+        "median": 4.749937170143248,
+        "min": -0.4381161007667056,
+        "max": 126.04884157795868
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 8217.0,
+          "candidate": 8181.0,
+          "delta": -36.0,
+          "percentChange": -0.4381161007667056,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 7958.0,
+          "candidate": 8336.0,
+          "delta": 378.0,
+          "percentChange": 4.749937170143248,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 7985.0,
+          "candidate": 18050.0,
+          "delta": 10065.0,
+          "percentChange": 126.04884157795868,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p95",
+      "baseline": {
+        "median": 8830.0,
+        "min": 8597.0,
+        "max": 9395.0
+      },
+      "candidate": {
+        "median": 9072.0,
+        "min": 8774.0,
+        "max": 23415.0
+      },
+      "percentChange": {
+        "median": 5.525183203443063,
+        "min": -6.609898882384247,
+        "max": 165.17553793884483
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 9395.0,
+          "candidate": 8774.0,
+          "delta": -621.0,
+          "percentChange": -6.609898882384247,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 8597.0,
+          "candidate": 9072.0,
+          "delta": 475.0,
+          "percentChange": 5.525183203443063,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 8830.0,
+          "candidate": 23415.0,
+          "delta": 14585.0,
+          "percentChange": 165.17553793884483,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "journalSave",
+      "percentile": "p99",
+      "baseline": {
+        "median": 10483.0,
+        "min": 9292.0,
+        "max": 10838.0
+      },
+      "candidate": {
+        "median": 9572.0,
+        "min": 9363.0,
+        "max": 27224.0
+      },
+      "percentChange": {
+        "median": 0.7640981489453358,
+        "min": -8.690260421635031,
+        "max": 151.1902565048902
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 10483.0,
+          "candidate": 9572.0,
+          "delta": -911.0,
+          "percentChange": -8.690260421635031,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9292.0,
+          "candidate": 9363.0,
+          "delta": 71.0,
+          "percentChange": 0.7640981489453358,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 10838.0,
+          "candidate": 27224.0,
+          "delta": 16386.0,
+          "percentChange": 151.1902565048902,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshot",
+      "percentile": "p50",
+      "baseline": {
+        "median": 92.0,
+        "min": 89.0,
+        "max": 99.0
+      },
+      "candidate": {
+        "median": 92.0,
+        "min": 88.0,
+        "max": 96.0
+      },
+      "percentChange": {
+        "median": -3.0303030303030276,
+        "min": -4.347826086956519,
+        "max": 3.370786516853941
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 92.0,
+          "candidate": 88.0,
+          "delta": -4.0,
+          "percentChange": -4.347826086956519,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 99.0,
+          "candidate": 96.0,
+          "delta": -3.0,
+          "percentChange": -3.0303030303030276,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 89.0,
+          "candidate": 92.0,
+          "delta": 3.0,
+          "percentChange": 3.370786516853941,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshot",
+      "percentile": "p95",
+      "baseline": {
+        "median": 130.0,
+        "min": 122.0,
+        "max": 144.0
+      },
+      "candidate": {
+        "median": 133.0,
+        "min": 124.0,
+        "max": 146.0
+      },
+      "percentChange": {
+        "median": 1.388888888888884,
+        "min": -4.61538461538461,
+        "max": 9.016393442622949
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 130.0,
+          "candidate": 124.0,
+          "delta": -6.0,
+          "percentChange": -4.61538461538461,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 144.0,
+          "candidate": 146.0,
+          "delta": 2.0,
+          "percentChange": 1.388888888888884,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 122.0,
+          "candidate": 133.0,
+          "delta": 11.0,
+          "percentChange": 9.016393442622949,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshot",
+      "percentile": "p99",
+      "baseline": {
+        "median": 167.0,
+        "min": 153.0,
+        "max": 192.0
+      },
+      "candidate": {
+        "median": 190.0,
+        "min": 174.0,
+        "max": 205.0
+      },
+      "percentChange": {
+        "median": 13.725490196078427,
+        "min": -1.041666666666663,
+        "max": 22.754491017964074
+      },
+      "directions": ["increased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 167.0,
+          "candidate": 205.0,
+          "delta": 38.0,
+          "percentChange": 22.754491017964074,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 192.0,
+          "candidate": 190.0,
+          "delta": -2.0,
+          "percentChange": -1.041666666666663,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 153.0,
+          "candidate": 174.0,
+          "delta": 21.0,
+          "percentChange": 13.725490196078427,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshotWire",
+      "percentile": "p50",
+      "baseline": {
+        "median": 1204.0,
+        "min": 1192.0,
+        "max": 1238.0
+      },
+      "candidate": {
+        "median": 1196.0,
+        "min": 1195.0,
+        "max": 1202.0
+      },
+      "percentChange": {
+        "median": -0.6644518272425293,
+        "min": -2.9079159935379684,
+        "max": 0.251677852348986
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1204.0,
+          "candidate": 1196.0,
+          "delta": -8.0,
+          "percentChange": -0.6644518272425293,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1238.0,
+          "candidate": 1202.0,
+          "delta": -36.0,
+          "percentChange": -2.9079159935379684,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1192.0,
+          "candidate": 1195.0,
+          "delta": 3.0,
+          "percentChange": 0.251677852348986,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshotWire",
+      "percentile": "p95",
+      "baseline": {
+        "median": 1441.0,
+        "min": 1374.0,
+        "max": 1462.0
+      },
+      "candidate": {
+        "median": 1409.0,
+        "min": 1380.0,
+        "max": 1425.0
+      },
+      "percentChange": {
+        "median": -2.530779753761969,
+        "min": -4.23317140874393,
+        "max": 2.547307132459964
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1441.0,
+          "candidate": 1380.0,
+          "delta": -61.0,
+          "percentChange": -4.23317140874393,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1462.0,
+          "candidate": 1425.0,
+          "delta": -37.0,
+          "percentChange": -2.530779753761969,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1374.0,
+          "candidate": 1409.0,
+          "delta": 35.0,
+          "percentChange": 2.547307132459964,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-100",
+      "metric": "snapshotWire",
+      "percentile": "p99",
+      "baseline": {
+        "median": 1632.0,
+        "min": 1596.0,
+        "max": 2027.0
+      },
+      "candidate": {
+        "median": 1633.0,
+        "min": 1557.0,
+        "max": 1679.0
+      },
+      "percentChange": {
+        "median": -4.595588235294112,
+        "min": -17.168228909718795,
+        "max": 2.318295739348364
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1632.0,
+          "candidate": 1557.0,
+          "delta": -75.0,
+          "percentChange": -4.595588235294112,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 2027.0,
+          "candidate": 1679.0,
+          "delta": -348.0,
+          "percentChange": -17.168228909718795,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1596.0,
+          "candidate": 1633.0,
+          "delta": 37.0,
+          "percentChange": 2.318295739348364,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p50",
+      "baseline": {
+        "median": 41302.0,
+        "min": 41261.0,
+        "max": 41686.0
+      },
+      "candidate": {
+        "median": 41279.0,
+        "min": 41118.0,
+        "max": 48385.0
+      },
+      "percentChange": {
+        "median": -0.3465742468675037,
+        "min": -0.9763469750035947,
+        "max": 17.14929059125465
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 41686.0,
+          "candidate": 41279.0,
+          "delta": -407.0,
+          "percentChange": -0.9763469750035947,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 41261.0,
+          "candidate": 41118.0,
+          "delta": -143.0,
+          "percentChange": -0.3465742468675037,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 41302.0,
+          "candidate": 48385.0,
+          "delta": 7083.0,
+          "percentChange": 17.14929059125465,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p95",
+      "baseline": {
+        "median": 44484.0,
+        "min": 43303.0,
+        "max": 44811.0
+      },
+      "candidate": {
+        "median": 44826.0,
+        "min": 43573.0,
+        "max": 54585.0
+      },
+      "percentChange": {
+        "median": 3.5170773387525056,
+        "min": -2.0479273446632473,
+        "max": 21.811608756778476
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 44484.0,
+          "candidate": 43573.0,
+          "delta": -911.0,
+          "percentChange": -2.0479273446632473,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 43303.0,
+          "candidate": 44826.0,
+          "delta": 1523.0,
+          "percentChange": 3.5170773387525056,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 44811.0,
+          "candidate": 54585.0,
+          "delta": 9774.0,
+          "percentChange": 21.811608756778476,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "durableCommand",
+      "percentile": "p99",
+      "baseline": {
+        "median": 45618.0,
+        "min": 45317.0,
+        "max": 46567.0
+      },
+      "candidate": {
+        "median": 46487.0,
+        "min": 45778.0,
+        "max": 56284.0
+      },
+      "percentChange": {
+        "median": 2.581812564821151,
+        "min": 0.35073874347846257,
+        "max": 20.866708183907058
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 45618.0,
+          "candidate": 45778.0,
+          "delta": 160.0,
+          "percentChange": 0.35073874347846257,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 45317.0,
+          "candidate": 46487.0,
+          "delta": 1170.0,
+          "percentChange": 2.581812564821151,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 46567.0,
+          "candidate": 56284.0,
+          "delta": 9717.0,
+          "percentChange": 20.866708183907058,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p50",
+      "baseline": {
+        "median": 59533.0,
+        "min": 55224.0,
+        "max": 68201.0
+      },
+      "candidate": {
+        "median": 56035.0,
+        "min": 55711.0,
+        "max": 70939.0
+      },
+      "percentChange": {
+        "median": -6.4199687568239465,
+        "min": -17.838448116596528,
+        "max": 28.45683036361002
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 59533.0,
+          "candidate": 55711.0,
+          "delta": -3822.0,
+          "percentChange": -6.4199687568239465,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 68201.0,
+          "candidate": 56035.0,
+          "delta": -12166.0,
+          "percentChange": -17.838448116596528,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 55224.0,
+          "candidate": 70939.0,
+          "delta": 15715.0,
+          "percentChange": 28.45683036361002,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p95",
+      "baseline": {
+        "median": 59533.0,
+        "min": 55224.0,
+        "max": 68201.0
+      },
+      "candidate": {
+        "median": 56035.0,
+        "min": 55711.0,
+        "max": 70939.0
+      },
+      "percentChange": {
+        "median": -6.4199687568239465,
+        "min": -17.838448116596528,
+        "max": 28.45683036361002
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 59533.0,
+          "candidate": 55711.0,
+          "delta": -3822.0,
+          "percentChange": -6.4199687568239465,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 68201.0,
+          "candidate": 56035.0,
+          "delta": -12166.0,
+          "percentChange": -17.838448116596528,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 55224.0,
+          "candidate": 70939.0,
+          "delta": 15715.0,
+          "percentChange": 28.45683036361002,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "enqueueBatch",
+      "percentile": "p99",
+      "baseline": {
+        "median": 59533.0,
+        "min": 55224.0,
+        "max": 68201.0
+      },
+      "candidate": {
+        "median": 56035.0,
+        "min": 55711.0,
+        "max": 70939.0
+      },
+      "percentChange": {
+        "median": -6.4199687568239465,
+        "min": -17.838448116596528,
+        "max": 28.45683036361002
+      },
+      "directions": ["decreased", "decreased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 59533.0,
+          "candidate": 55711.0,
+          "delta": -3822.0,
+          "percentChange": -6.4199687568239465,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 68201.0,
+          "candidate": 56035.0,
+          "delta": -12166.0,
+          "percentChange": -17.838448116596528,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 55224.0,
+          "candidate": 70939.0,
+          "delta": 15715.0,
+          "percentChange": 28.45683036361002,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p50",
+      "baseline": {
+        "median": 39835.0,
+        "min": 39782.0,
+        "max": 40235.0
+      },
+      "candidate": {
+        "median": 40633.0,
+        "min": 40089.0,
+        "max": 47394.0
+      },
+      "percentChange": {
+        "median": 2.139158413352771,
+        "min": -0.36286814962097624,
+        "max": 18.975775072172716
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 40235.0,
+          "candidate": 40089.0,
+          "delta": -146.0,
+          "percentChange": -0.36286814962097624,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 39782.0,
+          "candidate": 40633.0,
+          "delta": 851.0,
+          "percentChange": 2.139158413352771,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 39835.0,
+          "candidate": 47394.0,
+          "delta": 7559.0,
+          "percentChange": 18.975775072172716,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p95",
+      "baseline": {
+        "median": 42695.0,
+        "min": 42166.0,
+        "max": 44672.0
+      },
+      "candidate": {
+        "median": 44465.0,
+        "min": 43346.0,
+        "max": 52978.0
+      },
+      "percentChange": {
+        "median": 4.145684506382485,
+        "min": -2.9683022922636138,
+        "max": 25.641512118768684
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 44672.0,
+          "candidate": 43346.0,
+          "delta": -1326.0,
+          "percentChange": -2.9683022922636138,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 42695.0,
+          "candidate": 44465.0,
+          "delta": 1770.0,
+          "percentChange": 4.145684506382485,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 42166.0,
+          "candidate": 52978.0,
+          "delta": 10812.0,
+          "percentChange": 25.641512118768684,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "journalSave",
+      "percentile": "p99",
+      "baseline": {
+        "median": 44330.0,
+        "min": 43414.0,
+        "max": 45491.0
+      },
+      "candidate": {
+        "median": 45401.0,
+        "min": 44439.0,
+        "max": 54482.0
+      },
+      "percentChange": {
+        "median": 2.4159711256485528,
+        "min": -2.3125453386384165,
+        "max": 25.494080250610395
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [3],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 45491.0,
+          "candidate": 44439.0,
+          "delta": -1052.0,
+          "percentChange": -2.3125453386384165,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 44330.0,
+          "candidate": 45401.0,
+          "delta": 1071.0,
+          "percentChange": 2.4159711256485528,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 43414.0,
+          "candidate": 54482.0,
+          "delta": 11068.0,
+          "percentChange": 25.494080250610395,
+          "direction": "increased",
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshot",
+      "percentile": "p50",
+      "baseline": {
+        "median": 885.0,
+        "min": 884.0,
+        "max": 887.0
+      },
+      "candidate": {
+        "median": 856.0,
+        "min": 853.0,
+        "max": 866.0
+      },
+      "percentChange": {
+        "median": -3.167420814479638,
+        "min": -3.833145434047347,
+        "max": -2.1468926553672274
+      },
+      "directions": ["decreased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 884.0,
+          "candidate": 856.0,
+          "delta": -28.0,
+          "percentChange": -3.167420814479638,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 887.0,
+          "candidate": 853.0,
+          "delta": -34.0,
+          "percentChange": -3.833145434047347,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 885.0,
+          "candidate": 866.0,
+          "delta": -19.0,
+          "percentChange": -2.1468926553672274,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshot",
+      "percentile": "p95",
+      "baseline": {
+        "median": 1121.0,
+        "min": 1107.0,
+        "max": 1132.0
+      },
+      "candidate": {
+        "median": 1068.0,
+        "min": 1065.0,
+        "max": 1086.0
+      },
+      "percentChange": {
+        "median": -4.727921498661914,
+        "min": -5.918727915194344,
+        "max": -1.8970189701897011
+      },
+      "directions": ["decreased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1107.0,
+          "candidate": 1086.0,
+          "delta": -21.0,
+          "percentChange": -1.8970189701897011,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1121.0,
+          "candidate": 1068.0,
+          "delta": -53.0,
+          "percentChange": -4.727921498661914,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1132.0,
+          "candidate": 1065.0,
+          "delta": -67.0,
+          "percentChange": -5.918727915194344,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshot",
+      "percentile": "p99",
+      "baseline": {
+        "median": 1329.0,
+        "min": 1292.0,
+        "max": 1330.0
+      },
+      "candidate": {
+        "median": 1267.0,
+        "min": 1244.0,
+        "max": 1268.0
+      },
+      "percentChange": {
+        "median": -4.6616541353383445,
+        "min": -6.395786305492857,
+        "max": -1.9349845201238391
+      },
+      "directions": ["decreased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1292.0,
+          "candidate": 1267.0,
+          "delta": -25.0,
+          "percentChange": -1.9349845201238391,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1329.0,
+          "candidate": 1244.0,
+          "delta": -85.0,
+          "percentChange": -6.395786305492857,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1330.0,
+          "candidate": 1268.0,
+          "delta": -62.0,
+          "percentChange": -4.6616541353383445,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshotWire",
+      "percentile": "p50",
+      "baseline": {
+        "median": 12115.0,
+        "min": 11948.0,
+        "max": 12190.0
+      },
+      "candidate": {
+        "median": 11888.0,
+        "min": 11822.0,
+        "max": 11911.0
+      },
+      "percentChange": {
+        "median": -1.6838629797771398,
+        "min": -3.018867924528301,
+        "max": -0.5021760964178057
+      },
+      "directions": ["decreased", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 12115.0,
+          "candidate": 11911.0,
+          "delta": -204.0,
+          "percentChange": -1.6838629797771398,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 11948.0,
+          "candidate": 11888.0,
+          "delta": -60.0,
+          "percentChange": -0.5021760964178057,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 12190.0,
+          "candidate": 11822.0,
+          "delta": -368.0,
+          "percentChange": -3.018867924528301,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshotWire",
+      "percentile": "p95",
+      "baseline": {
+        "median": 13849.0,
+        "min": 13239.0,
+        "max": 13932.0
+      },
+      "candidate": {
+        "median": 13080.0,
+        "min": 12914.0,
+        "max": 13639.0
+      },
+      "percentChange": {
+        "median": -5.552747490793564,
+        "min": -7.3069193224232,
+        "max": 3.0213762368759056
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 13849.0,
+          "candidate": 13080.0,
+          "delta": -769.0,
+          "percentChange": -5.552747490793564,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 13239.0,
+          "candidate": 13639.0,
+          "delta": 400.0,
+          "percentChange": 3.0213762368759056,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 13932.0,
+          "candidate": 12914.0,
+          "delta": -1018.0,
+          "percentChange": -7.3069193224232,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "latency",
+      "scope": "queue-1000",
+      "metric": "snapshotWire",
+      "percentile": "p99",
+      "baseline": {
+        "median": 14795.0,
+        "min": 14543.0,
+        "max": 14908.0
+      },
+      "candidate": {
+        "median": 14626.0,
+        "min": 14466.0,
+        "max": 14851.0
+      },
+      "percentChange": {
+        "median": -1.8916018245237476,
+        "min": -2.2237242311591743,
+        "max": 2.1178573884343077
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 14908.0,
+          "candidate": 14626.0,
+          "delta": -282.0,
+          "percentChange": -1.8916018245237476,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 14543.0,
+          "candidate": 14851.0,
+          "delta": 308.0,
+          "percentChange": 2.1178573884343077,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 14795.0,
+          "candidate": 14466.0,
+          "delta": -329.0,
+          "percentChange": -2.2237242311591743,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "privateAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 1490944.0,
+        "min": 1482752.0,
+        "max": 1511424.0
+      },
+      "candidate": {
+        "median": 1486848.0,
+        "min": 1478656.0,
+        "max": 1511424.0
+      },
+      "percentChange": {
+        "median": -0.27472527472527375,
+        "min": -0.2762430939226568,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "decreased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1511424.0,
+          "candidate": 1511424.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1490944.0,
+          "candidate": 1486848.0,
+          "delta": -4096.0,
+          "percentChange": -0.27472527472527375,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1482752.0,
+          "candidate": 1478656.0,
+          "delta": -4096.0,
+          "percentChange": -0.2762430939226568,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "privateAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 2043904.0,
+        "min": 2043904.0,
+        "max": 2138112.0
+      },
+      "candidate": {
+        "median": 2109440.0,
+        "min": 2056192.0,
+        "max": 2142208.0
+      },
+      "percentChange": {
+        "median": 3.206412825651306,
+        "min": -3.831417624521072,
+        "max": 4.809619238476959
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2138112.0,
+          "candidate": 2056192.0,
+          "delta": -81920.0,
+          "percentChange": -3.831417624521072,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 2043904.0,
+          "candidate": 2142208.0,
+          "delta": 98304.0,
+          "percentChange": 4.809619238476959,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2043904.0,
+          "candidate": 2109440.0,
+          "delta": 65536.0,
+          "percentChange": 3.206412825651306,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "privateGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 561152.0,
+        "min": 552960.0,
+        "max": 626688.0
+      },
+      "candidate": {
+        "median": 630784.0,
+        "min": 544768.0,
+        "max": 655360.0
+      },
+      "percentChange": {
+        "median": 12.408759124087588,
+        "min": -13.0718954248366,
+        "max": 18.518518518518512
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 626688.0,
+          "candidate": 544768.0,
+          "delta": -81920.0,
+          "percentChange": -13.0718954248366,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 552960.0,
+          "candidate": 655360.0,
+          "delta": 102400.0,
+          "percentChange": 18.518518518518512,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 561152.0,
+          "candidate": 630784.0,
+          "delta": 69632.0,
+          "percentChange": 12.408759124087588,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "workingSetAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 9555968.0,
+        "min": 9555968.0,
+        "max": 9572352.0
+      },
+      "candidate": {
+        "median": 9555968.0,
+        "min": 9551872.0,
+        "max": 9580544.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": -0.04286326618088143,
+        "max": 0.08557980316645786
+      },
+      "directions": ["increased", "decreased", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 9572352.0,
+          "candidate": 9580544.0,
+          "delta": 8192.0,
+          "percentChange": 0.08557980316645786,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9555968.0,
+          "candidate": 9551872.0,
+          "delta": -4096.0,
+          "percentChange": -0.04286326618088143,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 9555968.0,
+          "candidate": 9555968.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "workingSetAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 11735040.0,
+        "min": 11726848.0,
+        "max": 11808768.0
+      },
+      "candidate": {
+        "median": 11776000.0,
+        "min": 11755520.0,
+        "max": 24793088.0
+      },
+      "percentChange": {
+        "median": 0.4191407614390519,
+        "min": 0.17452006980802626,
+        "max": 109.95490808185919
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [1],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 11808768.0,
+          "candidate": 24793088.0,
+          "delta": 12984320.0,
+          "percentChange": 109.95490808185919,
+          "direction": "increased",
+          "reviewRequired": true
+        },
+        {
+          "repeat": 2,
+          "baseline": 11726848.0,
+          "candidate": 11776000.0,
+          "delta": 49152.0,
+          "percentChange": 0.4191407614390519,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 11735040.0,
+          "candidate": 11755520.0,
+          "delta": 20480.0,
+          "percentChange": 0.17452006980802626,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1",
+      "metric": "workingSetGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 2179072.0,
+        "min": 2170880.0,
+        "max": 2236416.0
+      },
+      "candidate": {
+        "median": 2224128.0,
+        "min": 2199552.0,
+        "max": 15212544.0
+      },
+      "percentChange": {
+        "median": 2.452830188679256,
+        "min": 0.9398496240601517,
+        "max": 580.2197802197802
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [1],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2236416.0,
+          "candidate": 15212544.0,
+          "delta": 12976128.0,
+          "percentChange": 580.2197802197802,
+          "direction": "increased",
+          "reviewRequired": true
+        },
+        {
+          "repeat": 2,
+          "baseline": 2170880.0,
+          "candidate": 2224128.0,
+          "delta": 53248.0,
+          "percentChange": 2.452830188679256,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2179072.0,
+          "candidate": 2199552.0,
+          "delta": 20480.0,
+          "percentChange": 0.9398496240601517,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "privateAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 1728512.0,
+        "min": 1728512.0,
+        "max": 1744896.0
+      },
+      "candidate": {
+        "median": 1736704.0,
+        "min": 1736704.0,
+        "max": 1744896.0
+      },
+      "percentChange": {
+        "median": 0.4739336492890933,
+        "min": -0.46948356807511304,
+        "max": 0.9478672985782088
+      },
+      "directions": ["increased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1728512.0,
+          "candidate": 1736704.0,
+          "delta": 8192.0,
+          "percentChange": 0.4739336492890933,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1728512.0,
+          "candidate": 1744896.0,
+          "delta": 16384.0,
+          "percentChange": 0.9478672985782088,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1744896.0,
+          "candidate": 1736704.0,
+          "delta": -8192.0,
+          "percentChange": -0.46948356807511304,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "privateAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 3358720.0,
+        "min": 3153920.0,
+        "max": 4075520.0
+      },
+      "candidate": {
+        "median": 3268608.0,
+        "min": 3190784.0,
+        "max": 3915776.0
+      },
+      "percentChange": {
+        "median": 1.1688311688311748,
+        "min": -19.798994974874372,
+        "max": 16.58536585365853
+      },
+      "directions": ["increased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 3153920.0,
+          "candidate": 3190784.0,
+          "delta": 36864.0,
+          "percentChange": 1.1688311688311748,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 3358720.0,
+          "candidate": 3915776.0,
+          "delta": 557056.0,
+          "percentChange": 16.58536585365853,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4075520.0,
+          "candidate": 3268608.0,
+          "delta": -806912.0,
+          "percentChange": -19.798994974874372,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "privateGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 1630208.0,
+        "min": 1425408.0,
+        "max": 2330624.0
+      },
+      "candidate": {
+        "median": 1531904.0,
+        "min": 1454080.0,
+        "max": 2170880.0
+      },
+      "percentChange": {
+        "median": 2.011494252873569,
+        "min": -34.27065026362038,
+        "max": 33.16582914572865
+      },
+      "directions": ["increased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1425408.0,
+          "candidate": 1454080.0,
+          "delta": 28672.0,
+          "percentChange": 2.011494252873569,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1630208.0,
+          "candidate": 2170880.0,
+          "delta": 540672.0,
+          "percentChange": 33.16582914572865,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 2330624.0,
+          "candidate": 1531904.0,
+          "delta": -798720.0,
+          "percentChange": -34.27065026362038,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "workingSetAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 9805824.0,
+        "min": 9801728.0,
+        "max": 9805824.0
+      },
+      "candidate": {
+        "median": 9814016.0,
+        "min": 9814016.0,
+        "max": 9818112.0
+      },
+      "percentChange": {
+        "median": 0.12531328320801727,
+        "min": 0.08354218880535225,
+        "max": 0.1253656498119593
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 9801728.0,
+          "candidate": 9814016.0,
+          "delta": 12288.0,
+          "percentChange": 0.1253656498119593,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9805824.0,
+          "candidate": 9818112.0,
+          "delta": 12288.0,
+          "percentChange": 0.12531328320801727,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 9805824.0,
+          "candidate": 9814016.0,
+          "delta": 8192.0,
+          "percentChange": 0.08354218880535225,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "workingSetAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 12947456.0,
+        "min": 12800000.0,
+        "max": 13078528.0
+      },
+      "candidate": {
+        "median": 12865536.0,
+        "min": 12816384.0,
+        "max": 13012992.0
+      },
+      "percentChange": {
+        "median": 0.12799999999999478,
+        "min": -1.6285624804259324,
+        "max": 0.5061689338816899
+      },
+      "directions": ["increased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 12800000.0,
+          "candidate": 12816384.0,
+          "delta": 16384.0,
+          "percentChange": 0.12799999999999478,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 12947456.0,
+          "candidate": 13012992.0,
+          "delta": 65536.0,
+          "percentChange": 0.5061689338816899,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 13078528.0,
+          "candidate": 12865536.0,
+          "delta": -212992.0,
+          "percentChange": -1.6285624804259324,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-100",
+      "metric": "workingSetGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 3141632.0,
+        "min": 2998272.0,
+        "max": 3272704.0
+      },
+      "candidate": {
+        "median": 3051520.0,
+        "min": 3002368.0,
+        "max": 3194880.0
+      },
+      "percentChange": {
+        "median": 0.1366120218579292,
+        "min": -6.758448060075095,
+        "max": 1.6949152542372836
+      },
+      "directions": ["increased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 2998272.0,
+          "candidate": 3002368.0,
+          "delta": 4096.0,
+          "percentChange": 0.1366120218579292,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 3141632.0,
+          "candidate": 3194880.0,
+          "delta": 53248.0,
+          "percentChange": 1.6949152542372836,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 3272704.0,
+          "candidate": 3051520.0,
+          "delta": -221184.0,
+          "percentChange": -6.758448060075095,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "privateAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 4050944.0,
+        "min": 3702784.0,
+        "max": 4575232.0
+      },
+      "candidate": {
+        "median": 4067328.0,
+        "min": 3715072.0,
+        "max": 4067328.0
+      },
+      "percentChange": {
+        "median": 0.33185840707965486,
+        "min": -11.101163831692029,
+        "max": 0.4044489383215444
+      },
+      "directions": ["decreased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 4575232.0,
+          "candidate": 4067328.0,
+          "delta": -507904.0,
+          "percentChange": -11.101163831692029,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4050944.0,
+          "candidate": 4067328.0,
+          "delta": 16384.0,
+          "percentChange": 0.4044489383215444,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 3702784.0,
+          "candidate": 3715072.0,
+          "delta": 12288.0,
+          "percentChange": 0.33185840707965486,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "privateAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 10293248.0,
+        "min": 9138176.0,
+        "max": 10563584.0
+      },
+      "candidate": {
+        "median": 9326592.0,
+        "min": 9277440.0,
+        "max": 9388032.0
+      },
+      "percentChange": {
+        "median": -9.391165937126944,
+        "min": -12.17526172935246,
+        "max": 2.734199910354107
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 10563584.0,
+          "candidate": 9277440.0,
+          "delta": -1286144.0,
+          "percentChange": -12.17526172935246,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 9138176.0,
+          "candidate": 9388032.0,
+          "delta": 249856.0,
+          "percentChange": 2.734199910354107,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 10293248.0,
+          "candidate": 9326592.0,
+          "delta": -966656.0,
+          "percentChange": -9.391165937126944,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "privateGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 5988352.0,
+        "min": 5087232.0,
+        "max": 6590464.0
+      },
+      "candidate": {
+        "median": 5320704.0,
+        "min": 5210112.0,
+        "max": 5611520.0
+      },
+      "percentChange": {
+        "median": -12.995896032831734,
+        "min": -14.853946550652575,
+        "max": 4.589371980676327
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 5988352.0,
+          "candidate": 5210112.0,
+          "delta": -778240.0,
+          "percentChange": -12.995896032831734,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 5087232.0,
+          "candidate": 5320704.0,
+          "delta": 233472.0,
+          "percentChange": 4.589371980676327,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 6590464.0,
+          "candidate": 5611520.0,
+          "delta": -978944.0,
+          "percentChange": -14.853946550652575,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "workingSetAfterLoad",
+      "percentile": "",
+      "baseline": {
+        "median": 11763712.0,
+        "min": 11747328.0,
+        "max": 11771904.0
+      },
+      "candidate": {
+        "median": 11788288.0,
+        "min": 11771904.0,
+        "max": 11796480.0
+      },
+      "percentChange": {
+        "median": 0.20920502092049986,
+        "min": 0.13917884481557952,
+        "max": 0.278551532033422
+      },
+      "directions": ["increased", "increased", "increased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 11763712.0,
+          "candidate": 11796480.0,
+          "delta": 32768.0,
+          "percentChange": 0.278551532033422,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 11771904.0,
+          "candidate": 11788288.0,
+          "delta": 16384.0,
+          "percentChange": 0.13917884481557952,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 11747328.0,
+          "candidate": 11771904.0,
+          "delta": 24576.0,
+          "percentChange": 0.20920502092049986,
+          "direction": "increased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "workingSetAfterSamples",
+      "percentile": "",
+      "baseline": {
+        "median": 19529728.0,
+        "min": 18636800.0,
+        "max": 20090880.0
+      },
+      "candidate": {
+        "median": 18698240.0,
+        "min": 18677760.0,
+        "max": 18857984.0
+      },
+      "percentChange": {
+        "median": -4.25755033557047,
+        "min": -7.033639143730886,
+        "max": 1.186813186813196
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 20090880.0,
+          "candidate": 18677760.0,
+          "delta": -1413120.0,
+          "percentChange": -7.033639143730886,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 18636800.0,
+          "candidate": 18857984.0,
+          "delta": 221184.0,
+          "percentChange": 1.186813186813196,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 19529728.0,
+          "candidate": 18698240.0,
+          "delta": -831488.0,
+          "percentChange": -4.25755033557047,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "memory",
+      "scope": "queue-1000",
+      "metric": "workingSetGrowth",
+      "percentile": "",
+      "baseline": {
+        "median": 7782400.0,
+        "min": 6864896.0,
+        "max": 8327168.0
+      },
+      "candidate": {
+        "median": 6926336.0,
+        "min": 6881280.0,
+        "max": 7069696.0
+      },
+      "percentChange": {
+        "median": -10.999999999999998,
+        "min": -17.363502213477624,
+        "max": 2.9832935560859086
+      },
+      "directions": ["decreased", "increased", "decreased"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 8327168.0,
+          "candidate": 6881280.0,
+          "delta": -1445888.0,
+          "percentChange": -17.363502213477624,
+          "direction": "decreased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 6864896.0,
+          "candidate": 7069696.0,
+          "delta": 204800.0,
+          "percentChange": 2.9832935560859086,
+          "direction": "increased",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 7782400.0,
+          "candidate": 6926336.0,
+          "delta": -856064.0,
+          "percentChange": -10.999999999999998,
+          "direction": "decreased",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "manifestBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 610.0,
+        "min": 610.0,
+        "max": 610.0
+      },
+      "candidate": {
+        "median": 610.0,
+        "min": 610.0,
+        "max": 610.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 610.0,
+          "candidate": 610.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 610.0,
+          "candidate": 610.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 610.0,
+          "candidate": 610.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "manifestInvocations",
+      "percentile": "",
+      "baseline": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "candidate": {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1.0,
+          "candidate": 1.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "toolBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 83.0,
+        "min": 83.0,
+        "max": 83.0
+      },
+      "candidate": {
+        "median": 83.0,
+        "min": 83.0,
+        "max": 83.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 83.0,
+          "candidate": 83.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 83.0,
+          "candidate": 83.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 83.0,
+          "candidate": 83.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "toolInvocations",
+      "percentile": "",
+      "baseline": {
+        "median": 4.0,
+        "min": 4.0,
+        "max": 4.0
+      },
+      "candidate": {
+        "median": 4.0,
+        "min": 4.0,
+        "max": 4.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 4.0,
+          "candidate": 4.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 4.0,
+          "candidate": 4.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 4.0,
+          "candidate": 4.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "totalBytes",
+      "percentile": "",
+      "baseline": {
+        "median": 693.0,
+        "min": 693.0,
+        "max": 693.0
+      },
+      "candidate": {
+        "median": 693.0,
+        "min": 693.0,
+        "max": 693.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 693.0,
+          "candidate": 693.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 693.0,
+          "candidate": 693.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 693.0,
+          "candidate": 693.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_hash",
+      "scope": "runtime",
+      "metric": "totalInvocations",
+      "percentile": "",
+      "baseline": {
+        "median": 5.0,
+        "min": 5.0,
+        "max": 5.0
+      },
+      "candidate": {
+        "median": 5.0,
+        "min": 5.0,
+        "max": 5.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 5.0,
+          "candidate": 5.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 5.0,
+          "candidate": 5.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 5.0,
+          "candidate": 5.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_lease",
+      "scope": "runtime",
+      "metric": "resolutionCalls",
+      "percentile": "",
+      "baseline": {
+        "median": 408.0,
+        "min": 408.0,
+        "max": 408.0
+      },
+      "candidate": {
+        "median": 408.0,
+        "min": 408.0,
+        "max": 408.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "runtime_lease",
+      "scope": "runtime",
+      "metric": "successfulResolutions",
+      "percentile": "",
+      "baseline": {
+        "median": 408.0,
+        "min": 408.0,
+        "max": 408.0
+      },
+      "candidate": {
+        "median": 408.0,
+        "min": 408.0,
+        "max": 408.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 408.0,
+          "candidate": 408.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1",
+      "metric": "journalAfterDurable",
+      "percentile": "",
+      "baseline": {
+        "median": 742.0,
+        "min": 742.0,
+        "max": 742.0
+      },
+      "candidate": {
+        "median": 742.0,
+        "min": 742.0,
+        "max": 742.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 742.0,
+          "candidate": 742.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 742.0,
+          "candidate": 742.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 742.0,
+          "candidate": 742.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1",
+      "metric": "journalAfterEnqueue",
+      "percentile": "",
+      "baseline": {
+        "median": 1190.0,
+        "min": 1190.0,
+        "max": 1190.0
+      },
+      "candidate": {
+        "median": 1190.0,
+        "min": 1190.0,
+        "max": 1190.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 1190.0,
+          "candidate": 1190.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 1190.0,
+          "candidate": 1190.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 1190.0,
+          "candidate": 1190.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1",
+      "metric": "snapshotJson",
+      "percentile": "",
+      "baseline": {
+        "median": 635.0,
+        "min": 635.0,
+        "max": 635.0
+      },
+      "candidate": {
+        "median": 635.0,
+        "min": 635.0,
+        "max": 635.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 635.0,
+          "candidate": 635.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 635.0,
+          "candidate": 635.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 635.0,
+          "candidate": 635.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-100",
+      "metric": "journalAfterDurable",
+      "percentile": "",
+      "baseline": {
+        "median": 44390.0,
+        "min": 44390.0,
+        "max": 44390.0
+      },
+      "candidate": {
+        "median": 44390.0,
+        "min": 44390.0,
+        "max": 44390.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 44390.0,
+          "candidate": 44390.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 44390.0,
+          "candidate": 44390.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 44390.0,
+          "candidate": 44390.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-100",
+      "metric": "journalAfterEnqueue",
+      "percentile": "",
+      "baseline": {
+        "median": 89590.0,
+        "min": 89590.0,
+        "max": 89590.0
+      },
+      "candidate": {
+        "median": 89590.0,
+        "min": 89590.0,
+        "max": 89590.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 89590.0,
+          "candidate": 89590.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 89590.0,
+          "candidate": 89590.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 89590.0,
+          "candidate": 89590.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-100",
+      "metric": "snapshotJson",
+      "percentile": "",
+      "baseline": {
+        "median": 44276.0,
+        "min": 44276.0,
+        "max": 44276.0
+      },
+      "candidate": {
+        "median": 44276.0,
+        "min": 44276.0,
+        "max": 44276.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 44276.0,
+          "candidate": 44276.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 44276.0,
+          "candidate": 44276.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 44276.0,
+          "candidate": 44276.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1000",
+      "metric": "journalAfterDurable",
+      "percentile": "",
+      "baseline": {
+        "median": 443094.0,
+        "min": 443094.0,
+        "max": 443094.0
+      },
+      "candidate": {
+        "median": 443094.0,
+        "min": 443094.0,
+        "max": 443094.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 443094.0,
+          "candidate": 443094.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 443094.0,
+          "candidate": 443094.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 443094.0,
+          "candidate": 443094.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1000",
+      "metric": "journalAfterEnqueue",
+      "percentile": "",
+      "baseline": {
+        "median": 895686.0,
+        "min": 895686.0,
+        "max": 895686.0
+      },
+      "candidate": {
+        "median": 895686.0,
+        "min": 895686.0,
+        "max": 895686.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 895686.0,
+          "candidate": 895686.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 895686.0,
+          "candidate": 895686.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 895686.0,
+          "candidate": 895686.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    },
+    {
+      "category": "storage",
+      "scope": "queue-1000",
+      "metric": "snapshotJson",
+      "percentile": "",
+      "baseline": {
+        "median": 442976.0,
+        "min": 442976.0,
+        "max": 442976.0
+      },
+      "candidate": {
+        "median": 442976.0,
+        "min": 442976.0,
+        "max": 442976.0
+      },
+      "percentChange": {
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "directions": ["unchanged", "unchanged", "unchanged"],
+      "reviewRepeats": [],
+      "repeats": [
+        {
+          "repeat": 1,
+          "baseline": 442976.0,
+          "candidate": 442976.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 2,
+          "baseline": 442976.0,
+          "candidate": 442976.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        },
+        {
+          "repeat": 3,
+          "baseline": 442976.0,
+          "candidate": 442976.0,
+          "delta": 0.0,
+          "percentChange": 0.0,
+          "direction": "unchanged",
+          "reviewRequired": false
+        }
+      ]
+    }
+  ],
+  "candidateOutbox": [
+    {
+      "queueSize": 1,
+      "metric": "queuedBatches",
+      "median": 207,
+      "min": 207,
+      "max": 207
+    },
+    {
+      "queueSize": 1,
+      "metric": "queuedDeltas",
+      "median": 208,
+      "min": 208,
+      "max": 208
+    },
+    {
+      "queueSize": 1,
+      "metric": "estimatedBytes",
+      "median": 81647,
+      "min": 81647,
+      "max": 81647
+    },
+    {
+      "queueSize": 1,
+      "metric": "coalescedResyncs",
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    {
+      "queueSize": 100,
+      "metric": "queuedBatches",
+      "median": 207,
+      "min": 207,
+      "max": 207
+    },
+    {
+      "queueSize": 100,
+      "metric": "queuedDeltas",
+      "median": 406,
+      "min": 406,
+      "max": 406
+    },
+    {
+      "queueSize": 100,
+      "metric": "estimatedBytes",
+      "median": 160235,
+      "min": 160235,
+      "max": 160235
+    },
+    {
+      "queueSize": 100,
+      "metric": "coalescedResyncs",
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    {
+      "queueSize": 1000,
+      "metric": "queuedBatches",
+      "median": 207,
+      "min": 207,
+      "max": 207
+    },
+    {
+      "queueSize": 1000,
+      "metric": "queuedDeltas",
+      "median": 2206,
+      "min": 2206,
+      "max": 2206
+    },
+    {
+      "queueSize": 1000,
+      "metric": "estimatedBytes",
+      "median": 876635,
+      "min": 876635,
+      "max": 876635
+    },
+    {
+      "queueSize": 1000,
+      "metric": "coalescedResyncs",
+      "median": 0,
+      "min": 0,
+      "max": 0
+    }
+  ],
+  "correctness": {
+    "allHardGatesPassed": true,
+    "eventSequencesContiguous": true,
+    "runtimeHashesPreserved": true,
+    "runtimeResolutionsSuccessful": true,
+    "outboxBoundsPassed": true
+  },
+  "limitations": [
+    "Three matched repeats characterize short-run variation but do not establish long-duration behavior.",
+    "enqueueBatch has one sample per workload per run; its reported p50, p95, and p99 are the same single observation, not three independent percentile estimates.",
+    "workingSet and private-memory fields are point-in-time Windows process snapshots affected by allocator state, paging, and host activity; they are not allocation traces or leak evidence.",
+    "Timing flags are threshold review signals. The evidence does not establish that the refactor caused any observed difference.",
+    "Debug-profile synthetic workloads do not qualify release-profile or interactive end-to-end performance."
+  ],
+  "rawRuns": [
+    {
+      "repeat": 1,
+      "baseline": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949423514,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117815414784
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949471416,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949426331,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 2,
+                  "max": 33
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 20,
+                  "p99": 34,
+                  "max": 65
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4452,
+                  "p95": 4954,
+                  "p99": 5043,
+                  "max": 5287
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4264,
+                  "p95": 5100,
+                  "p99": 5848,
+                  "max": 8909
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 3878,
+                  "p95": 3878,
+                  "p99": 3878,
+                  "max": 3878
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 10,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9572352,
+                "workingSetAfterSamples": 11808768,
+                "privateAfterLoad": 1511424,
+                "privateAfterSamples": 2138112
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949433155,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 92,
+                  "p95": 130,
+                  "p99": 167,
+                  "max": 280
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1204,
+                  "p95": 1441,
+                  "p99": 1632,
+                  "max": 2331
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 8550,
+                  "p95": 9304,
+                  "p99": 15005,
+                  "max": 17945
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 8217,
+                  "p95": 9395,
+                  "p99": 10483,
+                  "max": 17126
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 14138,
+                  "p95": 14138,
+                  "p99": 14138,
+                  "max": 14138
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 191,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9801728,
+                "workingSetAfterSamples": 12800000,
+                "privateAfterLoad": 1728512,
+                "privateAfterSamples": 3153920
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949470447,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 884,
+                  "p95": 1107,
+                  "p99": 1292,
+                  "max": 2345
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 12115,
+                  "p95": 13849,
+                  "p99": 14908,
+                  "max": 18010
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 41686,
+                  "p95": 44484,
+                  "p99": 45618,
+                  "max": 45856
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 40235,
+                  "p95": 44672,
+                  "p99": 45491,
+                  "max": 45966
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 59533,
+                  "p95": 59533,
+                  "p99": 59533,
+                  "max": 59533
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1259,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11763712,
+                "workingSetAfterSamples": 20090880,
+                "privateAfterLoad": 4575232,
+                "privateAfterSamples": 10563584
+              }
+            }
+          }
+        ]
+      },
+      "candidate": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949472249,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117813542912
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949519761,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949475470,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 14,
+                  "max": 32
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 37,
+                  "p99": 50,
+                  "max": 71
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4423,
+                  "p95": 4998,
+                  "p99": 5316,
+                  "max": 16493
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 3721,
+                  "p95": 4302,
+                  "p99": 4566,
+                  "max": 5181
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 3994,
+                  "p95": 3994,
+                  "p99": 3994,
+                  "max": 3994
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 9,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9580544,
+                "workingSetAfterSamples": 24793088,
+                "privateAfterLoad": 1511424,
+                "privateAfterSamples": 2056192
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949482195,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 88,
+                  "p95": 124,
+                  "p99": 205,
+                  "max": 316
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1196,
+                  "p95": 1380,
+                  "p99": 1557,
+                  "max": 2049
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 8574,
+                  "p95": 9389,
+                  "p99": 11127,
+                  "max": 12263
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 8181,
+                  "p95": 8774,
+                  "p99": 9572,
+                  "max": 10350
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 13882,
+                  "p95": 13882,
+                  "p99": 13882,
+                  "max": 13882
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 128,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9814016,
+                "workingSetAfterSamples": 12816384,
+                "privateAfterLoad": 1736704,
+                "privateAfterSamples": 3190784
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949518761,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 856,
+                  "p95": 1086,
+                  "p99": 1267,
+                  "max": 2162
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 11911,
+                  "p95": 13080,
+                  "p99": 14626,
+                  "max": 16383
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 41279,
+                  "p95": 43573,
+                  "p99": 45778,
+                  "max": 46505
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 40089,
+                  "p95": 43346,
+                  "p99": 44439,
+                  "max": 47249
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 55711,
+                  "p95": 55711,
+                  "p99": 55711,
+                  "max": 55711
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 906,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11796480,
+                "workingSetAfterSamples": 18677760,
+                "privateAfterLoad": 4067328,
+                "privateAfterSamples": 9277440
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "repeat": 2,
+      "baseline": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949568149,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117811261440
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949615429,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949570841,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 23
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 20,
+                  "p99": 22,
+                  "max": 45
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4322,
+                  "p95": 4866,
+                  "p99": 5030,
+                  "max": 5035
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4034,
+                  "p95": 4642,
+                  "p99": 4965,
+                  "max": 6554
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4543,
+                  "p95": 4543,
+                  "p99": 4543,
+                  "max": 4543
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 11,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9555968,
+                "workingSetAfterSamples": 11726848,
+                "privateAfterLoad": 1490944,
+                "privateAfterSamples": 2043904
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949577623,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 99,
+                  "p95": 144,
+                  "p99": 192,
+                  "max": 271
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1238,
+                  "p95": 1462,
+                  "p99": 2027,
+                  "max": 2641
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 8504,
+                  "p95": 9408,
+                  "p99": 9780,
+                  "max": 10566
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 7958,
+                  "p95": 8597,
+                  "p99": 9292,
+                  "max": 20324
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 14203,
+                  "p95": 14203,
+                  "p99": 14203,
+                  "max": 14203
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 98,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9805824,
+                "workingSetAfterSamples": 12947456,
+                "privateAfterLoad": 1728512,
+                "privateAfterSamples": 3358720
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949614388,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 887,
+                  "p95": 1121,
+                  "p99": 1329,
+                  "max": 2020
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 11948,
+                  "p95": 13239,
+                  "p99": 14543,
+                  "max": 16059
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 41261,
+                  "p95": 43303,
+                  "p99": 45317,
+                  "max": 46139
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 39782,
+                  "p95": 42695,
+                  "p99": 44330,
+                  "max": 46068
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 68201,
+                  "p95": 68201,
+                  "p99": 68201,
+                  "max": 68201
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 945,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11771904,
+                "workingSetAfterSamples": 18636800,
+                "privateAfterLoad": 4050944,
+                "privateAfterSamples": 9138176
+              }
+            }
+          }
+        ]
+      },
+      "candidate": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949520392,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117812449280
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949567517,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949523034,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 37
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 20,
+                  "p99": 35,
+                  "max": 65
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4044,
+                  "p95": 4741,
+                  "p99": 4975,
+                  "max": 5461
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 3907,
+                  "p95": 4562,
+                  "p99": 4742,
+                  "max": 5025
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4669,
+                  "p95": 4669,
+                  "p99": 4669,
+                  "max": 4669
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 14,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9551872,
+                "workingSetAfterSamples": 11776000,
+                "privateAfterLoad": 1486848,
+                "privateAfterSamples": 2142208
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949529834,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 96,
+                  "p95": 146,
+                  "p99": 190,
+                  "max": 352
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1202,
+                  "p95": 1425,
+                  "p99": 1679,
+                  "max": 2468
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 8551,
+                  "p95": 9256,
+                  "p99": 9701,
+                  "max": 12296
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 8336,
+                  "p95": 9072,
+                  "p99": 9363,
+                  "max": 17737
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 14148,
+                  "p95": 14148,
+                  "p99": 14148,
+                  "max": 14148
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 84,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9818112,
+                "workingSetAfterSamples": 13012992,
+                "privateAfterLoad": 1744896,
+                "privateAfterSamples": 3915776
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949566509,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 853,
+                  "p95": 1068,
+                  "p99": 1244,
+                  "max": 1934
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 11888,
+                  "p95": 13639,
+                  "p99": 14851,
+                  "max": 17633
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 41118,
+                  "p95": 44826,
+                  "p99": 46487,
+                  "max": 52915
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 40633,
+                  "p95": 44465,
+                  "p99": 45401,
+                  "max": 50739
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 56035,
+                  "p95": 56035,
+                  "p99": 56035,
+                  "max": 56035
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 986,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11788288,
+                "workingSetAfterSamples": 18857984,
+                "privateAfterLoad": 4067328,
+                "privateAfterSamples": 9388032
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "repeat": 3,
+      "baseline": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949616096,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117810171904
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949663688,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949618826,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 2,
+                  "max": 18
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 20,
+                  "p99": 24,
+                  "max": 67
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4422,
+                  "p95": 4977,
+                  "p99": 5443,
+                  "max": 15093
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 3870,
+                  "p95": 4504,
+                  "p99": 4794,
+                  "max": 6195
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 4235,
+                  "p95": 4235,
+                  "p99": 4235,
+                  "max": 4235
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 18,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9555968,
+                "workingSetAfterSamples": 11735040,
+                "privateAfterLoad": 1482752,
+                "privateAfterSamples": 2043904
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949625433,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 89,
+                  "p95": 122,
+                  "p99": 153,
+                  "max": 282
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1192,
+                  "p95": 1374,
+                  "p99": 1596,
+                  "max": 2495
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 8433,
+                  "p95": 9413,
+                  "p99": 10907,
+                  "max": 15675
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 7985,
+                  "p95": 8830,
+                  "p99": 10838,
+                  "max": 12614
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 13662,
+                  "p95": 13662,
+                  "p99": 13662,
+                  "max": 13662
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 103,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9805824,
+                "workingSetAfterSamples": 13078528,
+                "privateAfterLoad": 1744896,
+                "privateAfterSamples": 4075520
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949662736,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 885,
+                  "p95": 1132,
+                  "p99": 1330,
+                  "max": 2185
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 12190,
+                  "p95": 13932,
+                  "p99": 14795,
+                  "max": 17866
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 41302,
+                  "p95": 44811,
+                  "p99": 46567,
+                  "max": 52074
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 39835,
+                  "p95": 42166,
+                  "p99": 43414,
+                  "max": 45244
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 55224,
+                  "p95": 55224,
+                  "p99": 55224,
+                  "max": 55224
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 899,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11747328,
+                "workingSetAfterSamples": 19529728,
+                "privateAfterLoad": 3702784,
+                "privateAfterSamples": 10293248
+              }
+            }
+          }
+        ]
+      },
+      "candidate": {
+        "host": {
+          "schemaVersion": 1,
+          "label": "after",
+          "profile": "debug",
+          "benchmark": "host",
+          "recordedAtUnixMs": 1788949664322,
+          "metrics": {
+            "windowsDisplayVersion": "25H2",
+            "windowsBuild": "26200.9445",
+            "processorName": "11th Gen Intel(R) Core(TM) i7-11700K @ 3.60GHz",
+            "logicalProcessors": 16,
+            "repositoryVolumeFormat": "NTFS",
+            "repositoryVolumeAvailableBytes": 117816426496
+          }
+        },
+        "runtime": {
+          "benchmark": "runtime_hash",
+          "label": "after",
+          "metrics": {
+            "hashes": {
+              "manifestBytes": 610,
+              "manifestInvocations": 1,
+              "toolBytes": 83,
+              "toolInvocations": 4,
+              "totalBytes": 693,
+              "totalInvocations": 5
+            },
+            "leases": {
+              "resolutionCalls": 408,
+              "successfulResolutions": 408
+            }
+          },
+          "profile": "debug",
+          "recordedAtUnixMs": 1788949718394,
+          "schemaVersion": 1,
+          "workload": {
+            "healthValidations": 1,
+            "operations": 100,
+            "toolNames": ["yt-dlp", "ffmpeg", "ffprobe", "deno"]
+          }
+        },
+        "states": [
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949667077,
+            "workload": {
+              "queueSize": 1,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 2,
+                  "max": 19
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 19,
+                  "p95": 21,
+                  "p99": 35,
+                  "max": 42
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 4251,
+                  "p95": 4888,
+                  "p99": 5075,
+                  "max": 8856
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 4129,
+                  "p95": 4653,
+                  "p99": 4961,
+                  "max": 6693
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 5083,
+                  "p95": 5083,
+                  "p99": 5083,
+                  "max": 5083
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 10,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2,
+                "serializedBytes": 1088,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 208,
+                "estimatedBytes": 81647,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 635,
+                "journalAfterDurable": 742,
+                "journalAfterEnqueue": 1190
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9555968,
+                "workingSetAfterSamples": 11755520,
+                "privateAfterLoad": 1478656,
+                "privateAfterSamples": 2109440
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949677629,
+            "workload": {
+              "queueSize": 100,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 92,
+                  "p95": 133,
+                  "p99": 174,
+                  "max": 252
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 1195,
+                  "p95": 1409,
+                  "p99": 1633,
+                  "max": 1952
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 18006,
+                  "p95": 23102,
+                  "p99": 23865,
+                  "max": 25834
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 18050,
+                  "p95": 23415,
+                  "p99": 27224,
+                  "max": 50914
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 23760,
+                  "p95": 23760,
+                  "p99": 23760,
+                  "max": 23760
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 129,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 200,
+                "serializedBytes": 108980,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 406,
+                "estimatedBytes": 160235,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 44276,
+                "journalAfterDurable": 44390,
+                "journalAfterEnqueue": 89590
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 9814016,
+                "workingSetAfterSamples": 12865536,
+                "privateAfterLoad": 1736704,
+                "privateAfterSamples": 3268608
+              }
+            }
+          },
+          {
+            "schemaVersion": 1,
+            "label": "after",
+            "profile": "debug",
+            "benchmark": "state_journal",
+            "recordedAtUnixMs": 1788949717375,
+            "workload": {
+              "queueSize": 1000,
+              "snapshotSamples": 10000,
+              "snapshotWireSamples": 1000,
+              "durableCommandSamples": 200,
+              "journalSamples": 200
+            },
+            "metrics": {
+              "latencyMicros": {
+                "snapshot": {
+                  "samples": 10000,
+                  "p50": 866,
+                  "p95": 1065,
+                  "p99": 1268,
+                  "max": 1855
+                },
+                "snapshotWire": {
+                  "samples": 1000,
+                  "p50": 11822,
+                  "p95": 12914,
+                  "p99": 14466,
+                  "max": 15721
+                },
+                "durableCommand": {
+                  "samples": 200,
+                  "p50": 48385,
+                  "p95": 54585,
+                  "p99": 56284,
+                  "max": 62569
+                },
+                "journalSave": {
+                  "samples": 200,
+                  "p50": 47394,
+                  "p95": 52978,
+                  "p99": 54482,
+                  "max": 59452
+                },
+                "enqueueBatch": {
+                  "samples": 1,
+                  "p50": 70939,
+                  "p95": 70939,
+                  "p99": 70939,
+                  "max": 70939
+                }
+              },
+              "blockedJournalSnapshot": {
+                "latencyMicros": 1008,
+                "observedPreCommitState": true
+              },
+              "eventBacklog": {
+                "deltaCount": 2000,
+                "serializedBytes": 1093592,
+                "sequencesContiguous": true
+              },
+              "outbox": {
+                "queuedBatches": 207,
+                "queuedDeltas": 2206,
+                "estimatedBytes": 876635,
+                "coalescedResyncs": 0,
+                "limits": {
+                  "maxBatches": 256,
+                  "maxDeltas": 4096,
+                  "maxEstimatedBytes": 16777216
+                }
+              },
+              "storageBytes": {
+                "snapshotJson": 442976,
+                "journalAfterDurable": 443094,
+                "journalAfterEnqueue": 895686
+              },
+              "memoryBytes": {
+                "workingSetAfterLoad": 11771904,
+                "workingSetAfterSamples": 18698240,
+                "privateAfterLoad": 3715072,
+                "privateAfterSamples": 9326592
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

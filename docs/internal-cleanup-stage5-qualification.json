@@ -1,0 +1,589 @@
+{
+  "schemaVersion": "internal-cleanup-stage5-qualification/v1",
+  "candidateCommit": "fd58050b054f921d315658880a14793fb93fcae6",
+  "firstObservedAtUtc": "2026-09-09T09:37:02Z",
+  "status": "all-local-short-performance-and-soak-gates-passed-external-gates-open",
+  "executed": [
+    {
+      "gate": "Rust backend library tests",
+      "result": "passed",
+      "detail": "304 ordinary library tests passed, 0 failed, 3 ignored; fresh executable and unchanged source manifest recorded. No separate doc-test qualification claim is made."
+    },
+    {
+      "gate": "Rust Clippy",
+      "result": "passed",
+      "detail": "Fresh dev-profile compile completed; no warning/error after completion."
+    },
+    {
+      "gate": "Frontend unit",
+      "result": "passed",
+      "detail": "167 passed, 1 skipped across 20 passed and 1 skipped files."
+    },
+    {
+      "gate": "Renderer workflows",
+      "result": "passed",
+      "detail": "11 independently repeatable workflows passed."
+    },
+    {
+      "gate": "Renderer visual comparison",
+      "result": "passed-emulated",
+      "detail": "60 scenario comparisons at emulated 100% and 150%; comparator explicitly reports nativeScalingQualified=false."
+    },
+    {
+      "gate": "Frontend build/typecheck/format/production exclusion",
+      "result": "passed",
+      "detail": "Static build, zero Svelte diagnostics, strict ESLint, Prettier, and WebDriver/mock-token exclusion receipts present."
+    },
+    {
+      "gate": "Source, publication, packaging, launcher, renderer-contract fixtures",
+      "result": "passed",
+      "detail": "Local deterministic contract suites and focused StateStore/process/publication tests passed."
+    },
+    {
+      "gate": "cargo-deny 0.20.2 policy",
+      "result": "passed-fresh-database",
+      "detail": "Fresh public advisory DB fetch followed by advisories, bans, licenses, and sources success; DB d502590ca247f3e53b56bf6c2ae40b61926800e5 timestamp 2026-09-09T10:26:17+02:00."
+    },
+    {
+      "gate": "Final source-review and architecture checks",
+      "result": "passed",
+      "detail": "Candidate-bound receipt records inventory coverage of all 1,215 current entries and backend architecture exit 0 in exec session 96602."
+    },
+    {
+      "gate": "Final Cargo format and generated bindings",
+      "result": "passed",
+      "detail": "Candidate-bound receipt records cargo fmt exit 0 and generated bindings diff exit 0; both retained logs are empty and hash to SHA-256 e3b0c442..."
+    },
+    {
+      "gate": "Matched frontend performance",
+      "result": "passed",
+      "detail": "18/18 candidate-bound measurements completed across queue sizes 1, 100, and 1,000; qualified=true, thresholdsPassed=true, three repeats per side/queue, unique run and receipt hashes, inputsVerifiedAfter=true."
+    },
+    {
+      "gate": "Matched backend performance",
+      "result": "passed-with-reviewed-variation",
+      "detail": "All three hard-gate comparisons passed. Review flags were 2, 0, and 22 across repeats 1-3 (24 total); no threshold signal recurred across two repeats. This does not establish zero performance effect or causality."
+    }
+  ],
+  "evidenceLimits": [
+    {
+      "item": "native scaling",
+      "status": "not-qualified",
+      "detail": "Visual comparison explicitly records nativeScalingQualified=false; both scales are browser emulation."
+    }
+  ],
+  "pending": [
+    {
+      "gate": "production npm audit",
+      "reason": "Networked audit awaits the specific approval required by the project qualification plan."
+    }
+  ],
+  "deferredExternal": [
+    "Disposable clean Windows 11 native app acceptance",
+    "Exact installer and portable artifact acceptance",
+    "Real Windows 100%/150% display scaling",
+    "Release-candidate construction and maintainer signing",
+    "Authentic signed update, relaunch, rollback, and sidecar download",
+    "Dedicated-account cookie browser/file acceptance",
+    "Maintainer-controlled external extractor acceptance"
+  ],
+  "historicalOnly": [
+    "Pre-Stage-5 matched backend performance receipts",
+    "Pre-Stage-5 7,203-second soak",
+    "Earlier cached-only cargo-deny run (superseded by refreshed pass)"
+  ],
+  "visualComparison": {
+    "passed": true,
+    "nativeScalingQualified": false,
+    "errors": []
+  },
+  "evidenceArtifacts": [
+    {
+      "path": "docs/backend-method-review.json",
+      "bytes": 3372338,
+      "sha256": "823a9e22c3f095ffb9cc3581b9ffbf73eb1c4b190a874dd5b8f46acc20dcdc8d"
+    },
+    {
+      "path": "docs/backend-method-reviews/downloader.json",
+      "bytes": 758229,
+      "sha256": "c814c1dfb5b8f4785fdcb6a22ec71a5825fbe1c177ca36abf4a9874d0ff9e609"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/build.log",
+      "bytes": 3292,
+      "sha256": "816acf5b3a2dc8dcb2363bf9f4c5397492c880141de9d4709cddc040be6342d0"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/comparison.log",
+      "bytes": 2890,
+      "sha256": "655c5da4800688ce9542668031f5fe2cfb228ec18347dc9f7bca18788b60dae8"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/format.log",
+      "bytes": 68,
+      "sha256": "f20510a9da4717c51c4cffee6d0dd88d6c9a723d0a83711d01216f5b48961283"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/lint.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/production-exclusion.log",
+      "bytes": 71,
+      "sha256": "bc52d84c5019e3d379cd52f9afbfd1b65cde705cb785fa5564d3ce4f7d4877dd"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/svelte-sync.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/typecheck.log",
+      "bytes": 162,
+      "sha256": "6a44d5cc01c19a72fdaf00dddf7121619a2bfb929c779d59c8f0d6087d7cbc56"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/unit.log",
+      "bytes": 276,
+      "sha256": "eaf09a9a54132ccd7d92f47f6629053bb67bdee173a1b584536005cf2a8b8890"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/visual-100.log",
+      "bytes": 1186,
+      "sha256": "1e2af2c5c50ad477811ca2407b07cde8c363a8db79063568d421c5c56d9816e3"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/visual-150.log",
+      "bytes": 1186,
+      "sha256": "0c59a788352bce119b263d88716a1f1353d7a6178bf4bc87b7a8480d85637dcd"
+    },
+    {
+      "path": "target/frontend-extractions/stage5-integrated-20260909T092230Z-9499add6a12f412792632fc5ed26bdbc/workflows-100.log",
+      "bytes": 2259,
+      "sha256": "3c3349ffacdf5f84358ea1c0371b37d42eba03d50181163e9cb2f94d10db8188"
+    },
+    {
+      "path": "target/internal-cleanup-frontend-performance-evidence-3/comparison-input.json",
+      "bytes": 3749,
+      "sha256": "3d7f0be6f0c44f8bf562b15ded67d5418c6d5f0d2a3d10be0b23f6dcb39b17b1"
+    },
+    {
+      "path": "target/internal-cleanup-frontend-performance-evidence-3/comparison.json",
+      "bytes": 85084,
+      "sha256": "3b7eabe0ac0d4eb78914e11d09109544f0114862c577b546aab3d5eb3a080d4d"
+    },
+    {
+      "path": "target/internal-cleanup-frontend-performance-evidence-3/dependency-copies.json",
+      "bytes": 906,
+      "sha256": "66268fa3d79ec48c884278236a01d0cbedfc6ce64f5c82bf34b4403c47ade988"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-contracts.log",
+      "bytes": 54,
+      "sha256": "72bdbecae8dce58845e1dd5f2a2686469ed7216cf7cfde442988aa5e674ce9a2"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/after-warm-receipt.json",
+      "bytes": 2574,
+      "sha256": "0ba66ebbe98d8c48f6be60b8bbcc7bfef3024f8cdd7b6c1731541e8343ae505d"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/baseline-source-manifest.json",
+      "bytes": 28601,
+      "sha256": "b645afd45e67c68b7f8782bb592ae1284682dab7b84a1f6ce6c6689d70351f7a"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/candidate-source-manifest.json",
+      "bytes": 29728,
+      "sha256": "5b073ea106f085221011c907e61768cbb63f7bf6bb6e1fc255a16591de9cec68"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/comparisons/repeat-1/comparison.json",
+      "bytes": 59142,
+      "sha256": "9b7e49725ba0ed7de783e479429e0b19b1691d45b7bef4c5160ad74429fd85e0"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/comparisons/repeat-2/comparison.json",
+      "bytes": 59113,
+      "sha256": "088f510c5d0fc346668132bb5130313b22374c1024b3fe6da02e3d6043760d3e"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/comparisons/repeat-3/comparison.json",
+      "bytes": 59111,
+      "sha256": "7e033d291ac15181a0a82c439f81861e513723be608c2633a21d48fbcced88a7"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/matched-harness-manifest.json",
+      "bytes": 609,
+      "sha256": "bccf08a1fb16bf689782292fb373e5316d3e11ef51d4c6cea0f61b1ce44075b4"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/preflight-receipt.json",
+      "bytes": 1528,
+      "sha256": "26e82784454b191a76d0f4d5b439fe94fe3506932c18913d7e032b6d73f06743"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-performance-frozen-20260909T1023Z/receipt.json",
+      "bytes": 9782,
+      "sha256": "1ec7a84cd829fdd0b2954a803cf0f70f0c3d93e36b054da0bc68de91c6ec5394"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/backend-soak-console.log",
+      "bytes": 11384,
+      "sha256": "140f3e207b2bb88f38a6db18b0d821e81a0a59f3d7e9c4cb4da6585f240793a5"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/benchmark-setup-failures.json",
+      "bytes": 2535,
+      "sha256": "bdf8f70923021c2b34a4a8c5835cfe30960af5265c5e00bf146a121a9717235c"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/cargo-deny-database.txt",
+      "bytes": 68,
+      "sha256": "42b8f85b54c25fe92198ef83002364d517aa477e6b3fe6e639421a866d5271fa"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/cargo-deny-refreshed.log",
+      "bytes": 121949,
+      "sha256": "baaf5603f047b32efa4cc5c30aef0de57717140205f21a70272f7c96fa9f0b2e"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/clippy.log",
+      "bytes": 164,
+      "sha256": "37ce14ef6302cdee2daa1869acc6280d27df253fa5170b9e6fb989a17d1dbe66"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/e2e-contract-tests.log",
+      "bytes": 919,
+      "sha256": "2bf26608ada099657e3123d433fa2db3a013a72ebe1ae7104e2417f9f1bc226a"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/e2e-contracts-standalone.log",
+      "bytes": 992,
+      "sha256": "85b5c3bd3d4fcc1519f1da4972eb89aa25bdac505406811e953684cd317369cc"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/final-bindings.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/final-format-bindings-receipt.json",
+      "bytes": 578,
+      "sha256": "caed9ee702de98989b50707e487680d670289666c22641e04dc0c4471df52b75"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/final-format.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/final-source-check-receipt.json",
+      "bytes": 836,
+      "sha256": "ddde34ed2b2ae725b1c8c73034ef6a82e796085c41b172d50de11c559d53c615"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/frontend-contract-tests.log",
+      "bytes": 3912,
+      "sha256": "bf435f7fa60a8e7478bd032499213f18fd84fa33267b681df194ddf117124d83"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/packaging-tests.log",
+      "bytes": 53,
+      "sha256": "acff89b6d0601122db405cb2028b59bbf33959f9483c11c209d6d9c5f6be3093"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/process-scan.json",
+      "bytes": 3218727,
+      "sha256": "ef5c51f8eec7e949817481a5c38a59b4b8c56b5461d8f8738b699aaa4d4dd811"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/process-tests.log",
+      "bytes": 2030,
+      "sha256": "8972696e9081f875212c7dab358f0989119db27d3ddf251b04a47116674ebc4b"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/publication-equivalence.log",
+      "bytes": 17010,
+      "sha256": "f29bb4244703bdc4310f4d7012b90e6dc9c351b97e14f7458597f41b260015ce"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/publication-scan.json",
+      "bytes": 3246481,
+      "sha256": "168eb04b4720c0ee01c0037e4250165725b4b44861477d15455791554d08dd22"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/publication-tests.log",
+      "bytes": 2999,
+      "sha256": "415e7f1354aaa849baf4163ce466900246cb857d333c8ee1afd6874693905a3c"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/renderer-baseline-contracts.log",
+      "bytes": 727,
+      "sha256": "1fb4eef0aa9ab0a8cdfa4134a9db1468c4f897c59775d9532db5b0187da9f1cc"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/renderer-input-provenance.log",
+      "bytes": 108,
+      "sha256": "901be879f328de697e4a19fd8e1b01f309dea886f2b0d6367432e6788ec92e65"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/renderer-soak-console.log",
+      "bytes": 447,
+      "sha256": "2b6743bceaa407b5e97e1508d08165b8d28b94bbce7076e8d9e5dad9fe5c1b40"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/backend-performance-results.json",
+      "bytes": 202751,
+      "sha256": "82c13f43c3dac800fbcf2da39ee13a06982f983df66d42719c8518bc3654f109"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/backend-performance-results.md",
+      "bytes": 7928,
+      "sha256": "496549e87a03cafb95e5a7b112930290326d98b308b0c9dca5de8d1fe646b907"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/backend-soak-final.json",
+      "bytes": 7503,
+      "sha256": "f19effb7aef9a5edd2c4b8f2b96e0431243d803b0ae110a775e19cbd5539a7eb"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/backend-soak-final.md",
+      "bytes": 2133,
+      "sha256": "8bf807924956b52e79d0ce6ed19357d296042b7554766ba9b82df41427a584f5"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/frontend-performance-results.json",
+      "bytes": 27675,
+      "sha256": "cf5513c69032390df3af1bfdf6bb6a93182764ac1524079ba3ddf4b1dfe2daaf"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/frontend-performance-results.md",
+      "bytes": 4603,
+      "sha256": "5a9ac28b315544f7d6c691c8ce28de30bde2a54306e21098595b6d6cfad091db"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/renderer-soak-results.json",
+      "bytes": 7435,
+      "sha256": "3a2d7ab62df06e0857cbc3a9f1aaaf10d7b985c02a66e9fa263f10fb7d97c35d"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/report-drafts/renderer-soak-results.md",
+      "bytes": 1779,
+      "sha256": "e02ca81919699ad4bb44d26bc9dc87ffa8bec9fb853745565a4aa5be403c1d62"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/rust-test-receipt.json",
+      "bytes": 628,
+      "sha256": "935d1db5060611bd0076f47c02fe1d981423c6cb4bc97d2a1420bf4c28bf1ae8"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/rust-tests.log",
+      "bytes": 432592,
+      "sha256": "235909f93c703e70e4fc559a6afd669255fd5b8eb0bb803c2807611fb9149a1f"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/soak-observations.jsonl",
+      "bytes": 63699,
+      "sha256": "91c3ce88f9fb79e7d4473e02189dd63026bffaaae308b056d7fd5e8ee26b5349"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/source-contract-tests.log",
+      "bytes": 123,
+      "sha256": "e8d78ac415ea25b6265be69a5f09b723b4f095c19c14f70234ed70f5d737f976"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/state-tests.log",
+      "bytes": 4420,
+      "sha256": "8d32b82d0b930ad12109b78a03f691cf0344f99d8ad609140ae141903ca89177"
+    },
+    {
+      "path": "target/internal-cleanup-stage5/windows-user-process-tests.log",
+      "bytes": 239,
+      "sha256": "36a1c1a3802f9a7ab3e485596dc37d59ad567b8673b439848c36edd43fd6ab42"
+    },
+    {
+      "path": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf/inputs-after.json",
+      "bytes": 16668,
+      "sha256": "f003f71ffb98fea6ad77195c8440f2e0cdccb9cfea695fb66bd6b72fcd3179af"
+    },
+    {
+      "path": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf/inputs-before.json",
+      "bytes": 16668,
+      "sha256": "f003f71ffb98fea6ad77195c8440f2e0cdccb9cfea695fb66bd6b72fcd3179af"
+    },
+    {
+      "path": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf/renderer-soak-receipt.json",
+      "bytes": 13751,
+      "sha256": "c68472a3bb130301f23fb963fb1da578c3d0997c54b7c5c8d09fef8e308dc0d2"
+    },
+    {
+      "path": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf/vitest.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf/vitest.stdout.log",
+      "bytes": 6590,
+      "sha256": "d3ee62c7832130d5bbd59ff2a48c7474ab0c62c2d4bfe288c0a3801a9921d7ca"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/bin/nuclear-soak-tests.exe",
+      "bytes": 26301440,
+      "sha256": "a3b9b0c98185868f0ac3dec06ac04deea443bbf853196118c05891dc14d28aa6"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/build-evidence.json",
+      "bytes": 2426,
+      "sha256": "41cd7b09871f9211c43ca4849acbd7ba32515fc6ae3f83f6d42d6d861b5da281"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/cargo-build.jsonl",
+      "bytes": 403406,
+      "sha256": "8c7268535123dcce66d49543561fc17bf660cbb711e2f9647a4f7332262f1e72"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/discovery-result.json",
+      "bytes": 449,
+      "sha256": "54e64743c74d3adbebcf020ab37810e39890e08942c5a7ae8e14d3377213957c"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/runner-result.json",
+      "bytes": 2583,
+      "sha256": "3dd6e39dccdb34a899f791de03b98eadaca9f505a96d02d97c8127c25430037f"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/samples.jsonl",
+      "bytes": 595885,
+      "sha256": "8abd5a3f8a7e727928289317f5236dfa23f41e2c44d6e380f04afad57f7239c9"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/soak.json",
+      "bytes": 2990,
+      "sha256": "29cc73068ff21f3fbd2b5b7eec15cf0b0b241ab483509ab881a7698eaaa654b2"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/soak.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/soak.stdout.log",
+      "bytes": 155,
+      "sha256": "e8e2062c5f507492190414f6c550362a8dfbed87b9d55df0f87bd0a3b36cb7e7"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/source-manifest-after-build.json",
+      "bytes": 29205,
+      "sha256": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/source-manifest.json",
+      "bytes": 29205,
+      "sha256": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/test-list.log",
+      "bytes": 54,
+      "sha256": "315b173c90050c9c36d83194045524d44a38bff191b84a252bbe5111fbd122f3"
+    },
+    {
+      "path": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded/test-list.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "bindingProof": [
+    {
+      "item": "backend method-review ledger",
+      "result": "current-and-complete",
+      "detail": "inventory-backend-methods.py check rescanned clean fd58050 source and reported: review ledger covers 1215 current entries. The ledger sourceCommit and reconciliation fields describe the merge parent and movement provenance; validate() determines currentness from all generated identity fields against a fresh scan."
+    },
+    {
+      "item": "frontend receipts",
+      "result": "candidate-applicable",
+      "detail": "Visual receipts were captured before the later backend-only commits and therefore record a64a7e2. git diff --quiet a64a7e2 fd58050 over nuclear-app/src, frontend package/config inputs, and nuclear-app/e2e returned 0; archived candidate production hashes and receipt hashes bind the unchanged frontend bytes."
+    }
+  ],
+  "failedPerformanceSetups": {
+    "artifact": "target/internal-cleanup-stage5/benchmark-setup-failures.json",
+    "qualificationCredit": false,
+    "detail": "Long-path, warm-target, frontend manifest-sum, and working-directory failures occurred before valid measurement/provenance and contribute no result count."
+  },
+  "soaks": {
+    "backend": {
+      "scope": "isolated Windows debug backend library-test process; not native app, release profile, installer, or external-service qualification",
+      "runnerStatus": "passed",
+      "testExitCode": 0,
+      "analyzerVerification": "passed",
+      "startedAtUtc": "2026-09-09T10:31:10.887Z",
+      "endedAtUtc": "2026-09-09T12:31:14.295Z",
+      "requestedDurationSeconds": 7200,
+      "actualDurationMillis": 7203355,
+      "cycles": 1438,
+      "operations": 7190,
+      "samples": 1440,
+      "sourceAndExecutableUnchanged": true,
+      "runnerEvidenceValidated": true,
+      "rawRoot": "target/soak/after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded",
+      "analyzerReportSha256": "f19effb7aef9a5edd2c4b8f2b96e0431243d803b0ae110a775e19cbd5539a7eb",
+      "analyzedSamples": 1440,
+      "capViolations": 0,
+      "maxGrowthFromSteadyState": {
+        "privateBytes": 3686400,
+        "workingSetBytes": 3801088,
+        "handles": 2
+      },
+      "assertionsPassed": 16
+    },
+    "renderer": {
+      "scope": "Vitest jsdom with mocked Tauri IPC; no native renderer or backend qualification claim",
+      "runnerStatus": "passed",
+      "exitCode": 0,
+      "analyzerVerification": "passed",
+      "startedAtUtc": "2026-09-09T10:31:13.308Z",
+      "endedAtUtc": "2026-09-09T12:31:20.080Z",
+      "configuredSeconds": 7200,
+      "elapsedMs": 7200016,
+      "mounts": 468194,
+      "modeCounts": {
+        "activeOperationCycles": 117049,
+        "lateListenerCycles": 117049,
+        "delayedStartupCycles": 117048,
+        "completedWorkflowCycles": 117048
+      },
+      "inputsUnchanged": true,
+      "nodeUnchanged": true,
+      "heapScope": "observational only; no arbitrary pass threshold; postGc is controlled only when Node exposes global.gc",
+      "rawRoot": "target/renderer-soak/20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf",
+      "analyzerReportSha256": "3a2d7ab62df06e0857cbc3a9f1aaaf10d7b985c02a66e9fa263f10fb7d97c35d",
+      "afterGcGrowthFromBaselineBytes": 5013520,
+      "heapAssessment": "Periodic sawtooth was observed; heap evidence is observational with no arbitrary pass threshold.",
+      "processSamples": 102,
+      "processSamplesStableHandles": true,
+      "ownedNodeCleanup": true,
+      "finalProbeUtc": "2026-09-09T12:31:21.5770749Z",
+      "finalProbeRendererProcesses": 0
+    }
+  },
+  "finalizedAtUtc": "2026-09-09T12:35:05Z",
+  "reportLinks": {
+    "frontendPerformance": {
+      "markdown": "internal-cleanup-stage5-frontend-performance.md",
+      "json": "internal-cleanup-stage5-frontend-performance.json"
+    },
+    "backendPerformance": {
+      "markdown": "internal-cleanup-stage5-backend-performance.md",
+      "json": "internal-cleanup-stage5-backend-performance.json"
+    },
+    "backendSoak": {
+      "markdown": "internal-cleanup-stage5-backend-soak.md",
+      "json": "internal-cleanup-stage5-backend-soak.json"
+    },
+    "rendererSoak": {
+      "markdown": "internal-cleanup-stage5-renderer-soak.md",
+      "json": "internal-cleanup-stage5-renderer-soak.json"
+    }
+  }
+}

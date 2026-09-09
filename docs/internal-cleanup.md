@@ -6,7 +6,11 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stages 1 through 5 passed their source and regression gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Each of the ten component/style extractions passed its own gate. The integrated candidate passed 304 Rust tests, strict Clippy, 167 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. The opt-in soaks remained skipped in those short suites. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, `frontend-components-review.md`, and `backend-internal-cleanup-review.md` record the changes and evidence. Matched performance, fresh soaks, and native qualification remain open.
+Stages 1 through 5 passed their source and regression gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Each of the ten component/style extractions passed its own gate. The integrated candidate passed 304 Rust tests, strict Clippy, 167 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, `frontend-components-review.md`, and `backend-internal-cleanup-review.md` record the changes and evidence.
+
+Frozen candidate `fd58050b054f921d315658880a14793fb93fcae6` then completed all 18 matched frontend performance measurements within the existing thresholds. All three matched backend hard gates passed. Backend timing and memory review flags were distributed 2, 0, and 22 across the repeats; none recurred across two repeats. The reports retain every flag without claiming a causal improvement or zero performance effect.
+
+Both fresh two-hour soaks passed against that candidate. The backend completed 1,438 cycles and 7,190 operations; all 1,440 samples met its resource limits, and final journal reopen and owned-fixture cleanup passed. The renderer completed 468,194 mounts across four workflow/race cases with teardown assertions after each mount. Its heap measurements remain observational. Backend debug tests and renderer jsdom tests do not qualify the native application. Native qualification remains deferred, and the production npm audit still awaits its separately requested network approval.
 
 An installed Chrome update invalidated one playlist visual run. The original browser executable was recovered from Google's signed static package and matched the original baseline SHA-256 exactly. A fresh full playlist gate and the final update-dialog gate passed against the unchanged baseline. `internal-cleanup-browser-recovery.md` records the recovery and retained invalid receipt; no replacement baseline was approved.
 
@@ -16,7 +20,7 @@ Headless Chrome captures use a fresh application-owned profile for each run. Bro
 
 ## Executed baseline checks
 
-Evidence below was collected before production changes. UTC run identifiers can fall on September 9 while the user's local date is September 8.
+Evidence below was collected before production changes. Each row records the result at that time; later paragraphs record corrected runs and accepted baselines. UTC run identifiers can fall on September 9 while the user's local date is September 8.
 
 | Check                                                              | Result                                                                                                                                                                                              | Evidence                                                                                            |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -48,15 +52,17 @@ The timing runs with raw samples and an idle-renderer control retained the exist
 
 All three runs verified that inputs and executable identities remained unchanged. All failed the existing workload-frame target of p95 <16.7 ms. The idle control also exceeded that target before application startup, which is evidence of an environmental contribution, not an application performance pass. Raw distributions and the limited Chromium-reported JavaScript heap measurements are retained in each `performance.json`. These are single-run baseline observations; matched repeat and candidate comparisons remain pending.
 
-## Remaining gates
+## Validation record and remaining gates
+
+Candidate results are recorded in the [qualification checklist](internal-cleanup-stage5-qualification.md), [frontend performance report](internal-cleanup-stage5-frontend-performance.md), [backend performance report](internal-cleanup-stage5-backend-performance.md), [backend soak report](internal-cleanup-stage5-backend-soak.md), and [renderer soak report](internal-cleanup-stage5-renderer-soak.md). Their JSON companions retain the measurements and evidence identities. The tested source is `fd58050`; subsequent delivery changes only these documentation records.
 
 The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.json`. Its paired captures are `target/renderer-checks/visual-20260909T060041Z-885155a599d74d619e7da52667d0c328/visual-100.json` and `target/renderer-checks/visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d/visual-150.json`. All 60 scenarios had identical decoded pixels and semantic evidence across two independent repeats. The final comparator reported zero errors and verified archived source, harness, executable, receipt, and screenshot identities. Its 21 synthetic cases passed, including deliberate pixel, text, geometry, enabled-state, focus-order, provenance, and malformed-input failures. This is baseline stability evidence, not a candidate comparison. Browser scale emulation does not qualify native Windows scaling.
 
-1. Investigate the existing frame-time failure with matched repeats and candidate measurements, without weakening its threshold.
+1. Completed: frozen matched frontend measurements passed 18/18 runs at queue sizes 1, 100, and 1,000 without weakening thresholds. Three matched backend comparisons passed every hard gate; their isolated review flags remain documented. The earlier idle-frame failure is retained as environment-sensitive evidence without an established root cause.
 2. Completed: generation-aware startup, one page resource owner, waiter cleanup, and their focused/integrated regression gates.
 3. Completed: queue presentation/workflow extraction and the separately regression-tested metadata/display-timestamp lifetime corrections.
 4. Completed: ten component/style extractions with individual output, controls, focus, geometry, and workflow comparisons.
 5. Completed: mechanical StateStore, process, and publication extractions, retaining ownership and lock boundaries; all 1,215 backend review units match current sources.
-6. Run integrated checks and fresh candidate-bound performance/soak validation. Complete native qualification when its prerequisites are available.
+6. Completed: integrated short checks, matched performance, and fresh candidate-bound backend and renderer soaks. Complete native and external release qualification when its prerequisites are available. Production npm audit remains pending approval to transmit dependency metadata.
 
-Structural implementation and its source/regression gates are complete. Integrated performance and long-run validation remain open. Native identical-UX and release qualification are not complete.
+Structural implementation, source/regression gates, matched performance review, and the candidate-bound soaks are complete. Native identical-UX and release qualification remain incomplete. No push or release publication was performed.

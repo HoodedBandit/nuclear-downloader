@@ -1,0 +1,184 @@
+{
+  "schemaVersion": "internal-cleanup-renderer-soak-summary/v1",
+  "qualified": true,
+  "source": {
+    "commit": "fd58050b054f921d315658880a14793fb93fcae6",
+    "cleanCheckout": true
+  },
+  "harness": {
+    "runnerSha256": "91543708afbfc8c7d1d9163d0ebf37da6d8db605677f4792a3de0b4d33e12f50",
+    "lifecycleTestSha256": "3357bcbc3e148477d84eac851a5252a24b8845ceb7f0ad1fa084b31a7678fc88",
+    "inputsSha256": "f003f71ffb98fea6ad77195c8440f2e0cdccb9cfea695fb66bd6b72fcd3179af",
+    "inputsUnchanged": true
+  },
+  "node": {
+    "version": "v22.23.1",
+    "sha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+    "unchanged": true,
+    "controlledGc": true
+  },
+  "duration": {
+    "configuredSeconds": 7200,
+    "elapsedMs": 7200016,
+    "deadlineExceeded": false
+  },
+  "workflows": {
+    "mounts": 468194,
+    "activeOperation": 117049,
+    "lateListener": 117049,
+    "delayedStartup": 117048,
+    "completedWorkflow": 117048
+  },
+  "teardownAssertions": {
+    "basis": "The single Vitest soak test passed; each application below is an assertion executed after one unmount.",
+    "listenerUnlistenExactlyOnce": 2340970,
+    "ownedTimersCleared": 468194,
+    "noPostUnmountIpcAdmission": 468194,
+    "oneResizeObserverCreated": 468194,
+    "resizeObserverDisconnectedExactlyOnce": 468194
+  },
+  "javascriptHeap": {
+    "scope": "Node/Vitest jsdom JavaScript heap only.",
+    "threshold": null,
+    "boundedness": "observational only; no arbitrary pass threshold; postGc is controlled only when Node exposes global.gc",
+    "samples": 121,
+    "periodicTrendBytes": {
+      "first": 66312136.0,
+      "last": 206789872.0,
+      "minimum": 66312136.0,
+      "maximum": 308804616.0,
+      "delta": 140477736.0
+    },
+    "baselineBytes": 66312136,
+    "maximumBytes": 334632792,
+    "finalBytes": 206790232,
+    "afterControlledGcBytes": 71325656,
+    "finalMinusBaselineBytes": 140478096.0,
+    "afterGcMinusBaselineBytes": 5013520.0
+  },
+  "observedProcesses": {
+    "scope": "probeVersion 2 PID-and-start-time-bound Node process observations; no threshold or native renderer claim.",
+    "observationRecords": 102,
+    "processes": [
+      {
+        "pidAndStart": "15216@2026-09-09T10:31:15.2941527Z",
+        "samples": 102,
+        "firstUtc": "2026-09-09T10:33:49.8099851Z",
+        "lastUtc": "2026-09-09T12:30:16.1300536Z",
+        "workingSetBytes": {
+          "first": 411897856.0,
+          "last": 415358976.0,
+          "minimum": 411897856.0,
+          "maximum": 416907264.0,
+          "delta": 3461120.0
+        },
+        "privateBytes": {
+          "first": 392957952.0,
+          "last": 396296192.0,
+          "minimum": 392818688.0,
+          "maximum": 398389248.0,
+          "delta": 3338240.0
+        },
+        "handles": {
+          "first": 229.0,
+          "last": 229.0,
+          "minimum": 229.0,
+          "maximum": 229.0,
+          "delta": 0.0
+        }
+      },
+      {
+        "pidAndStart": "17276@2026-09-09T10:31:13.3230616Z",
+        "samples": 102,
+        "firstUtc": "2026-09-09T10:33:49.8099851Z",
+        "lastUtc": "2026-09-09T12:30:16.1300536Z",
+        "workingSetBytes": {
+          "first": 100458496.0,
+          "last": 103350272.0,
+          "minimum": 100458496.0,
+          "maximum": 103362560.0,
+          "delta": 2891776.0
+        },
+        "privateBytes": {
+          "first": 136712192.0,
+          "last": 139046912.0,
+          "minimum": 136712192.0,
+          "maximum": 139046912.0,
+          "delta": 2334720.0
+        },
+        "handles": {
+          "first": 265.0,
+          "last": 265.0,
+          "minimum": 265.0,
+          "maximum": 265.0,
+          "delta": 0.0
+        }
+      }
+    ],
+    "finalObservationUtc": "2026-09-09T12:31:21.5770749Z",
+    "ownedNodeCleanupProved": true
+  },
+  "limitations": [
+    "The soak runs in Vitest jsdom with mocked Tauri IPC.",
+    "It does not exercise a native WebView, native Tauri IPC, backend processes, GPU resources, or OS renderer resources.",
+    "JavaScript heap and process memory are observational; no new memory threshold is applied.",
+    "Passing this analysis is not native renderer qualification."
+  ],
+  "evidence": {
+    "receipt": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\renderer-soak-receipt.json",
+      "bytes": 13751,
+      "sha256": "c68472a3bb130301f23fb963fb1da578c3d0997c54b7c5c8d09fef8e308dc0d2"
+    },
+    "stdout": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\vitest.stdout.log",
+      "bytes": 6590,
+      "sha256": "d3ee62c7832130d5bbd59ff2a48c7474ab0c62c2d4bfe288c0a3801a9921d7ca"
+    },
+    "stderr": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\vitest.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "launchPreflight": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\renderer-soak-launch-20260909T103111Z-751caa36119345c5ba4f16c43327152d\\preflight.json",
+      "bytes": 508,
+      "sha256": "725cf5e54645f6493316c3278be275f5ca2cab64e7f2100ff43ee0ccc65360ca"
+    },
+    "launchResult": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\renderer-soak-launch-20260909T103111Z-751caa36119345c5ba4f16c43327152d\\result.json",
+      "bytes": 600,
+      "sha256": "9360109c5815830a300d2172b6c5a4e44da09cd10e6c1b9553bf5db41c2002e8"
+    },
+    "launchLog": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\renderer-soak-launch-20260909T103111Z-751caa36119345c5ba4f16c43327152d\\runner.log",
+      "bytes": 285,
+      "sha256": "cdc301e14affe8798cceefac235d24970f8aacff26eb628d8ddae43970531875"
+    },
+    "inputsBefore": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\inputs-before.json",
+      "bytes": 16668,
+      "sha256": "f003f71ffb98fea6ad77195c8440f2e0cdccb9cfea695fb66bd6b72fcd3179af"
+    },
+    "inputsAfter": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\inputs-after.json",
+      "bytes": 16668,
+      "sha256": "f003f71ffb98fea6ad77195c8440f2e0cdccb9cfea695fb66bd6b72fcd3179af"
+    },
+    "observations": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\soak-observations.jsonl",
+      "bytes": 63699,
+      "sha256": "91c3ce88f9fb79e7d4473e02189dd63026bffaaae308b056d7fd5e8ee26b5349"
+    },
+    "archivedInputs": {
+      "root": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-soak\\20260909T103111Z-1fc95e72e0e1462385a57ef1579e59bf\\inputs-before",
+      "files": 96,
+      "verifiedAgainstManifest": true
+    },
+    "pinnedNode": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\toolchains\\node-v22.23.1-win-x64\\node.exe",
+      "bytes": 86989128,
+      "sha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed"
+    }
+  }
+}

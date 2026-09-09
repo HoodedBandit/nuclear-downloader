@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "notice": null,
+  "runRoot": "J:\\Nuclear AI box\\nuclear-downloader\\target\\soak\\after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded",
+  "samples": {
+    "count": 1440,
+    "firstCycle": 0,
+    "lastCycle": 1438,
+    "lastElapsedSeconds": 7203
+  },
+  "growthFromCycle12": {
+    "privateBytes": {
+      "unit": "bytes",
+      "baseline": 4603904,
+      "maximumGrowth": 3686400,
+      "finalGrowth": 1617920,
+      "configuredMaximumGrowth": 134217728
+    },
+    "workingSetBytes": {
+      "unit": "bytes",
+      "baseline": 18718720,
+      "maximumGrowth": 3801088,
+      "finalGrowth": 1900544,
+      "configuredMaximumGrowth": 201326592
+    },
+    "handleCount": {
+      "unit": "count",
+      "baseline": 150,
+      "maximumGrowth": 2,
+      "finalGrowth": 2,
+      "configuredMaximumGrowth": 32
+    }
+  },
+  "violations": [],
+  "runtime": {
+    "expectedResolutions": 5871,
+    "actualResolutions": 5871,
+    "successfulResolutions": 5871,
+    "expectedHashes": 595,
+    "actualHashes": 595,
+    "hashBytes": 82467,
+    "passed": true
+  },
+  "cleanup": {
+    "fixtureRootAbsent": true,
+    "finalJournalReopened": true
+  },
+  "durationChecks": {
+    "assignedDurationAtLeastRequired": true,
+    "actualDurationMeetsReceipt": true,
+    "runnerElapsedMeetsReceipt": true,
+    "finalSampleElapsedMeetsReceipt": true
+  },
+  "summaryChecks": {
+    "firstSampleMatches": true,
+    "steadyStateBaselineMatches": true,
+    "lastSampleMatches": true,
+    "finalCycleMatchesWorkload": true,
+    "sampleCountMatchesFinalDuplicateSchema": true
+  },
+  "finalizedSamples": {
+    "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\soak\\after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded\\samples.jsonl",
+    "bytes": 595885,
+    "sha256": "8abd5a3f8a7e727928289317f5236dfa23f41e2c44d6e380f04afad57f7239c9"
+  },
+  "outerLaunch": {
+    "root": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-soak-launch-20260909T103050Z-ceb5c131c72248e08bd9f5c4d056fc37",
+    "preflight": {
+      "schemaVersion": "candidate-soak-launch/v1",
+      "kind": "backend",
+      "candidateCommit": "fd58050b054f921d315658880a14793fb93fcae6",
+      "cleanCheckout": true,
+      "recordedAt": "2026-09-09T10:30:50.2004085+00:00",
+      "nodeSha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+      "runnerSha256": "5384c3acae9b4ee8ff9e54ffedbf820c1d34e8a120e998ec3c324e3c889ef3e3",
+      "callerSha256": "467c952ba1bfdf0e440723b04be2ecc177158c9da8735c21119ba395d65f84b0",
+      "durationMinutes": 120
+    },
+    "result": {
+      "schemaVersion": "candidate-soak-launch-result/v1",
+      "kind": "backend",
+      "candidateCommit": "fd58050b054f921d315658880a14793fb93fcae6",
+      "preflightSha256": "7cb95f6525a2e775e5da42436ce5aea6232606752e31d0d9b8ec580bd95c6201",
+      "runnerExitCode": 0,
+      "finalSourceError": null,
+      "log": "J:\\Nuclear AI box\\nuclear-downloader\\target\\internal-cleanup-stage5\\backend-soak-launch-20260909T103050Z-ceb5c131c72248e08bd9f5c4d056fc37\\runner.log",
+      "logSha256": "fa44d8e0a235998927c97dfbde3f9c4330a7ee2b9392ae35d182e8459ee5a2a7",
+      "completedAt": "2026-09-09T12:31:14.5586256+00:00"
+    },
+    "preflightSha256": "7cb95f6525a2e775e5da42436ce5aea6232606752e31d0d9b8ec580bd95c6201",
+    "resultSha256": "a2a08a78157f95667a12066c686d9e673d4888893de9b49a6167ab6382f37b37",
+    "logSha256Actual": "fa44d8e0a235998927c97dfbde3f9c4330a7ee2b9392ae35d182e8459ee5a2a7"
+  },
+  "assertions": {
+    "completeReceiptPresent": true,
+    "runnerPassed": true,
+    "soakPassed": true,
+    "warmupCycle12Present": true,
+    "cycleSequencePassed": true,
+    "sampleCapsPassed": true,
+    "latestSequenceMonotonic": true,
+    "runtimePassed": true,
+    "finalJournalReopened": true,
+    "fixtureCleanupPassed": true,
+    "frozenExecutableUnchanged": true,
+    "sourceAndExecutableBindingsPassed": true,
+    "durationPassed": true,
+    "finalSummaryMatchesSamples": true,
+    "finalizedSamplesBound": true,
+    "outerLaunchBindingPassed": true
+  },
+  "bindings": {
+    "sourceManifest": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\soak\\after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded\\source-manifest.json",
+      "sha256": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7",
+      "afterBuildPath": "J:\\Nuclear AI box\\nuclear-downloader\\target\\soak\\after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded\\source-manifest-after-build.json",
+      "afterBuildSha256": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7",
+      "unchangedDuringBuild": true,
+      "fileCount": 163
+    },
+    "runnerScript": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\scripts\\run-backend-soak.ps1",
+      "sha256": "5384c3acae9b4ee8ff9e54ffedbf820c1d34e8a120e998ec3c324e3c889ef3e3"
+    },
+    "sourceExecutable": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\debug\\deps\\nuclear_app_lib-7c7cc370866e23da.exe",
+      "bytes": 26301440,
+      "lastWriteTimeUtc": "2026-09-09T10:31:08.1685093Z",
+      "sha256": "a3b9b0c98185868f0ac3dec06ac04deea443bbf853196118c05891dc14d28aa6"
+    },
+    "frozenExecutable": {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\soak\\after-20260909T103050Z-9745c123477048e49f4f5766efaf8ded\\bin\\nuclear-soak-tests.exe",
+      "sha256": "a3b9b0c98185868f0ac3dec06ac04deea443bbf853196118c05891dc14d28aa6",
+      "readOnly": true
+    },
+    "sourceManifestActual": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7",
+    "sourceManifestAfterBuildActual": "1d58f174ee0e093cdfcb927c6ebec01521dddafbce0a061c17daf0e8e5887af7",
+    "frozenExecutableActual": "a3b9b0c98185868f0ac3dec06ac04deea443bbf853196118c05891dc14d28aa6",
+    "runnerScriptActual": "5384c3acae9b4ee8ff9e54ffedbf820c1d34e8a120e998ec3c324e3c889ef3e3"
+  },
+  "bindingChecks": {
+    "buildHeadMatchesExpectedCommit": true,
+    "buildGitStatusClean": true,
+    "sourceManifestMatchesReceipt": true,
+    "afterBuildManifestMatchesReceipt": true,
+    "sourceManifestUnchangedDuringBuild": true,
+    "runnerScriptMatchesReceipt": true,
+    "frozenExecutableMatchesBuildReceipt": true,
+    "sourceAndFrozenExecutableHashesMatch": true,
+    "frozenExecutableMatchesFinalReceipt": true
+  },
+  "receiptHashes": {
+    "build-evidence.json": "41cd7b09871f9211c43ca4849acbd7ba32515fc6ae3f83f6d42d6d861b5da281",
+    "runner-result.json": "3dd6e39dccdb34a899f791de03b98eadaca9f505a96d02d97c8127c25430037f",
+    "soak.json": "29cc73068ff21f3fbd2b5b7eec15cf0b0b241ab483509ab881a7698eaaa654b2"
+  },
+  "limitations": [
+    "This is an isolated Windows debug lib-test workload, not a release build or interactive desktop session.",
+    "Private and working-set values are point-in-time Windows counters; they do not identify allocation ownership, establish causality, or prove the absence of a leak.",
+    "The soak stresses queue/download lifecycle, subprocess supervision, publication cleanup, outbox resync, runtime mutation, journal reopen, and diagnostics bounds. It does not retain inspection or playlist payloads, so the 16 MiB inspection-retention budget and inspection-payload behavior were not stressed.",
+    "Quiescent sampling can miss short-lived peaks between five-second cycles."
+  ]
+}

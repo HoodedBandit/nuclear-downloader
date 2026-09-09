@@ -80,7 +80,9 @@ Evidence is `target/internal-cleanup-stage5/publication-tests.log`.
 Strict Clippy passed for all targets and features with `-D warnings`. A fresh
 Cargo test build then passed all 304 ordinary tests; three performance/soak
 harness tests remained opt-in. The Cargo artifact record explicitly reports
-`fresh: false`. Source manifests before and after the suite match, and generated
+`fresh: false`, meaning it was compiled rather than reused from cache; the
+summary receipt describes this as `freshCompilerArtifact: true`. Source
+manifests before and after the suite match, and generated
 bindings are unchanged. The test executable is bound by SHA-256 in
 `target/internal-cleanup-stage5/rust-test-receipt.json`; the full log is
 `rust-tests.log` beside it. This fresh suite covers all three extractions.
@@ -95,9 +97,29 @@ and `internal-cleanup-stage5-integrated-visual.json`.
 Packaging, evidence-contract, process-helper, inventory, architecture, renderer
 provenance, visual comparator, and performance-comparator fixtures also passed.
 These synthetic checks do not qualify an installer or clean Windows desktop.
-Pinned cargo-deny passed its cached advisory, license, source, and ban policies;
-the networked npm audit awaits specific authorization after automatic approval
-review rejected transmission of dependency metadata.
+Pinned `cargo-deny 0.20.2` passed advisories, bans, licenses, and sources after
+refreshing the public advisory database to
+`d502590ca247f3e53b56bf6c2ae40b61926800e5`
+(2026-09-09T10:26:17+02:00). The networked npm audit awaits specific authorization
+after automatic approval review rejected transmission of dependency metadata.
 
-Structural implementation and its source/regression gates are complete. Matched
-performance and fresh soaks remain pending. Native qualification remains deferred.
+All three matched backend performance hard gates passed. Review flags were
+distributed 2, 0, and 22 across repeats, with none recurring across two repeats;
+this does not establish zero performance effect or causality. The
+[performance report](internal-cleanup-stage5-backend-performance.md) retains all
+measurements and flags.
+
+The frozen `fd58050` backend soak passed for 7,203 seconds, with 1,438 cycles,
+7,190 operations, and 1,440 samples. All resource caps, runtime hash/resolution
+counts, final journal reopen, fixture cleanup, and source/executable bindings
+passed. Maximum growth after warm-up was 3.52 MiB private memory, 3.63 MiB
+working set, and two handles. The [soak report](internal-cleanup-stage5-backend-soak.md)
+records exact values and scope limits, including that inspection/playlist
+payload retention was not stressed by this workload.
+
+Structural implementation, source/regression gates, matched performance review,
+and the full candidate-bound backend and renderer soaks are complete. Native
+Windows, installer/portable, real display scaling, signed-update, cookie-account,
+and controlled-extractor qualification remain deferred. Production npm audit
+remains pending approval. The [qualification checklist](internal-cleanup-stage5-qualification.md)
+links the complete local evidence and remaining gates.

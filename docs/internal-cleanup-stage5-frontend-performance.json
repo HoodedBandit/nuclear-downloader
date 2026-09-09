@@ -1,0 +1,981 @@
+{
+  "schemaVersion": "internal-cleanup-frontend-performance-summary/v1",
+  "qualification": {
+    "qualified": true,
+    "thresholdsPassed": true,
+    "completedRuns": 18,
+    "repeatsPerSideAndQueue": 3,
+    "failedSetupAttemptsCredited": 0
+  },
+  "source": {
+    "baselineCommit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+    "candidateCommit": "fd58050b054f921d315658880a14793fb93fcae6",
+    "baselineProductionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+    "candidateProductionHash": "9104595dbaa5b69f027367b4776d902a46f620da9acf319c01513dc79813660b",
+    "harnessHash": "7dff2b7474c644449198227cc915555715404b9d26be63de852980dae1e6cb67"
+  },
+  "environment": {
+    "windowsBuild": "26200.9445",
+    "actualWindowsScalePercent": 100,
+    "executables": {
+      "driver": "4a35f44f324cfe2bb37194447a419bd72a382a5f1a4e87d4305b9b674d1cb212",
+      "node": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+      "browser": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0"
+    }
+  },
+  "dependencies": {
+    "aggregateHash": "454a5359fa77d2a72531eae071b17c11a92c815ba9c1c7c58d0d7ef207b27938",
+    "fileCount": 22792,
+    "bytes": 252885691,
+    "baselineMatches": true,
+    "candidateMatches": true,
+    "excludedTransientDirectories": ["node_modules/.vite"]
+  },
+  "evidence": {
+    "comparison": "target/internal-cleanup-frontend-performance-evidence-3/comparison.json",
+    "comparisonInput": "target/internal-cleanup-frontend-performance-evidence-3/comparison-input.json",
+    "dependencyCopies": "target/internal-cleanup-frontend-performance-evidence-3/dependency-copies.json",
+    "uniqueRunIds": 18,
+    "uniqueReceiptHashes": 18,
+    "inputsVerifiedAfter": true
+  },
+  "results": {
+    "baseline": {
+      "1": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59978.19999999553,
+            "min": 59971.5,
+            "max": 59980.10000000149
+          },
+          "inputToPaintMs": {
+            "median": 14.200000002980232,
+            "min": 11,
+            "max": 15.200000002980232
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 8,
+              "min": 8,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000136,
+              "min": 8.100000000000023,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.200000000000273,
+              "min": 8.100000000000364,
+              "max": 8.299999999999727
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.300000000001091,
+              "min": 7.299999999999272,
+              "max": 7.400000000001455
+            },
+            "p95": {
+              "median": 8.099999999999454,
+              "min": 8.099999999998545,
+              "max": 8.100000000000364
+            },
+            "p99": {
+              "median": 8.200000000000728,
+              "min": 8.200000000000728,
+              "max": 8.200000000000728
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0.09999999403953552,
+              "min": 0.09999999403953552,
+              "max": 0.09999999403953552
+            },
+            "p95": {
+              "median": 0.20000000298023224,
+              "min": 0.20000000298023224,
+              "max": 0.20000000298023224
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.20000000298023224,
+              "max": 0.29999999701976776
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7916.0,
+            "max": 7987.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 8119549.0,
+            "max": 8311001.0
+          },
+          "total": {
+            "min": 12842405.0,
+            "max": 13104549.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      },
+      "100": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59814.10000000149,
+            "min": 59812.20000000298,
+            "max": 59819.89999999851
+          },
+          "inputToPaintMs": {
+            "median": 11.600000001490116,
+            "min": 7.5,
+            "max": 15.100000001490116
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 8,
+              "min": 8,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000136,
+              "min": 8.099999999999909,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.200000000000273,
+              "min": 8.200000000000045,
+              "max": 8.5
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.399999999994179,
+              "min": 7.30000000000291,
+              "max": 7.600000000005821
+            },
+            "p95": {
+              "median": 8.100000000000364,
+              "min": 8.099999999998545,
+              "max": 8.100000000002183
+            },
+            "p99": {
+              "median": 8.200000000000728,
+              "min": 8.200000000000728,
+              "max": 8.200000000000728
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.19999999552965164
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.19999999552965164,
+              "min": 0.19999999552965164,
+              "max": 0.20000000298023224
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.29999999701976776,
+              "max": 0.29999999701976776
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7856.0,
+            "max": 7933.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 10007191.0,
+            "max": 13214899.0
+          },
+          "total": {
+            "min": 14154723.0,
+            "max": 16251875.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      },
+      "1000": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59812.79999999702,
+            "min": 59809.69999999553,
+            "max": 59815.5
+          },
+          "inputToPaintMs": {
+            "median": 12.199999995529652,
+            "min": 7.5999999940395355,
+            "max": 14.800000004470348
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 8,
+              "min": 8,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000136,
+              "min": 8.100000000000023,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.299999999999727,
+              "min": 8.200000000000045,
+              "max": 8.299999999999727
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.399999999994179,
+              "min": 7.30000000000291,
+              "max": 7.399999999994179
+            },
+            "p95": {
+              "median": 8.10000000000582,
+              "min": 8.10000000000582,
+              "max": 8.10000000000582
+            },
+            "p99": {
+              "median": 8.200000000004366,
+              "min": 8.200000000004366,
+              "max": 8.200000000004366
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.19999999552965164,
+              "min": 0.19999999552965164,
+              "max": 0.19999999552965164
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.20000000298023224,
+              "max": 0.29999999701976776
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7918.0,
+            "max": 7929.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 11333763.0,
+            "max": 14677459.0
+          },
+          "total": {
+            "min": 13368275.0,
+            "max": 18086867.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      }
+    },
+    "candidate": {
+      "1": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59979.20000000298,
+            "min": 59968.29999999702,
+            "max": 59981.79999999702
+          },
+          "inputToPaintMs": {
+            "median": 14.300000004470348,
+            "min": 8,
+            "max": 15.900000005960464
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 7.900000000000091,
+              "min": 7.900000000000091,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000136,
+              "min": 8.100000000000136,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.200000000000045,
+              "min": 8.199999999999818,
+              "max": 8.200000000000273
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.299999999999272,
+              "min": 7.299999999999272,
+              "max": 7.300000000001091
+            },
+            "p95": {
+              "median": 8.099999999998545,
+              "min": 8.099999999998545,
+              "max": 8.099999999999454
+            },
+            "p99": {
+              "median": 8.200000000000728,
+              "min": 8.200000000000728,
+              "max": 8.200000000000728
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0.09999999403953552,
+              "min": 0.09999999403953552,
+              "max": 0.09999999403953552
+            },
+            "p95": {
+              "median": 0.20000000298023224,
+              "min": 0.20000000298023224,
+              "max": 0.20000000298023224
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.20000000298023224,
+              "max": 0.29999999701976776
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7984.0,
+            "max": 7992.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 8364222.0,
+            "max": 8773734.0
+          },
+          "total": {
+            "min": 12102522.0,
+            "max": 13151098.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      },
+      "100": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59816.20000000298,
+            "min": 59813,
+            "max": 59817.39999999851
+          },
+          "inputToPaintMs": {
+            "median": 14.700000002980232,
+            "min": 12.199999995529652,
+            "max": 15.399999998509884
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 8,
+              "min": 8,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000136,
+              "min": 8.100000000000023,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.199999999999818,
+              "min": 8.199999999999818,
+              "max": 8.400000000000091
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.30000000000291,
+              "min": 7.30000000000291,
+              "max": 7.399999999994179
+            },
+            "p95": {
+              "median": 8.100000000000364,
+              "min": 8.100000000000364,
+              "max": 8.100000000002183
+            },
+            "p99": {
+              "median": 8.200000000004366,
+              "min": 8.200000000000728,
+              "max": 8.200000000004366
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0.09999999403953552,
+              "min": 0,
+              "max": 0.09999999403953552
+            },
+            "p95": {
+              "median": 0.20000000298023224,
+              "min": 0.20000000298023224,
+              "max": 0.20000000298023224
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.29999999701976776,
+              "max": 0.29999999701976776
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7923.0,
+            "max": 7936.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 10904778.0,
+            "max": 13994942.0
+          },
+          "total": {
+            "min": 15511802.0,
+            "max": 21016826.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      },
+      "1000": {
+        "runs": 3,
+        "thresholdsPassed": true,
+        "scalars": {
+          "elapsedMs": {
+            "median": 59815.5,
+            "min": 59812.10000000149,
+            "max": 59820.10000000149
+          },
+          "inputToPaintMs": {
+            "median": 13.600000001490116,
+            "min": 10.5,
+            "max": 13.799999997019768
+          },
+          "longestTaskMs": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          }
+        },
+        "distributionsMs": {
+          "idleFrame": {
+            "p50": {
+              "median": 8,
+              "min": 8,
+              "max": 8
+            },
+            "p95": {
+              "median": 8.100000000000023,
+              "min": 8.099999999999909,
+              "max": 8.100000000000136
+            },
+            "p99": {
+              "median": 8.200000000000273,
+              "min": 8.199999999999818,
+              "max": 17.699999999999932
+            }
+          },
+          "workloadFrame": {
+            "p50": {
+              "median": 7.30000000000291,
+              "min": 7.30000000000291,
+              "max": 7.399999999994179
+            },
+            "p95": {
+              "median": 8.10000000000582,
+              "min": 8.10000000000582,
+              "max": 8.10000000000582
+            },
+            "p99": {
+              "median": 8.200000000004366,
+              "min": 8.19999999999709,
+              "max": 8.200000000004366
+            }
+          },
+          "reducer": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p99": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            }
+          },
+          "progressDispatch": {
+            "p50": {
+              "median": 0,
+              "min": 0,
+              "max": 0
+            },
+            "p95": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            },
+            "p99": {
+              "median": 0.10000000149011612,
+              "min": 0.10000000149011612,
+              "max": 0.10000000149011612
+            }
+          },
+          "stateDeltaDispatch": {
+            "p50": {
+              "median": 0.09999999403953552,
+              "min": 0,
+              "max": 0.09999999403953552
+            },
+            "p95": {
+              "median": 0.20000000298023224,
+              "min": 0.20000000298023224,
+              "max": 0.20000000298023224
+            },
+            "p99": {
+              "median": 0.29999999701976776,
+              "min": 0.29999999701976776,
+              "max": 0.30000000447034836
+            }
+          }
+        },
+        "rawCountsPerRun": {
+          "reducer": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "progressDispatch": {
+            "min": 1500.0,
+            "max": 1500.0
+          },
+          "stateDeltaDispatch": {
+            "min": 3000.0,
+            "max": 3000.0
+          },
+          "workloadFrame": {
+            "min": 7926.0,
+            "max": 7955.0
+          },
+          "idleFrame": {
+            "min": 300.0,
+            "max": 300.0
+          },
+          "longTasks": {
+            "min": 0.0,
+            "max": 0.0
+          },
+          "dispatched": {
+            "min": 1500.0,
+            "max": 1500.0
+          }
+        },
+        "javascriptHeapBytes": {
+          "used": {
+            "min": 13216874.0,
+            "max": 18792150.0
+          },
+          "total": {
+            "min": 23376122.0,
+            "max": 26784010.0
+          },
+          "limit": {
+            "min": 4395630592.0,
+            "max": 4395630592.0
+          },
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      }
+    }
+  },
+  "observation": {
+    "earlierArchivedIdleFrameP95Ms": 19.40000000000009,
+    "matchedRunIdleFrameP95MedianMsRange": {
+      "min": 8.1,
+      "max": 8.1
+    },
+    "interpretation": "The earlier archived run failed the frame threshold near 20 ms while these matched runs measured about 8.1 ms. The evidence does not establish a root cause.",
+    "memory": "JavaScript heap values are observational Chromium figures and exclude native and GPU memory.",
+    "timingResolution": "Zero-millisecond duration samples reflect browser timer resolution and quantization, not zero execution cost."
+  },
+  "failedSetups": {
+    "attempt1": "Stopped before browser launch",
+    "attempt2": "One baseline queue-1 measurement completed, but its receipt carried the root checkout commit because the harness ran from the wrong working directory",
+    "qualificationCredit": false
+  }
+}
