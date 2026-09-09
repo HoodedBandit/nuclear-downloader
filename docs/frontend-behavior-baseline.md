@@ -20,7 +20,13 @@ The independent renderer cases in `nuclear-app/e2e/browser/renderer-workflows.e2
 
 Each case starts with a fresh renderer mount and restores the prior IPC mocks. Tests use real UI interactions and public mocked commands/events; they do not reach into Svelte component internals. Filename text replacement uses actual keyboard selection and typing because WebDriver's clear-value operation can trigger the application's blur commit.
 
-The source ownership inventory in `frontend-source-inventory.json` identifies the 280 current callables and their responsibilities. It is compiler-backed discovery, not a completed method review. New owners introduced during extraction must receive explicit responsibility mappings and regression links, and changed source identities require renewed review.
+The initial source ownership inventory identified 280 callables. `frontend-source-inventory.json` and `frontend-ownership.md` are updated with each extraction and describe the current sources. This is compiler-backed discovery, not a completed method review. New owners introduced during extraction must receive explicit responsibility mappings and regression links, and changed source identities require renewed review.
+
+## Mounted component boundaries
+
+`page-queue-components.test.ts` adds four actual-page regressions using 1,000 queue items: selection after scrolling addresses the correct record, filename focus and Enter editing reach the correct offscreen record, removal clamps the viewport, and resize observation updates the rendered window. These passed before the queue-row/table moves and continue in every component gate.
+
+`page-playlist-dialog.test.ts` adds two actual-page regressions using 205 playlist entries. They verify 100/100/5-entry pages, first/last-page controls, global-index selection retained across page changes, select-all indeterminate state, initial dialog focus, Escape dismissal, and focus restoration. The baseline passed before moving the playlist dialog (`target/internal-cleanup-stage4/playlist-baseline.log`). Its first focus query matched both the backdrop and close button; scoping the test query to the dialog corrected that test ambiguity without changing the application.
 
 ## Visual and keyboard matrix
 

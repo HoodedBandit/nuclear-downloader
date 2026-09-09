@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **415 callables across 25 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **415 callables across 26 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -18,6 +18,7 @@ The compiler-backed inventory contains **415 callables across 25 production file
 | `src/lib/backend-state.ts` | 17 | Derive stable operation and published-output facts from backend contracts. | state-sync, queue, download |
 | `src/lib/components/QueueRow.svelte` | 11 | Render a queue row and forward selection, filename, and download actions. | queue, download, cancellation, diagnostics |
 | `src/lib/components/QueueTable.svelte` | 0 | Compose the queue viewport, table controls, and virtual rows. | queue, download, accessibility |
+| `src/lib/components/QueueToolbar.svelte` | 0 | Render queue and diagnostic actions with their existing admission states. | queue, cancellation, diagnostics |
 | `src/lib/components/RowDiagnostics.svelte` | 1 | Render one row's redacted error details and copy action. | diagnostics, queue |
 | `src/lib/components/StatusFooter.svelte` | 0 | Render the existing queue counts and status announcement. | queue, download, accessibility |
 | `src/lib/frontend-errors.ts` | 3 | Preserve existing user-facing error normalization and diagnostic detail. | inspection, download, diagnostics |

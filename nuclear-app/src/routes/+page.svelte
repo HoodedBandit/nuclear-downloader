@@ -1,4 +1,5 @@
 <script lang="ts">
+  import QueueToolbar from '$lib/components/QueueToolbar.svelte';
   import QueueTable from '$lib/components/QueueTable.svelte';
   import '$lib/styles/app.css';
   import StatusFooter from '$lib/components/StatusFooter.svelte';
@@ -699,43 +700,22 @@
   </section>
 
   <!-- Action Buttons -->
-  <section class="actions">
-    <button
-      class="primary"
-      onclick={downloadAll}
-      disabled={!canStartDownloads || !queueSummary.hasReady}>Download All</button
-    >
-    <button
-      onclick={downloadSelected}
-      disabled={!canStartDownloads || !queueSummary.hasSelectedReady}>Download Selected</button
-    >
-    <button onclick={removeSelected} disabled={!queueSummary.hasSelected}>Remove Selected</button>
-    <button onclick={clearCompleted} disabled={!queueSummary.hasCompleted}>Clear Done</button>
-    <button class="danger" onclick={cancelAll} disabled={!queueSummary.hasActive}>Cancel All</button
-    >
-    <button onclick={exportDiagnostics}>Export Diagnostics</button>
-    <button onclick={clearDiagnostics}>Clear Diagnostics</button>
-    {#if queueActionState.cancelAllError}
-      <span class="error-text" role="alert" aria-live="assertive"
-        >{queueActionState.cancelAllError}</span
-      >
-    {/if}
-    {#if queueActionState.queueActionError}
-      <span class="error-text" role="alert" aria-live="assertive"
-        >{queueActionState.queueActionError}</span
-      >
-    {/if}
-    {#if persistenceHealthError}
-      <span class="error-text" role="alert" aria-live="assertive">{persistenceHealthError}</span>
-    {/if}
-    {#if settingsState.diagnosticsError}
-      <span class="error-text" role="alert" aria-live="assertive"
-        >{settingsState.diagnosticsError}</span
-      >
-    {:else if settingsState.diagnosticsMessage}
-      <span class="muted" role="status" aria-live="polite">{settingsState.diagnosticsMessage}</span>
-    {/if}
-  </section>
+  <QueueToolbar
+    summary={queueSummary}
+    {canStartDownloads}
+    cancelAllError={queueActionState.cancelAllError}
+    queueActionError={queueActionState.queueActionError}
+    {persistenceHealthError}
+    diagnosticsError={settingsState.diagnosticsError}
+    diagnosticsMessage={settingsState.diagnosticsMessage}
+    {downloadAll}
+    {downloadSelected}
+    {removeSelected}
+    {clearCompleted}
+    {cancelAll}
+    {exportDiagnostics}
+    {clearDiagnostics}
+  />
 
   <!-- Queue Table -->
   <QueueTable
