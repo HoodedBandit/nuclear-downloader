@@ -1,6 +1,7 @@
 <script lang="ts">
   import '$lib/styles/app.css';
   import StatusFooter from '$lib/components/StatusFooter.svelte';
+  import RowDiagnostics from '$lib/components/RowDiagnostics.svelte';
   import { getVersion } from '@tauri-apps/api/app';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { onMount, tick } from 'svelte';
@@ -52,8 +53,7 @@
     deriveSelectionState,
     isAudioOnlyFormat,
     isUpdateBlockingStatus,
-    resolveAvailableFormat,
-    redactDiagnosticText
+    resolveAvailableFormat
   } from '$lib/queue-logic';
   import {
     createStartupSubsystems,
@@ -977,19 +977,7 @@
               </td>
             </tr>
             {#if item.diagnosticsOpen && item.error}
-              <tr class="diagnostics-row">
-                <td colspan="9">
-                  <div class="diagnostics-panel">
-                    <div class="diagnostics-header">
-                      <span>{item.errorCode ?? 'download_failed'}</span>
-                      <button class="small" onclick={() => copyDiagnostics(item)}>
-                        Copy Diagnostics
-                      </button>
-                    </div>
-                    <pre>{redactDiagnosticText(item.errorDetail ?? item.error)}</pre>
-                  </div>
-                </td>
-              </tr>
+              <RowDiagnostics {item} {copyDiagnostics} />
             {/if}
           {/each}
           {#if queueWindow.bottomSpacerHeight > 0}
