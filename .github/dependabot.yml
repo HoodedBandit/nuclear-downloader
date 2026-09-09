@@ -1,4 +1,6 @@
 version: 2
+# Keep main as the repository's only branch; dependency updates are applied manually.
+# Vulnerability alerts and existing dependency checks remain configured separately.
 updates:
   - package-ecosystem: npm
     directory: /nuclear-app
@@ -7,7 +9,7 @@ updates:
       day: monday
       time: "09:00"
       timezone: America/Denver
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       frontend-dependencies:
         patterns:
@@ -20,7 +22,7 @@ updates:
       day: monday
       time: "09:15"
       timezone: America/Denver
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     groups:
       rust-dependencies:
         patterns:
@@ -33,4 +35,4 @@ updates:
       day: monday
       time: "09:30"
       timezone: America/Denver
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
