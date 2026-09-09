@@ -52,7 +52,7 @@ export interface InspectionQueuePort {
   retainMetadata: (
     url: string,
     metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
-  ) => void;
+  ) => () => void;
 }
 
 export interface InspectionWorkflowDependencies extends OperationWorkflow {
@@ -108,7 +108,7 @@ export class InspectionWorkflow {
     inspectionOperationId: string,
     cookieConfig: CookieConfig | null
   ): Promise<QueueItemRecord> {
-    this.dependencies.queue.retainMetadata(info.url, {
+    const discardMetadata = this.dependencies.queue.retainMetadata(info.url, {
       duration: info.duration,
       channel: info.channel,
       thumbnail: info.thumbnail
@@ -128,6 +128,7 @@ export class InspectionWorkflow {
         }
       });
     } catch (error) {
+      discardMetadata();
       if (!this.active()) throw error;
       await this.dependencies
         .invoke('dismiss_operation', { operationId: inspectionOperationId })

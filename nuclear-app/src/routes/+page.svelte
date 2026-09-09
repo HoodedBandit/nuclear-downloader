@@ -190,6 +190,7 @@
     let stateListening = false;
     pageLifetime.own(() => appStateController.stop());
     pageLifetime.own(() => operationWaiters.dispose(rendererUnloadError));
+    pageLifetime.own(() => queuePresentation.dispose());
     const queueResizeObserver =
       typeof ResizeObserver === 'undefined'
         ? undefined

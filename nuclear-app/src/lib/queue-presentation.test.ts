@@ -100,6 +100,140 @@ function progress(
 }
 
 describe('QueuePresentationController', () => {
+  it('consumes retained metadata only after a matching snapshot projection', () => {
+    const { controller, state } = setup();
+    controller.retainMetadata('https://fixture.test/item-1', {
+      duration: 65,
+      channel: 'Fixture Channel',
+      thumbnail: 'fixture.jpg'
+    });
+    controller.applySnapshot(snapshot([record('other')]));
+    expect(
+      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+    ).toBe(1);
+    controller.applySnapshot(snapshot());
+    expect(state.items[0].duration).toBe(65);
+    expect(
+      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+    ).toBe(0);
+  });
+
+  it('does not let an existing same-URL row consume a newer admission or stale discard', () => {
+    const { controller, state } = setup();
+    const old = record('old');
+    old.sourceUrl = 'https://fixture.test/shared';
+    controller.applySnapshot(snapshot([old]));
+    const discardOld = controller.retainMetadata(old.sourceUrl, {
+      duration: 10,
+      channel: 'first',
+      thumbnail: null
+    });
+    controller.applySnapshot(snapshot([old]));
+    const discardNew = controller.retainMetadata(old.sourceUrl, {
+      duration: 20,
+      channel: 'second',
+      thumbnail: null
+    });
+    discardOld();
+    const added = { ...record('new'), sourceUrl: old.sourceUrl };
+    controller.applySnapshot(snapshot([old, added]));
+
+    expect(state.items.find((item) => item.id === 'old')?.duration).toBeNull();
+    expect(state.items.find((item) => item.id === 'new')).toMatchObject({
+      duration: 20,
+      channel: 'second'
+    });
+    discardNew();
+  });
+
+  it('assigns duplicate-URL admissions to distinct newly projected rows', () => {
+    const { controller, state } = setup();
+    const url = 'https://fixture.test/shared';
+    controller.retainMetadata(url, { duration: 10, channel: 'first', thumbnail: null });
+    controller.retainMetadata(url, { duration: 20, channel: 'second', thumbnail: null });
+    const first = { ...record('first'), sourceUrl: url };
+    const second = { ...record('second'), sourceUrl: url };
+
+    controller.applySnapshot(snapshot([first]));
+    controller.applySnapshot(snapshot([first, second]));
+
+    expect(state.items.map((item) => [item.id, item.duration, item.channel])).toEqual([
+      ['first', 10, 'first'],
+      ['second', 20, 'second']
+    ]);
+  });
+
+  it('clears retained metadata and display ownership on disposal', () => {
+    const { controller } = setup();
+    controller.retainMetadata('pending', { duration: null, channel: null, thumbnail: null });
+    const running = operation('running');
+    controller.applySnapshot(
+      snapshot([{ ...record(), state: 'running', latestOperationId: running.id }], [running])
+    );
+    controller.applyProgress(progress(10));
+    controller.dispose();
+    expect(
+      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+    ).toBe(0);
+    expect(
+      (controller as unknown as { displayUpdatedAt: Map<string, unknown> }).displayUpdatedAt.size
+    ).toBe(0);
+  });
+
+  it('prunes display ownership after an authoritative terminal snapshot', () => {
+    const { controller } = setup();
+    const running = operation('running');
+    controller.applySnapshot(
+      snapshot([{ ...record(), state: 'running', latestOperationId: running.id }], [running])
+    );
+    controller.applyProgress(progress(10));
+    expect(
+      (controller as unknown as { displayUpdatedAt: Map<string, unknown> }).displayUpdatedAt.size
+    ).toBe(1);
+    const completed = operation('completed', 100);
+    controller.applySnapshot(
+      snapshot([{ ...record(), state: 'completed', latestOperationId: completed.id }], [completed])
+    );
+    expect(
+      (controller as unknown as { displayUpdatedAt: Map<string, unknown> }).displayUpdatedAt.size
+    ).toBe(0);
+  });
+
+  it('refreshes immediately after a row is removed and reused by a new operation', () => {
+    const now = vi.fn(() => 1_000);
+    const { controller, state } = setup(now);
+    const first = { ...operation('running', 10), phase: 'conversion' };
+    const active = {
+      ...record(),
+      format: 'webm',
+      state: 'running' as const,
+      latestOperationId: first.id
+    };
+    controller.applySnapshot(snapshot([active], [first]));
+    controller.applyProgress(
+      progress(10, { status: 'postprocessing', phase: 'conversion', conversion_progress: 10 })
+    );
+    controller.applySnapshot(snapshot([]), {
+      schemaVersion: 1,
+      sequence: 2,
+      emittedAtMs: 2,
+      kind: 'queue_items_removed',
+      value: ['item-1']
+    });
+    const next = { ...first, id: 'operation-2' };
+    controller.applySnapshot(snapshot([{ ...active, latestOperationId: next.id }], [next]));
+    now.mockReturnValue(1_100);
+    controller.applyProgress({
+      ...progress(20, {
+        status: 'postprocessing',
+        phase: 'conversion',
+        conversion_progress: 20
+      }),
+      download_id: next.id
+    });
+    expect(state.items[0].conversionProgress).toBe(20);
+  });
+
   it('projects retained metadata and preserves row-owned selection across snapshots', () => {
     const { controller, state } = setup();
     controller.retainMetadata('https://fixture.test/item-1', {

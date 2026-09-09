@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **400 callables across 21 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **411 callables across 21 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -12,7 +12,7 @@ The compiler-backed inventory contains **400 callables across 21 production file
 
 | Source | Entries | Responsibility | Workflows |
 | --- | ---: | --- | --- |
-| `src/routes/+page.svelte` | 123 | Compose controller state, lifecycle/event wiring, and visible UI. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
+| `src/routes/+page.svelte` | 124 | Compose controller state, lifecycle/event wiring, and visible UI. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
 | `src/routes/+layout.js` | 0 | Declare renderer-only static layout mode. | startup |
 | `src/lib/accessible-dialog.ts` | 6 | Own dialog focus, keyboard dismissal, and cleanup. | dialogs, accessibility |
 | `src/lib/app-state-controller.ts` | 24 | Apply snapshots and deltas and sequence resynchronization. | startup, state-sync |
@@ -28,7 +28,7 @@ The compiler-backed inventory contains **400 callables across 21 production file
 | `src/lib/page-lifetime.ts` | 6 | Own page resources and suppress callbacks after disposal. | startup, state-sync, cancellation |
 | `src/lib/queue-actions.ts` | 30 | Own queue commands, cancellation rollback, retries, removal, and item settings. | queue, download, cancellation |
 | `src/lib/queue-logic.ts` | 7 | Derive formats, qualities, selection, and redacted text. | queue, download, diagnostics |
-| `src/lib/queue-presentation.ts` | 67 | Own projection, progress display, selection, filenames, and retained inspection metadata. | queue, download, state-sync |
+| `src/lib/queue-presentation.ts` | 77 | Own projection, progress display, selection, filenames, and retained inspection metadata. | queue, download, state-sync |
 | `src/lib/runtime-workflow.ts` | 20 | Own runtime checks, repair/update actions, and runtime state. | startup, runtime-update |
 | `src/lib/settings-diagnostics-workflow.ts` | 20 | Own output/cookie settings and diagnostic copy/export/clear. | startup, settings, diagnostics |
 | `src/lib/startup-state.ts` | 6 | Derive startup readiness and subsystem recovery. | startup, runtime-update |
@@ -52,14 +52,14 @@ The compiler-backed inventory contains **400 callables across 21 production file
 | Classification | Count |
 | --- | ---: |
 | Function declarations | 82 |
-| Methods | 114 |
+| Methods | 118 |
 | Constructors | 10 |
 | Getters | 2 |
 | Function-valued declarations/properties | 76 |
-| Synchronous callbacks | 99 |
+| Synchronous callbacks | 106 |
 | Async callbacks | 1 |
 | Markup callbacks | 16 |
-| **Total** | **400** |
+| **Total** | **411** |
 
 Regenerate from a frozen source tree before assigning reviewers. Evidence should identify the exact inventory `id`, `sourceHash`, and `spanHash`.
 

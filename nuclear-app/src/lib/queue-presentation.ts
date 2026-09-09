@@ -66,11 +66,8 @@ export function createQueuePresentationState(): QueuePresentationState {
 }
 
 export class QueuePresentationController {
-  private readonly metadataByUrl = new Map<
-    string,
-    Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
-  >();
-  private readonly displayUpdatedAt = new Map<string, number>();
+  private readonly metadataByUrl = new Map<string, RetainedMetadata[]>();
+  private readonly displayUpdatedAt = new Map<string, { operationId: string; updatedAt: number }>();
 
   constructor(
     readonly state: QueuePresentationState,
@@ -84,42 +81,66 @@ export class QueuePresentationController {
   retainMetadata(
     url: string,
     metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
-  ): void {
-    this.metadataByUrl.set(url, metadata);
+  ): () => void {
+    const entry: RetainedMetadata = {
+      metadata,
+      existingIds: new Set(
+        this.state.backendSnapshot?.queue
+          .filter((record) => record.sourceUrl === url)
+          .map((record) => record.id) ?? []
+      )
+    };
+    const entries = this.metadataByUrl.get(url) ?? [];
+    entries.push(entry);
+    this.metadataByUrl.set(url, entries);
+    let retained = true;
+    return () => {
+      if (!retained) return;
+      retained = false;
+      const current = this.metadataByUrl.get(url);
+      if (!current) return;
+      const next = current.filter((candidate) => candidate !== entry);
+      if (next.length === 0) this.metadataByUrl.delete(url);
+      else this.metadataByUrl.set(url, next);
+    };
   }
 
   applySnapshot(snapshot: AppSnapshot, delta?: StateDelta): void {
     const previous = this.state.backendSnapshot;
     this.state.backendSnapshot = snapshot;
-    if (!previous || !delta) {
-      const existing = new Map(this.state.items.map((item) => [item.id, item]));
-      this.state.items = snapshot.queue.map((record) =>
-        this.project(snapshot, record, existing.get(record.id))
-      );
-      return;
-    }
-    switch (delta.kind) {
-      case 'queue_item_upserted': {
-        const prior = previous.queue.find((item) => item.id === delta.value.id);
-        if (!projectionRecordChanged(prior, delta.value)) return;
-        this.upsert(snapshot, delta.value);
+    try {
+      if (!previous || !delta) {
+        const existing = new Map(this.state.items.map((item) => [item.id, item]));
+        this.state.items = snapshot.queue.map((record) =>
+          this.project(snapshot, record, existing.get(record.id))
+        );
         return;
       }
-      case 'queue_items_removed': {
-        const removed = new Set(delta.value);
-        this.state.items = this.state.items.filter((item) => !removed.has(item.id));
-        return;
+      switch (delta.kind) {
+        case 'queue_item_upserted': {
+          const prior = previous.queue.find((item) => item.id === delta.value.id);
+          if (!projectionRecordChanged(prior, delta.value)) return;
+          this.upsert(snapshot, delta.value);
+          return;
+        }
+        case 'queue_items_removed': {
+          const removed = new Set(delta.value);
+          this.state.items = this.state.items.filter((item) => !removed.has(item.id));
+          return;
+        }
+        case 'operation_upserted':
+          if (delta.value.queueItemId) this.projectOperation(snapshot, delta.value.queueItemId);
+          return;
+        case 'operation_removed': {
+          const operation = previous.operations.find((item) => item.id === delta.value);
+          if (operation?.queueItemId) this.projectOperation(snapshot, operation.queueItemId);
+          return;
+        }
+        default:
+          return;
       }
-      case 'operation_upserted':
-        if (delta.value.queueItemId) this.projectOperation(snapshot, delta.value.queueItemId);
-        return;
-      case 'operation_removed': {
-        const operation = previous.operations.find((item) => item.id === delta.value);
-        if (operation?.queueItemId) this.projectOperation(snapshot, operation.queueItemId);
-        return;
-      }
-      default:
-        return;
+    } finally {
+      this.pruneDisplayOwnership();
     }
   }
 
@@ -152,12 +173,19 @@ export class QueuePresentationController {
     };
     assignFields(item, next, OPERATION_FIELDS);
     if (terminal) this.clearProgressDisplayState(item.id);
-    else if (refresh && isActiveStatus(payload.status))
-      this.displayUpdatedAt.set(item.id, this.now());
+    else if (refresh && isActiveStatus(payload.status) && item.downloadId)
+      this.displayUpdatedAt.set(item.id, {
+        operationId: item.downloadId,
+        updatedAt: this.now()
+      });
   }
 
   clearProgressDisplayState(id: string): void {
     this.displayUpdatedAt.delete(id);
+  }
+  dispose(): void {
+    this.metadataByUrl.clear();
+    this.displayUpdatedAt.clear();
   }
   replaceItem(id: string, mapper: (item: QueueItem) => QueueItem): void {
     const index = this.state.items.findIndex((item) => item.id === id);
@@ -271,8 +299,12 @@ export class QueuePresentationController {
       changed ||
       current === 0 ||
       (payload.status === 'downloading' && item.eta === '') ||
-      this.now() - (this.displayUpdatedAt.get(item.id) ?? 0) >= DISPLAY_INTERVAL_MS
+      this.now() - this.lastDisplayUpdate(item) >= DISPLAY_INTERVAL_MS
     );
+  }
+  private lastDisplayUpdate(item: QueueItem): number {
+    const owner = this.displayUpdatedAt.get(item.id);
+    return owner?.operationId === item.downloadId ? owner.updatedAt : 0;
   }
   private upsert(snapshot: AppSnapshot, record: QueueItemRecord): void {
     const index = this.state.items.findIndex((item) => item.id === record.id);
@@ -292,7 +324,7 @@ export class QueuePresentationController {
       );
   }
   private project(snapshot: AppSnapshot, record: QueueItemRecord, existing?: QueueItem): QueueItem {
-    const metadata = this.metadataByUrl.get(record.sourceUrl);
+    const metadata = this.claimMetadata(record);
     const operation = latestOperationForItem(snapshot, record.id, record.latestOperationId);
     const status = queueStatus(record, operation);
     const terminal = isTerminalStatus(status);
@@ -371,6 +403,32 @@ export class QueuePresentationController {
       selected: existing?.selected ?? false
     };
   }
+
+  private claimMetadata(
+    record: QueueItemRecord
+  ): Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'> | undefined {
+    const entries = this.metadataByUrl.get(record.sourceUrl);
+    if (!entries) return undefined;
+    const index = entries.findIndex((entry) => !entry.existingIds.has(record.id));
+    const entry = index === -1 ? undefined : entries.splice(index, 1)[0];
+    for (const remaining of entries) remaining.existingIds.add(record.id);
+    if (entries.length === 0) this.metadataByUrl.delete(record.sourceUrl);
+    return entry?.metadata;
+  }
+
+  private pruneDisplayOwnership(): void {
+    for (const [itemId, owner] of this.displayUpdatedAt) {
+      const item = this.state.items.find((candidate) => candidate.id === itemId);
+      if (!item || !isActiveStatus(item.status) || item.downloadId !== owner.operationId) {
+        this.displayUpdatedAt.delete(itemId);
+      }
+    }
+  }
+}
+
+interface RetainedMetadata {
+  metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>;
+  existingIds: Set<string>;
 }
 
 export function isActiveStatus(status: DownloadStatus): boolean {

@@ -64,7 +64,7 @@ function setup(overrides: Partial<InspectionWorkflowDependencies> = {}) {
     getSettings: () => settings,
     readCookie: () => null,
     readCompat: () => null,
-    queue: { getItems: () => [], retainMetadata: vi.fn() },
+    queue: { getItems: () => [], retainMetadata: vi.fn(() => () => undefined) },
     setQueueActionError: vi.fn(),
     invoke: invoke as unknown as WorkflowCommands['invoke'],
     waitForOperation,
@@ -137,7 +137,7 @@ describe('InspectionWorkflow', () => {
     const context = setup({
       queue: {
         getItems: () => [{ url: 'https://example.com/video' }] as never,
-        retainMetadata: vi.fn()
+        retainMetadata: vi.fn(() => () => undefined)
       }
     });
     context.state.urlInput = 'https://example.com/video';
@@ -196,7 +196,13 @@ describe('InspectionWorkflow', () => {
   });
 
   it('dismisses an admission token after failure and reports the original normalized error', async () => {
-    const context = setup();
+    const discardMetadata = vi.fn();
+    const context = setup({
+      queue: {
+        getItems: () => [],
+        retainMetadata: vi.fn(() => discardMetadata)
+      }
+    });
     context.state.urlInput = 'https://example.com/video';
     context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
       if (command === 'begin_inspection') return { operationId: 'operation-1' };
@@ -210,6 +216,27 @@ describe('InspectionWorkflow', () => {
       'dismiss_operation'
     ]);
     expect(context.state.urlError).toBe('Failed to inspect URL: admission failed');
+    expect(discardMetadata).toHaveBeenCalledOnce();
+  });
+
+  it('discards failed admission metadata after renderer disposal', async () => {
+    const discardMetadata = vi.fn();
+    const context = setup({
+      queue: { getItems: () => [], retainMetadata: vi.fn(() => discardMetadata) }
+    });
+    context.state.urlInput = 'https://example.com/video';
+    context.invoke.mockImplementation(async (command: string) => {
+      if (command === 'begin_inspection') return { operationId: 'operation-1' };
+      if (command === 'add_inspection_result_to_queue') {
+        context.dispose();
+        throw new Error('disposed admission failed');
+      }
+      return undefined;
+    });
+
+    await context.workflow.addToQueue();
+    expect(discardMetadata).toHaveBeenCalledOnce();
+    expect(context.state.urlError).toBe('');
   });
 
   it('keeps degraded startup usable and surfaces an interrupted inspection error', async () => {
