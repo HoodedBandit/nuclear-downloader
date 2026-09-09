@@ -14,6 +14,9 @@
     "src/state.rs",
     "src/state/commit.rs",
     "src/state/data.rs",
+    "src/state/maintenance.rs",
+    "src/state/operation.rs",
+    "src/state/queue.rs",
     "src/state/reducers.rs",
     "src/state/tests.rs",
     "src/state_events.rs",
@@ -7513,8 +7516,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 84,
-      "endLine": 96,
+      "line": 79,
+      "endLine": 91,
       "symbol": "open_default",
       "qualifiedName": "state::impl StateStore::open_default",
       "signature": "pub fn open_default() -> Result<Self, AppError>",
@@ -7552,22 +7555,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:84-96 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::open_default responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Uses application data defaults and reports a quarantine diagnostic while returning normalized empty state when journal corruption is recoverable."
+      "notes": "Uses application data defaults and reports a quarantine diagnostic while returning normalized empty state when journal corruption is recoverable. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::from_parts[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 98,
-      "endLine": 153,
+      "line": 93,
+      "endLine": 148,
       "symbol": "from_parts",
       "qualifiedName": "state::impl StateStore::from_parts",
       "signature": "fn from_parts( journal: JournalStore, loaded: PersistentJournal, diagnostics: Diagnostics, ) -> Self",
@@ -7607,22 +7611,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:98-153 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::from_parts responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Loaded persisted queue/operations become ordered SharedRecords; runtime-only pending work, maintenance, health, notifications, outbox, and inspection accounting start fresh."
+      "notes": "Loaded persisted queue/operations become ordered SharedRecords; runtime-only pending work, maintenance, health, notifications, outbox, and inspection accounting start fresh. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::snapshot[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 155,
-      "endLine": 197,
+      "line": 150,
+      "endLine": 192,
       "symbol": "snapshot",
       "qualifiedName": "state::impl StateStore::snapshot",
       "signature": "pub fn snapshot(&self) -> Result<AppSnapshot, AppError>",
@@ -7662,22 +7667,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:155-197 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Holds the live-state mutex only while cloning ordered SharedRecords and scalar status; returned AppSnapshot owns its vectors and shared inspection Arcs."
+      "notes": "Holds the live-state mutex only while cloning ordered SharedRecords and scalar status; returned AppSnapshot owns its vectors and shared inspection Arcs. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::queue_item[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 199,
-      "endLine": 205,
+      "line": 194,
+      "endLine": 200,
       "symbol": "queue_item",
       "qualifiedName": "state::impl StateStore::queue_item",
       "signature": "pub fn queue_item(&self, id: &str) -> Result<QueueItemRecord, AppError>",
@@ -7715,22 +7721,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:199-205 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Single-key lookup avoids cloning the entire AppSnapshot for queue edit validation."
+      "notes": "Single-key lookup avoids cloning the entire AppSnapshot for queue edit validation. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::take_outbox_reader[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 207,
-      "endLine": 209,
+      "line": 202,
+      "endLine": 204,
       "symbol": "take_outbox_reader",
       "qualifiedName": "state::impl StateStore::take_outbox_reader",
       "signature": "pub(crate) fn take_outbox_reader(&self) -> Result<StateOutboxReader, AppError>",
@@ -7766,24 +7773,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:207-209 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::take_outbox_reader responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Delegates the atomic single-reader claim; no live state or mutation gate is involved."
+      "notes": "Delegates the atomic single-reader claim; no live state or mutation gate is involved. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::add_queue_item[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::add_queue_item[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 211,
-      "endLine": 270,
+      "file": "src/state/queue.rs",
+      "line": 18,
+      "endLine": 77,
       "symbol": "add_queue_item",
-      "qualifiedName": "state::impl StateStore::add_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::add_queue_item",
       "signature": "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
       "sourceDigest": "110b96ecfd3deb027e4cb77d39b8c07f88cdfda090849aec8af540335b5ee040",
       "cfg": [],
@@ -7828,24 +7836,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:211-270 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::add_queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::add_queue_item responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::add_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::add_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::completed_inspection_video[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::completed_inspection_video[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 272,
-      "endLine": 275,
+      "file": "src/state/queue.rs",
+      "line": 79,
+      "endLine": 82,
       "symbol": "completed_inspection_video",
-      "qualifiedName": "state::impl StateStore::completed_inspection_video",
+      "qualifiedName": "state::queue::impl StateStore::completed_inspection_video",
       "signature": "pub fn completed_inspection_video(&self, operation_id: &str) -> Result<VideoInfo, AppError>",
       "sourceDigest": "3352435fdf788106f92ef658ffdf1f375227dda233eefdc54d0c436fb2152c74",
       "cfg": [],
@@ -7880,24 +7889,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:272-275 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::completed_inspection_video responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::completed_inspection_video responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Acts as an admission capability check: kind, terminal state, and Video result must all match before metadata is cloned."
+      "notes": "Acts as an admission capability check: kind, terminal state, and Video result must all match before metadata is cloned. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::update_queue_item[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::update_queue_item[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 277,
-      "endLine": 323,
+      "file": "src/state/queue.rs",
+      "line": 84,
+      "endLine": 130,
       "symbol": "update_queue_item",
-      "qualifiedName": "state::impl StateStore::update_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::update_queue_item",
       "signature": "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "8b0fd61213fc856cb635435e9d1cb1c4f218958c49355dca69ee4cd1ab69d38e",
       "cfg": [],
@@ -7946,24 +7956,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:277-323 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::update_queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::update_queue_item responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::update_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::update_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::remove_queue_items[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::remove_queue_items[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 325,
-      "endLine": 385,
+      "file": "src/state/queue.rs",
+      "line": 132,
+      "endLine": 192,
       "symbol": "remove_queue_items",
-      "qualifiedName": "state::impl StateStore::remove_queue_items",
+      "qualifiedName": "state::queue::impl StateStore::remove_queue_items",
       "signature": "pub async fn remove_queue_items(&self, ids: &[String]) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "f8af3192f99ead436804c4ad8452c3eed343f8d35cffdbd2e5d7522b9f409f94",
       "cfg": [],
@@ -8009,24 +8020,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:325-385 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::remove_queue_items responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::remove_queue_items responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::remove_queue_items; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::remove_queue_items; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::enqueue[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::enqueue[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 387,
-      "endLine": 480,
+      "file": "src/state/queue.rs",
+      "line": 194,
+      "endLine": 287,
       "symbol": "enqueue",
-      "qualifiedName": "state::impl StateStore::enqueue",
+      "qualifiedName": "state::queue::impl StateStore::enqueue",
       "signature": "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
       "sourceDigest": "64e4bf2dfa7229f7fc9e60c424aae33c22d0ced3098af7e01840e1d8ed02039d",
       "cfg": [],
@@ -8073,24 +8085,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:387-480 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::enqueue responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::enqueue responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::enqueue; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::enqueue; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::begin_operation[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 482,
-      "endLine": 489,
+      "file": "src/state/operation.rs",
+      "line": 15,
+      "endLine": 22,
       "symbol": "begin_operation",
-      "qualifiedName": "state::impl StateStore::begin_operation",
+      "qualifiedName": "state::operation::impl StateStore::begin_operation",
       "signature": "pub async fn begin_operation( &self, kind: OperationKind, queue_item_id: Option<String>, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
       "sourceDigest": "5314aad6eafdd555f2450202c869cacfac9553324956a22efd4c8e75ea29382f",
       "cfg": [],
@@ -8125,31 +8138,33 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:482-489 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::begin_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Uses the production limited durable admission path with MAX_ACTIVE_OPERATIONS."
+      "notes": "Uses the production limited durable admission path with MAX_ACTIVE_OPERATIONS. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::begin_operation_with_limit[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation_with_limit[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 491,
-      "endLine": 530,
+      "file": "src/state/operation.rs",
+      "line": 24,
+      "endLine": 63,
       "symbol": "begin_operation_with_limit",
-      "qualifiedName": "state::impl StateStore::begin_operation_with_limit",
-      "signature": "async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "sourceDigest": "a6bb17d2acd2b37be7070afd35dacecaa936f480736e738fc31e9181a53b1fa5",
+      "qualifiedName": "state::operation::impl StateStore::begin_operation_with_limit",
+      "signature": "pub(super) async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "2f675fa84b7fa3ecd79602664c5d07e34869dae70b795afda59a67a1d55259f2",
       "cfg": [],
       "ownerCall": null,
       "purpose": "Implements generic durable operation admission with an explicit limit.",
       "callers": [
-        "StateStore::begin_operation"
+        "StateStore::begin_operation",
+        "state::tests::concurrent_operation_admission_never_exceeds_the_limit"
       ],
       "inputs": [
         "&self",
@@ -8192,24 +8207,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:491-530 at cb616a1"
+        "Stage 5 extraction verifier confirms the method body is unchanged; only the signature visibility changed from private to pub(super), preserving access from sibling state::tests without widening beyond the state module (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_operation_with_limit responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::begin_operation_with_limit responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::begin_operation_with_limit; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::begin_operation_with_limit; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 532,
-      "endLine": 604,
+      "file": "src/state/maintenance.rs",
+      "line": 13,
+      "endLine": 85,
       "symbol": "begin_maintenance_operation_with_id",
-      "qualifiedName": "state::impl StateStore::begin_maintenance_operation_with_id",
+      "qualifiedName": "state::maintenance::impl StateStore::begin_maintenance_operation_with_id",
       "signature": "pub(crate) async fn begin_maintenance_operation_with_id( &self, kind: OperationKind, operation_id: String, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
       "sourceDigest": "669b3797e54c978811ab39d81f84d556c9924130fc1645bb08941659ee941393",
       "cfg": [],
@@ -8257,24 +8273,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:532-604 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_maintenance_operation_with_id responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::begin_maintenance_operation_with_id responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::begin_maintenance_operation_with_id; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::begin_maintenance_operation_with_id; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::prepare_app_update_handoff[cfg=all]",
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::prepare_app_update_handoff[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 606,
-      "endLine": 654,
+      "file": "src/state/maintenance.rs",
+      "line": 87,
+      "endLine": 135,
       "symbol": "prepare_app_update_handoff",
-      "qualifiedName": "state::impl StateStore::prepare_app_update_handoff",
+      "qualifiedName": "state::maintenance::impl StateStore::prepare_app_update_handoff",
       "signature": "pub async fn prepare_app_update_handoff( &self, operation_id: &str, expected_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "5f4a91cdafbd069f64536b1c262e8ea8c1f96762d141a0827ca06bb341cebc23",
       "cfg": [],
@@ -8319,24 +8336,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:606-654 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::prepare_app_update_handoff responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::prepare_app_update_handoff responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::prepare_app_update_handoff; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::prepare_app_update_handoff; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::reconcile_pending_app_update[cfg=all]",
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::reconcile_pending_app_update[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 656,
-      "endLine": 708,
+      "file": "src/state/maintenance.rs",
+      "line": 137,
+      "endLine": 189,
       "symbol": "reconcile_pending_app_update",
-      "qualifiedName": "state::impl StateStore::reconcile_pending_app_update",
+      "qualifiedName": "state::maintenance::impl StateStore::reconcile_pending_app_update",
       "signature": "pub async fn reconcile_pending_app_update( &self, current_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "c34d085220c27ce61e9008888ce14e389b302e8e0966c0902b08ab6d1f2707ad",
       "cfg": [],
@@ -8381,24 +8399,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:656-708 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::reconcile_pending_app_update responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::reconcile_pending_app_update responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::reconcile_pending_app_update; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::reconcile_pending_app_update; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::set_operation_state[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::set_operation_state[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 710,
-      "endLine": 735,
+      "file": "src/state/operation.rs",
+      "line": 65,
+      "endLine": 90,
       "symbol": "set_operation_state",
-      "qualifiedName": "state::impl StateStore::set_operation_state",
+      "qualifiedName": "state::operation::impl StateStore::set_operation_state",
       "signature": "pub async fn set_operation_state( &self, id: &str, operation_state: OperationState, error: Option<AppError>, ) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "d225668781059b8be516eb11e2a2b029f7901cb4ae0dc966d30ff56e72cca4af",
       "cfg": [],
@@ -8436,24 +8455,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:710-735 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_operation_state responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::set_operation_state responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Terminal requests delegate to durable finalization; nonterminal transitions complete under one borrowed mutation guard and publish before return."
+      "notes": "Terminal requests delegate to durable finalization; nonterminal transitions complete under one borrowed mutation guard and publish before return. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::request_cancellation[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::request_cancellation[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 737,
-      "endLine": 761,
+      "file": "src/state/operation.rs",
+      "line": 92,
+      "endLine": 116,
       "symbol": "request_cancellation",
-      "qualifiedName": "state::impl StateStore::request_cancellation",
+      "qualifiedName": "state::operation::impl StateStore::request_cancellation",
       "signature": "pub async fn request_cancellation(&self, id: &str) -> Result<StateDelta, AppError>",
       "sourceDigest": "83a674d62ba265d7671ee6da3bb14dc87dd475f70ac1809fcb0f1f3cbc8448b5",
       "cfg": [],
@@ -8497,24 +8517,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:737-761 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::request_cancellation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::request_cancellation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::request_cancellation; it intentionally publishes without journal persistence."
+      "notes": "Source-reviewed volatile state path for impl StateStore::request_cancellation; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::apply_download_progress[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::apply_download_progress[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 763,
-      "endLine": 823,
+      "file": "src/state/operation.rs",
+      "line": 118,
+      "endLine": 178,
       "symbol": "apply_download_progress",
-      "qualifiedName": "state::impl StateStore::apply_download_progress",
+      "qualifiedName": "state::operation::impl StateStore::apply_download_progress",
       "signature": "pub async fn apply_download_progress( &self, operation_id: &str, progress: &DownloadProgress, ) -> Result<Option<Vec<StateDelta>>, AppError>",
       "sourceDigest": "b7060742a4f299fb1d066b5b075a84df20c7e9926d4c01911a1388f5c9db5fb4",
       "cfg": [],
@@ -8557,24 +8578,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:763-823 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::apply_download_progress responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::apply_download_progress responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::apply_download_progress; it intentionally publishes without journal persistence."
+      "notes": "Source-reviewed volatile state path for impl StateStore::apply_download_progress; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::dismiss_operation[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::dismiss_operation[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 825,
-      "endLine": 865,
+      "file": "src/state/operation.rs",
+      "line": 180,
+      "endLine": 220,
       "symbol": "dismiss_operation",
-      "qualifiedName": "state::impl StateStore::dismiss_operation",
+      "qualifiedName": "state::operation::impl StateStore::dismiss_operation",
       "signature": "pub async fn dismiss_operation(&self, id: &str) -> Result<Vec<StateDelta>, AppError>",
       "sourceDigest": "2088ed423286c18ce9db1728fe18f5a678506da90cfd0507eda06aad73b2c179",
       "cfg": [],
@@ -8622,24 +8644,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:825-865 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::dismiss_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::dismiss_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::dismiss_operation; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly."
+      "notes": "Source-reviewed durable facade path for impl StateStore::dismiss_operation; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::set_maintenance[cfg=all]",
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::set_maintenance[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 867,
-      "endLine": 894,
+      "file": "src/state/maintenance.rs",
+      "line": 191,
+      "endLine": 218,
       "symbol": "set_maintenance",
-      "qualifiedName": "state::impl StateStore::set_maintenance",
+      "qualifiedName": "state::maintenance::impl StateStore::set_maintenance",
       "signature": "pub async fn set_maintenance( &self, active: bool, draining: bool, ) -> Result<StateDelta, AppError>",
       "sourceDigest": "cf915adac36a1695375bfea23a5a0fa0dba2fa098f2ea2003904e8175394968e",
       "cfg": [],
@@ -8684,24 +8707,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:867-894 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_maintenance responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::set_maintenance responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::set_maintenance; it intentionally publishes without journal persistence."
+      "notes": "Source-reviewed volatile state path for impl StateStore::set_maintenance; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::end_maintenance_operation[cfg=all]",
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::end_maintenance_operation[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 896,
-      "endLine": 922,
+      "file": "src/state/maintenance.rs",
+      "line": 220,
+      "endLine": 246,
       "symbol": "end_maintenance_operation",
-      "qualifiedName": "state::impl StateStore::end_maintenance_operation",
+      "qualifiedName": "state::maintenance::impl StateStore::end_maintenance_operation",
       "signature": "pub async fn end_maintenance_operation( &self, operation_id: &str, ) -> Result<Option<StateDelta>, AppError>",
       "sourceDigest": "b5e143edc193ccae5feeb8c64af1ef688414224a2d6515e9f3e9bf281e276ac8",
       "cfg": [],
@@ -8745,24 +8769,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:896-922 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::end_maintenance_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::end_maintenance_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Only the matching maintenance owner can clear flags; mismatched IDs are an idempotent None and do not emit or wake."
+      "notes": "Only the matching maintenance owner can clear flags; mismatched IDs are an idempotent None and do not emit or wake. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::wait_for_terminal[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::wait_for_terminal[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 924,
-      "endLine": 950,
+      "file": "src/state/operation.rs",
+      "line": 222,
+      "endLine": 248,
       "symbol": "wait_for_terminal",
-      "qualifiedName": "state::impl StateStore::wait_for_terminal",
+      "qualifiedName": "state::operation::impl StateStore::wait_for_terminal",
       "signature": "pub async fn wait_for_terminal( &self, operation_id: &str, timeout: std::time::Duration, ) -> Result<OperationSnapshot, AppError>",
       "sourceDigest": "fd033042329bdb50678e4ce893f5c66ed457dff7b7197ba202f48b7c56123ddf",
       "cfg": [],
@@ -8797,24 +8822,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:924-950 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::wait_for_terminal responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::wait_for_terminal responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Creates the Notify future before checking state; pinned Tokio notify_waiters generation semantics prevent the checked transition from being missed."
+      "notes": "Creates the Notify future before checking state; pinned Tokio notify_waiters generation semantics prevent the checked transition from being missed. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::set_runtime_readiness[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::set_runtime_readiness[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 952,
-      "endLine": 969,
+      "file": "src/state/operation.rs",
+      "line": 250,
+      "endLine": 267,
       "symbol": "set_runtime_readiness",
-      "qualifiedName": "state::impl StateStore::set_runtime_readiness",
+      "qualifiedName": "state::operation::impl StateStore::set_runtime_readiness",
       "signature": "pub async fn set_runtime_readiness( &self, readiness: RuntimeReadiness, ) -> Result<StateDelta, AppError>",
       "sourceDigest": "1ff44ed03bd175b9e169677a512f9887d8ab4a78310880adafa27c8bb4e57488",
       "cfg": [],
@@ -8853,24 +8879,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:952-969 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_runtime_readiness responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::set_runtime_readiness responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::set_runtime_readiness; it intentionally publishes without journal persistence."
+      "notes": "Source-reviewed volatile state path for impl StateStore::set_runtime_readiness; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::pending_operation_ids[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::pending_operation_ids[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 971,
-      "endLine": 975,
+      "file": "src/state/queue.rs",
+      "line": 289,
+      "endLine": 293,
       "symbol": "pending_operation_ids",
-      "qualifiedName": "state::impl StateStore::pending_operation_ids",
+      "qualifiedName": "state::queue::impl StateStore::pending_operation_ids",
       "signature": "pub fn pending_operation_ids(&self) -> Vec<String>",
       "sourceDigest": "bd847a8a5b005c548cabebd7bdd1a4d012ca58d88478c2b79fd97856c7d4930b",
       "cfg": [],
@@ -8906,24 +8933,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:971-975 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::pending_operation_ids responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::pending_operation_ids responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Clones only the volatile scheduling deque under the live-state mutex; it does not acquire mutation serialization."
+      "notes": "Clones only the volatile scheduling deque under the live-state mutex; it does not acquire mutation serialization. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::wait_pending_available[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::wait_pending_available[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 977,
-      "endLine": 990,
+      "file": "src/state/queue.rs",
+      "line": 295,
+      "endLine": 308,
       "symbol": "wait_pending_available",
-      "qualifiedName": "state::impl StateStore::wait_pending_available",
+      "qualifiedName": "state::queue::impl StateStore::wait_pending_available",
       "signature": "pub async fn wait_pending_available(&self)",
       "sourceDigest": "508b7effe3417553f5a9af04979f6fd9390518ddc288c5107ff7474d9737b882",
       "cfg": [],
@@ -8958,24 +8986,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:977-990 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::wait_pending_available responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::wait_pending_available responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Creates/enables pending Notify before checking the predicate so enqueue/reopen notifications cannot be lost."
+      "notes": "Creates/enables pending Notify before checking the predicate so enqueue/reopen notifications cannot be lost. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::take_next_pending[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::take_next_pending[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 992,
-      "endLine": 1015,
+      "file": "src/state/queue.rs",
+      "line": 310,
+      "endLine": 333,
       "symbol": "take_next_pending",
-      "qualifiedName": "state::impl StateStore::take_next_pending",
+      "qualifiedName": "state::queue::impl StateStore::take_next_pending",
       "signature": "pub async fn take_next_pending(&self) -> Option<QueuedDownload>",
       "sourceDigest": "7554bd082dbeef7c4411274d72d72345177802709d8a1cb125cd97bd5f6aeaa2",
       "cfg": [],
@@ -9010,24 +9039,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:992-1015 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::take_next_pending responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::take_next_pending responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Mutation gate serializes dequeue with cancellation/maintenance; stale IDs are skipped until a valid Queued Download and queue item pair is found."
+      "notes": "Mutation gate serializes dequeue with cancellation/maintenance; stale IDs are skipped until a valid Queued Download and queue item pair is found. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::cancel_pending[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::cancel_pending[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 1017,
-      "endLine": 1027,
+      "file": "src/state/queue.rs",
+      "line": 335,
+      "endLine": 345,
       "symbol": "cancel_pending",
-      "qualifiedName": "state::impl StateStore::cancel_pending",
+      "qualifiedName": "state::queue::impl StateStore::cancel_pending",
       "signature": "pub async fn cancel_pending(&self, operation_id: &str) -> bool",
       "sourceDigest": "698bf10971328bee892bad59d625db36e13abf9a51db1d9bad2f4d06e9bd27bf",
       "cfg": [],
@@ -9062,24 +9092,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1017-1027 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::cancel_pending responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::cancel_pending responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Retains all pending IDs except the requested one and reports whether length changed; no durable state or delta changes."
+      "notes": "Retains all pending IDs except the requested one and reports whether length changed; no durable state or delta changes. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::operation_state[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::operation_state[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 1029,
-      "endLine": 1035,
+      "file": "src/state/operation.rs",
+      "line": 269,
+      "endLine": 275,
       "symbol": "operation_state",
-      "qualifiedName": "state::impl StateStore::operation_state",
+      "qualifiedName": "state::operation::impl StateStore::operation_state",
       "signature": "pub fn operation_state(&self, operation_id: &str) -> Option<OperationState>",
       "sourceDigest": "724634b431639219c8fb2ffd9fb91e64ae36f12ba0faa86c9686a0215595f9bf",
       "cfg": [],
@@ -9115,24 +9146,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1029-1035 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::operation_state responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::operation_state responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Single-record state lookup under live mutex; missing IDs map to None."
+      "notes": "Single-record state lookup under live mutex; missing IDs map to None. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::operation_kind[cfg=all]",
+      "id": "src/state/operation.rs::state::operation::impl StateStore::operation_kind[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 1037,
-      "endLine": 1043,
+      "file": "src/state/operation.rs",
+      "line": 277,
+      "endLine": 283,
       "symbol": "operation_kind",
-      "qualifiedName": "state::impl StateStore::operation_kind",
+      "qualifiedName": "state::operation::impl StateStore::operation_kind",
       "signature": "pub fn operation_kind(&self, operation_id: &str) -> Option<OperationKind>",
       "sourceDigest": "bd6ffab7387d1adf38dda4c088b62fb89445c18615d47824a5a27a158b4fe4ad",
       "cfg": [],
@@ -9167,24 +9199,25 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1037-1043 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::operation_kind responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/operation.rs: retained with impl StateStore::operation_kind responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Single-record kind lookup under live mutex; missing IDs map to None."
+      "notes": "Single-record kind lookup under live mutex; missing IDs map to None. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
-      "id": "src/state.rs::state::impl StateStore::journaled_output_roots[cfg=all]",
+      "id": "src/state/queue.rs::state::queue::impl StateStore::journaled_output_roots[cfg=all]",
       "kind": "method",
       "classification": "production",
-      "file": "src/state.rs",
-      "line": 1045,
-      "endLine": 1057,
+      "file": "src/state/queue.rs",
+      "line": 347,
+      "endLine": 359,
       "symbol": "journaled_output_roots",
-      "qualifiedName": "state::impl StateStore::journaled_output_roots",
+      "qualifiedName": "state::queue::impl StateStore::journaled_output_roots",
       "signature": "pub fn journaled_output_roots(&self) -> Vec<String>",
       "sourceDigest": "965ed934f2dc58677b27d28d83ed98f073672afbe1cb6cd77382a7eba5a03058",
       "cfg": [],
@@ -9218,22 +9251,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1045-1057 at cb616a1"
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::journaled_output_roots responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/state/queue.rs: retained with impl StateStore::journaled_output_roots responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Reads persisted queue metadata only, deduplicates through a set, and sorts the returned roots for deterministic startup cleanup."
+      "notes": "Reads persisted queue metadata only, deduplicates through a set, and sorts the returned roots for deterministic startup cleanup. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::diagnostics[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 1059,
-      "endLine": 1061,
+      "line": 206,
+      "endLine": 208,
       "symbol": "diagnostics",
       "qualifiedName": "state::impl StateStore::diagnostics",
       "signature": "pub fn diagnostics(&self) -> &Diagnostics",
@@ -9269,22 +9303,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1059-1061 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::diagnostics responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Returns a shared reference to the existing Diagnostics sink without locking or cloning it."
+      "notes": "Returns a shared reference to the existing Diagnostics sink without locking or cloning it. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state.rs::state::impl StateStore::lock[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 1063,
-      "endLine": 1068,
+      "line": 210,
+      "endLine": 215,
       "symbol": "lock",
       "qualifiedName": "state::impl StateStore::lock",
       "signature": "fn lock(&self) -> Result<MutexGuard<'_, StateData>, AppError>",
@@ -9320,14 +9355,15 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state.rs:1063-1068 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "disposition": "keep",
       "destination": "src/state.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Centralizes poisoned live-state mutex conversion into renderer-safe internal AppError."
+      "notes": "Centralizes poisoned live-state mutex conversion into renderer-safe internal AppError. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
     },
     {
       "id": "src/state/commit.rs::state::commit::impl StateStore::finalize_operation[cfg=all]",

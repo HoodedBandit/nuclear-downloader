@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "d1f6571ed9da69e7aa63b2cdf47818e22f90161b",
+  "sourceCommit": "9221250af231a69af1f9d41e475882bd2cd2d961",
   "sourceRoot": "nuclear-app/src-tauri",
   "digestConvention": "sha256-lowercase(exact item span, CRLF/CR normalized to LF, no trimming)",
   "reviewSemantics": "Discovery is pending. Only complete reviewer-authored source review fields may set reviewed.",
   "summary": {
-    "files": 88,
+    "files": 91,
     "entries": 1215,
     "production": 726,
     "test": 327,
@@ -52433,8 +52433,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 84,
-      "endLine": 96,
+      "line": 79,
+      "endLine": 91,
       "symbol": "open_default",
       "qualifiedName": "state::impl StateStore::open_default",
       "signature": "pub fn open_default() -> Result<Self, AppError>",
@@ -52467,7 +52467,8 @@
         "static-only: default-path store opening is not isolated by a named test"
       ],
       "evidence": [
-        "final src/state.rs:84-96 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Opens the default per-user resource and establishes its initial runtime state.",
       "output": "Result<StateStore, AppError>",
@@ -52475,10 +52476,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::open_default responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Uses application data defaults and reports a quarantine diagnostic while returning normalized empty state when journal corruption is recoverable.",
+      "notes": "Uses application data defaults and reports a quarantine diagnostic while returning normalized empty state when journal corruption is recoverable. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -52486,8 +52487,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 98,
-      "endLine": 153,
+      "line": 93,
+      "endLine": 148,
       "symbol": "from_parts",
       "qualifiedName": "state::impl StateStore::from_parts",
       "signature": "fn from_parts( journal: JournalStore, loaded: PersistentJournal, diagnostics: Diagnostics, ) -> Self",
@@ -52522,7 +52523,8 @@
         "sequence_is_monotonic_and_snapshot_reports_latest"
       ],
       "evidence": [
-        "final src/state.rs:98-153 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Builds live state, notifications, budgets, and outbox state from an opened journal.",
       "output": "StateStore",
@@ -52530,10 +52532,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::from_parts responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Loaded persisted queue/operations become ordered SharedRecords; runtime-only pending work, maintenance, health, notifications, outbox, and inspection accounting start fresh.",
+      "notes": "Loaded persisted queue/operations become ordered SharedRecords; runtime-only pending work, maintenance, health, notifications, outbox, and inspection accounting start fresh. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -52541,8 +52543,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 155,
-      "endLine": 197,
+      "line": 150,
+      "endLine": 192,
       "symbol": "snapshot",
       "qualifiedName": "state::impl StateStore::snapshot",
       "signature": "pub fn snapshot(&self) -> Result<AppSnapshot, AppError>",
@@ -52577,7 +52579,8 @@
         "inspection_budget_counts_payloads_retained_by_a_snapshot"
       ],
       "evidence": [
-        "final src/state.rs:155-197 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Returns an ordered renderer snapshot with the current sequence and health state.",
       "output": "Result<AppSnapshot, AppError>",
@@ -52585,10 +52588,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Holds the live-state mutex only while cloning ordered SharedRecords and scalar status; returned AppSnapshot owns its vectors and shared inspection Arcs.",
+      "notes": "Holds the live-state mutex only while cloning ordered SharedRecords and scalar status; returned AppSnapshot owns its vectors and shared inspection Arcs. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -52596,8 +52599,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 199,
-      "endLine": 205,
+      "line": 194,
+      "endLine": 200,
       "symbol": "queue_item",
       "qualifiedName": "state::impl StateStore::queue_item",
       "signature": "pub fn queue_item(&self, id: &str) -> Result<QueueItemRecord, AppError>",
@@ -52630,7 +52633,8 @@
         "active_items_cannot_be_edited_or_removed"
       ],
       "evidence": [
-        "final src/state.rs:199-205 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Returns one queue record without cloning the whole application snapshot.",
       "output": "Result<QueueItemRecord, AppError>",
@@ -52638,10 +52642,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Single-key lookup avoids cloning the entire AppSnapshot for queue edit validation.",
+      "notes": "Single-key lookup avoids cloning the entire AppSnapshot for queue edit validation. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -52649,8 +52653,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 207,
-      "endLine": 209,
+      "line": 202,
+      "endLine": 204,
       "symbol": "take_outbox_reader",
       "qualifiedName": "state::impl StateStore::take_outbox_reader",
       "signature": "pub(crate) fn take_outbox_reader(&self) -> Result<StateOutboxReader, AppError>",
@@ -52681,7 +52685,8 @@
         "only_one_consumer_can_claim_the_outbox_at_a_time"
       ],
       "evidence": [
-        "final src/state.rs:207-209 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Claims the single authoritative state-publication consumer.",
       "output": "Result<StateOutboxReader, AppError>",
@@ -52689,1462 +52694,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::take_outbox_reader responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Delegates the atomic single-reader claim; no live state or mutation gate is involved.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::add_queue_item[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 211,
-      "endLine": 270,
-      "symbol": "add_queue_item",
-      "qualifiedName": "state::impl StateStore::add_queue_item",
-      "signature": "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
-      "sourceDigest": "110b96ecfd3deb027e4cb77d39b8c07f88cdfda090849aec8af540335b5ee040",
-      "cfg": [],
-      "callers": [
-        "lib.rs::add_queue_item tracked admission workflow"
-      ],
-      "inputs": [
-        "&self",
-        "input"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Consumes a completed video inspection and durably creates an inert queue item",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Consumes a completed video inspection and durably creates an inert queue item"
-      ],
-      "tests": [
-        "queue_add_consumes_only_authoritative_completed_video_inspections",
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
-        "queued_operation_blocks_maintenance_before_worker_registration"
-      ],
-      "evidence": [
-        "final src/state.rs:211-270 at cb616a1"
-      ],
-      "purpose": "Consumes a completed video inspection and durably creates an inert queue item.",
-      "output": "Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::add_queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::add_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::completed_inspection_video[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 272,
-      "endLine": 275,
-      "symbol": "completed_inspection_video",
-      "qualifiedName": "state::impl StateStore::completed_inspection_video",
-      "signature": "pub fn completed_inspection_video(&self, operation_id: &str) -> Result<VideoInfo, AppError>",
-      "sourceDigest": "3352435fdf788106f92ef658ffdf1f375227dda233eefdc54d0c436fb2152c74",
-      "cfg": [],
-      "callers": [
-        "inspection-to-queue admission preparation"
-      ],
-      "inputs": [
-        "&self",
-        "operation ID"
-      ],
-      "sideEffects": [
-        "clones authoritative completed video metadata"
-      ],
-      "errors": [
-        "lock-poison or inspection not-found/kind/state/result AppError"
-      ],
-      "ownership": [
-        "returns owned VideoInfo clone; StateStore retains shared inspection payload"
-      ],
-      "locks": [
-        "live state mutex during validation/clone"
-      ],
-      "invariants": [
-        "only completed Inspection Video yields capability"
-      ],
-      "tests": [
-        "queue_add_consumes_only_authoritative_completed_video_inspections"
-      ],
-      "evidence": [
-        "final src/state.rs:272-275 at cb616a1"
-      ],
-      "purpose": "Reads and validates an authoritative completed video inspection capability.",
-      "output": "Result<VideoInfo, AppError>",
-      "cancellation": "synchronous read has no await point",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::completed_inspection_video responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Acts as an admission capability check: kind, terminal state, and Video result must all match before metadata is cloned.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::update_queue_item[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 277,
-      "endLine": 323,
-      "symbol": "update_queue_item",
-      "qualifiedName": "state::impl StateStore::update_queue_item",
-      "signature": "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "8b0fd61213fc856cb635435e9d1cb1c4f218958c49355dca69ee4cd1ab69d38e",
-      "cfg": [],
-      "callers": [
-        "lib.rs::update_queue_item tracked admission workflow"
-      ],
-      "inputs": [
-        "&self",
-        "id",
-        "input"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Validates and durably edits fields on an editable queue item",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Validates and durably edits fields on an editable queue item"
-      ],
-      "tests": [
-        "queue_add_consumes_only_authoritative_completed_video_inspections",
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
-        "app_update_handoff_does_not_launch_from_an_unpersisted_marker",
-        "degraded_app_update_finalization_clears_and_flushes_the_pending_handoff",
-        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
-        "app_update_handoff_mismatch_becomes_retryable_interruption"
-      ],
-      "evidence": [
-        "final src/state.rs:277-323 at cb616a1"
-      ],
-      "purpose": "Validates and durably edits fields on an editable queue item.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::update_queue_item responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::update_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::remove_queue_items[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 325,
-      "endLine": 385,
-      "symbol": "remove_queue_items",
-      "qualifiedName": "state::impl StateStore::remove_queue_items",
-      "signature": "pub async fn remove_queue_items(&self, ids: &[String]) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "f8af3192f99ead436804c4ad8452c3eed343f8d35cffdbd2e5d7522b9f409f94",
-      "cfg": [],
-      "callers": [
-        "lib.rs::remove_queue_items tracked admission workflow"
-      ],
-      "inputs": [
-        "&self",
-        "ids"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Durably removes editable queue items and detaches retained terminal history",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Durably removes editable queue items and detaches retained terminal history"
-      ],
-      "tests": [
-        "queue_add_consumes_only_authoritative_completed_video_inspections",
-        "active_items_cannot_be_edited_or_removed",
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
-        "queued_operation_blocks_maintenance_before_worker_registration"
-      ],
-      "evidence": [
-        "final src/state.rs:325-385 at cb616a1"
-      ],
-      "purpose": "Durably removes editable queue items and detaches retained terminal history.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::remove_queue_items responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::remove_queue_items; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::enqueue[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 387,
-      "endLine": 480,
-      "symbol": "enqueue",
-      "qualifiedName": "state::impl StateStore::enqueue",
-      "signature": "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
-      "sourceDigest": "64e4bf2dfa7229f7fc9e60c424aae33c22d0ced3098af7e01840e1d8ed02039d",
-      "cfg": [],
-      "callers": [
-        "lib.rs::enqueue_downloads tracked admission workflow"
-      ],
-      "inputs": [
-        "&self",
-        "ids",
-        "priority"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Queues an ordered delta batch or coalesces overflow into a high-water resync marker",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
-        "after commit returns, notifies pending workers"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Queues an ordered delta batch or coalesces overflow into a high-water resync marker"
-      ],
-      "tests": [
-        "retry_preserves_item_identity_and_creates_a_new_attempt",
-        "front_priority_is_single_row_only",
-        "front_priority_is_next_after_the_five_admitted_rows"
-      ],
-      "evidence": [
-        "final src/state.rs:387-480 at cb616a1"
-      ],
-      "purpose": "Queues an ordered delta batch or coalesces overflow into a high-water resync marker.",
-      "output": "Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::enqueue responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::enqueue; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::begin_operation[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 482,
-      "endLine": 489,
-      "symbol": "begin_operation",
-      "qualifiedName": "state::impl StateStore::begin_operation",
-      "signature": "pub async fn begin_operation( &self, kind: OperationKind, queue_item_id: Option<String>, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "sourceDigest": "5314aad6eafdd555f2450202c869cacfac9553324956a22efd4c8e75ea29382f",
-      "cfg": [],
-      "callers": [
-        "inspection admission"
-      ],
-      "inputs": [
-        "operation kind",
-        "optional queue item ID"
-      ],
-      "sideEffects": [
-        "delegates durable admission to begin_operation_with_limit using MAX_ACTIVE_OPERATIONS"
-      ],
-      "errors": [
-        "propagates busy/limit/lock/persistence errors"
-      ],
-      "ownership": [
-        "borrows StateStore and moves queue_item_id into delegated candidate"
-      ],
-      "locks": [
-        "delegated owned mutation gate/live-state/persisted-revision locking"
-      ],
-      "invariants": [
-        "uses global maximum active-operation limit"
-      ],
-      "tests": [
-        "concurrent_operation_admission_never_exceeds_the_limit"
-      ],
-      "evidence": [
-        "final src/state.rs:482-489 at cb616a1"
-      ],
-      "purpose": "Durably creates a generic operation under the active-operation limit.",
-      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "cancellation": "same cancellation-safe detached commit behavior as begin_operation_with_limit",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Uses the production limited durable admission path with MAX_ACTIVE_OPERATIONS.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::begin_operation_with_limit[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 491,
-      "endLine": 530,
-      "symbol": "begin_operation_with_limit",
-      "qualifiedName": "state::impl StateStore::begin_operation_with_limit",
-      "signature": "async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "sourceDigest": "a6bb17d2acd2b37be7070afd35dacecaa936f480736e738fc31e9181a53b1fa5",
-      "cfg": [],
-      "callers": [
-        "StateStore::begin_operation"
-      ],
-      "inputs": [
-        "&self",
-        "kind",
-        "queue_item_id",
-        "limit"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Implements generic durable operation admission with an explicit limit",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Implements generic durable operation admission with an explicit limit"
-      ],
-      "tests": [
-        "maintenance_operation_is_registered_in_the_same_state_transition",
-        "maintenance_operation_accepts_a_preregistered_unique_uuid",
-        "queued_operation_blocks_maintenance_before_worker_registration",
-        "cancelled_maintenance_operation_cannot_start_after_cancellation",
-        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
-        "concurrent_operation_admission_never_exceeds_the_limit"
-      ],
-      "evidence": [
-        "final src/state.rs:491-530 at cb616a1"
-      ],
-      "purpose": "Implements generic durable operation admission with an explicit limit.",
-      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_operation_with_limit responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::begin_operation_with_limit; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 532,
-      "endLine": 604,
-      "symbol": "begin_maintenance_operation_with_id",
-      "qualifiedName": "state::impl StateStore::begin_maintenance_operation_with_id",
-      "signature": "pub(crate) async fn begin_maintenance_operation_with_id( &self, kind: OperationKind, operation_id: String, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "sourceDigest": "669b3797e54c978811ab39d81f84d556c9924130fc1645bb08941659ee941393",
-      "cfg": [],
-      "callers": [
-        "app/runtime update workflow after lifecycle preregistration"
-      ],
-      "inputs": [
-        "crate"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Atomically persists a preregistered update operation and maintenance ownership",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
-        "updates maintenance/update recovery ownership atomically with journal candidate"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Atomically persists a preregistered update operation and maintenance ownership"
-      ],
-      "tests": [
-        "maintenance_operation_is_registered_in_the_same_state_transition",
-        "maintenance_operation_accepts_a_preregistered_unique_uuid",
-        "queued_operation_blocks_maintenance_before_worker_registration",
-        "cancelled_maintenance_operation_cannot_start_after_cancellation",
-        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
-        "concurrent_operation_admission_never_exceeds_the_limit"
-      ],
-      "evidence": [
-        "final src/state.rs:532-604 at cb616a1"
-      ],
-      "purpose": "Atomically persists a preregistered update operation and maintenance ownership.",
-      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::begin_maintenance_operation_with_id responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::begin_maintenance_operation_with_id; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::prepare_app_update_handoff[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 606,
-      "endLine": 654,
-      "symbol": "prepare_app_update_handoff",
-      "qualifiedName": "state::impl StateStore::prepare_app_update_handoff",
-      "signature": "pub async fn prepare_app_update_handoff( &self, operation_id: &str, expected_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "5f4a91cdafbd069f64536b1c262e8ea8c1f96762d141a0827ca06bb341cebc23",
-      "cfg": [],
-      "callers": [
-        "verified app-update service before installer launch"
-      ],
-      "inputs": [
-        "&self",
-        "operation_id",
-        "expected_version"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Durably records installer target/version proof before external installer publication",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Durably records installer target/version proof before external installer publication"
-      ],
-      "tests": [
-        "app_update_handoff_does_not_launch_from_an_unpersisted_marker",
-        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent"
-      ],
-      "evidence": [
-        "final src/state.rs:606-654 at cb616a1"
-      ],
-      "purpose": "Durably records installer target/version proof before external installer publication.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::prepare_app_update_handoff responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::prepare_app_update_handoff; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::reconcile_pending_app_update[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 656,
-      "endLine": 708,
-      "symbol": "reconcile_pending_app_update",
-      "qualifiedName": "state::impl StateStore::reconcile_pending_app_update",
-      "signature": "pub async fn reconcile_pending_app_update( &self, current_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "c34d085220c27ce61e9008888ce14e389b302e8e0966c0902b08ab6d1f2707ad",
-      "cfg": [],
-      "callers": [
-        "startup recovery before admission opens"
-      ],
-      "inputs": [
-        "&self",
-        "current_version"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: On restart, terminalizes a pending installer handoff from the installed version evidence",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
-        "updates maintenance/update recovery ownership atomically with journal candidate"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "On restart, terminalizes a pending installer handoff from the installed version evidence"
-      ],
-      "tests": [
-        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
-        "app_update_handoff_mismatch_becomes_retryable_interruption"
-      ],
-      "evidence": [
-        "final src/state.rs:656-708 at cb616a1"
-      ],
-      "purpose": "On restart, terminalizes a pending installer handoff from the installed version evidence.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::reconcile_pending_app_update responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::reconcile_pending_app_update; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::set_operation_state[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 710,
-      "endLine": 735,
-      "symbol": "set_operation_state",
-      "qualifiedName": "state::impl StateStore::set_operation_state",
-      "signature": "pub async fn set_operation_state( &self, id: &str, operation_state: OperationState, error: Option<AppError>, ) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "d225668781059b8be516eb11e2a2b029f7901cb4ae0dc966d30ff56e72cca4af",
-      "cfg": [],
-      "callers": [
-        "inspection/update workflow nonterminal transitions and terminal fallback"
-      ],
-      "inputs": [
-        "operation ID",
-        "target OperationState",
-        "optional AppError"
-      ],
-      "sideEffects": [
-        "terminal targets delegate to durable finalize_operation",
-        "nonterminal targets mutate live operation/queue, advance sequence/read clock, enqueue deltas, and notify operation waiters"
-      ],
-      "errors": [
-        "transition/not-found/lock errors or delegated finalization persistence errors"
-      ],
-      "ownership": [
-        "nonterminal path retains state in StateStore and queues owned delta clone; terminal path transfers candidate/guard to detached finalizer"
-      ],
-      "locks": [
-        "nonterminal path holds mutation_gate borrowed guard then live-state mutex without await",
-        "terminal path uses owned gate in finalizer"
-      ],
-      "invariants": [
-        "terminal progress cannot use volatile path"
-      ],
-      "tests": [
-        "cancelling_inspection_cannot_be_completed"
-      ],
-      "evidence": [
-        "final src/state.rs:710-735 at cb616a1"
-      ],
-      "purpose": "Applies and publishes a volatile nonterminal transition or delegates terminal work to durable finalization.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before nonterminal gate acquisition no change; terminal cancellation follows detached finalizer ownership, subject to separately recorded join-error compensation risk",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_operation_state responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Terminal requests delegate to durable finalization; nonterminal transitions complete under one borrowed mutation guard and publish before return.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::request_cancellation[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 737,
-      "endLine": 761,
-      "symbol": "request_cancellation",
-      "qualifiedName": "state::impl StateStore::request_cancellation",
-      "signature": "pub async fn request_cancellation(&self, id: &str) -> Result<StateDelta, AppError>",
-      "sourceDigest": "83a674d62ba265d7671ee6da3bb14dc87dd475f70ac1809fcb0f1f3cbc8448b5",
-      "cfg": [],
-      "callers": [
-        "cancel command and cancellation drains"
-      ],
-      "inputs": [
-        "&self",
-        "id"
-      ],
-      "sideEffects": [
-        "mutates installed in-memory state for: Marks a nonterminal operation cancelling and immediately publishes its state change",
-        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
-      ],
-      "errors": [
-        "not_found when operation ID is absent",
-        "already_terminal when operation already finished",
-        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
-      ],
-      "ownership": [
-        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
-      ],
-      "locks": [
-        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
-        "live state mutex is not held across an await"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Marks a nonterminal operation cancelling and immediately publishes its state change"
-      ],
-      "tests": [
-        "cancelled_maintenance_operation_cannot_start_after_cancellation",
-        "cancellation_cannot_regress_or_complete_from_late_progress",
-        "cancellation_waiter_resolves_only_after_terminal_transition",
-        "published_download_completion_wins_a_late_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:737-761 at cb616a1"
-      ],
-      "purpose": "Marks a nonterminal operation cancelling and immediately publishes its state change.",
-      "output": "Result<StateDelta, AppError>",
-      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::request_cancellation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::request_cancellation; it intentionally publishes without journal persistence.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::apply_download_progress[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 763,
-      "endLine": 823,
-      "symbol": "apply_download_progress",
-      "qualifiedName": "state::impl StateStore::apply_download_progress",
-      "signature": "pub async fn apply_download_progress( &self, operation_id: &str, progress: &DownloadProgress, ) -> Result<Option<Vec<StateDelta>>, AppError>",
-      "sourceDigest": "b7060742a4f299fb1d066b5b075a84df20c7e9926d4c01911a1388f5c9db5fb4",
-      "cfg": [],
-      "callers": [
-        "scheduling progress callback"
-      ],
-      "inputs": [
-        "&self",
-        "operation_id",
-        "progress"
-      ],
-      "sideEffects": [
-        "mutates installed in-memory state for: Applies bounded nonterminal download progress and queue-state deltas",
-        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
-      ],
-      "errors": [
-        "terminal_progress_requires_finalization for completed/cancelled/error status",
-        "internal AppError if live-state mutex is poisoned",
-        "missing, terminal, or Cancelling operation returns Ok(None); outbox poison panics as invariant"
-      ],
-      "ownership": [
-        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
-      ],
-      "locks": [
-        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
-        "live state mutex is not held across an await"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Applies bounded nonterminal download progress and queue-state deltas"
-      ],
-      "tests": [
-        "cancellation_cannot_regress_or_complete_from_late_progress",
-        "published_download_completion_wins_a_late_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:763-823 at cb616a1"
-      ],
-      "purpose": "Applies bounded nonterminal download progress and queue-state deltas.",
-      "output": "Result<Option<Vec<StateDelta>>, AppError>",
-      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::apply_download_progress responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::apply_download_progress; it intentionally publishes without journal persistence.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::dismiss_operation[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 825,
-      "endLine": 865,
-      "symbol": "dismiss_operation",
-      "qualifiedName": "state::impl StateStore::dismiss_operation",
-      "signature": "pub async fn dismiss_operation(&self, id: &str) -> Result<Vec<StateDelta>, AppError>",
-      "sourceDigest": "2088ed423286c18ce9db1728fe18f5a678506da90cfd0507eda06aad73b2c179",
-      "cfg": [],
-      "callers": [
-        "dismiss_operation command"
-      ],
-      "inputs": [
-        "&self",
-        "id"
-      ],
-      "sideEffects": [
-        "validates and mutates an isolated candidate for: Durably removes terminal operation history and repairs queue latest-operation references",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
-      ],
-      "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
-      ],
-      "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
-      ],
-      "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Durably removes terminal operation history and repairs queue latest-operation references"
-      ],
-      "tests": [
-        "maintenance_operation_is_registered_in_the_same_state_transition",
-        "maintenance_operation_accepts_a_preregistered_unique_uuid",
-        "queued_operation_blocks_maintenance_before_worker_registration",
-        "cancelled_maintenance_operation_cannot_start_after_cancellation",
-        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
-        "concurrent_operation_admission_never_exceeds_the_limit"
-      ],
-      "evidence": [
-        "final src/state.rs:825-865 at cb616a1"
-      ],
-      "purpose": "Durably removes terminal operation history and repairs queue latest-operation references.",
-      "output": "Result<Vec<StateDelta>, AppError>",
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::dismiss_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::dismiss_operation; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::set_maintenance[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 867,
-      "endLine": 894,
-      "symbol": "set_maintenance",
-      "qualifiedName": "state::impl StateStore::set_maintenance",
-      "signature": "pub async fn set_maintenance( &self, active: bool, draining: bool, ) -> Result<StateDelta, AppError>",
-      "sourceDigest": "cf915adac36a1695375bfea23a5a0fa0dba2fa098f2ea2003904e8175394968e",
-      "cfg": [],
-      "callers": [
-        "maintenance/update/cancel-all coordination"
-      ],
-      "inputs": [
-        "&self",
-        "active",
-        "draining"
-      ],
-      "sideEffects": [
-        "mutates installed in-memory state for: Publishes volatile global maintenance/draining state when no update operation owns it",
-        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence",
-        "notifies pending workers after maintenance/draining clears"
-      ],
-      "errors": [
-        "busy when an operation owns maintenance",
-        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
-      ],
-      "ownership": [
-        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
-      ],
-      "locks": [
-        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
-        "live state mutex is not held across an await"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Publishes volatile global maintenance/draining state when no update operation owns it"
-      ],
-      "tests": [
-        "maintenance_operation_is_registered_in_the_same_state_transition",
-        "maintenance_operation_accepts_a_preregistered_unique_uuid",
-        "queued_operation_blocks_maintenance_before_worker_registration",
-        "cancelled_maintenance_operation_cannot_start_after_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:867-894 at cb616a1"
-      ],
-      "purpose": "Publishes volatile global maintenance/draining state when no update operation owns it.",
-      "output": "Result<StateDelta, AppError>",
-      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_maintenance responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::set_maintenance; it intentionally publishes without journal persistence.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::end_maintenance_operation[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 896,
-      "endLine": 922,
-      "symbol": "end_maintenance_operation",
-      "qualifiedName": "state::impl StateStore::end_maintenance_operation",
-      "signature": "pub async fn end_maintenance_operation( &self, operation_id: &str, ) -> Result<Option<StateDelta>, AppError>",
-      "sourceDigest": "b5e143edc193ccae5feeb8c64af1ef688414224a2d6515e9f3e9bf281e276ac8",
-      "cfg": [],
-      "callers": [
-        "services::maintenance::release_app_maintenance",
-        "AppMaintenanceLease cleanup continuation",
-        "state maintenance tests"
-      ],
-      "inputs": [
-        "StateStore",
-        "maintenance owner operation ID"
-      ],
-      "sideEffects": [
-        "when owner matches, clears maintenance_owner/active/draining",
-        "advances sequence and enqueues MaintenanceChanged(false,false)",
-        "notifies pending waiters after publication"
-      ],
-      "errors": [
-        "poisoned live-state or outbox internal mutex failure"
-      ],
-      "ownership": [
-        "StateStore retains live state; returned optional delta is an owned clone also retained by outbox"
-      ],
-      "locks": [
-        "awaits and retains borrowed mutation_gate across live mutation and outbox enqueue",
-        "brief live-state mutex, released before outbox/Notify"
-      ],
-      "invariants": [
-        "mismatched operation ID returns None with no state change",
-        "matching owner is cleared exactly once",
-        "maintenance clear delta precedes pending worker wake"
-      ],
-      "tests": [
-        "maintenance_operation_is_registered_in_the_same_state_transition",
-        "maintenance_operation_accepts_a_preregistered_unique_uuid",
-        "cancelled_maintenance_operation_cannot_start_after_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:896-922 at cb616a1"
-      ],
-      "purpose": "Idempotently releases maintenance only for its owning operation and wakes pending workers.",
-      "output": "Some authoritative MaintenanceChanged delta for matching owner, None otherwise, or AppError.",
-      "cancellation": "Cancellation while awaiting mutation_gate makes no change; after acquisition there is no await before clear, publication, and wake complete.",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::end_maintenance_operation responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Only the matching maintenance owner can clear flags; mismatched IDs are an idempotent None and do not emit or wake.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::wait_for_terminal[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 924,
-      "endLine": 950,
-      "symbol": "wait_for_terminal",
-      "qualifiedName": "state::impl StateStore::wait_for_terminal",
-      "signature": "pub async fn wait_for_terminal( &self, operation_id: &str, timeout: std::time::Duration, ) -> Result<OperationSnapshot, AppError>",
-      "sourceDigest": "fd033042329bdb50678e4ce893f5c66ed457dff7b7197ba202f48b7c56123ddf",
-      "cfg": [],
-      "callers": [
-        "cancel/update/inspection lifecycle cleanup"
-      ],
-      "inputs": [
-        "operation ID",
-        "timeout Duration"
-      ],
-      "sideEffects": [
-        "registers on operation Notify and may suspend; clones terminal operation on success"
-      ],
-      "errors": [
-        "not_found/lock AppError or retryable operation_wait_timeout AppError"
-      ],
-      "ownership": [
-        "waiter owns no operation; returned snapshot is owned clone"
-      ],
-      "locks": [
-        "live state mutex only during each predicate/clone check; never across await"
-      ],
-      "invariants": [
-        "Notified future is created before state check so notify_waiters generation cannot be lost"
-      ],
-      "tests": [
-        "cancellation_waiter_resolves_only_after_terminal_transition"
-      ],
-      "evidence": [
-        "final src/state.rs:924-950 at cb616a1"
-      ],
-      "purpose": "Waits up to a deadline for one operation to enter a terminal state.",
-      "output": "Result<OperationSnapshot, AppError>",
-      "cancellation": "caller cancellation drops only its waiter; operation state remains unchanged; next waiter rechecks state",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::wait_for_terminal responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Creates the Notify future before checking state; pinned Tokio notify_waiters generation semantics prevent the checked transition from being missed.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::set_runtime_readiness[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 952,
-      "endLine": 969,
-      "symbol": "set_runtime_readiness",
-      "qualifiedName": "state::impl StateStore::set_runtime_readiness",
-      "signature": "pub async fn set_runtime_readiness( &self, readiness: RuntimeReadiness, ) -> Result<StateDelta, AppError>",
-      "sourceDigest": "1ff44ed03bd175b9e169677a512f9887d8ab4a78310880adafa27c8bb4e57488",
-      "cfg": [],
-      "callers": [
-        "startup/runtime repair and update workflows"
-      ],
-      "inputs": [
-        "&self",
-        "readiness"
-      ],
-      "sideEffects": [
-        "mutates installed in-memory state for: Publishes the current volatile downloader runtime readiness",
-        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
-      ],
-      "errors": [
-        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
-      ],
-      "ownership": [
-        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
-      ],
-      "locks": [
-        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
-        "live state mutex is not held across an await"
-      ],
-      "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Publishes the current volatile downloader runtime readiness"
-      ],
-      "tests": [
-        "static-only: readiness mutation has no dedicated named test in this sidecar scope"
-      ],
-      "evidence": [
-        "final src/state.rs:952-969 at cb616a1"
-      ],
-      "purpose": "Publishes the current volatile downloader runtime readiness.",
-      "output": "Result<StateDelta, AppError>",
-      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::set_runtime_readiness responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Source-reviewed volatile state path for impl StateStore::set_runtime_readiness; it intentionally publishes without journal persistence.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::pending_operation_ids[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 971,
-      "endLine": 975,
-      "symbol": "pending_operation_ids",
-      "qualifiedName": "state::impl StateStore::pending_operation_ids",
-      "signature": "pub fn pending_operation_ids(&self) -> Vec<String>",
-      "sourceDigest": "bd847a8a5b005c548cabebd7bdd1a4d012ca58d88478c2b79fd97856c7d4930b",
-      "cfg": [],
-      "callers": [
-        "cancel-all drain coordination",
-        "shutdown cleanup"
-      ],
-      "inputs": [
-        "&self"
-      ],
-      "sideEffects": [
-        "clones pending operation IDs only"
-      ],
-      "errors": [
-        "lock poisoning is collapsed to an empty vector by the current implementation"
-      ],
-      "ownership": [
-        "returns owned ID clones; StateStore retains pending deque"
-      ],
-      "locks": [
-        "live state mutex only; no mutation gate"
-      ],
-      "invariants": [
-        "result order matches pending_downloads iteration order"
-      ],
-      "tests": [
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
-        "queued_operation_blocks_maintenance_before_worker_registration"
-      ],
-      "evidence": [
-        "final src/state.rs:971-975 at cb616a1"
-      ],
-      "purpose": "Snapshots pending download operation IDs in scheduling order.",
-      "output": "Vec<String> preserving pending deque order",
-      "cancellation": "synchronous snapshot has no await point",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::pending_operation_ids responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Clones only the volatile scheduling deque under the live-state mutex; it does not acquire mutation serialization.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::wait_pending_available[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 977,
-      "endLine": 990,
-      "symbol": "wait_pending_available",
-      "qualifiedName": "state::impl StateStore::wait_pending_available",
-      "signature": "pub async fn wait_pending_available(&self)",
-      "sourceDigest": "508b7effe3417553f5a9af04979f6fd9390518ddc288c5107ff7474d9737b882",
-      "cfg": [],
-      "callers": [
-        "download worker loop"
-      ],
-      "inputs": [
-        "&self"
-      ],
-      "sideEffects": [
-        "registers on pending Notify and may suspend"
-      ],
-      "errors": [
-        "none; poisoned live-state lock is treated as unavailable and wait continues"
-      ],
-      "ownership": [
-        "waiter dequeues nothing and owns no job"
-      ],
-      "locks": [
-        "brief live state mutex predicate read; no mutation gate and no lock across await"
-      ],
-      "invariants": [
-        "Notified enabled before predicate check prevents lost wake",
-        "returns only when a valid queued operation and queue item exist"
-      ],
-      "tests": [
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
-      ],
-      "evidence": [
-        "final src/state.rs:977-990 at cb616a1"
-      ],
-      "purpose": "Waits without dequeueing until valid pending work is available.",
-      "output": "()",
-      "cancellation": "caller cancellation drops waiter without changing queue; new waiter rechecks predicate",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::wait_pending_available responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Creates/enables pending Notify before checking the predicate so enqueue/reopen notifications cannot be lost.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::take_next_pending[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 992,
-      "endLine": 1015,
-      "symbol": "take_next_pending",
-      "qualifiedName": "state::impl StateStore::take_next_pending",
-      "signature": "pub async fn take_next_pending(&self) -> Option<QueuedDownload>",
-      "sourceDigest": "7554bd082dbeef7c4411274d72d72345177802709d8a1cb125cd97bd5f6aeaa2",
-      "cfg": [],
-      "callers": [
-        "worker after LifecycleCoordinator WorkerClaim"
-      ],
-      "inputs": [
-        "&self"
-      ],
-      "sideEffects": [
-        "removes stale/picked IDs from volatile pending deque",
-        "clones selected queue item; does not publish or persist"
-      ],
-      "errors": [
-        "none; poisoned state lock yields None"
-      ],
-      "ownership": [
-        "returns owned operation ID and QueueItemRecord clone"
-      ],
-      "locks": [
-        "awaits mutation_gate then live state mutex; no lock held across further await"
-      ],
-      "invariants": [
-        "returns only queued operation linked to existing queue item"
-      ],
-      "tests": [
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
-      ],
-      "evidence": [
-        "final src/state.rs:992-1015 at cb616a1"
-      ],
-      "purpose": "Dequeues the next still-valid queued download and returns its immutable request record.",
-      "output": "Option<QueuedDownload>",
-      "cancellation": "cancellation before gate acquisition changes nothing; after acquisition no await occurs before dequeue completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::take_next_pending responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Mutation gate serializes dequeue with cancellation/maintenance; stale IDs are skipped until a valid Queued Download and queue item pair is found.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::cancel_pending[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 1017,
-      "endLine": 1027,
-      "symbol": "cancel_pending",
-      "qualifiedName": "state::impl StateStore::cancel_pending",
-      "signature": "pub async fn cancel_pending(&self, operation_id: &str) -> bool",
-      "sourceDigest": "698bf10971328bee892bad59d625db36e13abf9a51db1d9bad2f4d06e9bd27bf",
-      "cfg": [],
-      "callers": [
-        "cancel operation",
-        "cancel-all/shutdown cleanup"
-      ],
-      "inputs": [
-        "operation ID"
-      ],
-      "sideEffects": [
-        "retains all pending IDs except matching operation; no delta/journal mutation"
-      ],
-      "errors": [
-        "none; poisoned state lock yields false"
-      ],
-      "ownership": [
-        "StateStore retains deque; removed String allocation is dropped"
-      ],
-      "locks": [
-        "awaits mutation_gate then live state mutex"
-      ],
-      "invariants": [
-        "true only when deque length decreased"
-      ],
-      "tests": [
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
-      ],
-      "evidence": [
-        "final src/state.rs:1017-1027 at cb616a1"
-      ],
-      "purpose": "Removes an operation ID from the volatile pending queue.",
-      "output": "bool removed",
-      "cancellation": "cancellation before gate acquisition changes nothing; after acquisition no await before retain completes",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::cancel_pending responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Retains all pending IDs except the requested one and reports whether length changed; no durable state or delta changes.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::operation_state[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 1029,
-      "endLine": 1035,
-      "symbol": "operation_state",
-      "qualifiedName": "state::impl StateStore::operation_state",
-      "signature": "pub fn operation_state(&self, operation_id: &str) -> Option<OperationState>",
-      "sourceDigest": "724634b431639219c8fb2ffd9fb91e64ae36f12ba0faa86c9686a0215595f9bf",
-      "cfg": [],
-      "callers": [
-        "lifecycle/scheduling/state command coordination"
-      ],
-      "inputs": [
-        "&self",
-        "operation ID"
-      ],
-      "sideEffects": [
-        "none"
-      ],
-      "errors": [
-        "none; lock poisoning or missing operation yields None"
-      ],
-      "ownership": [
-        "returns Copy enum and retains operation"
-      ],
-      "locks": [
-        "live state mutex only"
-      ],
-      "invariants": [
-        "returns current stored operation state when lock and ID are valid"
-      ],
-      "tests": [
-        "cancellation_cannot_regress_or_complete_from_late_progress",
-        "published_download_completion_wins_a_late_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:1029-1035 at cb616a1"
-      ],
-      "purpose": "Reads one operation state.",
-      "output": "Option<OperationState>",
-      "cancellation": "synchronous read has no await point",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::operation_state responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Single-record state lookup under live mutex; missing IDs map to None.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::operation_kind[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 1037,
-      "endLine": 1043,
-      "symbol": "operation_kind",
-      "qualifiedName": "state::impl StateStore::operation_kind",
-      "signature": "pub fn operation_kind(&self, operation_id: &str) -> Option<OperationKind>",
-      "sourceDigest": "bd6ffab7387d1adf38dda4c088b62fb89445c18615d47824a5a27a158b4fe4ad",
-      "cfg": [],
-      "callers": [
-        "lifecycle/scheduling/state command coordination"
-      ],
-      "inputs": [
-        "&self",
-        "operation ID"
-      ],
-      "sideEffects": [
-        "none"
-      ],
-      "errors": [
-        "none; lock poisoning or missing operation yields None"
-      ],
-      "ownership": [
-        "returns Copy enum and retains operation"
-      ],
-      "locks": [
-        "live state mutex only"
-      ],
-      "invariants": [
-        "returns current stored operation kind when lock and ID are valid"
-      ],
-      "tests": [
-        "published_download_completion_wins_a_late_cancellation"
-      ],
-      "evidence": [
-        "final src/state.rs:1037-1043 at cb616a1"
-      ],
-      "purpose": "Reads one operation kind.",
-      "output": "Option<OperationKind>",
-      "cancellation": "synchronous read has no await point",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::operation_kind responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Single-record kind lookup under live mutex; missing IDs map to None.",
-      "ownerCall": null
-    },
-    {
-      "id": "src/state.rs::state::impl StateStore::journaled_output_roots[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/state.rs",
-      "line": 1045,
-      "endLine": 1057,
-      "symbol": "journaled_output_roots",
-      "qualifiedName": "state::impl StateStore::journaled_output_roots",
-      "signature": "pub fn journaled_output_roots(&self) -> Vec<String>",
-      "sourceDigest": "965ed934f2dc58677b27d28d83ed98f073672afbe1cb6cd77382a7eba5a03058",
-      "cfg": [],
-      "callers": [
-        "startup orphan-output cleanup"
-      ],
-      "inputs": [
-        "&self"
-      ],
-      "sideEffects": [
-        "clones, sorts, and deduplicates output_dir values"
-      ],
-      "errors": [
-        "none; poisoned state lock yields empty vector"
-      ],
-      "ownership": [
-        "returns owned strings; queue records remain stored"
-      ],
-      "locks": [
-        "live state mutex during clone; sorting occurs after values collected within current scope"
-      ],
-      "invariants": [
-        "output sorted and unique"
-      ],
-      "tests": [
-        "static-only: startup cleanup consumes this projection without a dedicated state test"
-      ],
-      "evidence": [
-        "final src/state.rs:1045-1057 at cb616a1"
-      ],
-      "purpose": "Returns sorted unique persisted output directories for startup cleanup.",
-      "output": "sorted deduplicated Vec<String>",
-      "cancellation": "synchronous snapshot has no await point",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/state.rs: retained with impl StateStore::journaled_output_roots responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
-      "status": "reviewed",
-      "notes": "Reads persisted queue metadata only, deduplicates through a set, and sorts the returned roots for deterministic startup cleanup.",
+      "notes": "Delegates the atomic single-reader claim; no live state or mutation gate is involved. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -54152,8 +52705,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 1059,
-      "endLine": 1061,
+      "line": 206,
+      "endLine": 208,
       "symbol": "diagnostics",
       "qualifiedName": "state::impl StateStore::diagnostics",
       "signature": "pub fn diagnostics(&self) -> &Diagnostics",
@@ -54184,7 +52737,8 @@
         "operation_failure_log_uses_snapshot_correlation_and_redacts_detail"
       ],
       "evidence": [
-        "final src/state.rs:1059-1061 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Exposes the store diagnostic sink.",
       "output": "&Diagnostics",
@@ -54192,10 +52746,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs: retained with impl StateStore::diagnostics responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Returns a shared reference to the existing Diagnostics sink without locking or cloning it.",
+      "notes": "Returns a shared reference to the existing Diagnostics sink without locking or cloning it. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -54203,8 +52757,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state.rs",
-      "line": 1063,
-      "endLine": 1068,
+      "line": 210,
+      "endLine": 215,
       "symbol": "lock",
       "qualifiedName": "state::impl StateStore::lock",
       "signature": "fn lock(&self) -> Result<MutexGuard<'_, StateData>, AppError>",
@@ -54235,7 +52789,8 @@
         "static-only: mutex poison translation is not isolated by a named test"
       ],
       "evidence": [
-        "final src/state.rs:1063-1068 at cb616a1"
+        "Stage 5 extraction verifier records this method as retained in the parent src/state.rs module with one exact normalized span (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
       ],
       "purpose": "Acquires the live state mutex and maps poisoning to a typed error.",
       "output": "Result<MutexGuard<StateData>, AppError>",
@@ -54243,10 +52798,10 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/state.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
       "status": "reviewed",
-      "notes": "Centralizes poisoned live-state mutex conversion into renderer-safe internal AppError.",
+      "notes": "Centralizes poisoned live-state mutex conversion into renderer-safe internal AppError. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
       "ownerCall": null
     },
     {
@@ -55848,6 +54403,1532 @@
       "status": "reviewed",
       "notes": "Source-reviewed after extraction; this helper performs no persistence I/O, and any clock read or AppError correlation-ID construction is explicitly recorded.",
       "ownerCall": null
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 13,
+      "endLine": 85,
+      "symbol": "begin_maintenance_operation_with_id",
+      "qualifiedName": "state::maintenance::impl StateStore::begin_maintenance_operation_with_id",
+      "signature": "pub(crate) async fn begin_maintenance_operation_with_id( &self, kind: OperationKind, operation_id: String, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "669b3797e54c978811ab39d81f84d556c9924130fc1645bb08941659ee941393",
+      "cfg": [],
+      "callers": [
+        "app/runtime update workflow after lifecycle preregistration"
+      ],
+      "inputs": [
+        "crate"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Atomically persists a preregistered update operation and maintenance ownership",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
+        "updates maintenance/update recovery ownership atomically with journal candidate"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Atomically persists a preregistered update operation and maintenance ownership"
+      ],
+      "tests": [
+        "maintenance_operation_is_registered_in_the_same_state_transition",
+        "maintenance_operation_accepts_a_preregistered_unique_uuid",
+        "queued_operation_blocks_maintenance_before_worker_registration",
+        "cancelled_maintenance_operation_cannot_start_after_cancellation",
+        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
+        "concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Atomically persists a preregistered update operation and maintenance ownership.",
+      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::begin_maintenance_operation_with_id responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::begin_maintenance_operation_with_id; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::prepare_app_update_handoff[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 87,
+      "endLine": 135,
+      "symbol": "prepare_app_update_handoff",
+      "qualifiedName": "state::maintenance::impl StateStore::prepare_app_update_handoff",
+      "signature": "pub async fn prepare_app_update_handoff( &self, operation_id: &str, expected_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "5f4a91cdafbd069f64536b1c262e8ea8c1f96762d141a0827ca06bb341cebc23",
+      "cfg": [],
+      "callers": [
+        "verified app-update service before installer launch"
+      ],
+      "inputs": [
+        "&self",
+        "operation_id",
+        "expected_version"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Durably records installer target/version proof before external installer publication",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Durably records installer target/version proof before external installer publication"
+      ],
+      "tests": [
+        "app_update_handoff_does_not_launch_from_an_unpersisted_marker",
+        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Durably records installer target/version proof before external installer publication.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::prepare_app_update_handoff responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::prepare_app_update_handoff; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::prepare_app_update_handoff[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::reconcile_pending_app_update[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 137,
+      "endLine": 189,
+      "symbol": "reconcile_pending_app_update",
+      "qualifiedName": "state::maintenance::impl StateStore::reconcile_pending_app_update",
+      "signature": "pub async fn reconcile_pending_app_update( &self, current_version: &str, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "c34d085220c27ce61e9008888ce14e389b302e8e0966c0902b08ab6d1f2707ad",
+      "cfg": [],
+      "callers": [
+        "startup recovery before admission opens"
+      ],
+      "inputs": [
+        "&self",
+        "current_version"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: On restart, terminalizes a pending installer handoff from the installed version evidence",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
+        "updates maintenance/update recovery ownership atomically with journal candidate"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "On restart, terminalizes a pending installer handoff from the installed version evidence"
+      ],
+      "tests": [
+        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
+        "app_update_handoff_mismatch_becomes_retryable_interruption"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "On restart, terminalizes a pending installer handoff from the installed version evidence.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::reconcile_pending_app_update responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::reconcile_pending_app_update; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::reconcile_pending_app_update[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::set_maintenance[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 191,
+      "endLine": 218,
+      "symbol": "set_maintenance",
+      "qualifiedName": "state::maintenance::impl StateStore::set_maintenance",
+      "signature": "pub async fn set_maintenance( &self, active: bool, draining: bool, ) -> Result<StateDelta, AppError>",
+      "sourceDigest": "cf915adac36a1695375bfea23a5a0fa0dba2fa098f2ea2003904e8175394968e",
+      "cfg": [],
+      "callers": [
+        "maintenance/update/cancel-all coordination"
+      ],
+      "inputs": [
+        "&self",
+        "active",
+        "draining"
+      ],
+      "sideEffects": [
+        "mutates installed in-memory state for: Publishes volatile global maintenance/draining state when no update operation owns it",
+        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence",
+        "notifies pending workers after maintenance/draining clears"
+      ],
+      "errors": [
+        "busy when an operation owns maintenance",
+        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
+      ],
+      "ownership": [
+        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
+      ],
+      "locks": [
+        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
+        "live state mutex is not held across an await"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Publishes volatile global maintenance/draining state when no update operation owns it"
+      ],
+      "tests": [
+        "maintenance_operation_is_registered_in_the_same_state_transition",
+        "maintenance_operation_accepts_a_preregistered_unique_uuid",
+        "queued_operation_blocks_maintenance_before_worker_registration",
+        "cancelled_maintenance_operation_cannot_start_after_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Publishes volatile global maintenance/draining state when no update operation owns it.",
+      "output": "Result<StateDelta, AppError>",
+      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::set_maintenance responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed volatile state path for impl StateStore::set_maintenance; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::set_maintenance[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::end_maintenance_operation[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 220,
+      "endLine": 246,
+      "symbol": "end_maintenance_operation",
+      "qualifiedName": "state::maintenance::impl StateStore::end_maintenance_operation",
+      "signature": "pub async fn end_maintenance_operation( &self, operation_id: &str, ) -> Result<Option<StateDelta>, AppError>",
+      "sourceDigest": "b5e143edc193ccae5feeb8c64af1ef688414224a2d6515e9f3e9bf281e276ac8",
+      "cfg": [],
+      "callers": [
+        "services::maintenance::release_app_maintenance",
+        "AppMaintenanceLease cleanup continuation",
+        "state maintenance tests"
+      ],
+      "inputs": [
+        "StateStore",
+        "maintenance owner operation ID"
+      ],
+      "sideEffects": [
+        "when owner matches, clears maintenance_owner/active/draining",
+        "advances sequence and enqueues MaintenanceChanged(false,false)",
+        "notifies pending waiters after publication"
+      ],
+      "errors": [
+        "poisoned live-state or outbox internal mutex failure"
+      ],
+      "ownership": [
+        "StateStore retains live state; returned optional delta is an owned clone also retained by outbox"
+      ],
+      "locks": [
+        "awaits and retains borrowed mutation_gate across live mutation and outbox enqueue",
+        "brief live-state mutex, released before outbox/Notify"
+      ],
+      "invariants": [
+        "mismatched operation ID returns None with no state change",
+        "matching owner is cleared exactly once",
+        "maintenance clear delta precedes pending worker wake"
+      ],
+      "tests": [
+        "maintenance_operation_is_registered_in_the_same_state_transition",
+        "maintenance_operation_accepts_a_preregistered_unique_uuid",
+        "cancelled_maintenance_operation_cannot_start_after_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Idempotently releases maintenance only for its owning operation and wakes pending workers.",
+      "output": "Some authoritative MaintenanceChanged delta for matching owner, None otherwise, or AppError.",
+      "cancellation": "Cancellation while awaiting mutation_gate makes no change; after acquisition there is no await before clear, publication, and wake complete.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs: retained with impl StateStore::end_maintenance_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Only the matching maintenance owner can clear flags; mismatched IDs are an idempotent None and do not emit or wake. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::end_maintenance_operation[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 15,
+      "endLine": 22,
+      "symbol": "begin_operation",
+      "qualifiedName": "state::operation::impl StateStore::begin_operation",
+      "signature": "pub async fn begin_operation( &self, kind: OperationKind, queue_item_id: Option<String>, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "5314aad6eafdd555f2450202c869cacfac9553324956a22efd4c8e75ea29382f",
+      "cfg": [],
+      "callers": [
+        "inspection admission"
+      ],
+      "inputs": [
+        "operation kind",
+        "optional queue item ID"
+      ],
+      "sideEffects": [
+        "delegates durable admission to begin_operation_with_limit using MAX_ACTIVE_OPERATIONS"
+      ],
+      "errors": [
+        "propagates busy/limit/lock/persistence errors"
+      ],
+      "ownership": [
+        "borrows StateStore and moves queue_item_id into delegated candidate"
+      ],
+      "locks": [
+        "delegated owned mutation gate/live-state/persisted-revision locking"
+      ],
+      "invariants": [
+        "uses global maximum active-operation limit"
+      ],
+      "tests": [
+        "concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Durably creates a generic operation under the active-operation limit.",
+      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "cancellation": "same cancellation-safe detached commit behavior as begin_operation_with_limit",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::begin_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Uses the production limited durable admission path with MAX_ACTIVE_OPERATIONS. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::begin_operation[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation_with_limit[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 24,
+      "endLine": 63,
+      "symbol": "begin_operation_with_limit",
+      "qualifiedName": "state::operation::impl StateStore::begin_operation_with_limit",
+      "signature": "pub(super) async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "2f675fa84b7fa3ecd79602664c5d07e34869dae70b795afda59a67a1d55259f2",
+      "cfg": [],
+      "callers": [
+        "StateStore::begin_operation",
+        "state::tests::concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "inputs": [
+        "&self",
+        "kind",
+        "queue_item_id",
+        "limit"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Implements generic durable operation admission with an explicit limit",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Implements generic durable operation admission with an explicit limit"
+      ],
+      "tests": [
+        "maintenance_operation_is_registered_in_the_same_state_transition",
+        "maintenance_operation_accepts_a_preregistered_unique_uuid",
+        "queued_operation_blocks_maintenance_before_worker_registration",
+        "cancelled_maintenance_operation_cannot_start_after_cancellation",
+        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
+        "concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier confirms the method body is unchanged; only the signature visibility changed from private to pub(super), preserving access from sibling state::tests without widening beyond the state module (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Implements generic durable operation admission with an explicit limit.",
+      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::begin_operation_with_limit responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::begin_operation_with_limit; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::set_operation_state[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 65,
+      "endLine": 90,
+      "symbol": "set_operation_state",
+      "qualifiedName": "state::operation::impl StateStore::set_operation_state",
+      "signature": "pub async fn set_operation_state( &self, id: &str, operation_state: OperationState, error: Option<AppError>, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "d225668781059b8be516eb11e2a2b029f7901cb4ae0dc966d30ff56e72cca4af",
+      "cfg": [],
+      "callers": [
+        "inspection/update workflow nonterminal transitions and terminal fallback"
+      ],
+      "inputs": [
+        "operation ID",
+        "target OperationState",
+        "optional AppError"
+      ],
+      "sideEffects": [
+        "terminal targets delegate to durable finalize_operation",
+        "nonterminal targets mutate live operation/queue, advance sequence/read clock, enqueue deltas, and notify operation waiters"
+      ],
+      "errors": [
+        "transition/not-found/lock errors or delegated finalization persistence errors"
+      ],
+      "ownership": [
+        "nonterminal path retains state in StateStore and queues owned delta clone; terminal path transfers candidate/guard to detached finalizer"
+      ],
+      "locks": [
+        "nonterminal path holds mutation_gate borrowed guard then live-state mutex without await",
+        "terminal path uses owned gate in finalizer"
+      ],
+      "invariants": [
+        "terminal progress cannot use volatile path"
+      ],
+      "tests": [
+        "cancelling_inspection_cannot_be_completed"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Applies and publishes a volatile nonterminal transition or delegates terminal work to durable finalization.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before nonterminal gate acquisition no change; terminal cancellation follows detached finalizer ownership, subject to separately recorded join-error compensation risk",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::set_operation_state responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Terminal requests delegate to durable finalization; nonterminal transitions complete under one borrowed mutation guard and publish before return. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::set_operation_state[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::request_cancellation[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 92,
+      "endLine": 116,
+      "symbol": "request_cancellation",
+      "qualifiedName": "state::operation::impl StateStore::request_cancellation",
+      "signature": "pub async fn request_cancellation(&self, id: &str) -> Result<StateDelta, AppError>",
+      "sourceDigest": "83a674d62ba265d7671ee6da3bb14dc87dd475f70ac1809fcb0f1f3cbc8448b5",
+      "cfg": [],
+      "callers": [
+        "cancel command and cancellation drains"
+      ],
+      "inputs": [
+        "&self",
+        "id"
+      ],
+      "sideEffects": [
+        "mutates installed in-memory state for: Marks a nonterminal operation cancelling and immediately publishes its state change",
+        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
+      ],
+      "errors": [
+        "not_found when operation ID is absent",
+        "already_terminal when operation already finished",
+        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
+      ],
+      "ownership": [
+        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
+      ],
+      "locks": [
+        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
+        "live state mutex is not held across an await"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Marks a nonterminal operation cancelling and immediately publishes its state change"
+      ],
+      "tests": [
+        "cancelled_maintenance_operation_cannot_start_after_cancellation",
+        "cancellation_cannot_regress_or_complete_from_late_progress",
+        "cancellation_waiter_resolves_only_after_terminal_transition",
+        "published_download_completion_wins_a_late_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Marks a nonterminal operation cancelling and immediately publishes its state change.",
+      "output": "Result<StateDelta, AppError>",
+      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::request_cancellation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed volatile state path for impl StateStore::request_cancellation; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::request_cancellation[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::apply_download_progress[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 118,
+      "endLine": 178,
+      "symbol": "apply_download_progress",
+      "qualifiedName": "state::operation::impl StateStore::apply_download_progress",
+      "signature": "pub async fn apply_download_progress( &self, operation_id: &str, progress: &DownloadProgress, ) -> Result<Option<Vec<StateDelta>>, AppError>",
+      "sourceDigest": "b7060742a4f299fb1d066b5b075a84df20c7e9926d4c01911a1388f5c9db5fb4",
+      "cfg": [],
+      "callers": [
+        "scheduling progress callback"
+      ],
+      "inputs": [
+        "&self",
+        "operation_id",
+        "progress"
+      ],
+      "sideEffects": [
+        "mutates installed in-memory state for: Applies bounded nonterminal download progress and queue-state deltas",
+        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
+      ],
+      "errors": [
+        "terminal_progress_requires_finalization for completed/cancelled/error status",
+        "internal AppError if live-state mutex is poisoned",
+        "missing, terminal, or Cancelling operation returns Ok(None); outbox poison panics as invariant"
+      ],
+      "ownership": [
+        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
+      ],
+      "locks": [
+        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
+        "live state mutex is not held across an await"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Applies bounded nonterminal download progress and queue-state deltas"
+      ],
+      "tests": [
+        "cancellation_cannot_regress_or_complete_from_late_progress",
+        "published_download_completion_wins_a_late_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Applies bounded nonterminal download progress and queue-state deltas.",
+      "output": "Result<Option<Vec<StateDelta>>, AppError>",
+      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::apply_download_progress responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed volatile state path for impl StateStore::apply_download_progress; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::apply_download_progress[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::dismiss_operation[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 180,
+      "endLine": 220,
+      "symbol": "dismiss_operation",
+      "qualifiedName": "state::operation::impl StateStore::dismiss_operation",
+      "signature": "pub async fn dismiss_operation(&self, id: &str) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "2088ed423286c18ce9db1728fe18f5a678506da90cfd0507eda06aad73b2c179",
+      "cfg": [],
+      "callers": [
+        "dismiss_operation command"
+      ],
+      "inputs": [
+        "&self",
+        "id"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Durably removes terminal operation history and repairs queue latest-operation references",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Durably removes terminal operation history and repairs queue latest-operation references"
+      ],
+      "tests": [
+        "maintenance_operation_is_registered_in_the_same_state_transition",
+        "maintenance_operation_accepts_a_preregistered_unique_uuid",
+        "queued_operation_blocks_maintenance_before_worker_registration",
+        "cancelled_maintenance_operation_cannot_start_after_cancellation",
+        "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
+        "concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Durably removes terminal operation history and repairs queue latest-operation references.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::dismiss_operation responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::dismiss_operation; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::dismiss_operation[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::wait_for_terminal[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 222,
+      "endLine": 248,
+      "symbol": "wait_for_terminal",
+      "qualifiedName": "state::operation::impl StateStore::wait_for_terminal",
+      "signature": "pub async fn wait_for_terminal( &self, operation_id: &str, timeout: std::time::Duration, ) -> Result<OperationSnapshot, AppError>",
+      "sourceDigest": "fd033042329bdb50678e4ce893f5c66ed457dff7b7197ba202f48b7c56123ddf",
+      "cfg": [],
+      "callers": [
+        "cancel/update/inspection lifecycle cleanup"
+      ],
+      "inputs": [
+        "operation ID",
+        "timeout Duration"
+      ],
+      "sideEffects": [
+        "registers on operation Notify and may suspend; clones terminal operation on success"
+      ],
+      "errors": [
+        "not_found/lock AppError or retryable operation_wait_timeout AppError"
+      ],
+      "ownership": [
+        "waiter owns no operation; returned snapshot is owned clone"
+      ],
+      "locks": [
+        "live state mutex only during each predicate/clone check; never across await"
+      ],
+      "invariants": [
+        "Notified future is created before state check so notify_waiters generation cannot be lost"
+      ],
+      "tests": [
+        "cancellation_waiter_resolves_only_after_terminal_transition"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Waits up to a deadline for one operation to enter a terminal state.",
+      "output": "Result<OperationSnapshot, AppError>",
+      "cancellation": "caller cancellation drops only its waiter; operation state remains unchanged; next waiter rechecks state",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::wait_for_terminal responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Creates the Notify future before checking state; pinned Tokio notify_waiters generation semantics prevent the checked transition from being missed. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::wait_for_terminal[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::set_runtime_readiness[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 250,
+      "endLine": 267,
+      "symbol": "set_runtime_readiness",
+      "qualifiedName": "state::operation::impl StateStore::set_runtime_readiness",
+      "signature": "pub async fn set_runtime_readiness( &self, readiness: RuntimeReadiness, ) -> Result<StateDelta, AppError>",
+      "sourceDigest": "1ff44ed03bd175b9e169677a512f9887d8ab4a78310880adafa27c8bb4e57488",
+      "cfg": [],
+      "callers": [
+        "startup/runtime repair and update workflows"
+      ],
+      "inputs": [
+        "&self",
+        "readiness"
+      ],
+      "sideEffects": [
+        "mutates installed in-memory state for: Publishes the current volatile downloader runtime readiness",
+        "advances sequence, reads clock, and enqueues authoritative delta(s) without journal persistence"
+      ],
+      "errors": [
+        "internal AppError if live-state mutex is poisoned; outbox poison panics as invariant"
+      ],
+      "ownership": [
+        "StateStore retains live records; returned deltas are owned snapshots queued independently by outbox"
+      ],
+      "locks": [
+        "awaits mutation_gate and holds its borrowed guard across live mutation and outbox enqueue",
+        "live state mutex is not held across an await"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Publishes the current volatile downloader runtime readiness"
+      ],
+      "tests": [
+        "static-only: readiness mutation has no dedicated named test in this sidecar scope"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Publishes the current volatile downloader runtime readiness.",
+      "output": "Result<StateDelta, AppError>",
+      "cancellation": "cancellation while awaiting mutation_gate makes no change; after acquisition the method has no further await before mutation/publication completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::set_runtime_readiness responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed volatile state path for impl StateStore::set_runtime_readiness; it intentionally publishes without journal persistence. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::set_runtime_readiness[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::operation_state[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 269,
+      "endLine": 275,
+      "symbol": "operation_state",
+      "qualifiedName": "state::operation::impl StateStore::operation_state",
+      "signature": "pub fn operation_state(&self, operation_id: &str) -> Option<OperationState>",
+      "sourceDigest": "724634b431639219c8fb2ffd9fb91e64ae36f12ba0faa86c9686a0215595f9bf",
+      "cfg": [],
+      "callers": [
+        "lifecycle/scheduling/state command coordination"
+      ],
+      "inputs": [
+        "&self",
+        "operation ID"
+      ],
+      "sideEffects": [
+        "none"
+      ],
+      "errors": [
+        "none; lock poisoning or missing operation yields None"
+      ],
+      "ownership": [
+        "returns Copy enum and retains operation"
+      ],
+      "locks": [
+        "live state mutex only"
+      ],
+      "invariants": [
+        "returns current stored operation state when lock and ID are valid"
+      ],
+      "tests": [
+        "cancellation_cannot_regress_or_complete_from_late_progress",
+        "published_download_completion_wins_a_late_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Reads one operation state.",
+      "output": "Option<OperationState>",
+      "cancellation": "synchronous read has no await point",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::operation_state responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Single-record state lookup under live mutex; missing IDs map to None. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::operation_state[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::operation_kind[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 277,
+      "endLine": 283,
+      "symbol": "operation_kind",
+      "qualifiedName": "state::operation::impl StateStore::operation_kind",
+      "signature": "pub fn operation_kind(&self, operation_id: &str) -> Option<OperationKind>",
+      "sourceDigest": "bd6ffab7387d1adf38dda4c088b62fb89445c18615d47824a5a27a158b4fe4ad",
+      "cfg": [],
+      "callers": [
+        "lifecycle/scheduling/state command coordination"
+      ],
+      "inputs": [
+        "&self",
+        "operation ID"
+      ],
+      "sideEffects": [
+        "none"
+      ],
+      "errors": [
+        "none; lock poisoning or missing operation yields None"
+      ],
+      "ownership": [
+        "returns Copy enum and retains operation"
+      ],
+      "locks": [
+        "live state mutex only"
+      ],
+      "invariants": [
+        "returns current stored operation kind when lock and ID are valid"
+      ],
+      "tests": [
+        "published_download_completion_wins_a_late_cancellation"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Reads one operation kind.",
+      "output": "Option<OperationKind>",
+      "cancellation": "synchronous read has no await point",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/operation.rs: retained with impl StateStore::operation_kind responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Single-record kind lookup under live mutex; missing IDs map to None. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::operation_kind[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::add_queue_item[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 18,
+      "endLine": 77,
+      "symbol": "add_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::add_queue_item",
+      "signature": "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
+      "sourceDigest": "110b96ecfd3deb027e4cb77d39b8c07f88cdfda090849aec8af540335b5ee040",
+      "cfg": [],
+      "callers": [
+        "lib.rs::add_queue_item tracked admission workflow"
+      ],
+      "inputs": [
+        "&self",
+        "input"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Consumes a completed video inspection and durably creates an inert queue item",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Consumes a completed video inspection and durably creates an inert queue item"
+      ],
+      "tests": [
+        "queue_add_consumes_only_authoritative_completed_video_inspections",
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
+        "queued_operation_blocks_maintenance_before_worker_registration"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Consumes a completed video inspection and durably creates an inert queue item.",
+      "output": "Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::add_queue_item responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::add_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::add_queue_item[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::completed_inspection_video[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 79,
+      "endLine": 82,
+      "symbol": "completed_inspection_video",
+      "qualifiedName": "state::queue::impl StateStore::completed_inspection_video",
+      "signature": "pub fn completed_inspection_video(&self, operation_id: &str) -> Result<VideoInfo, AppError>",
+      "sourceDigest": "3352435fdf788106f92ef658ffdf1f375227dda233eefdc54d0c436fb2152c74",
+      "cfg": [],
+      "callers": [
+        "inspection-to-queue admission preparation"
+      ],
+      "inputs": [
+        "&self",
+        "operation ID"
+      ],
+      "sideEffects": [
+        "clones authoritative completed video metadata"
+      ],
+      "errors": [
+        "lock-poison or inspection not-found/kind/state/result AppError"
+      ],
+      "ownership": [
+        "returns owned VideoInfo clone; StateStore retains shared inspection payload"
+      ],
+      "locks": [
+        "live state mutex during validation/clone"
+      ],
+      "invariants": [
+        "only completed Inspection Video yields capability"
+      ],
+      "tests": [
+        "queue_add_consumes_only_authoritative_completed_video_inspections"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Reads and validates an authoritative completed video inspection capability.",
+      "output": "Result<VideoInfo, AppError>",
+      "cancellation": "synchronous read has no await point",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::completed_inspection_video responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Acts as an admission capability check: kind, terminal state, and Video result must all match before metadata is cloned. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::completed_inspection_video[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::update_queue_item[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 84,
+      "endLine": 130,
+      "symbol": "update_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::update_queue_item",
+      "signature": "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "8b0fd61213fc856cb635435e9d1cb1c4f218958c49355dca69ee4cd1ab69d38e",
+      "cfg": [],
+      "callers": [
+        "lib.rs::update_queue_item tracked admission workflow"
+      ],
+      "inputs": [
+        "&self",
+        "id",
+        "input"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Validates and durably edits fields on an editable queue item",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Validates and durably edits fields on an editable queue item"
+      ],
+      "tests": [
+        "queue_add_consumes_only_authoritative_completed_video_inspections",
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
+        "app_update_handoff_does_not_launch_from_an_unpersisted_marker",
+        "degraded_app_update_finalization_clears_and_flushes_the_pending_handoff",
+        "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
+        "app_update_handoff_mismatch_becomes_retryable_interruption"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Validates and durably edits fields on an editable queue item.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::update_queue_item responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::update_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::update_queue_item[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::remove_queue_items[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 132,
+      "endLine": 192,
+      "symbol": "remove_queue_items",
+      "qualifiedName": "state::queue::impl StateStore::remove_queue_items",
+      "signature": "pub async fn remove_queue_items(&self, ids: &[String]) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "f8af3192f99ead436804c4ad8452c3eed343f8d35cffdbd2e5d7522b9f409f94",
+      "cfg": [],
+      "callers": [
+        "lib.rs::remove_queue_items tracked admission workflow"
+      ],
+      "inputs": [
+        "&self",
+        "ids"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Durably removes editable queue items and detaches retained terminal history",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Durably removes editable queue items and detaches retained terminal history"
+      ],
+      "tests": [
+        "queue_add_consumes_only_authoritative_completed_video_inspections",
+        "active_items_cannot_be_edited_or_removed",
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
+        "queued_operation_blocks_maintenance_before_worker_registration"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Durably removes editable queue items and detaches retained terminal history.",
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::remove_queue_items responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::remove_queue_items; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::remove_queue_items[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::enqueue[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 194,
+      "endLine": 287,
+      "symbol": "enqueue",
+      "qualifiedName": "state::queue::impl StateStore::enqueue",
+      "signature": "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
+      "sourceDigest": "64e4bf2dfa7229f7fc9e60c424aae33c22d0ced3098af7e01840e1d8ed02039d",
+      "cfg": [],
+      "callers": [
+        "lib.rs::enqueue_downloads tracked admission workflow"
+      ],
+      "inputs": [
+        "&self",
+        "ids",
+        "priority"
+      ],
+      "sideEffects": [
+        "validates and mutates an isolated candidate for: Queues an ordered delta batch or coalesces overflow into a high-water resync marker",
+        "may flush prior dirty/degraded state and prune retained history",
+        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas",
+        "after commit returns, notifies pending workers"
+      ],
+      "errors": [
+        "method-specific validation/not-found/busy errors before commit",
+        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+      ],
+      "ownership": [
+        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
+        "StateStore remains authoritative owner after installation"
+      ],
+      "locks": [
+        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
+        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
+        "JournalStore persisted_revision mutex is held by blocking save worker"
+      ],
+      "invariants": [
+        "global sequence is monotonic",
+        "state installation precedes authoritative outbox visibility",
+        "Queues an ordered delta batch or coalesces overflow into a high-water resync marker"
+      ],
+      "tests": [
+        "retry_preserves_item_identity_and_creates_a_new_attempt",
+        "front_priority_is_single_row_only",
+        "front_priority_is_next_after_the_five_admitted_rows"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Queues an ordered delta batch or coalesces overflow into a high-water resync marker.",
+      "output": "Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
+      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::enqueue responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Source-reviewed durable facade path for impl StateStore::enqueue; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::enqueue[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::pending_operation_ids[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 289,
+      "endLine": 293,
+      "symbol": "pending_operation_ids",
+      "qualifiedName": "state::queue::impl StateStore::pending_operation_ids",
+      "signature": "pub fn pending_operation_ids(&self) -> Vec<String>",
+      "sourceDigest": "bd847a8a5b005c548cabebd7bdd1a4d012ca58d88478c2b79fd97856c7d4930b",
+      "cfg": [],
+      "callers": [
+        "cancel-all drain coordination",
+        "shutdown cleanup"
+      ],
+      "inputs": [
+        "&self"
+      ],
+      "sideEffects": [
+        "clones pending operation IDs only"
+      ],
+      "errors": [
+        "lock poisoning is collapsed to an empty vector by the current implementation"
+      ],
+      "ownership": [
+        "returns owned ID clones; StateStore retains pending deque"
+      ],
+      "locks": [
+        "live state mutex only; no mutation gate"
+      ],
+      "invariants": [
+        "result order matches pending_downloads iteration order"
+      ],
+      "tests": [
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
+        "queued_operation_blocks_maintenance_before_worker_registration"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Snapshots pending download operation IDs in scheduling order.",
+      "output": "Vec<String> preserving pending deque order",
+      "cancellation": "synchronous snapshot has no await point",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::pending_operation_ids responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Clones only the volatile scheduling deque under the live-state mutex; it does not acquire mutation serialization. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::pending_operation_ids[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::wait_pending_available[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 295,
+      "endLine": 308,
+      "symbol": "wait_pending_available",
+      "qualifiedName": "state::queue::impl StateStore::wait_pending_available",
+      "signature": "pub async fn wait_pending_available(&self)",
+      "sourceDigest": "508b7effe3417553f5a9af04979f6fd9390518ddc288c5107ff7474d9737b882",
+      "cfg": [],
+      "callers": [
+        "download worker loop"
+      ],
+      "inputs": [
+        "&self"
+      ],
+      "sideEffects": [
+        "registers on pending Notify and may suspend"
+      ],
+      "errors": [
+        "none; poisoned live-state lock is treated as unavailable and wait continues"
+      ],
+      "ownership": [
+        "waiter dequeues nothing and owns no job"
+      ],
+      "locks": [
+        "brief live state mutex predicate read; no mutation gate and no lock across await"
+      ],
+      "invariants": [
+        "Notified enabled before predicate check prevents lost wake",
+        "returns only when a valid queued operation and queue item exist"
+      ],
+      "tests": [
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Waits without dequeueing until valid pending work is available.",
+      "output": "()",
+      "cancellation": "caller cancellation drops waiter without changing queue; new waiter rechecks predicate",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::wait_pending_available responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Creates/enables pending Notify before checking the predicate so enqueue/reopen notifications cannot be lost. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::wait_pending_available[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::take_next_pending[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 310,
+      "endLine": 333,
+      "symbol": "take_next_pending",
+      "qualifiedName": "state::queue::impl StateStore::take_next_pending",
+      "signature": "pub async fn take_next_pending(&self) -> Option<QueuedDownload>",
+      "sourceDigest": "7554bd082dbeef7c4411274d72d72345177802709d8a1cb125cd97bd5f6aeaa2",
+      "cfg": [],
+      "callers": [
+        "worker after LifecycleCoordinator WorkerClaim"
+      ],
+      "inputs": [
+        "&self"
+      ],
+      "sideEffects": [
+        "removes stale/picked IDs from volatile pending deque",
+        "clones selected queue item; does not publish or persist"
+      ],
+      "errors": [
+        "none; poisoned state lock yields None"
+      ],
+      "ownership": [
+        "returns owned operation ID and QueueItemRecord clone"
+      ],
+      "locks": [
+        "awaits mutation_gate then live state mutex; no lock held across further await"
+      ],
+      "invariants": [
+        "returns only queued operation linked to existing queue item"
+      ],
+      "tests": [
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Dequeues the next still-valid queued download and returns its immutable request record.",
+      "output": "Option<QueuedDownload>",
+      "cancellation": "cancellation before gate acquisition changes nothing; after acquisition no await occurs before dequeue completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::take_next_pending responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Mutation gate serializes dequeue with cancellation/maintenance; stale IDs are skipped until a valid Queued Download and queue item pair is found. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::take_next_pending[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::cancel_pending[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 335,
+      "endLine": 345,
+      "symbol": "cancel_pending",
+      "qualifiedName": "state::queue::impl StateStore::cancel_pending",
+      "signature": "pub async fn cancel_pending(&self, operation_id: &str) -> bool",
+      "sourceDigest": "698bf10971328bee892bad59d625db36e13abf9a51db1d9bad2f4d06e9bd27bf",
+      "cfg": [],
+      "callers": [
+        "cancel operation",
+        "cancel-all/shutdown cleanup"
+      ],
+      "inputs": [
+        "operation ID"
+      ],
+      "sideEffects": [
+        "retains all pending IDs except matching operation; no delta/journal mutation"
+      ],
+      "errors": [
+        "none; poisoned state lock yields false"
+      ],
+      "ownership": [
+        "StateStore retains deque; removed String allocation is dropped"
+      ],
+      "locks": [
+        "awaits mutation_gate then live state mutex"
+      ],
+      "invariants": [
+        "true only when deque length decreased"
+      ],
+      "tests": [
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Removes an operation ID from the volatile pending queue.",
+      "output": "bool removed",
+      "cancellation": "cancellation before gate acquisition changes nothing; after acquisition no await before retain completes",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::cancel_pending responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Retains all pending IDs except the requested one and reports whether length changed; no durable state or delta changes. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::cancel_pending[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::journaled_output_roots[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 347,
+      "endLine": 359,
+      "symbol": "journaled_output_roots",
+      "qualifiedName": "state::queue::impl StateStore::journaled_output_roots",
+      "signature": "pub fn journaled_output_roots(&self) -> Vec<String>",
+      "sourceDigest": "965ed934f2dc58677b27d28d83ed98f073672afbe1cb6cd77382a7eba5a03058",
+      "cfg": [],
+      "callers": [
+        "startup orphan-output cleanup"
+      ],
+      "inputs": [
+        "&self"
+      ],
+      "sideEffects": [
+        "clones, sorts, and deduplicates output_dir values"
+      ],
+      "errors": [
+        "none; poisoned state lock yields empty vector"
+      ],
+      "ownership": [
+        "returns owned strings; queue records remain stored"
+      ],
+      "locks": [
+        "live state mutex during clone; sorting occurs after values collected within current scope"
+      ],
+      "invariants": [
+        "output sorted and unique"
+      ],
+      "tests": [
+        "static-only: startup cleanup consumes this projection without a dedicated state test"
+      ],
+      "evidence": [
+        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
+        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+      ],
+      "purpose": "Returns sorted unique persisted output directories for startup cleanup.",
+      "output": "sorted deduplicated Vec<String>",
+      "cancellation": "synchronous snapshot has no await point",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/queue.rs: retained with impl StateStore::journaled_output_roots responsibility",
+      "reviewer": "root_ledger; root",
+      "reviewedAt": "2026-09-09T09:07:51Z",
+      "status": "reviewed",
+      "notes": "Reads persisted queue metadata only, deduplicates through a set, and sorts the returned roots for deterministic startup cleanup. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged.",
+      "ownerCall": null,
+      "movedFrom": "src/state.rs::state::impl StateStore::journaled_output_roots[cfg=all]",
+      "staleReason": "moved_requires_context_review"
     },
     {
       "id": "src/state/reducers.rs::state::reducers::apply_operation_transition[cfg=all]",
@@ -66240,8 +66321,131 @@
     }
   ],
   "reconciliation": {
-    "stale": [],
-    "removed": []
+    "stale": [
+      {
+        "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::prepare_app_update_handoff[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::reconcile_pending_app_update[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::set_maintenance[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::end_maintenance_operation[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::set_operation_state[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::request_cancellation[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::apply_download_progress[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::dismiss_operation[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::wait_for_terminal[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::set_runtime_readiness[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::operation_state[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/operation.rs::state::operation::impl StateStore::operation_kind[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::add_queue_item[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::completed_inspection_video[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::update_queue_item[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::remove_queue_items[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::enqueue[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::pending_operation_ids[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::wait_pending_available[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::take_next_pending[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::cancel_pending[cfg=all]",
+        "reason": "moved_requires_context_review"
+      },
+      {
+        "id": "src/state/queue.rs::state::queue::impl StateStore::journaled_output_roots[cfg=all]",
+        "reason": "moved_requires_context_review"
+      }
+    ],
+    "removed": [
+      "src/state.rs::state::impl StateStore::add_queue_item[cfg=all]",
+      "src/state.rs::state::impl StateStore::completed_inspection_video[cfg=all]",
+      "src/state.rs::state::impl StateStore::update_queue_item[cfg=all]",
+      "src/state.rs::state::impl StateStore::remove_queue_items[cfg=all]",
+      "src/state.rs::state::impl StateStore::enqueue[cfg=all]",
+      "src/state.rs::state::impl StateStore::begin_operation[cfg=all]",
+      "src/state.rs::state::impl StateStore::begin_operation_with_limit[cfg=all]",
+      "src/state.rs::state::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+      "src/state.rs::state::impl StateStore::prepare_app_update_handoff[cfg=all]",
+      "src/state.rs::state::impl StateStore::reconcile_pending_app_update[cfg=all]",
+      "src/state.rs::state::impl StateStore::set_operation_state[cfg=all]",
+      "src/state.rs::state::impl StateStore::request_cancellation[cfg=all]",
+      "src/state.rs::state::impl StateStore::apply_download_progress[cfg=all]",
+      "src/state.rs::state::impl StateStore::dismiss_operation[cfg=all]",
+      "src/state.rs::state::impl StateStore::set_maintenance[cfg=all]",
+      "src/state.rs::state::impl StateStore::end_maintenance_operation[cfg=all]",
+      "src/state.rs::state::impl StateStore::wait_for_terminal[cfg=all]",
+      "src/state.rs::state::impl StateStore::set_runtime_readiness[cfg=all]",
+      "src/state.rs::state::impl StateStore::pending_operation_ids[cfg=all]",
+      "src/state.rs::state::impl StateStore::wait_pending_available[cfg=all]",
+      "src/state.rs::state::impl StateStore::take_next_pending[cfg=all]",
+      "src/state.rs::state::impl StateStore::cancel_pending[cfg=all]",
+      "src/state.rs::state::impl StateStore::operation_state[cfg=all]",
+      "src/state.rs::state::impl StateStore::operation_kind[cfg=all]",
+      "src/state.rs::state::impl StateStore::journaled_output_roots[cfg=all]"
+    ]
   },
   "reviewSidecars": [
     "docs/backend-method-reviews/artifact-contract.json",
