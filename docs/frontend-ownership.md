@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **416 callables across 28 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **416 callables across 29 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -16,6 +16,7 @@ The compiler-backed inventory contains **416 callables across 28 production file
 | `src/lib/app-state-controller.ts` | 24 | Own renderer snapshot/delta application and resynchronization sequencing. | startup, state-sync |
 | `src/lib/app-update-workflow.ts` | 11 | Own application version, update checks, installation, and update dialog state. | startup, app-update |
 | `src/lib/backend-state.ts` | 17 | Derive stable operation and published-output facts from backend contracts. | state-sync, queue, download |
+| `src/lib/components/HeaderRuntime.svelte` | 0 | Render version, readiness, maintenance, and update controls. | startup, runtime-update, app-update |
 | `src/lib/components/QueueRow.svelte` | 11 | Render a queue row and forward selection, filename, and download actions. | queue, download, cancellation, diagnostics |
 | `src/lib/components/QueueTable.svelte` | 0 | Compose the queue viewport, table controls, and virtual rows. | queue, download, accessibility |
 | `src/lib/components/QueueToolbar.svelte` | 0 | Render queue and diagnostic actions with their existing admission states. | queue, cancellation, diagnostics |

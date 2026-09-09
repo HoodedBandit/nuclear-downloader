@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "renderer-visual-comparison/v1",
+  "purpose": "baseline-candidate-parity",
+  "comparedCandidate": true,
+  "passed": true,
+  "nativeScalingQualified": false,
+  "baselineInputs": [
+    {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-checks\\visual-20260909T060041Z-885155a599d74d619e7da52667d0c328\\visual-100.json",
+      "artifactSha256": "38bead8aa2e9ad3ffb901d13764c90ef93f10c6fac1a5010f149c67772af243d",
+      "sourceCommit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+      "productionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+      "harnessHash": "e631194bb67eceffc62db73d0561b33c7f3881002b90a2f2c94fcdb83ef75b97",
+      "receiptSha256": "012d24da5ad9804c8913dde5f2677485ba3b1c4b792dac4f5de80c94e559c15c"
+    },
+    {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-checks\\visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d\\visual-150.json",
+      "artifactSha256": "4245eb32280bf96dbfd3e29bf73724fa36d6491eff8121e13659a4f195dd6035",
+      "sourceCommit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+      "productionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+      "harnessHash": "e631194bb67eceffc62db73d0561b33c7f3881002b90a2f2c94fcdb83ef75b97",
+      "receiptSha256": "5dc0f8e6ab1fd9c6a0418da94658342fd7a38a56c7c163a6322f4b85a34d0328"
+    }
+  ],
+  "candidateInputs": [
+    {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-checks\\visual-20260909T082630Z-ada32beb90414f9b95a092c7002bc1f2\\visual-100.json",
+      "artifactSha256": "106d736d7ebbc1cf5fbc8d77640cebc4398e22e5c3b55ac7b0c1408506f5c2e8",
+      "sourceCommit": "4527eac29e9d17896358f2c7ee8d3028a9fabeb7",
+      "productionHash": "bdf412b745e9b9504c913de399cce8e318a2d0b88d94b05a02e758fb1c3663b8",
+      "harnessHash": "e631194bb67eceffc62db73d0561b33c7f3881002b90a2f2c94fcdb83ef75b97",
+      "receiptSha256": "135a6defd0e1e2bbf0039a5eb5547834cbdc1bedc32bda625952c7eabd6b247e"
+    },
+    {
+      "path": "J:\\Nuclear AI box\\nuclear-downloader\\target\\renderer-checks\\visual-20260909T082817Z-d2983826f1e6408cae3ddef4be74dbeb\\visual-150.json",
+      "artifactSha256": "8a24f1c759646d88f9bd6247694b728fd7c07d12d347dc50100a5dc1553f4e70",
+      "sourceCommit": "4527eac29e9d17896358f2c7ee8d3028a9fabeb7",
+      "productionHash": "bdf412b745e9b9504c913de399cce8e318a2d0b88d94b05a02e758fb1c3663b8",
+      "harnessHash": "e631194bb67eceffc62db73d0561b33c7f3881002b90a2f2c94fcdb83ef75b97",
+      "receiptSha256": "dd6b0f9edc5f4c995122b65d573da35997f977596e772c2fdbed678387f38537"
+    }
+  ],
+  "comparator": {
+    "powershellSha256": "14bcde041533b8e706c7f5bab8410074f05020cd73b79b743e58286c51537c5f",
+    "csharpSha256": "d0b80654b1f82340e6db5dacff6c332317386bf034ac3f412badfcd547941e4e"
+  },
+  "errors": []
+}
