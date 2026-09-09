@@ -217,13 +217,17 @@ pub(super) async fn download_installer(
         cleanup_current_artifact(&part_path).await;
         return Err(error.into());
     }
-    if let Err(error) = fs::remove_file(&part_path).await {
-        eprintln!(
-            "Published the verified installer, but failed to remove its partial link: {error}"
-        );
-    }
-    if let Ok(record_path) = owner_record_path(&part_path) {
-        cleanup_file_if_exists(&record_path).await;
+    match fs::remove_file(&part_path).await {
+        Ok(()) => {
+            if let Ok(record_path) = owner_record_path(&part_path) {
+                cleanup_file_if_exists(&record_path).await;
+            }
+        }
+        Err(error) => {
+            eprintln!(
+                "Published the verified installer, but failed to remove its partial link: {error}"
+            );
+        }
     }
     drop(publication);
     context.check_cancelled()?;

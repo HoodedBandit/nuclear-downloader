@@ -772,6 +772,14 @@ pub(super) async fn cleanup_file_if_exists(path: &Path) {
 
 pub(super) async fn cleanup_current_artifact(path: &Path) {
     cleanup_file_if_exists(path).await;
+    // Keep ownership proof while the artifact remains or cannot be inspected,
+    // so a later cleanup pass can retry without treating it as unrelated data.
+    if !matches!(
+        fs::symlink_metadata(path).await,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound
+    ) {
+        return;
+    }
     if let Ok(record_path) = owner_record_path(path) {
         cleanup_file_if_exists(&record_path).await;
     }

@@ -420,6 +420,42 @@ async fn partial_cleanup_removes_only_owned_regular_files() {
     let _ = std::fs::remove_dir_all(root);
 }
 
+#[cfg(windows)]
+#[tokio::test]
+async fn failed_partial_removal_retains_ownership_for_startup_retry() {
+    let root = unique_test_root("updater-partial-cleanup-retry");
+    let directory_lock = UpdateDirectoryLock::acquire(&root).unwrap();
+    let part = root
+        .join("Nuclear.Downloader_0.6.0_x64-setup.exe.550e8400-e29b-41d4-a716-446655440000.part");
+    let bytes = b"verified fixture bytes";
+    let hash = format!("{:x}", Sha256::digest(bytes));
+    std::fs::write(&part, bytes).unwrap();
+    let owner = write_owner_record(&part, bytes.len() as u64, &hash)
+        .await
+        .unwrap();
+    let lease = open_verified_installer(&part, bytes.len() as u64, &hash)
+        .await
+        .unwrap()
+        .unwrap();
+
+    artifact::cleanup_current_artifact(&part).await;
+    assert!(
+        part.exists(),
+        "the fixture lease must prevent artifact deletion"
+    );
+    assert!(
+        owner.exists(),
+        "failed deletion must retain proof for retry"
+    );
+
+    drop(lease);
+    cleanup_owned_partial_installers(&root).await.unwrap();
+    assert!(!part.exists());
+    assert!(!owner.exists());
+    drop(directory_lock);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[tokio::test]
 async fn ownership_record_growth_is_bounded_and_unrelated_files_are_preserved() {
     let root = unique_test_root("updater-owner-record-growth");
