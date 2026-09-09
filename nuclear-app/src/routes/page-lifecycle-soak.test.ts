@@ -178,6 +178,10 @@ describe('opt-in mounted page lifecycle soak', () => {
       const deadline = startedAt + soakSeconds * 1000;
       const baselineHeap = process.memoryUsage().heapUsed;
       let maximumHeap = baselineHeap;
+      const heapSamples: Array<{ elapsedMs: number; heapUsedBytes: number }> = [
+        { elapsedMs: 0, heapUsedBytes: baselineHeap }
+      ];
+      let nextHeapSampleAt = startedAt + 60_000;
       let mounts = 0;
       let activeOperationCycles = 0;
       let lateListenerCycles = 0;
@@ -335,7 +339,15 @@ describe('opt-in mounted page lifecycle soak', () => {
         cleanup();
         vi.clearAllMocks();
         mounts += 1;
-        maximumHeap = Math.max(maximumHeap, process.memoryUsage().heapUsed);
+        const heapUsed = process.memoryUsage().heapUsed;
+        maximumHeap = Math.max(maximumHeap, heapUsed);
+        if (performance.now() >= nextHeapSampleAt) {
+          heapSamples.push({
+            elapsedMs: Math.round(performance.now() - startedAt),
+            heapUsedBytes: heapUsed
+          });
+          nextHeapSampleAt += 60_000;
+        }
       }
 
       const finalHeap = process.memoryUsage().heapUsed;
@@ -351,7 +363,7 @@ describe('opt-in mounted page lifecycle soak', () => {
       exposedGc?.();
       const afterOptionalGcHeap = process.memoryUsage().heapUsed;
       console.info(
-        JSON.stringify({
+        `NUCLEAR_RENDERER_SOAK_RESULT=${JSON.stringify({
           provenance:
             'Vitest jsdom; mocked Tauri IPC; JS heap only; no native renderer or OS resources',
           configuredSeconds: soakSeconds,
@@ -367,10 +379,11 @@ describe('opt-in mounted page lifecycle soak', () => {
             final: finalHeap,
             afterOptionalGc: afterOptionalGcHeap
           },
+          heapSamples,
           gcAvailable,
           heapBoundedness:
             'observational only; no arbitrary pass threshold; postGc is controlled only when Node exposes global.gc'
-        })
+        })}`
       );
     },
     Math.max(30_000, soakSeconds * 1000 + 30_000)
