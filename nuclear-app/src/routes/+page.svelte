@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppUpdateDialog from '$lib/components/AppUpdateDialog.svelte';
   import PlaylistDialog from '$lib/components/PlaylistDialog.svelte';
   import HeaderRuntime from '$lib/components/HeaderRuntime.svelte';
   import SettingsRow from '$lib/components/SettingsRow.svelte';
@@ -10,7 +11,6 @@
   import { getVersion } from '@tauri-apps/api/app';
   import { open, save } from '@tauri-apps/plugin-dialog';
   import { onMount, tick } from 'svelte';
-  import { accessibleDialog } from '$lib/accessible-dialog';
   import { AppStateController } from '$lib/app-state-controller';
   import { isTerminalOperation } from '$lib/backend-state';
   import type { AppSnapshot } from '$lib/bindings/AppSnapshot';
@@ -603,143 +603,15 @@
 
 <!-- Update Modal -->
 {#if appUpdateState.modalOpen}
-  <div class="modal-layer">
-    <button
-      type="button"
-      class="modal-backdrop"
-      aria-label="Close update dialog"
-      onclick={closeUpdateModal}
-      disabled={appUpdateState.installRunning}
-    ></button>
-    <div
-      class="modal update-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="update-modal-title"
-      tabindex="-1"
-      use:accessibleDialog={{ onClose: closeUpdateModal, locked: appUpdateState.installRunning }}
-    >
-      <div class="modal-header">
-        <div>
-          <h2 id="update-modal-title">App Updates</h2>
-          <span class="modal-count">GitHub Releases installer update</span>
-        </div>
-        <button
-          class="small"
-          onclick={closeUpdateModal}
-          disabled={appUpdateState.installRunning}
-          data-dialog-initial-focus
-        >
-          Close
-        </button>
-      </div>
-      <div class="update-body">
-        {#if appUpdateState.checkState === 'checking' && !appUpdateState.info}
-          <p class="update-summary">Checking the latest stable GitHub Release...</p>
-        {:else}
-          <div class="update-meta">
-            <div class="update-meta-row">
-              <span class="update-meta-label">Current</span>
-              <span class="update-meta-value"
-                >v{appUpdateState.appVersion ??
-                  appUpdateState.info?.currentVersion ??
-                  'Unknown'}</span
-              >
-            </div>
-            <div class="update-meta-row">
-              <span class="update-meta-label">Latest</span>
-              <span class="update-meta-value">
-                {#if appUpdateState.info?.latestVersion}
-                  v{appUpdateState.info.latestVersion}
-                {:else}
-                  Unknown
-                {/if}
-              </span>
-            </div>
-            <div class="update-meta-row">
-              <span class="update-meta-label">Published</span>
-              <span class="update-meta-value">
-                {formatPublishedAt(appUpdateState.info?.publishedAt ?? null)}
-              </span>
-            </div>
-            <div class="update-meta-row">
-              <span class="update-meta-label">Installer</span>
-              <span class="update-meta-value">
-                {appUpdateState.info?.installerName ?? 'Checked during install'}
-              </span>
-            </div>
-          </div>
-
-          {#if appUpdateState.info?.hasUpdate}
-            <p class="update-summary">
-              A newer version is available. Installing it downloads the published Windows NSIS
-              installer, closes the app, and relaunches Nuclear Downloader automatically.
-            </p>
-          {:else if appUpdateState.info}
-            <p class="update-summary">You are already on the latest stable release.</p>
-          {/if}
-
-          {#if appUpdateState.installProgress}
-            <div class="update-progress-panel">
-              <div class="update-progress-header">
-                <span>{appUpdateState.installProgress.message ?? 'Working...'}</span>
-                <span>
-                  {#if appUpdateState.installProgress.totalBytes}
-                    {formatByteCount(appUpdateState.installProgress.downloadedBytes)} / {formatByteCount(
-                      appUpdateState.installProgress.totalBytes
-                    )}
-                  {:else if appUpdateState.installProgress.downloadedBytes > 0}
-                    {formatByteCount(appUpdateState.installProgress.downloadedBytes)}
-                  {:else}
-                    Waiting...
-                  {/if}
-                </span>
-              </div>
-              <div class="update-progress-bar">
-                <div
-                  class="update-progress-fill"
-                  style="width: {appUpdateWorkflow.downloadPercent()}%"
-                ></div>
-              </div>
-            </div>
-          {/if}
-
-          {#if appUpdateState.error}
-            <p class="update-error" role="alert" aria-live="assertive">{appUpdateState.error}</p>
-          {/if}
-
-          <div class="update-notes-block">
-            <h3>Release Notes</h3>
-            <div class="update-notes">
-              {appUpdateState.info?.notes ?? 'No release notes were provided for this release.'}
-            </div>
-          </div>
-        {/if}
-      </div>
-      <div class="modal-footer">
-        {#if appUpdateState.info?.hasUpdate && appUpdateState.info.latestVersion}
-          <button
-            class="primary"
-            onclick={installAppUpdate}
-            disabled={maintenanceActive ||
-              appUpdateState.checkState === 'checking' ||
-              hasUpdateBlockingWork()}
-            title={hasUpdateBlockingWork() ? 'Finish or cancel queued downloads first' : ''}
-          >
-            {#if appUpdateState.installRunning}
-              Installing...
-            {:else}
-              Install v{appUpdateState.info.latestVersion}
-            {/if}
-          </button>
-        {/if}
-        <button
-          onclick={handleManualUpdateCheck}
-          disabled={appUpdateState.checkState === 'checking' || maintenanceActive}
-        >
-          {appUpdateState.checkState === 'checking' ? 'Checking...' : 'Refresh Check'}
-        </button>
-      </div>
-    </div>
-  </div>
+  <AppUpdateDialog
+    state={appUpdateState}
+    {maintenanceActive}
+    updateBlockingWork={hasUpdateBlockingWork()}
+    downloadPercent={appUpdateWorkflow.downloadPercent()}
+    {formatByteCount}
+    {formatPublishedAt}
+    onClose={closeUpdateModal}
+    onInstall={installAppUpdate}
+    onRefresh={handleManualUpdateCheck}
+  />
 {/if}

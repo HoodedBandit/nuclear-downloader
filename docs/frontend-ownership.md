@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **418 callables across 30 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **418 callables across 31 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -16,6 +16,7 @@ The compiler-backed inventory contains **418 callables across 30 production file
 | `src/lib/app-state-controller.ts` | 24 | Own renderer snapshot/delta application and resynchronization sequencing. | startup, state-sync |
 | `src/lib/app-update-workflow.ts` | 11 | Own application version, update checks, installation, and update dialog state. | startup, app-update |
 | `src/lib/backend-state.ts` | 17 | Derive stable operation and published-output facts from backend contracts. | state-sync, queue, download |
+| `src/lib/components/AppUpdateDialog.svelte` | 0 | Render update details and forward update and dismissal actions. | app-update, dialogs, accessibility |
 | `src/lib/components/HeaderRuntime.svelte` | 0 | Render version, readiness, maintenance, and update controls. | startup, runtime-update, app-update |
 | `src/lib/components/PlaylistDialog.svelte` | 6 | Render the playlist picker and own its local select-all DOM reference. | inspection, queue, dialogs, accessibility |
 | `src/lib/components/QueueRow.svelte` | 11 | Render a queue row and forward selection, filename, and download actions. | queue, download, cancellation, diagnostics |

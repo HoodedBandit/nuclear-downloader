@@ -6,7 +6,9 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stages 1 through 3 passed their reproducibility, lifecycle, and workflow extraction gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Stage 4 is in progress: the stylesheet/status-footer candidate passed 161 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, and `frontend-components-review.md` record the changes and evidence. Performance and native qualification remain open as described below.
+Stages 1 through 4 passed their reproducibility, lifecycle, workflow, and component extraction gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. Queue metadata lifetime fixes passed their separate regressions. Each of the ten component/style extractions passed its own gate; the final candidate passed 167 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios. The opt-in soak remained skipped. `frontend-lifecycle-review.md`, `frontend-workflow-review.md`, and `frontend-components-review.md` record the changes and evidence. Backend extraction, integrated performance, soak, and native qualification remain open.
+
+An installed Chrome update invalidated one playlist visual run. The original browser executable was recovered from Google's signed static package and matched the original baseline SHA-256 exactly. A fresh full playlist gate and the final update-dialog gate passed against the unchanged baseline. `internal-cleanup-browser-recovery.md` records the recovery and retained invalid receipt; no replacement baseline was approved.
 
 The user deferred the disposable Windows 11 environment on September 8, 2026 because licensed installation media or a clean VM image is unavailable. Hyper-V enumeration also requires an administrator token unavailable in this session. No VM, account, desktop permission, or host display setting has been changed. Native installer/portable qualification and real 100%/150% Windows scaling remain incomplete.
 
@@ -53,7 +55,7 @@ The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.js
 1. Investigate the existing frame-time failure with matched repeats and candidate measurements, without weakening its threshold.
 2. Completed: generation-aware startup, one page resource owner, waiter cleanup, and their focused/integrated regression gates.
 3. Completed: queue presentation/workflow extraction and the separately regression-tested metadata/display-timestamp lifetime corrections.
-4. Extract Svelte components individually and compare output, controls, focus, geometry, and workflows after each extraction.
+4. Completed: ten component/style extractions with individual output, controls, focus, geometry, and workflow comparisons.
 5. Mechanically separate the specified StateStore, process, and publication modules, retaining ownership and lock boundaries; update source-matched reviews.
 6. Run integrated checks and fresh candidate-bound performance/soak validation. Complete native qualification when its prerequisites are available.
 
