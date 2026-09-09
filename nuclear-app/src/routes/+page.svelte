@@ -1,4 +1,5 @@
 <script lang="ts">
+  import UrlBar from '$lib/components/UrlBar.svelte';
   import QueueToolbar from '$lib/components/QueueToolbar.svelte';
   import QueueTable from '$lib/components/QueueTable.svelte';
   import '$lib/styles/app.css';
@@ -567,50 +568,17 @@
   {/if}
 
   <!-- URL Input -->
-  <form class="url-bar" autocomplete="off" onsubmit={handleUrlSubmit}>
-    <label class="sr-only" for="video-url">Video or playlist URL</label>
-    <input
-      id="video-url"
-      type="text"
-      name="nuclear-source-url"
-      placeholder="Paste a video URL..."
-      bind:value={inspectionState.urlInput}
-      autocomplete="off"
-      autocapitalize="none"
-      spellcheck={false}
-      inputmode="url"
-      aria-autocomplete="none"
-      disabled={inspectionState.playlistLoading || maintenanceActive}
-      class:input-error={Boolean(inspectionState.urlError)}
-      aria-describedby={inspectionState.urlError ? 'url-error' : undefined}
-    />
-    <button
-      type="submit"
-      class="primary"
-      disabled={!canStartDownloads || inspectionState.playlistLoading}
-    >
-      {inspectionState.playlistLoading ? 'Loading...' : 'Add'}
-    </button>
-    {#if inspectionState.playlistLoading}
-      <button onclick={cancelInspection}>Cancel</button>
-    {/if}
-    {#if inspectionState.urlError}
-      <span id="url-error" class="error-text" role="alert" aria-live="assertive"
-        >{inspectionState.urlError}</span
-      >
-    {/if}
-    {#if runtimeState.error}
-      <span class="error-text" role="alert" aria-live="assertive">{runtimeState.error}</span>
-    {:else if runtimeState.status?.message && runtimeState.status.state !== 'ready'}
-      <span class="error-text">{runtimeState.status.message}</span>
-    {/if}
-    {#if runtimeState.updateProgress}
-      <span class="muted" role="status" aria-live="polite">
-        {runtimeState.updateProgress.message ?? 'Runtime update'}
-        {Math.round(runtimeWorkflow.getUpdatePercent())}%
-      </span>
-    {/if}
-  </form>
+  <UrlBar
+    bind:urlInput={inspectionState.urlInput}
+    playlistLoading={inspectionState.playlistLoading}
+    urlError={inspectionState.urlError}
+    {maintenanceActive}
+    {canStartDownloads}
+    {runtimeState}
+    runtimeUpdatePercent={() => runtimeWorkflow.getUpdatePercent()}
+    {handleUrlSubmit}
+    {cancelInspection}
+  />
 
   <!-- Settings Row -->
   <section class="settings-row">

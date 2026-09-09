@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **415 callables across 26 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **416 callables across 27 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -21,6 +21,7 @@ The compiler-backed inventory contains **415 callables across 26 production file
 | `src/lib/components/QueueToolbar.svelte` | 0 | Render queue and diagnostic actions with their existing admission states. | queue, cancellation, diagnostics |
 | `src/lib/components/RowDiagnostics.svelte` | 1 | Render one row's redacted error details and copy action. | diagnostics, queue |
 | `src/lib/components/StatusFooter.svelte` | 0 | Render the existing queue counts and status announcement. | queue, download, accessibility |
+| `src/lib/components/UrlBar.svelte` | 0 | Render URL entry, inspection cancellation, and runtime progress. | inspection, runtime-update |
 | `src/lib/frontend-errors.ts` | 3 | Preserve existing user-facing error normalization and diagnostic detail. | inspection, download, diagnostics |
 | `src/lib/frontend-types.ts` | 0 | Define shared renderer presentation types and existing format defaults. | queue, inspection, settings |
 | `src/lib/frontend-workflow-ports.ts` | 0 | Declare typed command, operation-wait, and lifetime dependencies. | ipc, startup, cancellation |
@@ -37,7 +38,7 @@ The compiler-backed inventory contains **415 callables across 26 production file
 | `src/lib/startup-state.ts` | 6 | Derive startup readiness and subsystem recovery state. | startup, runtime-update |
 | `src/lib/state-reconciler.ts` | 9 | Coordinate ordered state-delta delivery, gap recovery, and listener disposal. | startup, state-sync |
 | `src/routes/+layout.js` | 0 | Declare the renderer-only static application layout mode. | startup |
-| `src/routes/+page.svelte` | 116 | Compose the main window, user actions, backend workflows, and visible application state. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
+| `src/routes/+page.svelte` | 117 | Compose the main window, user actions, backend workflows, and visible application state. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
 
 ## Workflow owners
 
@@ -63,8 +64,8 @@ The compiler-backed inventory contains **415 callables across 26 production file
 | Function-valued declarations/properties | 76 |
 | Synchronous callbacks | 106 |
 | Async callbacks | 1 |
-| Markup callbacks | 20 |
-| **Total** | **415** |
+| Markup callbacks | 21 |
+| **Total** | **416** |
 
 Regenerate from a frozen source tree before assigning reviewers. Evidence should identify the exact inventory `id`, `sourceHash`, and `spanHash`.
 
