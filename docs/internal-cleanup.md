@@ -6,7 +6,7 @@ The accepted scope preserves application output and behavior while separating ow
 
 ## Current status
 
-Stages 1 and 2 passed their reproducibility and lifecycle regression gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. The lifecycle candidate passed 100 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios with the baseline. `frontend-lifecycle-review.md` records the demonstrated defects and validation; `internal-cleanup-lifecycle-visual.json` binds the visual evidence. Stage 3 ownership extraction is next. Performance and native qualification remain open as described below.
+Stages 1 through 3 passed their reproducibility, lifecycle, and workflow extraction gates. The baseline includes source inventory, 11 independently repeatable renderer workflows, 60 visual scenarios with two stable captures each, and frontend/backend measurements for 1, 100, and 1,000 queue items. The latest workflow candidate passed 154 frontend tests, all 11 renderer workflows, and exact comparison of all 60 visual scenarios with the baseline. `frontend-lifecycle-review.md` and `frontend-workflow-review.md` record the changes and validation; `internal-cleanup-workflows-visual.json` binds the latest visual evidence. Queue metadata lifetime fixes and Stage 4 component extraction are next. Performance and native qualification remain open as described below.
 
 The user deferred the disposable Windows 11 environment on September 8, 2026 because licensed installation media or a clean VM image is unavailable. Hyper-V enumeration also requires an administrator token unavailable in this session. No VM, account, desktop permission, or host display setting has been changed. Native installer/portable qualification and real 100%/150% Windows scaling remain incomplete.
 
@@ -52,7 +52,7 @@ The accepted visual baseline is recorded in `internal-cleanup-visual-baseline.js
 
 1. Investigate the existing frame-time failure with matched repeats and candidate measurements, without weakening its threshold.
 2. Completed: generation-aware startup, one page resource owner, waiter cleanup, and their focused/integrated regression gates.
-3. Extract queue presentation and workflow ownership, preserving IPC order, payloads, progress precedence, and existing errors.
+3. Completed: extract queue presentation and workflow ownership, preserving IPC order, payloads, progress precedence, and existing errors. Correct the separately identified retained metadata/display-timestamp lifetimes with focused regressions.
 4. Extract Svelte components individually and compare output, controls, focus, geometry, and workflows after each extraction.
 5. Mechanically separate the specified StateStore, process, and publication modules, retaining ownership and lock boundaries; update source-matched reviews.
 6. Run integrated checks and fresh candidate-bound performance/soak validation. Complete native qualification when its prerequisites are available.

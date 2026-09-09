@@ -1,67 +1,67 @@
 # Frontend source ownership
 
-This document assigns the current production TypeScript and Svelte script callables to concrete responsibilities and workflows as internal ownership changes. The generated companion inventory is [`frontend-source-inventory.json`](frontend-source-inventory.json).
+This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The inventory is automated compiler-backed discovery. Its 302 entries are **not source reviews**, and generation does not mark any entry reviewed, accepted, or behaviorally correct. Substantive review must inspect each current source-bound entry, its callers, effects, cleanup, ordering, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **400 callables across 21 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
-`scripts/frontend-source-inventory.mjs` loads the repository-installed TypeScript 5.6.3 and Svelte 5.56.4 compilers from `nuclear-app/node_modules`. TypeScript compiler nodes identify declarations, methods, accessors, constructors, function-valued expressions, and callbacks. The Svelte compiler identifies module and instance script regions before those regions are parsed as TypeScript, and its template AST identifies inline arrow/function callbacks and snippet callable boundaries.
-
-The production scan includes `.js`, `.ts`, and `.svelte` files under `nuclear-app/src`. It excludes `*.test.ts`, `*.test.svelte`, generated `src/lib/bindings/**`, and the explicitly declared `src/lib/AccessibleDialogHarness.svelte` test-support component. Other extensions are outside this frontend callable inventory. Files with no callables, such as `+layout.js`, remain in the file hash set so source drift is still detected.
-
-Each entry records the repository-relative path, lexical owner, symbol, exact start/end offsets, start/end line, classification, async flag, complete-file `sourceHash`, callable `spanHash`, responsibility, and workflow list. Anonymous callbacks use their compiler parent call and argument position as a stable navigation label. TypeScript parse diagnostics fail inventory generation instead of accepting a compiler recovery tree. These identities are structural review aids rather than a TypeScript type-check or reachability proof.
+`scripts/frontend-source-inventory.mjs` uses the repository-installed TypeScript and Svelte compilers. It scans `.js`, `.ts`, and `.svelte` under `nuclear-app/src`, excluding tests, generated bindings, and the declared accessible-dialog harness. Files without callables remain hashed so drift is detected. Entries record path, lexical owner, symbol, source location, classification, async flag, file and span hashes, responsibility, and workflows. Parse diagnostics fail generation. This is not a type check, reachability proof, behavioral review, or workflow result.
 
 ## Ownership map
 
-| Source                               | Entries | Responsibility                                                                           | Workflows                                                                                   |
-| ------------------------------------ | ------: | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `src/routes/+page.svelte`            |     197 | Compose the main window, user actions, backend workflows, and visible application state. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
-| `src/routes/+layout.js`              |       0 | Declare the renderer-only static application layout mode.                                | startup                                                                                     |
-| `src/lib/accessible-dialog.ts`       |       6 | Provide keyboard focus, dismissal, and cleanup behavior for accessible dialogs.          | dialogs, accessibility                                                                      |
-| `src/lib/app-state-controller.ts`    |      24 | Own renderer snapshot/delta application and resynchronization sequencing.                | startup, state-sync                                                                         |
-| `src/lib/backend-state.ts`           |      17 | Derive stable operation and published-output facts from backend contracts.               | state-sync, queue, download                                                                 |
-| `src/lib/ipc-client.ts`              |       5 | Provide the typed command and event boundary used by renderer workflows.                 | ipc, state-sync                                                                             |
-| `src/lib/operation-reducer.ts`       |       6 | Order and reduce operation progress without regressing terminal state.                   | download, cancellation, state-sync                                                          |
-| `src/lib/operation-wait-registry.ts` |      19 | Own bounded renderer waiters for operation completion and teardown.                      | download, cancellation, runtime-update, app-update                                          |
-| `src/lib/page-lifetime.ts`           |       6 | Own page resources and suppress callbacks after renderer disposal.                       | startup, state-sync, cancellation                                                           |
-| `src/lib/queue-logic.ts`             |       7 | Validate and derive queue, format, selection, and redacted display behavior.             | queue, download, diagnostics                                                                |
-| `src/lib/startup-state.ts`           |       6 | Derive startup readiness and subsystem recovery state.                                   | startup, runtime-update                                                                     |
-| `src/lib/state-reconciler.ts`        |       9 | Coordinate ordered state-delta delivery, gap recovery, and listener disposal.            | startup, state-sync                                                                         |
+| Source | Entries | Responsibility | Workflows |
+| --- | ---: | --- | --- |
+| `src/routes/+page.svelte` | 123 | Compose controller state, lifecycle/event wiring, and visible UI. | startup, inspection, queue, download, cancellation, runtime-update, app-update, diagnostics |
+| `src/routes/+layout.js` | 0 | Declare renderer-only static layout mode. | startup |
+| `src/lib/accessible-dialog.ts` | 6 | Own dialog focus, keyboard dismissal, and cleanup. | dialogs, accessibility |
+| `src/lib/app-state-controller.ts` | 24 | Apply snapshots and deltas and sequence resynchronization. | startup, state-sync |
+| `src/lib/app-update-workflow.ts` | 11 | Own app version, update checks, installation, and modal state. | startup, app-update |
+| `src/lib/backend-state.ts` | 17 | Derive operation and published-output facts. | state-sync, queue, download |
+| `src/lib/frontend-errors.ts` | 3 | Normalize visible errors and retain diagnostic detail. | inspection, download, diagnostics |
+| `src/lib/frontend-types.ts` | 0 | Define shared renderer types and format defaults. | queue, inspection, settings |
+| `src/lib/frontend-workflow-ports.ts` | 0 | Declare command, wait, and lifetime ports. | ipc, startup, cancellation |
+| `src/lib/inspection-workflow.ts` | 21 | Own URL/playlist inspection, admission, cancellation, and modal state. | inspection, queue, cancellation |
+| `src/lib/ipc-client.ts` | 5 | Provide the typed command and event boundary. | ipc, state-sync |
+| `src/lib/operation-reducer.ts` | 6 | Reduce progress without regressing terminal state. | download, cancellation, state-sync |
+| `src/lib/operation-wait-registry.ts` | 19 | Own bounded operation waiters and teardown. | download, cancellation, runtime-update, app-update |
+| `src/lib/page-lifetime.ts` | 6 | Own page resources and suppress callbacks after disposal. | startup, state-sync, cancellation |
+| `src/lib/queue-actions.ts` | 30 | Own queue commands, cancellation rollback, retries, removal, and item settings. | queue, download, cancellation |
+| `src/lib/queue-logic.ts` | 7 | Derive formats, qualities, selection, and redacted text. | queue, download, diagnostics |
+| `src/lib/queue-presentation.ts` | 67 | Own projection, progress display, selection, filenames, and retained inspection metadata. | queue, download, state-sync |
+| `src/lib/runtime-workflow.ts` | 20 | Own runtime checks, repair/update actions, and runtime state. | startup, runtime-update |
+| `src/lib/settings-diagnostics-workflow.ts` | 20 | Own output/cookie settings and diagnostic copy/export/clear. | startup, settings, diagnostics |
+| `src/lib/startup-state.ts` | 6 | Derive startup readiness and subsystem recovery. | startup, runtime-update |
+| `src/lib/state-reconciler.ts` | 9 | Sequence deltas, recover gaps, and dispose listeners. | startup, state-sync |
 
-## Workflow review boundaries
+## Workflow owners
 
-| Workflow                          | Primary owners                                                                                        | Review obligations                                                                                                                                                                      |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Startup and state synchronization | `+page.svelte`, `app-state-controller.ts`, `state-reconciler.ts`, `startup-state.ts`, `ipc-client.ts` | Listener installation must precede snapshot reconciliation; sequence gaps trigger bounded resync; stale deltas cannot regress installed state; teardown releases listeners and waiters. |
-| Inspection and queue editing      | `+page.svelte`, `queue-logic.ts`, `backend-state.ts`                                                  | User selections and inspected metadata remain authoritative; queue mutations preserve current validation, selection, paging, and visible error behavior.                                |
-| Download progress and completion  | `+page.svelte`, `operation-reducer.ts`, `operation-wait-registry.ts`, `backend-state.ts`              | Progress ordering, terminal precedence, published output paths, waiter resolution, timeouts, and disposal retain their present contracts.                                               |
-| Cancellation                      | `+page.svelte`, `operation-reducer.ts`, `operation-wait-registry.ts`                                  | Cancelling state cannot be overwritten by late progress; terminal notification resolves each owned waiter once; shutdown rejects remaining waiters.                                     |
-| Runtime and application updates   | `+page.svelte`, `startup-state.ts`, `operation-wait-registry.ts`                                      | Maintenance/readiness gates, progress, retry paths, installer handoff, and operation waiting retain existing user-visible ordering and messages.                                        |
-| Dialogs and accessibility         | `+page.svelte`, `accessible-dialog.ts`                                                                | Focus capture/restoration, Escape handling, tab containment, dismissal, and action cleanup remain balanced across open/close and component teardown.                                    |
-| Diagnostics                       | `+page.svelte`, `queue-logic.ts`                                                                      | Export/clear flows and display redaction retain current payload and visible behavior.                                                                                                   |
+| Workflow | Primary owners | Review obligations |
+| --- | --- | --- |
+| Startup/state sync | `+page.svelte`, `app-state-controller.ts`, `state-reconciler.ts`, `startup-state.ts`, `ipc-client.ts` | Install listeners before reconciliation, recover gaps, reject stale deltas, and release resources. |
+| Inspection/admission | `inspection-workflow.ts`, `queue-presentation.ts`, `queue-logic.ts` | Preserve validation, captured settings, single-use cleanup, deduplication, paging, cancellation, and errors. |
+| Queue display/editing | `queue-presentation.ts`, `queue-actions.ts`, `backend-state.ts` | Preserve projection, throttling, selection, filenames, payloads, filters, and rollback. |
+| Download/cancellation | `queue-actions.ts`, `operation-reducer.ts`, `operation-wait-registry.ts`, `backend-state.ts` | Preserve priority, terminal precedence, published paths, timeout/disposal, and cancellation diagnostics. |
+| Runtime updates | `runtime-workflow.ts`, `startup-state.ts`, `operation-wait-registry.ts` | Preserve readiness, progress, retries, prompts, waiting, and startup callbacks. |
+| App updates | `app-update-workflow.ts`, `operation-wait-registry.ts` | Preserve blocking guards, modal/progress state, installer handoff, messages, and startup degradation. |
+| Settings/diagnostics | `settings-diagnostics-workflow.ts`, `queue-actions.ts`, `queue-logic.ts` | Preserve defaults, dialogs, directory fanout, snapshots, redaction, clipboard, confirmation, export, and clear. |
+| Accessibility | `accessible-dialog.ts`, `+page.svelte` | Preserve focus, Escape, tab containment, dismissal, and balanced cleanup. |
 
 ## Classification totals
 
-| Compiler classification                 |   Count |
-| --------------------------------------- | ------: |
-| Function declarations                   |     141 |
-| Methods                                 |      36 |
-| Constructors                            |       4 |
-| Getters                                 |       2 |
-| Function-valued declarations/properties |       6 |
-| Synchronous callbacks                   |      96 |
-| Async callbacks                         |       1 |
-| Markup callbacks                        |      16 |
-| Markup async callbacks                  |       0 |
-| Snippet callables                       |       0 |
-| **Total**                               | **302** |
+| Classification | Count |
+| --- | ---: |
+| Function declarations | 82 |
+| Methods | 114 |
+| Constructors | 10 |
+| Getters | 2 |
+| Function-valued declarations/properties | 76 |
+| Synchronous callbacks | 99 |
+| Async callbacks | 1 |
+| Markup callbacks | 16 |
+| **Total** | **400** |
 
-The inventory should be regenerated from a frozen source tree before assigning manual reviewers. Review evidence should refer to the exact `id`, `sourceHash`, and `spanHash` from that generation. Discovery counts, compiler parsing, and fixture tests establish coverage mechanics only; they do not establish that the discovered code has been substantively reviewed or that a workflow passed.
-
-## Commands
-
-From the repository root:
+Regenerate from a frozen source tree before assigning reviewers. Evidence should identify the exact inventory `id`, `sourceHash`, and `spanHash`.
 
 ```powershell
 node scripts/frontend-source-inventory.mjs
@@ -69,4 +69,4 @@ node scripts/frontend-source-inventory.mjs --check
 node --test scripts/frontend-source-inventory.test.mjs
 ```
 
-The generator resolves compiler packages through `nuclear-app/package.json`, so it does not depend on a global Node package installation or add dependencies.
+The generator resolves compilers through `nuclear-app/package.json`; it does not require a global Node installation or add dependencies.

@@ -24,6 +24,78 @@ const { parse: parseSvelte } = requireFromFrontend("svelte/compiler");
 
 const OWNERSHIP = new Map([
   [
+    "src/lib/frontend-types.ts",
+    {
+      responsibility:
+        "Define shared renderer presentation types and existing format defaults.",
+      workflows: ["queue", "inspection", "settings"],
+    },
+  ],
+  [
+    "src/lib/frontend-errors.ts",
+    {
+      responsibility:
+        "Preserve existing user-facing error normalization and diagnostic detail.",
+      workflows: ["inspection", "download", "diagnostics"],
+    },
+  ],
+  [
+    "src/lib/frontend-workflow-ports.ts",
+    {
+      responsibility:
+        "Declare typed command, operation-wait, and lifetime dependencies.",
+      workflows: ["ipc", "startup", "cancellation"],
+    },
+  ],
+  [
+    "src/lib/queue-presentation.ts",
+    {
+      responsibility:
+        "Own queue projection, progress presentation, selection, and filename drafts.",
+      workflows: ["queue", "download", "state-sync"],
+    },
+  ],
+  [
+    "src/lib/inspection-workflow.ts",
+    {
+      responsibility:
+        "Own URL and playlist inspection, admission, cancellation, and their display state.",
+      workflows: ["inspection", "queue", "cancellation"],
+    },
+  ],
+  [
+    "src/lib/queue-actions.ts",
+    {
+      responsibility:
+        "Own queue command ordering, optimistic cancellation, retries, and settings changes.",
+      workflows: ["queue", "download", "cancellation"],
+    },
+  ],
+  [
+    "src/lib/runtime-workflow.ts",
+    {
+      responsibility:
+        "Own runtime checks, repair/update workflows, and runtime presentation state.",
+      workflows: ["startup", "runtime-update"],
+    },
+  ],
+  [
+    "src/lib/app-update-workflow.ts",
+    {
+      responsibility:
+        "Own application version, update checks, installation, and update dialog state.",
+      workflows: ["startup", "app-update"],
+    },
+  ],
+  [
+    "src/lib/settings-diagnostics-workflow.ts",
+    {
+      responsibility:
+        "Own output/cookie settings and diagnostic export, clear, and copy workflows.",
+      workflows: ["startup", "settings", "diagnostics"],
+    },
+  ],
+  [
     "src/routes/+page.svelte",
     {
       responsibility:
