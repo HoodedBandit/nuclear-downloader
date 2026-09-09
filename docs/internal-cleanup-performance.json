@@ -1,0 +1,297 @@
+{
+  "schemaVersion": "internal-cleanup-performance-baseline/v1",
+  "comparisonCommit": "df582df4ddc566712729b7006dfb080374c5ef45",
+  "candidateQualification": false,
+  "status": "baseline-recorded-existing-frame-target-failed",
+  "limitations": [
+    "Single baseline run at each queue size; matched repeats and candidate comparison pending.",
+    "Headless Chrome browser emulation on the host; no native WebView2 qualification.",
+    "The idle-renderer control also exceeds the frame target; no host display setting was changed.",
+    "JavaScript heap observations exclude native, browser-process, and GPU memory."
+  ],
+  "existingFrameP95ThresholdMs": 16.7,
+  "runs": [
+    {
+      "evidencePath": "target/renderer-checks/performance-20260909T054141Z-47c6e8cd59944585962b81d42b05724d",
+      "receiptSha256": "2f2de45f1f24a92354e5411516a94126c05a8d1f475c4b19e1f617d195bdaeb3",
+      "metricsSha256": "51e02a98b60b5a0b3413234199b6dc290bdbe5b001de58cc9453e2ea48bec88f",
+      "source": {
+        "commit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+        "productionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+        "manifest": {
+          "path": "production-manifest.json",
+          "sha256": "3ea6d6e430f4948f1b2febfd394ba4668adc1b1677159520c3f2bfc28d970e5f"
+        }
+      },
+      "harness": {
+        "hash": "7dff2b7474c644449198227cc915555715404b9d26be63de852980dae1e6cb67",
+        "manifest": {
+          "path": "harness-manifest.json",
+          "sha256": "e9ed10ec777e1b1e71d923a93fed4142d2c90b9eef0964fb298c1e76468914c2"
+        }
+      },
+      "executables": {
+        "node": {
+          "path": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\toolchains\\node-v22.23.1-win-x64\\node.exe",
+          "size": 86989128,
+          "sha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+          "version": "v22.23.1"
+        },
+        "browser": {
+          "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "size": 4484760,
+          "sha256": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0",
+          "version": "152.0.7977.76"
+        },
+        "driver": {
+          "path": "C:\\Users\\Mr.W\\AppData\\Local\\Temp\\chromedriver\\win64-152.0.7977.76\\chromedriver-win64\\chromedriver.exe",
+          "size": 23805952,
+          "sha256": "4a35f44f324cfe2bb37194447a419bd72a382a5f1a4e87d4305b9b674d1cb212",
+          "version": "ChromeDriver 152.0.7977.76 (0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174-refs/branch-heads/7977@{#2216})"
+        }
+      },
+      "windowsBuild": "26200.9445",
+      "startedAtUtc": "2026-09-09T05:41:42.4796157Z",
+      "inputsVerifiedAfter": true,
+      "testExitCode": 1,
+      "measured": {
+        "queueSize": 1,
+        "activeOperations": 1,
+        "dispatched": 1500,
+        "elapsedMs": 59986.79999999702,
+        "reducerP95Ms": 0,
+        "progressDispatchP95Ms": 0.10000000149011612,
+        "stateDeltaDispatchP95Ms": 0.30000000074505806,
+        "frameP95Ms": 19.599999999998545,
+        "inputToPaintMs": 18.099999997764826,
+        "longestTaskMs": 0,
+        "distributions": {
+          "idleFrame": {
+            "samples": 300,
+            "p50Ms": 12.299999999999955,
+            "p95Ms": 19.40000000000009,
+            "p99Ms": 20.699999999999818
+          },
+          "workloadFrame": {
+            "samples": 4556,
+            "p50Ms": 12.900000000001455,
+            "p95Ms": 19.599999999998545,
+            "p99Ms": 20.600000000000364
+          },
+          "reducer": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "p99Ms": 0.09999999776482582
+          },
+          "progressDispatch": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0.10000000149011612,
+            "p99Ms": 0.19999999925494194
+          },
+          "stateDeltaDispatch": {
+            "samples": 3000,
+            "p50Ms": 0.10000000149011612,
+            "p95Ms": 0.30000000074505806,
+            "p99Ms": 0.5999999977648258
+          }
+        },
+        "javascriptHeap": {
+          "usedBytes": 12919914,
+          "totalBytes": 14939306,
+          "limitBytes": 4395630592,
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      }
+    },
+    {
+      "evidencePath": "target/renderer-checks/performance-20260909T054329Z-1b7e01c86ea34a0cbc2092136cb21d0b",
+      "receiptSha256": "87d6fec025862a81027c5f0eacff83754ab4ecd0eba41844d3bc16caeb75b67b",
+      "metricsSha256": "717063e528f98e0c9616633e4ac71733df0b43b15d56964c27055ff7edd02c2e",
+      "source": {
+        "commit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+        "productionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+        "manifest": {
+          "path": "production-manifest.json",
+          "sha256": "3ea6d6e430f4948f1b2febfd394ba4668adc1b1677159520c3f2bfc28d970e5f"
+        }
+      },
+      "harness": {
+        "hash": "7dff2b7474c644449198227cc915555715404b9d26be63de852980dae1e6cb67",
+        "manifest": {
+          "path": "harness-manifest.json",
+          "sha256": "e9ed10ec777e1b1e71d923a93fed4142d2c90b9eef0964fb298c1e76468914c2"
+        }
+      },
+      "executables": {
+        "node": {
+          "path": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\toolchains\\node-v22.23.1-win-x64\\node.exe",
+          "size": 86989128,
+          "sha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+          "version": "v22.23.1"
+        },
+        "browser": {
+          "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "size": 4484760,
+          "sha256": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0",
+          "version": "152.0.7977.76"
+        },
+        "driver": {
+          "path": "C:\\Users\\Mr.W\\AppData\\Local\\Temp\\chromedriver\\win64-152.0.7977.76\\chromedriver-win64\\chromedriver.exe",
+          "size": 23805952,
+          "sha256": "4a35f44f324cfe2bb37194447a419bd72a382a5f1a4e87d4305b9b674d1cb212",
+          "version": "ChromeDriver 152.0.7977.76 (0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174-refs/branch-heads/7977@{#2216})"
+        }
+      },
+      "windowsBuild": "26200.9445",
+      "startedAtUtc": "2026-09-09T05:43:30.1625669Z",
+      "inputsVerifiedAfter": true,
+      "testExitCode": 1,
+      "measured": {
+        "queueSize": 100,
+        "activeOperations": 5,
+        "dispatched": 1500,
+        "elapsedMs": 59820.699999999255,
+        "reducerP95Ms": 0,
+        "progressDispatchP95Ms": 0.10000000149011612,
+        "stateDeltaDispatchP95Ms": 0.30000000074505806,
+        "frameP95Ms": 20.599999999998545,
+        "inputToPaintMs": 18.399999998509884,
+        "longestTaskMs": 0,
+        "distributions": {
+          "idleFrame": {
+            "samples": 300,
+            "p50Ms": 12.400000000000091,
+            "p95Ms": 20,
+            "p99Ms": 20.700000000000273
+          },
+          "workloadFrame": {
+            "samples": 4158,
+            "p50Ms": 14.60000000000582,
+            "p95Ms": 20.599999999998545,
+            "p99Ms": 20.69999999999709
+          },
+          "reducer": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "p99Ms": 0
+          },
+          "progressDispatch": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0.10000000149011612,
+            "p99Ms": 0.19999999925494194
+          },
+          "stateDeltaDispatch": {
+            "samples": 3000,
+            "p50Ms": 0.09999999776482582,
+            "p95Ms": 0.30000000074505806,
+            "p99Ms": 0.5
+          }
+        },
+        "javascriptHeap": {
+          "usedBytes": 11366944,
+          "totalBytes": 16251624,
+          "limitBytes": 4395630592,
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      }
+    },
+    {
+      "evidencePath": "target/renderer-checks/performance-20260909T054505Z-bb51d4b741794565b0d54ff11c9d7880",
+      "receiptSha256": "cc06d697b443698c8764db0b52e1713b2d26017748ebb8d73f87ca17526a0048",
+      "metricsSha256": "d2a111e3bf8e096ad587b2d6fd69de13b82a454c463cde9ff7bb9204052627f4",
+      "source": {
+        "commit": "5504f2284c96838f2895e9fbff0e2fd7eef60561",
+        "productionHash": "2f7edd48e66dfba3addbe32070e24062a23c2413afc8dadd973382be2fc7f154",
+        "manifest": {
+          "path": "production-manifest.json",
+          "sha256": "3ea6d6e430f4948f1b2febfd394ba4668adc1b1677159520c3f2bfc28d970e5f"
+        }
+      },
+      "harness": {
+        "hash": "7dff2b7474c644449198227cc915555715404b9d26be63de852980dae1e6cb67",
+        "manifest": {
+          "path": "harness-manifest.json",
+          "sha256": "e9ed10ec777e1b1e71d923a93fed4142d2c90b9eef0964fb298c1e76468914c2"
+        }
+      },
+      "executables": {
+        "node": {
+          "path": "J:\\Nuclear AI box\\nuclear-downloader\\nuclear-app\\src-tauri\\target\\toolchains\\node-v22.23.1-win-x64\\node.exe",
+          "size": 86989128,
+          "sha256": "f8d162c0641dcee512132f3bcf8a68169c7ecb852efd8e1a46c9fec5a0f469ed",
+          "version": "v22.23.1"
+        },
+        "browser": {
+          "path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+          "size": 4484760,
+          "sha256": "17b09f4c2e7806a05b0b648e7d459c3e3868f215adc93fa887adc3892bc704c0",
+          "version": "152.0.7977.76"
+        },
+        "driver": {
+          "path": "C:\\Users\\Mr.W\\AppData\\Local\\Temp\\chromedriver\\win64-152.0.7977.76\\chromedriver-win64\\chromedriver.exe",
+          "size": 23805952,
+          "sha256": "4a35f44f324cfe2bb37194447a419bd72a382a5f1a4e87d4305b9b674d1cb212",
+          "version": "ChromeDriver 152.0.7977.76 (0d89dfa2dd7c1ec4b8a14b9f303f887bb63b6174-refs/branch-heads/7977@{#2216})"
+        }
+      },
+      "windowsBuild": "26200.9445",
+      "startedAtUtc": "2026-09-09T05:45:06.5396096Z",
+      "inputsVerifiedAfter": true,
+      "testExitCode": 1,
+      "measured": {
+        "queueSize": 1000,
+        "activeOperations": 5,
+        "dispatched": 1500,
+        "elapsedMs": 59833.39999999851,
+        "reducerP95Ms": 0,
+        "progressDispatchP95Ms": 0.10000000149011612,
+        "stateDeltaDispatchP95Ms": 0.20000000298023224,
+        "frameP95Ms": 20.59999999999127,
+        "inputToPaintMs": 30.100000001490116,
+        "longestTaskMs": 0,
+        "distributions": {
+          "idleFrame": {
+            "samples": 300,
+            "p50Ms": 13.599999999999909,
+            "p95Ms": 20.59999999999991,
+            "p99Ms": 20.799999999999955
+          },
+          "workloadFrame": {
+            "samples": 4271,
+            "p50Ms": 13.80000000000291,
+            "p95Ms": 20.59999999999127,
+            "p99Ms": 20.69999999999709
+          },
+          "reducer": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "p99Ms": 0.09999999776482582
+          },
+          "progressDispatch": {
+            "samples": 1500,
+            "p50Ms": 0,
+            "p95Ms": 0.10000000149011612,
+            "p99Ms": 0.19999999925494194
+          },
+          "stateDeltaDispatch": {
+            "samples": 3000,
+            "p50Ms": 0.09999999776482582,
+            "p95Ms": 0.20000000298023224,
+            "p99Ms": 0.4000000022351742
+          }
+        },
+        "javascriptHeap": {
+          "usedBytes": 14767832,
+          "totalBytes": 18873064,
+          "limitBytes": 4395630592,
+          "scope": "Chromium-reported JavaScript heap; excludes native and GPU memory"
+        }
+      }
+    }
+  ]
+}

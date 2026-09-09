@@ -1,0 +1,37 @@
+# Frontend behavior baseline
+
+The comparison application remains `df582df4ddc566712729b7006dfb080374c5ef45`. This checklist describes executed renderer fixtures and the existing unit tests that will constrain ownership extraction. Renderer commands are mocked; passing these fixtures does not prove native subprocess, filesystem, installer, or extractor behavior.
+
+The independent renderer cases in `nuclear-app/e2e/browser/renderer-workflows.e2e.mjs` passed together on Chrome 152.0.7977.76 with an owned headless profile. Receipt: `target/renderer-checks/workflows-20260909T054758Z-8d5d9a9d93ba4bebabd08a49f8b877eb/run-receipt.json`. All 11 cases passed, and the runner verified that its source, harness, and executable identities remained unchanged.
+
+| Observable workflow                                                                                                                    | Renderer case                                                                    | Complementary unit owner                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Inspection admission, queue insertion, download priority, progress, Cancel All, item cancellation, retry, removal, and reload recovery | `covers queue actions, cancellation, retry, removal, and reload reconciliation`  | `queue-logic.test.ts`, `operation-reducer.test.ts`, `operation-wait-registry.test.ts` |
+| Rejected item cancellation restores the row and displays existing diagnostics                                                          | `restores a running row and exposes diagnostics when item cancellation fails`    | `operation-reducer.test.ts`                                                           |
+| Inspection cancellation sends the admitted ID and clears loading without a failure message                                             | `cancels an in-flight inspection without displaying a failure`                   | `operation-wait-registry.test.ts`                                                     |
+| Playlist selection admits the selected child inspection and queue item                                                                 | `covers playlist selection and child inspection`                                 | `queue-logic.test.ts`                                                                 |
+| Filename validation, extension/reserved-name sanitization, Enter, Escape, and blur commit                                              | `covers filename sanitizing plus Enter, Escape, and blur editing`                | Backend filename/publication regressions remain authoritative for destination safety. |
+| Existing quality/format and output/cookie/compatibility path controls retain command payloads                                          | `covers settings and output, cookie, and compatibility paths`                    | `ipc-client.test.ts`, `queue-logic.test.ts`                                           |
+| Diagnostic export/clear and persistence-degraded display                                                                               | `covers diagnostics and persistence degradation`                                 | `backend-state.test.ts`, `startup-state.test.ts`                                      |
+| Explicit backend resync requests refresh the rendered queue                                                                            | `reloads the authoritative snapshot when the backend requests resynchronization` | `app-state-controller.test.ts`, `state-reconciler.test.ts`                            |
+| Queue-setting rejection reloads authority; diagnostic export rejection uses the existing error display                                 | `shows focused command failures and reconciles failed queue settings`            | `ipc-client.test.ts`, `app-state-controller.test.ts`                                  |
+| Runtime checks, progress error presentation, operation settlement, and ready display                                                   | `covers runtime refresh and runtime update completion`                           | `startup-state.test.ts`, `operation-wait-registry.test.ts`                            |
+| App-update details, version payload, progress error, completion, modal initial focus, Escape, inert background, and focus restoration  | `covers app update details and completion`                                       | `accessible-dialog.test.ts`, `operation-wait-registry.test.ts`                        |
+
+Each case starts with a fresh renderer mount and restores the prior IPC mocks. Tests use real UI interactions and public mocked commands/events; they do not reach into Svelte component internals. Filename text replacement uses actual keyboard selection and typing because WebDriver's clear-value operation can trigger the application's blur commit.
+
+The source ownership inventory in `frontend-source-inventory.json` identifies the 280 current callables and their responsibilities. It is compiler-backed discovery, not a completed method review. New owners introduced during extraction must receive explicit responsibility mappings and regression links, and changed source identities require renewed review.
+
+## Visual and keyboard matrix
+
+The capture spec covers ten states at 800×500, 1000×700, and 1440×1000 CSS pixels, with separate browser-scale 1 and 1.5 runs and two fresh captures per scenario. It records screenshots, displayed text, geometry, enabled/disabled controls, initial focus, and actual forward-Tab order. Modal layers are siblings of the application main element and must be included explicitly in semantic evidence.
+
+Capture execution and comparator acceptance are separate gates. `frontend-visual-contract.md` defines the paired-run contract, input archives, decoded-pixel comparison, stable-repeat requirement, and deliberate mutation fixtures. No screenshot is automatically promoted because a run completed. Browser scale emulation does not qualify real Windows display scaling or WebView2 rendering.
+
+The unchanged 800-pixel-wide populated and persistence-degraded layouts expose a baseline quirk: the filename title button has a zero-width rectangle but remains enabled and reachable through real Tab navigation. The capture records both facts. A Tab-order entry must identify an enabled element; its initial screenshot visibility is compared independently and must not be inferred from focusability. This finding is retained for a later interface decision. No layout fix is included in the internal cleanup.
+
+## Timing evidence
+
+`performance-acceptance.e2e.mjs` now supports 1, 100, and 1,000 queue items while preserving the existing 25 progress events per second workload and all existing thresholds. It retains raw samples, p50/p95/p99 distributions, an idle-renderer frame control before startup, and Chromium's limited JavaScript heap observation.
+
+The unchanged application currently fails the frame p95 threshold in this headless environment; the idle control fails it as well. See `internal-cleanup.md` for the exact measurements and evidence paths. Neither a low state-update time nor a failed idle control substitutes for passing performance qualification. Matching repeat and candidate comparisons remain required.

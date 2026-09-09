@@ -28,6 +28,22 @@ Evidence below was collected before production changes. UTC run identifiers can 
 
 Initial renderer receipts predate the strengthened source/harness archive contract. They remain diagnostic evidence and must not be presented as accepted baseline receipts. The canonical baseline will use fresh, matching runner receipts with archived inputs and validated repeat stability.
 
+The strengthened runner now archives exact production and harness inputs, including untracked source files, generated bindings, static assets, and build configuration. A fixture using its real input enumerator passed: source edits and newly added source files invalidate the after-run check, while archived bytes remain unchanged. Its receipts also bind the Node, Chrome, and driver hashes and record both browser emulation and the actual host display scale.
+
+Svelte/TypeScript checking, strict ESLint, frontend formatting, a fresh production build, and production-bundle test-hook exclusion checks passed after the Stage 1 harness additions.
+
+The expanded workflow rerun at `target/renderer-checks/workflows-20260909T053917Z-c5e3a95f30b44b4396aa5a2f1e5a0383/` passed nine cases and failed two new test interactions. Filename editing was affected by WebDriver's clear-value behavior, which triggers the application's existing blur commit. The test now uses actual keyboard selection and typing. The update dialog test now reacquires its element after Escape removes and reopening recreates it. The corrected run at `target/renderer-checks/workflows-20260909T054758Z-8d5d9a9d93ba4bebabd08a49f8b877eb/` passed all 11 cases and verified unchanged inputs. `frontend-behavior-baseline.md` maps these cases to their observable workflows and complementary unit tests.
+
+The timing runs with raw samples and an idle-renderer control retained the existing failure:
+
+| Queue | Idle frame p95 | Workload frame p95 | State-delta dispatch p95 | Input-to-paint | Receipt directory under `target/renderer-checks/`               |
+| ----- | -------------: | -----------------: | -----------------------: | -------------: | --------------------------------------------------------------- |
+| 1     |        19.4 ms |            19.6 ms |                   0.3 ms |        18.1 ms | `performance-20260909T054141Z-47c6e8cd59944585962b81d42b05724d` |
+| 100   |        20.0 ms |            20.6 ms |                   0.3 ms |        18.4 ms | `performance-20260909T054329Z-1b7e01c86ea34a0cbc2092136cb21d0b` |
+| 1,000 |        20.6 ms |            20.6 ms |                   0.2 ms |        30.1 ms | `performance-20260909T054505Z-bb51d4b741794565b0d54ff11c9d7880` |
+
+All three runs verified that inputs and executable identities remained unchanged. All failed the existing workload-frame target of p95 <16.7 ms. The idle control also exceeded that target before application startup, which is evidence of an environmental contribution, not an application performance pass. Raw distributions and the limited Chromium-reported JavaScript heap measurements are retained in each `performance.json`. These are single-run baseline observations; matched repeat and candidate comparisons remain pending.
+
 ## Remaining gates
 
 1. Finish Stage 1: corrected and expanded workflow runs, stable visual captures at both browser scales, deliberate comparator mutation tests, and 1/100/1,000-item frontend measurements. Investigate the existing frame-time failure without weakening its threshold.

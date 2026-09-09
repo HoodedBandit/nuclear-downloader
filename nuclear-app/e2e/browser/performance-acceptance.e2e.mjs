@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
 
-const ROW_COUNT = 1_000;
-const ACTIVE_COUNT = 5;
+const ROW_COUNT = Number(process.env.NUCLEAR_E2E_QUEUE_SIZE ?? '1000');
+if (![1, 100, 1000].includes(ROW_COUNT)) {
+  throw new Error('NUCLEAR_E2E_QUEUE_SIZE must be 1, 100, or 1000.');
+}
+const ACTIVE_COUNT = Math.min(5, ROW_COUNT);
 const PROGRESS_EVENTS_PER_SECOND = 25;
 const TEST_SECONDS = 60;
 const EXPECTED_EVENTS = PROGRESS_EVENTS_PER_SECOND * TEST_SECONDS;
@@ -9,6 +14,15 @@ const EXPECTED_EVENTS = PROGRESS_EVENTS_PER_SECOND * TEST_SECONDS;
 function percentile(values, percentileValue) {
   const sorted = [...values].sort((left, right) => left - right);
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * percentileValue))];
+}
+
+function distribution(values) {
+  return {
+    samples: values.length,
+    p50Ms: percentile(values, 0.5),
+    p95Ms: percentile(values, 0.95),
+    p99Ms: percentile(values, 0.99)
+  };
 }
 
 function queueItem(index) {
@@ -125,7 +139,20 @@ async function preparePerformanceRenderer() {
 }
 
 describe('renderer performance acceptance', () => {
-  it('meets the 1,000-row sustained progress thresholds', async () => {
+  it(`meets the ${ROW_COUNT}-row sustained progress thresholds`, async () => {
+    // Measure the same renderer clock while startup is still gated. This is
+    // diagnostic context for frame-budget failures, never a replacement budget.
+    const idleFrameDurations = await browser.executeAsync((done) => {
+      const durations = [];
+      let previous;
+      const sample = (timestamp) => {
+        if (previous !== undefined) durations.push(timestamp - previous);
+        previous = timestamp;
+        if (durations.length < 300) requestAnimationFrame(sample);
+        else done(durations);
+      };
+      requestAnimationFrame(sample);
+    });
     await preparePerformanceRenderer();
 
     const metrics = await browser.executeAsync(
@@ -182,9 +209,10 @@ describe('renderer performance acceptance', () => {
 
         const startedAt = performance.now();
         let stateSequence = 1;
-        const ticks = seconds * 5;
+        const ticks = expectedEvents / activeCount;
+        const tickIntervalMs = (seconds * 1000) / ticks;
         for (let tick = 0; tick < ticks; tick += 1) {
-          const target = startedAt + tick * 200;
+          const target = startedAt + tick * tickIntervalMs;
           const delay = target - performance.now();
           if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
           for (let active = 0; active < activeCount; active += 1) {
@@ -286,6 +314,14 @@ describe('renderer performance acceptance', () => {
           stateDispatchDurations,
           frameDurations: frameDurations.slice(2),
           longTasks,
+          javascriptHeap: performance.memory
+            ? {
+                usedBytes: performance.memory.usedJSHeapSize,
+                totalBytes: performance.memory.totalJSHeapSize,
+                limitBytes: performance.memory.jsHeapSizeLimit,
+                scope: 'Chromium-reported JavaScript heap; excludes native and GPU memory'
+              }
+            : null,
           inputToPaint,
           dispatched: dispatchDurations.length,
           elapsed: performance.now() - startedAt
@@ -297,6 +333,8 @@ describe('renderer performance acceptance', () => {
     );
 
     const measured = {
+      queueSize: ROW_COUNT,
+      activeOperations: ACTIVE_COUNT,
       dispatched: metrics.dispatched,
       elapsedMs: metrics.elapsed,
       reducerP95Ms: percentile(metrics.reducerDurations, 0.95),
@@ -304,9 +342,24 @@ describe('renderer performance acceptance', () => {
       stateDeltaDispatchP95Ms: percentile(metrics.stateDispatchDurations, 0.95),
       frameP95Ms: percentile(metrics.frameDurations, 0.95),
       inputToPaintMs: metrics.inputToPaint,
-      longestTaskMs: metrics.longTasks.length === 0 ? 0 : Math.max(...metrics.longTasks)
+      longestTaskMs: metrics.longTasks.length === 0 ? 0 : Math.max(...metrics.longTasks),
+      distributions: {
+        idleFrame: distribution(idleFrameDurations),
+        workloadFrame: distribution(metrics.frameDurations),
+        reducer: distribution(metrics.reducerDurations),
+        progressDispatch: distribution(metrics.dispatchDurations),
+        stateDeltaDispatch: distribution(metrics.stateDispatchDurations)
+      },
+      javascriptHeap: metrics.javascriptHeap
     };
     console.log(`PERFORMANCE_ACCEPTANCE ${JSON.stringify(measured)}`);
+    if (process.env.NUCLEAR_RENDERER_OUTPUT_DIRECTORY) {
+      writeFileSync(
+        path.join(process.env.NUCLEAR_RENDERER_OUTPUT_DIRECTORY, 'performance.json'),
+        `${JSON.stringify({ schemaVersion: 'renderer-performance/v1', measured, raw: { ...metrics, idleFrameDurations } }, null, 2)}\n`,
+        { flag: 'wx' }
+      );
+    }
 
     assert.equal(metrics.dispatched, EXPECTED_EVENTS, 'Sustained progress event count drifted.');
     assert.ok(

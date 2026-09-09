@@ -1,278 +1,97 @@
 import assert from 'node:assert/strict';
+import { Key } from 'webdriverio';
+import {
+  IDS,
+  applyDelta,
+  childVideo,
+  initialSnapshot,
+  operation,
+  queueItem,
+  registerRenderer,
+  video,
+  waitForMockCalls
+} from './support/renderer-fixture.mjs';
 
-const IDS = {
-  videoInspection: '10000000-0000-4000-8000-000000000001',
-  playlistInspection: '10000000-0000-4000-8000-000000000002',
-  childInspection: '10000000-0000-4000-8000-000000000003',
-  item: '20000000-0000-4000-8000-000000000001',
-  playlistItem: '20000000-0000-4000-8000-000000000002',
-  download: '30000000-0000-4000-8000-000000000001',
-  runtime: '40000000-0000-4000-8000-000000000001',
-  appUpdate: '50000000-0000-4000-8000-000000000001'
-};
+let previousMocks = [];
 
-const initialSnapshot = {
-  schemaVersion: 1,
-  queue: [],
-  operations: [],
-  runtimeReadiness: 'ready',
-  maintenanceActive: false,
-  draining: false,
-  persistenceHealth: { degraded: false, error: null },
-  latestSequence: 1
-};
-
-const video = {
-  id: 'fixture-video',
-  title: 'Fixture Video',
-  duration: 15,
-  channel: 'Fixture Channel',
-  thumbnail: null,
-  url: 'https://fixture.test/video',
-  available_qualities: ['1080p', '720p'],
-  has_audio: true
-};
-
-const childVideo = {
-  ...video,
-  id: 'playlist-child-1',
-  title: 'Playlist Child One',
-  url: 'https://fixture.test/child-1'
-};
-
-function queueItem(id, info, now = 10) {
-  return {
-    schemaVersion: 1,
-    id,
-    sourceUrl: info.url,
-    title: info.title,
-    availableQualities: ['best', ...info.available_qualities],
-    hasAudio: info.has_audio,
-    cookieConfig: null,
-    format: 'mp4',
-    quality: 'best',
-    outputDir: 'C:\\fixture-output',
-    filenameOverride: null,
-    compatConfigPath: null,
-    state: 'inert',
-    latestOperationId: null,
-    createdAtMs: now,
-    updatedAtMs: now
+async function startRenderer(seed = initialSnapshot) {
+  const state = { snapshot: structuredClone(seed), mocks: null };
+  await browser.refresh();
+  state.mocks = await registerRenderer(state.snapshot, previousMocks);
+  previousMocks = Object.values(state.mocks);
+  state.emit = async (kind, value) => {
+    const delta = {
+      schemaVersion: 1,
+      sequence: state.snapshot.latestSequence + 1,
+      emittedAtMs: Date.now(),
+      kind,
+      value
+    };
+    state.snapshot = applyDelta(state.snapshot, delta);
+    await browser.execute((next) => {
+      window.__NUCLEAR_E2E_SNAPSHOT__ = next;
+    }, state.snapshot);
+    await browser.tauri.emitEvent('app-state-changed', delta);
   };
+  return state;
 }
 
-function operation(id, kind, state, overrides = {}) {
-  return {
-    schemaVersion: 1,
-    id,
-    queueItemId: null,
-    kind,
-    state,
-    progress: state === 'completed' ? 100 : 0,
-    phase: null,
-    sequence: 1,
-    createdAtMs: 10,
-    updatedAtMs: 10,
-    finishedAtMs: state === 'completed' || state === 'cancelled' ? 10 : null,
-    error: null,
-    inspectionResult: null,
-    publishedOutput: null,
-    intendedTerminalOutcome: null,
-    correlationId: `correlation-${id}`,
-    ...overrides
-  };
-}
-
-function applyDelta(snapshot, delta) {
-  const next = { ...snapshot, latestSequence: delta.sequence };
-  if (delta.kind === 'queue_item_upserted') {
-    next.queue = [...snapshot.queue.filter((item) => item.id !== delta.value.id), delta.value];
-  } else if (delta.kind === 'operation_upserted') {
-    next.operations = [
-      ...snapshot.operations.filter((item) => item.id !== delta.value.id),
-      delta.value
-    ];
-  } else if (delta.kind === 'queue_items_removed') {
-    next.queue = snapshot.queue.filter((item) => !delta.value.includes(item.id));
-  } else if (delta.kind === 'operation_removed') {
-    next.operations = snapshot.operations.filter((item) => item.id !== delta.value);
-  } else if (delta.kind === 'runtime_readiness_changed') {
-    next.runtimeReadiness = delta.value;
-  } else if (delta.kind === 'maintenance_changed') {
-    next.maintenanceActive = delta.value.active;
-    next.draining = delta.value.draining;
-  }
-  return next;
-}
-
-async function waitForMockCalls(mock, count) {
-  await browser.waitUntil(
-    async () => {
-      await mock.update();
-      return mock.mock.calls.length >= count;
-    },
-    { timeout: 10_000, timeoutMsg: `Expected ${count} command calls.` }
-  );
-}
-
-async function registerRenderer(snapshot, oldMocks = []) {
-  for (const mock of oldMocks) await mock.mockRestore();
-
-  await browser.execute((value) => {
-    window.__NUCLEAR_E2E_SNAPSHOT__ = value;
-    window.confirm = () => true;
-  }, snapshot);
-
-  const commands = [
-    'get_app_snapshot',
-    'check_downloader_runtime',
-    'check_runtime_update',
-    'default_download_dir',
-    'validate_output_directory',
-    'check_app_update',
-    'begin_inspection',
-    'add_inspection_result_to_queue',
-    'enqueue_queue_items',
-    'cancel_operation',
-    'cancel_all_downloads',
-    'dismiss_operation',
-    'begin_runtime_update',
-    'begin_app_update',
-    'export_diagnostics',
-    'clear_diagnostics',
-    'plugin:dialog|save'
-  ];
-  const entries = await Promise.all(
-    commands.map(async (command) => [command, await browser.tauri.mock(command)])
-  );
-  const mocks = Object.fromEntries(entries);
-
-  await mocks.get_app_snapshot.mockImplementation(() => window.__NUCLEAR_E2E_SNAPSHOT__);
-  await mocks.check_downloader_runtime.mockResolvedValue({
-    state: 'ready',
-    runtimeVersion: '2026.7.4',
-    source: 'fixture',
-    updateAvailable: false,
-    latestRuntimeVersion: null,
-    runtimeDir: 'C:\\fixture-runtime',
-    pluginDir: 'C:\\fixture-plugins',
-    message: null,
-    tools: [
-      {
-        name: 'yt-dlp',
-        required: true,
-        available: true,
-        version: 'fixture',
-        path: null,
-        source: 'fixture',
-        error: null
-      }
-    ]
-  });
-  await mocks.check_runtime_update.mockResolvedValue({
-    updateAvailable: true,
-    latestRuntimeVersion: '2026.8.1',
-    message: 'Signed fixture runtime is available.'
-  });
-  await mocks.default_download_dir.mockResolvedValue('C:\\fixture-output');
-  await mocks.validate_output_directory.mockResolvedValue('C:\\fixture-output');
-  await mocks.check_app_update.mockResolvedValue({
-    currentVersion: '0.6.0',
-    hasUpdate: true,
-    latestVersion: '0.6.1',
-    notes: 'Fixture release notes',
-    publishedAt: '2026-08-17T12:00:00Z',
-    installerName: 'Nuclear.Downloader_0.6.1_x64-setup.exe'
-  });
-  await mocks.begin_inspection.mockResolvedValue({ operationId: IDS.videoInspection });
-  await mocks.add_inspection_result_to_queue.mockResolvedValue(queueItem(IDS.item, video));
-  await mocks.enqueue_queue_items.mockResolvedValue([{ operationId: IDS.download }]);
-  await mocks.cancel_operation.mockResolvedValue({
-    operationId: IDS.download,
-    state: 'cancelling'
-  });
-  await mocks.cancel_all_downloads.mockResolvedValue({
-    idle: false,
-    remainingOperationIds: [IDS.download]
-  });
-  await mocks.dismiss_operation.mockResolvedValue(null);
-  await mocks.begin_runtime_update.mockResolvedValue({ operationId: IDS.runtime });
-  await mocks.begin_app_update.mockResolvedValue({ operationId: IDS.appUpdate });
-  await mocks.export_diagnostics.mockResolvedValue(null);
-  await mocks.clear_diagnostics.mockResolvedValue(null);
-  await mocks['plugin:dialog|save'].mockResolvedValue('C:\\fixture-output\\diagnostics.jsonl');
-
-  await browser.waitUntil(
-    () => browser.execute(() => typeof window.__NUCLEAR_WEBDRIVER_RELEASE_STARTUP__ === 'function'),
-    { timeout: 10_000, timeoutMsg: 'WebDriver-only startup gate was not installed.' }
-  );
-  await browser.execute(() => window.__NUCLEAR_WEBDRIVER_RELEASE_STARTUP__());
-  await $('button=Add').waitForEnabled();
-  return mocks;
+async function replaceFilenameDraft(value) {
+  const editor = await $('input[aria-label="Edit queued filename"]');
+  await editor.waitForDisplayed({ timeoutMsg: 'Queued filename editor did not open.' });
+  await editor.click();
+  await browser.keys([Key.Ctrl, 'a']);
+  await browser.keys(value);
+  return editor;
 }
 
 describe('renderer workflows with deterministic Tauri IPC', () => {
-  it('covers queueing, cancellation, reload reconciliation, playlists, diagnostics, and updates', async () => {
-    let snapshot = structuredClone(initialSnapshot);
-    let mocks = await registerRenderer(snapshot);
-
+  it('covers queue actions, cancellation, retry, removal, and reload reconciliation', async () => {
+    const fixture = await startRenderer();
+    let { mocks } = fixture;
     const sourceUrlInput = await $('#video-url');
     assert.equal(await sourceUrlInput.getAttribute('autocomplete'), 'off');
     assert.equal(await sourceUrlInput.getAttribute('autocapitalize'), 'none');
     assert.equal(await sourceUrlInput.getAttribute('spellcheck'), 'false');
     assert.equal(await sourceUrlInput.getAttribute('aria-autocomplete'), 'none');
 
-    async function emit(kind, value) {
-      const delta = {
-        schemaVersion: 1,
-        sequence: snapshot.latestSequence + 1,
-        emittedAtMs: Date.now(),
-        kind,
-        value
-      };
-      snapshot = applyDelta(snapshot, delta);
-      await browser.execute((next) => {
-        window.__NUCLEAR_E2E_SNAPSHOT__ = next;
-      }, snapshot);
-      await browser.tauri.emitEvent('app-state-changed', delta);
-    }
-
-    await $('#video-url').setValue(video.url);
+    await sourceUrlInput.setValue(video.url);
     await $('button=Add').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
-    const missedCompletionDelta = {
+    const missedCompletion = {
       schemaVersion: 1,
-      sequence: snapshot.latestSequence + 1,
+      sequence: fixture.snapshot.latestSequence + 1,
       emittedAtMs: Date.now(),
       kind: 'operation_upserted',
       value: operation(IDS.videoInspection, 'inspection', 'completed', {
         inspectionResult: { kind: 'video', video }
       })
     };
-    snapshot = applyDelta(snapshot, missedCompletionDelta);
+    fixture.snapshot = applyDelta(fixture.snapshot, missedCompletion);
     await browser.execute((next) => {
       window.__NUCLEAR_E2E_SNAPSHOT__ = next;
-    }, snapshot);
-    // Deliberately omit app-state-changed. Add must reconcile the durable
-    // snapshot instead of looking permanently stuck when one event is lost.
+    }, fixture.snapshot);
     await waitForMockCalls(mocks.add_inspection_result_to_queue, 1);
     assert.equal(
       mocks.add_inspection_result_to_queue.mock.calls[0][0].input.inspectionOperationId,
       IDS.videoInspection
     );
-    await emit('queue_item_upserted', queueItem(IDS.item, video));
-    const fixtureDownload = await $('button[aria-label="Download Fixture Video"]');
-    await fixtureDownload.waitForClickable();
-    await fixtureDownload.click();
+
+    await fixture.emit('queue_item_upserted', queueItem(IDS.item, video));
+    await $('button[aria-label="Download Fixture Video"]').click();
     await waitForMockCalls(mocks.enqueue_queue_items, 1);
+    assert.deepEqual(mocks.enqueue_queue_items.mock.calls[0][0], {
+      itemIds: [IDS.item],
+      priority: 'front'
+    });
     const runningItem = {
       ...queueItem(IDS.item, video),
       state: 'running',
       latestOperationId: IDS.download,
       updatedAtMs: 20
     };
-    await emit('queue_item_upserted', runningItem);
-    await emit(
+    await fixture.emit('queue_item_upserted', runningItem);
+    await fixture.emit(
       'operation_upserted',
       operation(IDS.download, 'download', 'running', {
         queueItemId: IDS.item,
@@ -280,6 +99,24 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
         phase: 'download'
       })
     );
+    await browser.tauri.emitEvent('download-progress', {
+      download_id: IDS.download,
+      status: 'downloading',
+      progress: 20,
+      download_progress: 20,
+      conversion_progress: null,
+      phase: 'download',
+      speed: '1 MiB/s',
+      eta: '12s',
+      error: null,
+      error_code: null,
+      error_detail: null,
+      filename: null
+    });
+    await expect($('.progress-text')).toHaveText('20%');
+    assert.match(await $('.progress-fill').getAttribute('style'), /width:\s*20%/);
+    await expect($('tr.queue-item .col-speed')).toHaveText(expect.stringContaining('1 MiB/s'));
+    await expect($('tr.queue-item .col-eta')).toHaveText(expect.stringContaining('12s'));
     await $('button=Cancel All').click();
     await waitForMockCalls(mocks.cancel_all_downloads, 1);
     await expect($('.actions')).toHaveText(
@@ -287,28 +124,35 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     );
     await $('button[aria-label="Cancel Fixture Video"]').click();
     await waitForMockCalls(mocks.cancel_operation, 1);
-    await emit(
+    assert.deepEqual(mocks.cancel_operation.mock.calls[0][0], { operationId: IDS.download });
+    await fixture.emit(
       'operation_upserted',
       operation(IDS.download, 'download', 'cancelled', {
         queueItemId: IDS.item,
         finishedAtMs: 30
       })
     );
-    await emit('queue_item_upserted', {
+    await fixture.emit('queue_item_upserted', {
       ...runningItem,
       state: 'cancelled',
       updatedAtMs: 30
     });
     await expect($('.status-pill')).toHaveText('Cancelled');
+    await $('button=Retry').click();
+    await waitForMockCalls(mocks.enqueue_queue_items, 2);
+    await $('input[aria-label="Select Fixture Video"]').click();
+    await $('button=Remove Selected').click();
+    await waitForMockCalls(mocks.remove_queue_items, 1);
+    assert.deepEqual(mocks.remove_queue_items.mock.calls[0][0], { itemIds: [IDS.item] });
 
     await browser.refresh();
-    mocks = await registerRenderer(snapshot, Object.values(mocks));
+    mocks = await registerRenderer(fixture.snapshot, Object.values(mocks));
+    previousMocks = Object.values(mocks);
     await expect($('.queue')).toHaveText(expect.stringContaining('Fixture Video'));
-
     const reconciled = {
-      ...snapshot,
-      latestSequence: snapshot.latestSequence + 2,
-      queue: snapshot.queue.map((item) =>
+      ...fixture.snapshot,
+      latestSequence: fixture.snapshot.latestSequence + 2,
+      queue: fixture.snapshot.queue.map((item) =>
         item.id === IDS.item ? { ...item, title: 'Reconciled Fixture Video' } : item
       )
     };
@@ -322,12 +166,62 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       kind: 'runtime_readiness_changed',
       value: 'ready'
     });
-    snapshot = reconciled;
     await expect($('.queue')).toHaveText(expect.stringContaining('Reconciled Fixture Video'));
+  });
 
-    await mocks.begin_inspection.mockResolvedValueOnce({
-      operationId: IDS.playlistInspection
+  it('restores a running row and exposes diagnostics when item cancellation fails', async () => {
+    const running = {
+      ...queueItem(IDS.item, video),
+      state: 'running',
+      latestOperationId: IDS.download,
+      updatedAtMs: 20
+    };
+    const seed = {
+      ...structuredClone(initialSnapshot),
+      queue: [running],
+      operations: [
+        operation(IDS.download, 'download', 'running', {
+          queueItemId: IDS.item,
+          progress: 20,
+          phase: 'download'
+        })
+      ]
+    };
+    const { mocks } = await startRenderer(seed);
+    await mocks.cancel_operation.mockRejectedValueOnce('fixture cancellation rejected');
+    await $('button[aria-label="Cancel Fixture Video"]').click();
+    await waitForMockCalls(mocks.cancel_operation, 1);
+    await expect($('.status-pill')).toHaveText('Downloading');
+    await expect($('.error-summary')).toHaveText(
+      expect.stringContaining('Cancellation failed: fixture cancellation rejected')
+    );
+    await expect($('.diagnostics-panel')).toBeDisplayed();
+    await expect($('button=Retry')).not.toBeExisting();
+  });
+
+  it('cancels an in-flight inspection without displaying a failure', async () => {
+    const fixture = await startRenderer();
+    const { mocks } = fixture;
+    await $('#video-url').setValue(video.url);
+    await $('button=Add').click();
+    await waitForMockCalls(mocks.begin_inspection, 1);
+    await $('button=Cancel').click();
+    await waitForMockCalls(mocks.cancel_operation, 1);
+    assert.deepEqual(mocks.cancel_operation.mock.calls[0][0], {
+      operationId: IDS.videoInspection
     });
+    await fixture.emit(
+      'operation_upserted',
+      operation(IDS.videoInspection, 'inspection', 'cancelled')
+    );
+    await $('button=Add').waitForEnabled();
+    await expect($('#url-error')).not.toBeExisting();
+  });
+
+  it('covers playlist selection and child inspection', async () => {
+    const fixture = await startRenderer();
+    const { mocks } = fixture;
+    await mocks.begin_inspection.mockResolvedValueOnce({ operationId: IDS.playlistInspection });
     await mocks.begin_inspection.mockResolvedValue({ operationId: IDS.childInspection });
     await mocks.add_inspection_result_to_queue.mockResolvedValue(
       queueItem(IDS.playlistItem, childVideo)
@@ -335,7 +229,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await $('#video-url').setValue('https://fixture.test/playlist');
     await $('button=Add').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
-    await emit(
+    await fixture.emit(
       'operation_upserted',
       operation(IDS.playlistInspection, 'inspection', 'completed', {
         inspectionResult: {
@@ -376,7 +270,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       operationId: IDS.playlistInspection
     });
     await waitForMockCalls(mocks.begin_inspection, 2);
-    await emit(
+    await fixture.emit(
       'operation_upserted',
       operation(IDS.childInspection, 'inspection', 'completed', {
         inspectionResult: { kind: 'video', video: childVideo }
@@ -387,9 +281,103 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       mocks.add_inspection_result_to_queue.mock.calls[0][0].input.inspectionOperationId,
       IDS.childInspection
     );
-    await emit('queue_item_upserted', queueItem(IDS.playlistItem, childVideo, 40));
+    await fixture.emit('queue_item_upserted', queueItem(IDS.playlistItem, childVideo, 40));
     await expect($('.queue')).toHaveText(expect.stringContaining('Playlist Child One'));
+  });
 
+  it('covers filename sanitizing plus Enter, Escape, and blur editing', async () => {
+    const seed = { ...structuredClone(initialSnapshot), queue: [queueItem(IDS.item, video)] };
+    const fixture = await startRenderer(seed);
+    const { mocks } = fixture;
+    await $('.title-button').click();
+    await replaceFilenameDraft('   ');
+    await browser.keys('Enter');
+    await expect($('.filename-error')).toHaveText(
+      'Filename must contain at least one valid character.'
+    );
+    await mocks.update_queue_item.update();
+    assert.equal(mocks.update_queue_item.mock.calls.length, 0);
+    await replaceFilenameDraft('Renamed Fixture.mp4');
+    await browser.keys('Enter');
+    await waitForMockCalls(mocks.update_queue_item, 1);
+    assert.deepEqual(mocks.update_queue_item.mock.calls[0][0], {
+      itemId: IDS.item,
+      input: { filenameOverride: 'Renamed Fixture' }
+    });
+    await expect($('.queue')).toHaveText(expect.stringContaining('Fixture Video'));
+
+    await fixture.emit('queue_item_upserted', {
+      ...queueItem(IDS.item, video),
+      filenameOverride: 'Renamed Fixture',
+      updatedAtMs: 20
+    });
+    await expect($('.title-button')).toHaveText('Renamed Fixture');
+    await $('.title-button').click();
+    await replaceFilenameDraft('Discarded Draft');
+    await browser.keys('Escape');
+    await expect($('input[aria-label="Edit queued filename"]')).not.toBeExisting();
+    await mocks.update_queue_item.update();
+    assert.equal(mocks.update_queue_item.mock.calls.length, 1);
+
+    await $('.title-button').click();
+    await replaceFilenameDraft('CON.txt');
+    await browser.keys('Enter');
+    await waitForMockCalls(mocks.update_queue_item, 2);
+    assert.deepEqual(mocks.update_queue_item.mock.calls[1][0], {
+      itemId: IDS.item,
+      input: { filenameOverride: 'CON_.txt' }
+    });
+
+    await fixture.emit('queue_item_upserted', {
+      ...queueItem(IDS.item, video),
+      filenameOverride: 'CON_.txt',
+      updatedAtMs: 30
+    });
+    await $('.title-button').click();
+    await replaceFilenameDraft('Blur Commit.webm');
+    await $('h1').click();
+    await waitForMockCalls(mocks.update_queue_item, 3);
+    assert.deepEqual(mocks.update_queue_item.mock.calls[2][0], {
+      itemId: IDS.item,
+      input: { filenameOverride: 'Blur Commit' }
+    });
+  });
+
+  it('covers settings and output, cookie, and compatibility paths', async () => {
+    const seed = { ...structuredClone(initialSnapshot), queue: [queueItem(IDS.item, video)] };
+    const { mocks } = await startRenderer(seed);
+    await $('#quality').selectByAttribute('value', '720p');
+    await waitForMockCalls(mocks.update_queue_item, 1);
+    assert.deepEqual(mocks.update_queue_item.mock.calls[0][0], {
+      itemId: IDS.item,
+      input: { quality: '720p' }
+    });
+    await $('#format').selectByAttribute('value', 'mp3');
+    await waitForMockCalls(mocks.update_queue_item, 2);
+    assert.deepEqual(mocks.update_queue_item.mock.calls[1][0], {
+      itemId: IDS.item,
+      input: { format: 'mp3' }
+    });
+    await mocks['plugin:dialog|open'].mockResolvedValueOnce('C:\\chosen-output');
+    await $('button=Browse').click();
+    await waitForMockCalls(mocks.validate_output_directory, 2);
+    assert.deepEqual(mocks.validate_output_directory.mock.calls.at(-1)[0], {
+      path: 'C:\\chosen-output'
+    });
+    await expect($('#outdir')).toHaveValue('C:\\chosen-output');
+    await $('label=Cookies').click();
+    await $('#cookie-mode').selectByAttribute('value', 'file');
+    await mocks['plugin:dialog|open'].mockResolvedValueOnce('C:\\fixtures\\cookies.txt');
+    await $('button=Select cookies.txt').click();
+    await expect($('button=cookies.txt')).toBeDisplayed();
+    await mocks['plugin:dialog|open'].mockResolvedValueOnce('C:\\fixtures\\yt-dlp.conf');
+    await $('#compat-config').click();
+    await expect($('button=yt-dlp.conf')).toBeDisplayed();
+  });
+
+  it('covers diagnostics and persistence degradation', async () => {
+    const fixture = await startRenderer();
+    const { mocks } = fixture;
     await $('button=Export Diagnostics').click();
     await waitForMockCalls(mocks.export_diagnostics, 1);
     assert.deepEqual(mocks.export_diagnostics.mock.calls[0][0], {
@@ -398,18 +386,106 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await $('button=Clear Diagnostics').click();
     await waitForMockCalls(mocks.clear_diagnostics, 1);
     await expect($('.actions')).toHaveText(expect.stringContaining('diagnostics were cleared'));
+    await fixture.emit('persistence_health_changed', {
+      degraded: true,
+      error: 'Fixture persistence is degraded.'
+    });
+    await expect($('.actions')).toHaveText(
+      expect.stringContaining('Fixture persistence is degraded.')
+    );
+  });
 
-    await $('button=Update v0.6.1').click();
-    const updateDialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
-    await updateDialog.waitForDisplayed();
-    await expect(updateDialog).toHaveText(expect.stringContaining('Fixture release notes'));
-    await updateDialog.$('button=Install v0.6.1').click();
-    await waitForMockCalls(mocks.begin_app_update, 1);
-    await emit('operation_upserted', operation(IDS.appUpdate, 'app_update', 'completed'));
-    await updateDialog.$('button=Close').click();
+  it('reloads the authoritative snapshot when the backend requests resynchronization', async () => {
+    const seed = { ...structuredClone(initialSnapshot), queue: [queueItem(IDS.item, video)] };
+    await startRenderer(seed);
+    const resynced = {
+      ...seed,
+      latestSequence: 5,
+      queue: [{ ...seed.queue[0], title: 'Resynchronized Fixture Video', updatedAtMs: 50 }]
+    };
+    await browser.execute((next) => {
+      window.__NUCLEAR_E2E_SNAPSHOT__ = next;
+    }, resynced);
+    await browser.tauri.emitEvent('app-state-resync-required', { latestSequence: 5 });
+    await expect($('.queue')).toHaveText(expect.stringContaining('Resynchronized Fixture Video'));
+  });
 
+  it('shows focused command failures and reconciles failed queue settings', async () => {
+    const seed = { ...structuredClone(initialSnapshot), queue: [queueItem(IDS.item, video)] };
+    const { mocks } = await startRenderer(seed);
+    await mocks.update_queue_item.mockRejectedValueOnce('fixture setting rejected');
+    await $('#quality').selectByAttribute('value', '720p');
+    await waitForMockCalls(mocks.update_queue_item, 1);
+    await expect($('.actions')).toHaveText(expect.stringContaining('fixture setting rejected'));
+    await waitForMockCalls(mocks.get_app_snapshot, 2);
+
+    await mocks.export_diagnostics.mockRejectedValueOnce('fixture export rejected');
+    await $('button=Export Diagnostics').click();
+    await waitForMockCalls(mocks.export_diagnostics, 1);
+    await expect($('.actions')).toHaveText(expect.stringContaining('fixture export rejected'));
+  });
+
+  it('covers runtime refresh and runtime update completion', async () => {
+    const fixture = await startRenderer();
+    const { mocks } = fixture;
+    await $('button=Check Runtime').click();
+    await waitForMockCalls(mocks.check_downloader_runtime, 2);
     await $('button=Update Runtime').click();
     await waitForMockCalls(mocks.begin_runtime_update, 1);
-    await emit('operation_upserted', operation(IDS.runtime, 'runtime_update', 'completed'));
+    await browser.tauri.emitEvent('downloader-runtime-update-progress', {
+      status: 'error',
+      version: '2026.8.1',
+      downloadedBytes: 10,
+      totalBytes: 20,
+      message: 'Fixture runtime update failed.'
+    });
+    await expect($('.url-bar')).toHaveText(
+      expect.stringContaining('Fixture runtime update failed.')
+    );
+    await expect($('button=Update Runtime')).toBeEnabled();
+    await fixture.emit('operation_upserted', operation(IDS.runtime, 'runtime_update', 'completed'));
+    await waitForMockCalls(mocks.check_downloader_runtime, 3);
+    await expect($('[data-testid="runtime-status"]')).toHaveText(
+      expect.stringContaining('Runtime ready')
+    );
+  });
+
+  it('covers app update details and completion', async () => {
+    const fixture = await startRenderer();
+    const { mocks } = fixture;
+    const trigger = await $('button=Update v0.6.1');
+    await trigger.click();
+    const dialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
+    await dialog.waitForDisplayed();
+    await browser.waitUntil(
+      async () => browser.execute(() => document.activeElement?.textContent?.trim() === 'Close'),
+      { timeoutMsg: 'Update dialog did not focus its Close button.' }
+    );
+    assert.equal(await browser.execute(() => document.querySelector('main')?.inert), true);
+    await browser.keys('Escape');
+    await expect(dialog).not.toBeDisplayed();
+    assert.equal(await browser.execute(() => document.querySelector('main')?.inert), false);
+    assert.equal(
+      await browser.execute(() => document.activeElement?.textContent?.trim()),
+      'Update v0.6.1'
+    );
+    await trigger.click();
+    const reopenedDialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
+    await reopenedDialog.waitForDisplayed();
+    await expect(reopenedDialog).toHaveText(expect.stringContaining('Fixture release notes'));
+    await reopenedDialog.$('button=Install v0.6.1').click();
+    await waitForMockCalls(mocks.begin_app_update, 1);
+    assert.deepEqual(mocks.begin_app_update.mock.calls[0][0], { expectedVersion: '0.6.1' });
+    await browser.tauri.emitEvent('update-install-progress', {
+      status: 'error',
+      version: '0.6.1',
+      downloadedBytes: 10,
+      totalBytes: 20,
+      message: 'Fixture app update failed.'
+    });
+    await expect(reopenedDialog).toHaveText(expect.stringContaining('Fixture app update failed.'));
+    await fixture.emit('operation_upserted', operation(IDS.appUpdate, 'app_update', 'completed'));
+    await reopenedDialog.$('button=Close').click();
+    await expect(reopenedDialog).not.toBeDisplayed();
   });
 });
