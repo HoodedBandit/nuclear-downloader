@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SettingsRow from '$lib/components/SettingsRow.svelte';
   import UrlBar from '$lib/components/UrlBar.svelte';
   import QueueToolbar from '$lib/components/QueueToolbar.svelte';
   import QueueTable from '$lib/components/QueueTable.svelte';
@@ -14,13 +15,7 @@
   import type { OperationSnapshot } from '$lib/bindings/OperationSnapshot';
   import type { StateDelta } from '$lib/bindings/StateDelta';
   import { normalizeAppError } from '$lib/frontend-errors';
-  import {
-    supportedBrowsers,
-    videoFormats,
-    audioFormats,
-    type QueueItem,
-    type OutputFormat
-  } from '$lib/frontend-types';
+  import { type QueueItem, type OutputFormat } from '$lib/frontend-types';
   import { invokeCommand as invoke, listenEvent as listen } from '$lib/ipc-client';
   import { OperationWaitRegistry } from '$lib/operation-wait-registry';
   import { PageLifetime } from '$lib/page-lifetime';
@@ -41,8 +36,7 @@
   } from '$lib/app-update-workflow';
   import {
     SettingsDiagnosticsWorkflow,
-    createSettingsDiagnosticsState,
-    getPathBasename
+    createSettingsDiagnosticsState
   } from '$lib/settings-diagnostics-workflow';
   import {
     canStartWork,
@@ -581,91 +575,22 @@
   />
 
   <!-- Settings Row -->
-  <section class="settings-row">
-    <div class="setting">
-      <label for="quality">Quality</label>
-      <select id="quality" bind:value={settingsState.globalQuality} onchange={applyGlobalQuality}>
-        <option value="best">Best</option>
-        <option value="2160p">4K</option>
-        <option value="1440p">1440p</option>
-        <option value="1080p">1080p</option>
-        <option value="720p">720p</option>
-        <option value="480p">480p</option>
-        <option value="360p">360p</option>
-      </select>
-    </div>
-    <div class="setting">
-      <label for="format">Format</label>
-      <select id="format" bind:value={settingsState.globalFormat} onchange={applyGlobalFormat}>
-        <optgroup label="Video">
-          {#each videoFormats as fmt (fmt)}
-            <option value={fmt}>{fmt.toUpperCase()}</option>
-          {/each}
-        </optgroup>
-        <optgroup label="Audio Only">
-          {#each audioFormats as fmt (fmt)}
-            <option value={fmt}>{fmt.toUpperCase()}</option>
-          {/each}
-        </optgroup>
-      </select>
-    </div>
-    <div class="setting output-dir">
-      <label for="outdir">Output</label>
-      <input id="outdir" type="text" bind:value={settingsState.outputDir} readonly />
-      <button onclick={browseOutputDir}>Browse</button>
-      {#if settingsState.outputDirError}
-        <span class="error-text" role="alert">{settingsState.outputDirError}</span>
-      {/if}
-    </div>
-    <div class="setting cookie-setting">
-      <label>
-        <input type="checkbox" bind:checked={settingsState.useCookies} />
-        Cookies
-      </label>
-      {#if settingsState.useCookies}
-        <label class="sr-only" for="cookie-mode">Cookie source</label>
-        <select id="cookie-mode" bind:value={settingsState.cookieMode} class="cookie-mode-select">
-          <option value="browser">From Browser</option>
-          <option value="file">From File</option>
-        </select>
-        {#if settingsState.cookieMode === 'browser'}
-          <label class="sr-only" for="cookie-browser">Cookie browser</label>
-          <select id="cookie-browser" bind:value={settingsState.cookieBrowser}>
-            {#each supportedBrowsers as b (b)}
-              <option value={b}>{b.charAt(0).toUpperCase() + b.slice(1)}</option>
-            {/each}
-          </select>
-          {#if settingsState.cookieBrowser === 'chrome' || settingsState.cookieBrowser === 'edge' || settingsState.cookieBrowser === 'brave' || settingsState.cookieBrowser === 'chromium'}
-            <span class="cookie-warn"
-              >Chromium browsers block cookie access — use Firefox or a cookie file instead</span
-            >
-          {:else}
-            <span class="cookie-hint"
-              >Close {settingsState.cookieBrowser} first if errors occur</span
-            >
-          {/if}
-        {:else}
-          <button class="cookie-browse" onclick={browseCookieFile}>
-            {settingsState.cookieFilePath
-              ? settingsState.cookieFilePath.split(/[\\/]/).pop()
-              : 'Select cookies.txt'}
-          </button>
-          <span class="cookie-hint"
-            >Export via browser extension (e.g. "Get cookies.txt LOCALLY")</span
-          >
-        {/if}
-      {/if}
-    </div>
-    <div class="setting advanced-config">
-      <label for="compat-config">Compat Config</label>
-      <button id="compat-config" class="cookie-browse" onclick={browseCompatConfigFile}>
-        {settingsState.compatConfigPath ? getPathBasename(settingsState.compatConfigPath) : 'None'}
-      </button>
-      {#if settingsState.compatConfigPath}
-        <button class="small" onclick={() => (settingsState.compatConfigPath = '')}>Clear</button>
-      {/if}
-    </div>
-  </section>
+  <SettingsRow
+    bind:globalQuality={settingsState.globalQuality}
+    bind:globalFormat={settingsState.globalFormat}
+    bind:outputDir={settingsState.outputDir}
+    bind:useCookies={settingsState.useCookies}
+    bind:cookieMode={settingsState.cookieMode}
+    bind:cookieBrowser={settingsState.cookieBrowser}
+    bind:compatConfigPath={settingsState.compatConfigPath}
+    outputDirError={settingsState.outputDirError}
+    cookieFilePath={settingsState.cookieFilePath}
+    {applyGlobalQuality}
+    {applyGlobalFormat}
+    {browseOutputDir}
+    {browseCookieFile}
+    {browseCompatConfigFile}
+  />
 
   <!-- Action Buttons -->
   <QueueToolbar
