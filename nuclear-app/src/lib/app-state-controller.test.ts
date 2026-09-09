@@ -25,6 +25,255 @@ const maintenance = (sequence: number, active: boolean): StateDelta => ({
 });
 
 describe('AppStateController', () => {
+  it('disposes a subscription that resolves after stop without continuing startup', async () => {
+    let resolveSubscription!: (unlisten: () => void) => void;
+    const unlisten = vi.fn();
+    const subscribeResync = vi.fn(async () => () => undefined);
+    const load = vi.fn(async () => snapshot(1));
+    const controller = new AppStateController(load, vi.fn());
+    const starting = controller.start(
+      () => new Promise((resolve) => (resolveSubscription = resolve)),
+      subscribeResync
+    );
+
+    controller.stop();
+    resolveSubscription(unlisten);
+    await starting;
+
+    expect(unlisten).toHaveBeenCalledOnce();
+    expect(subscribeResync).not.toHaveBeenCalled();
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('disposes both subscriptions when stop occurs while the second is pending', async () => {
+    let resolveResyncSubscription!: (unlisten: () => void) => void;
+    const unlistenState = vi.fn();
+    const unlistenResync = vi.fn();
+    const load = vi.fn(async () => snapshot(1));
+    const controller = new AppStateController(load, vi.fn());
+    const starting = controller.start(
+      async () => unlistenState,
+      () => new Promise((resolve) => (resolveResyncSubscription = resolve))
+    );
+    await vi.waitFor(() => expect(resolveResyncSubscription).toBeTypeOf('function'));
+
+    controller.stop();
+    resolveResyncSubscription(unlistenResync);
+    await starting;
+
+    expect(unlistenState).toHaveBeenCalledOnce();
+    expect(unlistenResync).toHaveBeenCalledOnce();
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('retains a second subscription rejection while cleaning the first subscription', async () => {
+    const unlistenState = vi.fn();
+    const controller = new AppStateController(async () => snapshot(1), vi.fn());
+
+    await expect(
+      controller.start(
+        async () => unlistenState,
+        async () => {
+          throw new Error('resync subscription failed');
+        }
+      )
+    ).rejects.toThrow('resync subscription failed');
+
+    expect(unlistenState).toHaveBeenCalledOnce();
+    expect(controller.current()).toBeNull();
+  });
+
+  it('buffers resync during registration and loads only after both subscriptions resolve', async () => {
+    let resolveResyncSubscription!: (unlisten: () => void) => void;
+    let resyncHandler: ((request: { latestSequence: number }) => void) | null = null;
+    const load = vi.fn(async () => snapshot(7));
+    const controller = new AppStateController(load, vi.fn());
+    const starting = controller.start(
+      async () => () => undefined,
+      (handler) => {
+        resyncHandler = handler;
+        return new Promise((resolve) => (resolveResyncSubscription = resolve));
+      }
+    );
+
+    await vi.waitFor(() => expect(resyncHandler).not.toBeNull());
+    (resyncHandler as unknown as (request: { latestSequence: number }) => void)({
+      latestSequence: 7
+    });
+    await Promise.resolve();
+    expect(load).not.toHaveBeenCalled();
+
+    resolveResyncSubscription(() => undefined);
+    await starting;
+    expect(load).toHaveBeenCalledOnce();
+    expect(controller.current()?.latestSequence).toBe(7);
+  });
+
+  it('ignores old handlers and a stale load after a newer start', async () => {
+    let oldHandler: ((delta: StateDelta) => void) | null = null;
+    let resolveOldLoad!: (value: AppSnapshot) => void;
+    const published: AppSnapshot[] = [];
+    const errors: unknown[] = [];
+    const load = vi
+      .fn<() => Promise<AppSnapshot>>()
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveOldLoad = resolve)))
+      .mockResolvedValueOnce(snapshot(20));
+    const controller = new AppStateController(
+      load,
+      (value) => published.push(value),
+      (error) => {
+        errors.push(error);
+      }
+    );
+    const oldStart = controller.start(async (handler) => {
+      oldHandler = handler;
+      return () => undefined;
+    }, subscribeNoResync);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
+
+    await controller.start(async () => () => undefined, subscribeNoResync);
+    (oldHandler as unknown as (delta: StateDelta) => void)(maintenance(21, true));
+    resolveOldLoad(snapshot(1, true));
+    await oldStart;
+
+    expect(controller.current()).toEqual(snapshot(20));
+    expect(published).toEqual([snapshot(20)]);
+    expect(errors).toEqual([]);
+  });
+
+  it('ignores a stale load failure after a newer start succeeds', async () => {
+    let rejectOldLoad!: (error: Error) => void;
+    const errors: unknown[] = [];
+    const load = vi
+      .fn<() => Promise<AppSnapshot>>()
+      .mockImplementationOnce(() => new Promise((_, reject) => (rejectOldLoad = reject)))
+      .mockResolvedValueOnce(snapshot(30));
+    const controller = new AppStateController(load, vi.fn(), (error) => errors.push(error));
+    const oldStart = controller.start(async () => () => undefined, subscribeNoResync);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledOnce());
+
+    await controller.start(async () => () => undefined, subscribeNoResync);
+    rejectOldLoad(new Error('stale snapshot failure'));
+
+    await expect(oldStart).resolves.toBeUndefined();
+    expect(controller.current()).toEqual(snapshot(30));
+    expect(errors).toEqual([]);
+  });
+
+  it('does not let an old load finalizer clear a newer pending reload slot', async () => {
+    let resolveOldLoad!: (value: AppSnapshot) => void;
+    let resolveNewLoad!: (value: AppSnapshot) => void;
+    const load = vi
+      .fn<() => Promise<AppSnapshot>>()
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveOldLoad = resolve)))
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveNewLoad = resolve)));
+    const controller = new AppStateController(load, vi.fn());
+    const oldStart = controller.start(async () => () => undefined, subscribeNoResync);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    const newStart = controller.start(async () => () => undefined, subscribeNoResync);
+    await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+
+    resolveOldLoad(snapshot(1));
+    await oldStart;
+    const deduplicatedReload = controller.reload();
+    expect(load).toHaveBeenCalledTimes(2);
+
+    resolveNewLoad(snapshot(2));
+    await Promise.all([newStart, deduplicatedReload]);
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(controller.current()).toEqual(snapshot(2));
+  });
+
+  it('preserves buffered deltas when a pending reload is requested again', async () => {
+    let resolveReload!: (value: AppSnapshot) => void;
+    const load = vi
+      .fn<() => Promise<AppSnapshot>>()
+      .mockResolvedValueOnce(snapshot(1))
+      .mockImplementationOnce(() => new Promise((resolve) => (resolveReload = resolve)));
+    const controller = new AppStateController(load, vi.fn());
+    await controller.start(async () => () => undefined, subscribeNoResync);
+
+    const firstReload = controller.reload();
+    await vi.waitFor(() => expect(load).toHaveBeenCalledTimes(2));
+    await controller.accept(maintenance(2, true));
+    const coalescedReload = controller.reload();
+    resolveReload(snapshot(1));
+    await Promise.all([firstReload, coalescedReload]);
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(controller.current()).toEqual(snapshot(2, true));
+  });
+
+  it('disposes each completed generation exactly once across repeated start and stop', async () => {
+    const listeners = [vi.fn(), vi.fn(), vi.fn(), vi.fn()];
+    let index = 0;
+    const subscribe = async () => listeners[index++];
+    const controller = new AppStateController(async () => snapshot(index), vi.fn());
+
+    await controller.start(subscribe, subscribe);
+    await controller.start(subscribe, subscribe);
+    controller.stop();
+    controller.stop();
+
+    for (const unlisten of listeners) expect(unlisten).toHaveBeenCalledOnce();
+  });
+
+  it('defers a public reload until listener registration completes', async () => {
+    let resolveResyncSubscription!: (unlisten: () => void) => void;
+    const load = vi.fn(async () => snapshot(4));
+    const controller = new AppStateController(load, vi.fn());
+    const starting = controller.start(
+      async () => () => undefined,
+      () => new Promise((resolve) => (resolveResyncSubscription = resolve))
+    );
+    await vi.waitFor(() => expect(resolveResyncSubscription).toBeTypeOf('function'));
+
+    await controller.reload();
+    expect(load).not.toHaveBeenCalled();
+    resolveResyncSubscription(() => undefined);
+    await starting;
+
+    expect(load).toHaveBeenCalledOnce();
+  });
+
+  it('does not begin a queued reload after stop in the same turn', async () => {
+    const load = vi.fn(async () => snapshot(1));
+    const controller = new AppStateController(load, vi.fn());
+    await controller.start(async () => () => undefined, subscribeNoResync);
+    load.mockClear();
+
+    const reloading = controller.reload();
+    controller.stop();
+    await reloading;
+
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('releases every listener and retains the primary startup failure', async () => {
+    const firstUnlisten = vi.fn(() => {
+      throw new Error('first cleanup failed');
+    });
+    const secondUnlisten = vi.fn();
+    const cleanupErrors: unknown[] = [];
+    const controller = new AppStateController(
+      async () => {
+        throw new Error('snapshot failed');
+      },
+      vi.fn(),
+      (error) => cleanupErrors.push(error)
+    );
+
+    await expect(
+      controller.start(
+        async () => firstUnlisten,
+        async () => secondUnlisten
+      )
+    ).rejects.toThrow('snapshot failed');
+    expect(firstUnlisten).toHaveBeenCalledOnce();
+    expect(secondUnlisten).toHaveBeenCalledOnce();
+    expect(cleanupErrors).toHaveLength(1);
+  });
+
   it('subscribes before requesting the initial snapshot and applies buffered events', async () => {
     const order: string[] = [];
     let handler: ((delta: StateDelta) => void) | null = null;

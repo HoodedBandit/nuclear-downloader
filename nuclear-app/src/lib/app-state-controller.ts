@@ -5,17 +5,24 @@ import { applyStateDelta, validateAppSnapshot, validateStateDelta } from './back
 import { StateReconciler } from './state-reconciler';
 
 const MAX_RECONCILIATION_ATTEMPTS = 3;
-
 export type StateSubscription = (handler: (delta: StateDelta) => void) => Promise<() => void>;
 export type StateResyncSubscription = (
   handler: (request: AppStateResyncRequired) => void
 ) => Promise<() => void>;
 
+interface ControllerSession {
+  generation: number;
+  reconciler: StateReconciler<AppSnapshot, StateDelta>;
+  reloadPromise: Promise<void> | null;
+  requiredSequence: number;
+  registrationsComplete: boolean;
+  reloadRequested: boolean;
+  unlisten: (() => void)[];
+}
+
 export class AppStateController {
-  private readonly reconciler = new StateReconciler<AppSnapshot, StateDelta>(applyStateDelta);
-  private reloadPromise: Promise<void> | null = null;
-  private requiredSequence = 0;
-  private unlisten: (() => void)[] = [];
+  private generation = 0;
+  private session: ControllerSession | null = null;
 
   constructor(
     private readonly loadSnapshot: () => Promise<AppSnapshot>,
@@ -27,89 +34,186 @@ export class AppStateController {
     subscribe: StateSubscription,
     subscribeResync: StateResyncSubscription
   ): Promise<void> {
-    // Subscribe first so no backend change can land between snapshot and listener setup.
+    this.stop();
+    const session: ControllerSession = {
+      generation: ++this.generation,
+      reconciler: new StateReconciler<AppSnapshot, StateDelta>(applyStateDelta),
+      reloadPromise: null,
+      requiredSequence: 0,
+      registrationsComplete: false,
+      reloadRequested: false,
+      unlisten: []
+    };
+    this.session = session;
     try {
-      this.unlisten.push(
-        await subscribe((delta) => {
-          void this.accept(delta).catch(this.onError);
-        })
-      );
-      this.unlisten.push(
-        await subscribeResync((request) => {
-          void this.acceptResync(request).catch(this.onError);
-        })
-      );
-      await this.load(false);
+      if (
+        !(await this.install(
+          session,
+          subscribe((delta) => this.handleDelta(session, delta))
+        ))
+      )
+        return;
+      if (
+        !(await this.install(
+          session,
+          subscribeResync((request) => this.handleResync(session, request))
+        ))
+      )
+        return;
+      session.registrationsComplete = true;
+      if (session.reloadRequested) session.reconciler.beginReload();
+      await this.load(session, false);
     } catch (error) {
-      this.stop();
+      if (!this.isCurrent(session)) return;
+      this.end(session);
       throw error;
     }
   }
 
   stop(): void {
-    for (const unlisten of this.unlisten.splice(0)) unlisten();
+    this.generation += 1;
+    const session = this.session;
+    this.session = null;
+    if (session) this.dispose(session);
   }
 
   async accept(unchecked: StateDelta): Promise<void> {
-    const delta = validateStateDelta(unchecked);
-    this.reconciler.push({ sequence: delta.sequence, value: delta });
-    if (this.reconciler.needsRefetch()) {
-      await this.reload();
-      return;
-    }
-    this.publish(delta);
+    const session = this.session;
+    if (session) await this.acceptFor(session, unchecked);
   }
 
   async acceptResync(unchecked: AppStateResyncRequired): Promise<void> {
-    const latestSequence = unchecked?.latestSequence;
-    if (!Number.isSafeInteger(latestSequence) || latestSequence < 0) {
-      throw new Error('Invalid app state resync sequence.');
-    }
-    this.requiredSequence = Math.max(this.requiredSequence, latestSequence);
-    await this.reload();
+    const session = this.session;
+    if (session) await this.acceptResyncFor(session, unchecked);
   }
 
   reload(): Promise<void> {
-    return this.load(true);
+    const session = this.session;
+    if (!session) return Promise.resolve();
+    if (!session.registrationsComplete) {
+      session.reloadRequested = true;
+      return Promise.resolve();
+    }
+    return this.load(session, true);
   }
 
   current(): AppSnapshot | null {
-    return this.reconciler.current()?.value ?? null;
+    return this.session?.reconciler.current()?.value ?? null;
   }
 
-  private load(beginReload: boolean): Promise<void> {
-    if (beginReload) this.reconciler.beginReload();
-    if (this.reloadPromise) return this.reloadPromise;
+  private async install(
+    session: ControllerSession,
+    pending: Promise<() => void>
+  ): Promise<boolean> {
+    const unlisten = await pending;
+    if (!this.isCurrent(session)) {
+      unlisten();
+      return false;
+    }
+    session.unlisten.push(unlisten);
+    return true;
+  }
+
+  private handleDelta(session: ControllerSession, delta: StateDelta): void {
+    if (!this.isCurrent(session)) return;
+    void this.acceptFor(session, delta).catch((error) => {
+      if (this.isCurrent(session)) this.onError(error);
+    });
+  }
+
+  private handleResync(session: ControllerSession, request: AppStateResyncRequired): void {
+    if (!this.isCurrent(session)) return;
+    void this.acceptResyncFor(session, request).catch((error) => {
+      if (this.isCurrent(session)) this.onError(error);
+    });
+  }
+
+  private async acceptFor(session: ControllerSession, unchecked: StateDelta): Promise<void> {
+    if (!this.isCurrent(session)) return;
+    const delta = validateStateDelta(unchecked);
+    if (!this.isCurrent(session)) return;
+    session.reconciler.push({ sequence: delta.sequence, value: delta });
+    if (session.registrationsComplete && session.reconciler.needsRefetch()) {
+      await this.load(session, true);
+      return;
+    }
+    this.publish(session, delta);
+  }
+
+  private async acceptResyncFor(
+    session: ControllerSession,
+    unchecked: AppStateResyncRequired
+  ): Promise<void> {
+    if (!this.isCurrent(session)) return;
+    const latestSequence = unchecked?.latestSequence;
+    if (!Number.isSafeInteger(latestSequence) || latestSequence < 0)
+      throw new Error('Invalid app state resync sequence.');
+    session.requiredSequence = Math.max(session.requiredSequence, latestSequence);
+    if (session.registrationsComplete) await this.load(session, true);
+  }
+
+  private load(session: ControllerSession, beginReload: boolean): Promise<void> {
+    if (!this.isCurrent(session)) return Promise.resolve();
+    if (session.reloadPromise) return session.reloadPromise;
+    if (beginReload) session.reconciler.beginReload();
     const reload = Promise.resolve().then(async () => {
       for (let attempt = 0; attempt < MAX_RECONCILIATION_ATTEMPTS; attempt += 1) {
-        const snapshot = validateAppSnapshot(await this.loadSnapshot());
-        this.reconciler.load({ sequence: snapshot.latestSequence, value: snapshot });
-        const current = this.reconciler.current();
+        if (!this.isCurrent(session)) return;
+        const unchecked = await this.loadSnapshot();
+        if (!this.isCurrent(session)) return;
+        const snapshot = validateAppSnapshot(unchecked);
+        if (!this.isCurrent(session)) return;
+        session.reconciler.load({ sequence: snapshot.latestSequence, value: snapshot });
+        const current = session.reconciler.current();
         if (
-          !this.reconciler.needsRefetch() &&
+          !session.reconciler.needsRefetch() &&
           current !== null &&
-          current.sequence >= this.requiredSequence
+          current.sequence >= session.requiredSequence
         ) {
-          this.publish();
+          this.publish(session);
           return;
         }
-
-        // A second gap can be observed while this snapshot is in flight. Start
-        // another buffered load immediately instead of waiting indefinitely for
-        // an unrelated future event to trigger recovery.
-        this.reconciler.beginReload();
+        session.reconciler.beginReload();
       }
-
-      throw new Error('App state could not be reconciled after repeated sequence gaps.');
+      if (this.isCurrent(session))
+        throw new Error('App state could not be reconciled after repeated sequence gaps.');
     });
-    this.reloadPromise = reload.finally(() => {
-      this.reloadPromise = null;
+    const ownedPromise = reload.finally(() => {
+      if (this.isCurrent(session) && session.reloadPromise === ownedPromise)
+        session.reloadPromise = null;
     });
-    return this.reloadPromise;
+    session.reloadPromise = ownedPromise;
+    return ownedPromise;
   }
 
-  private publish(delta?: StateDelta): void {
-    const current = this.reconciler.current();
+  private publish(session: ControllerSession, delta?: StateDelta): void {
+    if (!this.isCurrent(session)) return;
+    const current = session.reconciler.current();
     if (current) this.onSnapshot(current.value, delta);
+  }
+
+  private isCurrent(session: ControllerSession): boolean {
+    return this.session === session && this.generation === session.generation;
+  }
+
+  private end(session: ControllerSession): void {
+    if (!this.isCurrent(session)) return;
+    this.generation += 1;
+    this.session = null;
+    this.dispose(session);
+  }
+
+  private dispose(session: ControllerSession): void {
+    for (const unlisten of session.unlisten.splice(0)) {
+      try {
+        unlisten();
+      } catch (error) {
+        try {
+          this.onError(error);
+        } catch {
+          // Continue releasing the remaining listeners.
+        }
+      }
+    }
   }
 }
