@@ -15,17 +15,32 @@ pub(crate) fn load(root: &Path) -> Result<Option<RuntimeTransaction>, String> {
         return Ok(None);
     }
     ensure_regular_path(&path, false, "runtime transaction journal")?;
-    let metadata = std::fs::metadata(&path)
+    let mut file = File::open(&path)
+        .map_err(|error| format!("Failed to open runtime transaction journal: {error}"))?;
+    let metadata = file
+        .metadata()
         .map_err(|error| format!("Failed to inspect runtime transaction journal: {error}"))?;
+    if !metadata.is_file() || is_reparse(&metadata) {
+        return Err("Runtime transaction journal is not a regular file.".into());
+    }
     if metadata.len() > JOURNAL_LIMIT {
         return Err("Runtime transaction journal exceeds the 64 KiB limit.".into());
     }
-    let bytes = std::fs::read(&path)
+    read_opened_journal(&mut file).map(Some)
+}
+
+pub(super) fn read_opened_journal(file: &mut File) -> Result<RuntimeTransaction, String> {
+    let mut bytes = Vec::new();
+    Read::take(file, JOURNAL_LIMIT + 1)
+        .read_to_end(&mut bytes)
         .map_err(|error| format!("Failed to read runtime transaction journal: {error}"))?;
+    if bytes.len() as u64 > JOURNAL_LIMIT {
+        return Err("Runtime transaction journal exceeds the 64 KiB limit.".into());
+    }
     let transaction = serde_json::from_slice::<RuntimeTransaction>(&bytes)
         .map_err(|error| format!("Failed to parse runtime transaction journal: {error}"))?;
     transaction.validate()?;
-    Ok(Some(transaction))
+    Ok(transaction)
 }
 
 pub(crate) fn store(root: &Path, transaction: &RuntimeTransaction) -> Result<(), String> {
