@@ -2,8 +2,9 @@
 
 This checklist links the overhaul's failure modes to executable evidence. The phase
 results and measurements are recorded in `backend-overhaul.md`. The subsequent
-maintainability refactor is tracked in `backend-maintainability.md`; its final
-qualification is still in progress. A passing unit or
+maintainability refactor is tracked in `backend-maintainability.md`; its local
+automated/component qualification passed, while the external gates below remain
+blocked. A passing unit or
 fixture test is not a passing packaged-application acceptance case.
 
 ## Regression coverage
@@ -75,7 +76,7 @@ on both revisions. Its final matching-host measurements are tracked separately i
 
 | Gate | Required evidence | Current status |
 | --- | --- | --- |
-| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | The final `d1f6571` refactor soak is running under `target/soak/after-20260909T020321Z-e35c8e5cfdcd499daf3901b16481c134/`; it has not passed until full-duration terminal evidence is verified. The original overhaul's 7,202.276-second run remains historical evidence only at `target/soak/after-20260908T093535Z-afb163eef5e8413c8183957ee05d4693/final-verification.json`. |
+| Isolated two-hour mixed backend soak | Exact compiled test executable hash, source hashes, full two-hour duration, workload counters, bounded memory/handles/outbox, no surviving owned descendants or unexplained owned staging | Final `d1f6571` refactor run passed: 7,203.095 seconds, 7,190 operations, 1,440 clear quiescent samples, 156 unchanged source/build inputs, journal reopened, observed process exited and fixtures empty. All 20 post-run checks passed. Tracked receipt: `backend-maintainability-soak.json`; raw evidence: `target/soak/after-20260909T020321Z-e35c8e5cfdcd499daf3901b16481c134/`. The original overhaul's 7,202.276-second run remains historical only. |
 | Native workflows | Successful video and audio, playlist discovery, explicit retry, collision-safe publication, cancellation, forced interruption/restart, and update/repair cases | Acceptance source expanded; pinned yt-dlp validated the two-entry loopback playlist; native app execution remains blocked on the disposable environment |
 | Exact installer and portable artifacts on a clean Windows 11 x64 desktop | Candidate inventory and asset hashes, client OS build, WebView2 and tool versions, executed cases | Blocked: no disposable clean desktop environment supplied |
 | Advertised YouTube and X extractor smoke tests | Maintainer-controlled fixture configuration and candidate-bound results | Blocked: controlled fixture URLs not supplied |

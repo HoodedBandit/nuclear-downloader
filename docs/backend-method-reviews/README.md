@@ -9,5 +9,6 @@ The merged canonical ledger is `../backend-method-review.json`.
 CI and release-candidate builds run
 `python scripts/inventory-backend-methods.py check`, which fails when source
 identity changes or a current review unit lacks an accepted review. This completes the
-source method-review gate only. The Stage 6 two-hour soak and external native
-release acceptance remain separate qualification requirements.
+source method-review gate. The separate Stage 6 two-hour isolated soak also passed;
+its evidence and the still-blocked external native release gates are recorded in
+`../backend-maintainability.md` and `../backend-qualification.md`.

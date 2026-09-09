@@ -15,7 +15,7 @@ fixes; mechanical moves do not also change behavior.
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
 | 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
 | 5. Runtime/updater/lifecycle internals | Passed | 290 Rust tests, strict Clippy, formatting, unchanged bindings, architecture checks and independent runtime/updater extraction review |
-| 6. Integrated qualification | Final soak running | 304 Rust tests, strict Clippy, 1,215 reconciled source reviews, source/CI contract checks and four matched performance comparisons passed; new two-hour soak running; external native acceptance remains blocked |
+| 6. Integrated qualification | Local gates passed; external gates blocked | 304 Rust tests, strict Clippy, 1,215 reconciled source reviews, source/CI contract checks, four matched performance comparisons and the final 7,203.095-second soak passed; native release acceptance remains blocked |
 
 Every production method and ownership-bearing asynchronous closure is recorded in
 `backend-method-review.json`. Reviewer sidecars record actual inspection outcomes;
@@ -429,8 +429,46 @@ The final 120-minute soak started at approximately 2026-09-09 02:03 UTC from
 `d1f6571`. All 156 source/build/runner manifest entries matched before and after
 compilation. Its frozen executable SHA-256 is
 `d10bb3be49f5688a3d7b3cc975377d9b1562e9c117cec3acd5fac31a39d8a647`, identical
-to the final performance executable. Exact test discovery passed. The run is
-still in progress and cannot count as qualification until its full-duration
-terminal evidence is verified. No compiled inputs or soak runner may change
-during the run. Evidence root:
+to the final performance executable. Exact test discovery passed. The run exited
+normally at 2026-09-09 04:03:29 UTC after 7,203.095 seconds, with one test passed
+and zero failed. No compiled inputs or soak runner changed during the run.
+Evidence root:
 `target/soak/after-20260909T020321Z-e35c8e5cfdcd499daf3901b16481c134/`.
+
+The completed run exercised 1,438 mixed cycles and 7,190 operations: 4,314 completed,
+1,438 intentionally cancelled, and 1,438 intentionally failed. These controlled
+operation failures are workload cases, not failed tests. It also exercised 1,438
+publications and collision preservations, four inherited-pipe drains, 71 abandoned
+stage cleanups with unowned-stage preservation, 119 lifecycle drains and runtime
+replacements, four observed resyncs, and 64,510 state deltas. The runtime made 5,871
+successful lease resolutions with 595 hashes, exactly five for each of the 119
+coordinated replacements.
+
+All 1,440 quiescent samples had zero pending operations, active jobs, queued outbox
+batches/deltas/bytes, descendant processes and output residue. The 100-item queue
+remained intact and retained operations never exceeded 200. The final journal was
+reopened successfully. The recorded workload PID/start identity had exited, no
+process remained at the frozen executable path, and the owned fixture directory
+was empty. Stderr was empty.
+
+| Resource | Maximum observed at quiescent samples | Maximum growth after warm-up | Allowed growth |
+| --- | --- | --- | --- |
+| Private memory | 8,036,352 bytes | 3,039,232 bytes | 128 MiB |
+| Working set | 21,086,208 bytes | 3,612,672 bytes | 192 MiB |
+| Process handles | 114 | 2 | 32 |
+
+Journal size remained at or below 152,694 bytes and diagnostics at or below
+349,434 bytes. These are sampled debug-process measurements, not instantaneous
+peaks or native packaged-application memory claims.
+
+Post-run verification passed all 20 checks, including the exact 156-entry source
+set and hashes, successful compiler artifact/discovery/runner records, full wall
+duration, every sample's resource bounds, workload/lease counters, monotonic event
+sequences, and empty owned fixtures. Separate process-exit evidence confirms the
+observed test process is gone. The tracked receipt
+[`backend-maintainability-soak.json`](backend-maintainability-soak.json) binds the
+raw records and verifier by SHA-256. Local implementation and automated/component
+qualification are complete. Independent review recomputed the sample bounds,
+workload equations and receipt hashes and accepted the final record. The external
+native, extractor, cookie and authentic
+signed-update gates above remain blocked; no push or publishing occurred.

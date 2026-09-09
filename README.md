@@ -128,8 +128,9 @@ and [feature preservation checklist](docs/backend-feature-preservation.md). The
 to review changed methods and keep their source identities current. The ledger now
 covers every current backend review unit and is enforced before dependency installation
 in CI and release-candidate builds; discovery alone never counts as review. This
-completes the source method review, while the Stage 6 two-hour soak and external
-native release acceptance remain separate qualification gates.
+completes the source method review. The separate two-hour isolated backend soak
+also passed; external native release acceptance remains blocked as recorded in the
+[qualification checklist](docs/backend-qualification.md).
 
 ## License
 
