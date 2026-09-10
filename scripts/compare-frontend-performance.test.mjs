@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -187,11 +195,13 @@ async function fixtureRun(root, side, queueSize, repeat, options = {}) {
   return directory;
 }
 
-async function fixtureManifest(optionsForRun) {
-  const root = await mkdtemp(path.join(os.tmpdir(), "frontend-performance-"));
+async function fixtureManifest(optionsForRun, ownerRoot) {
+  const root = await mkdtemp(
+    path.join(ownerRoot ?? os.tmpdir(), "frontend-performance-"),
+  );
   const manifest = {
     schemaVersion: "frontend-performance-comparison-input/v1",
-    expected,
+    expected: structuredClone(expected),
     baseline: [],
     candidate: [],
   };
@@ -209,6 +219,100 @@ async function fixtureManifest(optionsForRun) {
         );
   return manifest;
 }
+
+async function withOwnedFixture(callback) {
+  const owner = await mkdtemp(
+    path.join(os.tmpdir(), "frontend-performance-owned-"),
+  );
+  try {
+    return await callback(owner);
+  } finally {
+    await rm(owner, { recursive: true, force: true });
+  }
+}
+
+async function rewriteProductionManifest(
+  directory,
+  mutate,
+  expectedHashKey,
+  manifest,
+) {
+  const manifestPath = path.join(directory, "production-manifest.json");
+  const production = JSON.parse(await readFile(manifestPath, "utf8"));
+  mutate(production.files[0]);
+  production.aggregateHash = sha256(JSON.stringify(production.files));
+  const bytes = JSON.stringify(production);
+  await writeFile(manifestPath, bytes);
+  const receiptPath = path.join(directory, "run-receipt.json");
+  const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+  receipt.source.productionHash = production.aggregateHash;
+  receipt.source.manifest.sha256 = sha256(bytes);
+  await writeFile(receiptPath, JSON.stringify(receipt));
+  manifest.expected[expectedHashKey] = production.aggregateHash;
+}
+
+test(
+  "accepts an owned run through a canonical directory junction",
+  { skip: process.platform !== "win32" },
+  async () =>
+    withOwnedFixture(async (owner) => {
+      const manifest = await fixtureManifest(undefined, owner);
+      const realRoot = path.dirname(manifest.baseline[0]);
+      const alias = path.join(owner, "run-root-alias");
+      await symlink(realRoot, alias, "junction");
+      for (const side of ["baseline", "candidate"])
+        manifest[side] = manifest[side].map((directory) =>
+          path.join(alias, path.basename(directory)),
+        );
+
+      const result = await compareFrontendPerformance(manifest);
+      assert.equal(result.sides.baseline[1].runs.length, 3);
+    }),
+);
+
+test("rejects an archived path that lexically escapes its run", async () =>
+  withOwnedFixture(async (owner) => {
+    const manifest = await fixtureManifest(undefined, owner);
+    for (const directory of manifest.baseline)
+      await rewriteProductionManifest(
+        directory,
+        (entry) => {
+          entry.path = "../../../escaped.txt";
+          entry.archivePath = "inputs/production/../../../escaped.txt";
+        },
+        "baselineProductionHash",
+        manifest,
+      );
+
+    await assert.rejects(
+      () => compareFrontendPerformance(manifest),
+      /escapes run directory/,
+    );
+  }));
+
+test(
+  "rejects a linked child inside an otherwise owned run",
+  { skip: process.platform !== "win32" },
+  async () =>
+    withOwnedFixture(async (owner) => {
+      const manifest = await fixtureManifest(undefined, owner);
+      const directory = manifest.baseline[0];
+      const fixtureDirectory = path.join(
+        directory,
+        "inputs",
+        "production",
+        "fixture",
+      );
+      const displaced = path.join(directory, "displaced-fixture");
+      await rename(fixtureDirectory, displaced);
+      await symlink(displaced, fixtureDirectory, "junction");
+
+      await assert.rejects(
+        () => compareFrontendPerformance(manifest),
+        /reparse link/,
+      );
+    }),
+);
 
 test("reports distributions, ranges, failures, and side comparison", async () => {
   const result = await compareFrontendPerformance(await fixtureManifest());

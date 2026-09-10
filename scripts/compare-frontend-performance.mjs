@@ -90,6 +90,7 @@ async function validateArchivedManifest(
     manifest.aggregateHash,
   );
   assert.equal(manifest.aggregateHash, expectedHash);
+  const resolvedDirectory = path.resolve(directory);
   const realDirectory = await realpath(directory);
   const seenPaths = new Set();
   for (const entry of manifest.files) {
@@ -105,7 +106,7 @@ async function validateArchivedManifest(
       ...entry.archivePath.split("/"),
     );
     assert.ok(
-      within(realDirectory, archivePath),
+      within(resolvedDirectory, archivePath),
       `Archived input escapes run directory: ${entry.archivePath}`,
     );
     let current = directory;
@@ -117,14 +118,19 @@ async function validateArchivedManifest(
         `Archived input uses a reparse link: ${entry.archivePath}`,
       );
     }
-    const file = await lstat(archivePath);
+    const realArchivePath = await realpath(archivePath);
+    assert.ok(
+      within(realDirectory, realArchivePath),
+      `Archived input escapes run directory: ${entry.archivePath}`,
+    );
+    const file = await lstat(realArchivePath);
     assert.equal(
       file.isFile(),
       true,
       `Archived input is not a regular file: ${entry.archivePath}`,
     );
     assert.equal(file.size, entry.size);
-    assert.equal(sha256(await readFile(archivePath)), entry.sha256);
+    assert.equal(sha256(await readFile(realArchivePath)), entry.sha256);
   }
 }
 
