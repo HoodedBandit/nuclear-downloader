@@ -26,6 +26,8 @@ jobs:
       - name: Verify backend source architecture
         working-directory: .
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           python -m unittest scripts/test_inventory_backend_methods.py
           python -m unittest scripts/test_backend_architecture.py
           python scripts/check-backend-architecture.py
@@ -55,6 +57,20 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Test repository architecture and performance contracts
+        working-directory: .
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          node scripts/frontend-source-inventory.test.mjs
+          node scripts/frontend-source-inventory.mjs --check
+          node scripts/page-style-contract.test.mjs
+          node scripts/compare-frontend-performance.test.mjs
+          pwsh -NoProfile -File scripts/test-backend-performance-contracts.ps1
+          pwsh -NoProfile -File scripts/test-renderer-input-provenance.ps1
+          pwsh -NoProfile -File scripts/test-renderer-baseline.ps1
+          pwsh -NoProfile -File scripts/test-publish-contracts.ps1
 
       - name: Check frontend formatting
         run: npm run format:check

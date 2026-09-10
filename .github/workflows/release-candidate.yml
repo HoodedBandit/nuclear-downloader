@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   build-and-verify:
-    name: Build and verify private candidate
+    name: Build and verify unpublished candidate
     runs-on: windows-latest
     timeout-minutes: 120
     environment: release-candidate
@@ -60,6 +60,8 @@ jobs:
       - name: Verify backend source architecture
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           python -m unittest scripts/test_inventory_backend_methods.py
           python -m unittest scripts/test_backend_architecture.py
           python scripts/check-backend-architecture.py
@@ -94,6 +96,20 @@ jobs:
         working-directory: nuclear-app
         shell: pwsh
         run: npm ci
+
+      - name: Test repository architecture and performance contracts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          node scripts/frontend-source-inventory.test.mjs
+          node scripts/frontend-source-inventory.mjs --check
+          node scripts/page-style-contract.test.mjs
+          node scripts/compare-frontend-performance.test.mjs
+          pwsh -NoProfile -File scripts/test-backend-performance-contracts.ps1
+          pwsh -NoProfile -File scripts/test-renderer-input-provenance.ps1
+          pwsh -NoProfile -File scripts/test-renderer-baseline.ps1
+          pwsh -NoProfile -File scripts/test-publish-contracts.ps1
 
       - name: Run frontend quality gate
         working-directory: nuclear-app
@@ -220,7 +236,7 @@ jobs:
             -ExpectedCommitSha '${{ github.sha }}' `
             -ExpectedCandidateRunId '${{ github.run_id }}'
 
-      - name: Upload private acceptance evidence
+      - name: Upload sanitized acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -231,7 +247,7 @@ jobs:
           retention-days: 30
           overwrite: false
 
-      - name: Upload private candidate bytes
+      - name: Upload unpublished candidate bytes
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: nuclear-downloader-0.6.0-candidate

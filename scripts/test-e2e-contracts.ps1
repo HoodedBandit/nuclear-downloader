@@ -78,7 +78,7 @@ foreach ($required in @(
     'NUCLEAR_E2E_YOUTUBE_FIXTURE_ID: ${{ vars.NUCLEAR_E2E_YOUTUBE_FIXTURE_ID }}',
     'NUCLEAR_E2E_X_FIXTURE_URL: ${{ secrets.NUCLEAR_E2E_X_FIXTURE_URL }}',
     'NUCLEAR_E2E_X_FIXTURE_ID: ${{ vars.NUCLEAR_E2E_X_FIXTURE_ID }}',
-    '- name: Upload private acceptance evidence',
+    '- name: Upload sanitized acceptance evidence',
     'if: ${{ always() }}',
     'if-no-files-found: warn'
 )) {
