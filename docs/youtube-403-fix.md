@@ -68,3 +68,18 @@ Installer/portable acceptance, controlled extractor coverage, cookies,
 signed-update handoff, and the two-hour soak have not been repeated for this
 candidate. Contract fixture success does not qualify those workflows. No push
 or release publication is included.
+
+## Native build and launch
+
+The application was rebuilt offline from commit
+`7a983a354b663fcac87122fbecd52974c6eb1fe7` with the embedded production frontend
+and launched once at `2026-09-10T01:24:54Z`. Its responding Nuclear Downloader
+window was verified. App executable SHA-256:
+`c6ed6ba0a3ead33d784749fc0f78ecdc8d8286c5b516843d2f73569fe45ec091`.
+
+All four adjacent runtime executable hashes matched the embedded lock manifest;
+the adjacent yt-dlp version probe returned `2026.08.19`. No managed runtime was
+present to override the bundle. The existing failed queue item was left for the
+user's explicit retry. Build and launch receipts are
+`target/youtube-403/native-build-result.json` and
+`target/youtube-403/launch-result.json`.
