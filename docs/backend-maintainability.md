@@ -15,7 +15,7 @@ fixes; mechanical moves do not also change behavior.
 | 3. State and durable commits | Passed | 283 Rust tests, strict Clippy, formatting and unchanged bindings; initial performance run plus three repeats, all 45 hard gates passed per comparison |
 | 4. Complete application workflows | Passed | 287 Rust tests, strict Clippy, formatting/bindings, architecture and executable acceptance-contract fixtures |
 | 5. Runtime/updater/lifecycle internals | Passed | 290 Rust tests, strict Clippy, formatting, unchanged bindings, architecture checks and independent runtime/updater extraction review |
-| 6. Integrated qualification | Local gates passed; external gates blocked | 304 Rust tests, strict Clippy, 1,215 reconciled source reviews, source/CI contract checks, four matched performance comparisons and the final 7,203.095-second soak passed; native release acceptance remains blocked |
+| 6. Integrated qualification | Current short gates passed; external gates blocked | Current Rust library suite 332 passed with three opt-in harnesses ignored, strict Clippy passed, and 1,246 source reviews reconcile; matched performance and the later two-hour soaks remain evidence for `fd58050`, while native release acceptance remains blocked |
 
 Every production method and ownership-bearing asynchronous closure is recorded in
 `backend-method-review.json`. Reviewer sidecars record actual inspection outcomes;
@@ -25,14 +25,31 @@ in `backend-feature-preservation.md` links observable behavior to retained check
 The initial inventory contains 671 production entries (including declarations,
 trait implementations and async blocks), 300 test entries, and 141 test-support
 entries. These are review units, not a claim of 671 independent business methods.
-The final reconciled inventory contains 1,215 reviewed entries across 88 files:
-726 production, 327 test and 162 test-support units. CI now requires an accepted
+The current reconciled inventory contains 1,246 reviewed entries across 97 files:
+725 production, 354 test and 167 test-support units. CI now requires an accepted
 review matching every current source identity.
 The structural inventory was cross-checked against all 961 masked Rust `fn`
 tokens: 960 declarations and one explicitly excluded function-pointer type.
 A lexer regression for paired lifetime annotations added one previously missed
 test helper. The inventory records reviewed source syntax, not macro expansion or
 a proof of semantic correctness; its limitations are documented in the schema.
+
+The latest follow-up replaces URL-only playlist identity with a validated media
+selector containing the entry id, extractor key, and one-based playlist ordinal.
+Inspection discovers a bounded playlist in one pass, selected inspection verifies
+the returned identity, queue persistence retains it for retry, and publication
+requires the matching machine output record. Captured inspection JSON uses its
+8 MiB aggregate cap while streamed progress retains its 64 KiB line cap. The
+source-matched review and 332-test library run are current for these bytes; the
+older matched performance and two-hour soak receipts are not transferred to this
+follow-up. See [the inspection and playlist correction](inspection-playlist-fix.md).
+
+The recommended yt-dlp baseline is now `2026.08.19`. The dedicated regression
+binds directly to that constant and passed in the same 332-test library run;
+strict Clippy also passed. The retained exact-URL comparison showed the older
+binary receiving HTTP 403 and the official `2026.08.19` binary succeeding with
+the same selector. The user's subsequent successful YouTube download is useful
+confirmation of that case, not broad extractor or release qualification.
 
 ## Ownership and dependency rules
 

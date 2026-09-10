@@ -1,0 +1,108 @@
+name: Bug report
+description: Report a reproducible Nuclear Downloader problem without sharing private data.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not upload cookies, cookie databases, account credentials, access tokens, private URLs, or unredacted diagnostics. Replace usernames, personal file paths, private media identifiers, and other personal values with `[redacted]`.
+  - type: input
+    id: version
+    attributes:
+      label: Nuclear Downloader version
+      placeholder: 0.6.0
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Installation or build source
+      description: Release installer, portable ZIP, or source build. For source builds, include the commit if known.
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows 11 x64 version
+      description: Include the edition, release, and OS build shown by winver.
+      placeholder: Windows 11 Pro 24H2, build 26100.x
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Source
+      options:
+        - YouTube
+        - X / Twitter
+        - Another yt-dlp-supported site
+        - Local application or runtime behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: Requested format
+      options:
+        - MP4
+        - MKV
+        - WebM
+        - MP3
+        - FLAC
+        - WAV
+        - AAC
+        - Opus
+        - Not applicable
+    validations:
+      required: true
+  - type: dropdown
+    id: cookies
+    attributes:
+      label: Cookie mode
+      description: State only the mode. Never attach or paste cookie data.
+      options:
+        - Disabled
+        - cookies.txt file
+        - Browser cookies
+        - Not applicable
+    validations:
+      required: true
+  - type: input
+    id: quality
+    attributes:
+      label: Requested quality
+      placeholder: Best, 1080p, 720p, or not applicable
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Downloader runtime versions
+      description: Include yt-dlp, FFmpeg, and Deno versions if available in diagnostics. Do not include personal paths.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use a public example URL when possible. Redact private URLs and identifiers.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Paste only the relevant error and runtime versions after removing usernames, paths, URLs, IDs, cookies, tokens, and account data.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed cookies, credentials, tokens, private URLs, personal paths, and other secrets from this report.
+          required: true

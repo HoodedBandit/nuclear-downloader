@@ -110,7 +110,11 @@ verified. Executable SHA-256:
 `af73bed742af78c9f1d55ff78635907c4b666ee6581c2227c053c25039b4604f`.
 The build and launch receipts are retained under
 `target/manual-launch/inspection-fix-8466d7b-90423cd133dd452b935e9a9d79993c0d/`.
-The user's native workflow and Add-button timing retest remain pending.
+The original X workflow and Add-button timing retest remain pending. A later
+[YouTube 403 correction](youtube-403-fix.md) rebuilt the app with the updated
+runtime, and the maintainer reported that the YouTube Best/MP4 download works.
+That observation does not provide a new Add-button timing or complete playlist
+acceptance result.
 
 The two-hour soaks and native installer/portable, cookie, and signed-update
 qualification have not been rerun for these changes. This bug-fix evidence does

@@ -2,6 +2,16 @@
 
 Nuclear Downloader 0.6.0 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
 
+This document describes the workflow pinned to shipped application version
+0.6.0. The published v0.6.0 assets were built from commit `493bcab` with the
+yt-dlp 2026.07.04 runtime. Changes on current `main`, including the internal
+refactor and yt-dlp 2026.08.19 pin, are not covered by that release's receipts.
+They require a fresh exact-byte candidate and every automated and manual gate
+below. Source, browser, performance, and soak checks alone do not authorize
+publication. Do not dispatch this still-0.6.0-pinned workflow for current
+`main`: a future release first needs a separately approved version change across
+the application metadata, asset contracts, and protected workflows.
+
 ## Trust and distribution boundaries
 
 - GitHub Releases is the distribution host.
@@ -10,7 +20,7 @@ Nuclear Downloader 0.6.0 is a Windows x64-only release. ARM64 builds are not pro
 - The signing private key exists only in the protected `release-candidate` GitHub environment and in an encrypted offline backup. It must never be stored in the repository, an Actions artifact, a build log, or a release asset.
 - The current public key and key ID are compiled into release binaries by `build.rs`. An optional second public key/ID pair implements a reviewed rotation window.
 - The `production-release` GitHub environment has required maintainers but does not need the signing private key. Publishing consumes already-signed candidate bytes.
-- Actions artifacts are private to repository users with Actions access. They are candidates, not public releases.
+- Actions artifacts can be downloaded by signed-in users with repository read access. This repository is public, so these artifacts are not confidential. Protected environment approval controls execution, not artifact readership. See [GitHub artifact access](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts). Candidate artifacts are not approved release downloads.
 
 Configure these non-secret GitHub repository variables. The candidate and production environments must not shadow them with different values:
 
@@ -48,7 +58,7 @@ It also accepts exactly these managed-runtime files, where `VERSION` has three n
 - `nuclear-downloader-runtime-VERSION-windows-x64.zip`
 - `nuclear-downloader-runtime-VERSION-windows-x64.zip.sha256`
 
-`nuclear-downloader-v0.6.0-sha256.txt` and the runtime `.zip.sha256` are the bounded compatibility bridge for older clients. Version 0.6.0 and later require the signed JSON contracts. The runtime descriptor also binds the exact SHA-256 of the archive's sole root `runtime-manifest.json`; both candidate verification and runtime installation enforce that inner binding. `SHA256SUMS` covers every other public asset. The private `release-candidate-inventory.json` additionally records every public asset's exact size and hash, the source commit, the key ID, and toolchain versions; it is not published.
+`nuclear-downloader-v0.6.0-sha256.txt` and the runtime `.zip.sha256` are the bounded compatibility bridge for older clients. Version 0.6.0 and later require the signed JSON contracts. The runtime descriptor also binds the exact SHA-256 of the archive's sole root `runtime-manifest.json`; both candidate verification and runtime installation enforce that inner binding. `SHA256SUMS` covers every other public asset. The candidate-only `release-candidate-inventory.json` additionally records every public asset's exact size and hash, the source commit, the key ID, and toolchain versions; it is retained in the candidate artifact rather than attached to the release.
 
 The app update manifest is UTF-8 without a byte-order mark. Its exact bytes are signed, and its schema is:
 
@@ -74,55 +84,66 @@ Do not reformat either signed descriptor after signing it.
 Use Node.js 22.23.1, npm 10.9.9, Rust/Cargo 1.94.1, and PowerShell 7.5 or newer on Windows x64. Release evidence readers explicitly preserve JSON timestamp strings; older PowerShell versions fail early instead of changing their representation. From a clean worktree, run:
 
 ```powershell
+python -m unittest scripts/test_inventory_backend_methods.py
+python -m unittest scripts/test_backend_architecture.py
+python scripts/check-backend-architecture.py
+python scripts/inventory-backend-methods.py check
+pwsh -NoProfile -File scripts/test-windows-user-process.ps1
 cd nuclear-app
 npm ci
 npm run format:check
 npm run lint
 npm run check
 npm test
+# First set the fresh owned profile variables shown in docs/testing.md.
 npm run test:e2e:renderer
 npm run build
 npm run test:e2e:production-bundle
 npm run audit:production
 cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-features export_bindings_
 cargo test --manifest-path src-tauri/Cargo.toml --all-features
 cargo deny --manifest-path src-tauri/Cargo.toml check
 cargo fetch --manifest-path src-tauri/Cargo.toml --locked
 cd ..
 pwsh -NoProfile -File scripts/test-packaging.ps1
 pwsh -NoProfile -File scripts/test-e2e-contracts.ps1
-pwsh -NoProfile -File scripts/test-windows-user-process.ps1
 git status --short
 ```
 
-The last command must show no unexplained changes. This local gate does not sign, upload, tag, or release anything.
+The renderer command requires a new owned profile configured as documented in
+[testing.md](testing.md). After binding export, generated bindings must remain
+clean. The last command must show no unexplained changes. This local gate does
+not sign, upload, tag, or release anything.
 
-## Gate 2: private release candidate
+## Gate 2: unpublished release candidate
 
 After the maintainer explicitly approves pushing the exact commit:
 
 1. Push that commit normally. Do not create a release tag yet.
 2. Manually dispatch **Release Candidate**.
 3. Set `release_version` to `0.6.0`.
-4. Set `runtime_version` to the approved three-component runtime version.
+4. Set `runtime_version` to the approved three-component runtime version. The
+   current workflow default is `2026.08.19`; confirm it matches the reviewed
+   sidecar lock instead of relying on the default blindly.
 5. Optionally supply a canonical UTC `published_at` value such as `2026-08-17T12:00:00Z`. If omitted, the builder records its current UTC time.
 6. Enter the exact confirmation `BUILD v0.6.0`.
 7. Approve the protected `release-candidate` environment after reviewing the commit and inputs.
 
-The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the private inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. It creates no public release or tag. It uploads the private `nuclear-downloader-0.6.0-candidate` artifact after successful acceptance and separately retains sanitized acceptance evidence in `nuclear-downloader-0.6.0-acceptance`, including bounded diagnostics when acceptance fails. Record the successful Actions run ID.
+The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the candidate inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. It creates no public release or tag. It uploads the unpublished `nuclear-downloader-0.6.0-candidate` artifact after successful acceptance and separately retains sanitized acceptance evidence in `nuclear-downloader-0.6.0-acceptance`, including bounded diagnostics when acceptance fails. Record the successful Actions run ID.
 
 After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance-user.ps1`. The wrapper launches the acceptance worker with a restricted Medium-integrity token and an owned kill-on-close process job, preserving the runner account, environment, and exact production bytes. It does not alter UAC policy or add a WebDriver plugin to the app. An early CI fixture verifies the token, exit-code forwarding, environment, Unicode arguments, timeout, and descendant cleanup before building. Acceptance records the verified integrity RID alongside the WebView2 and EdgeDriver versions. This is required because [WebView2 ignores environment-supplied debugging arguments for elevated hosts](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645#issuecomment-4934355430).
 
 The restricted token retains its user's access to newly created process objects instead of relying on the now-disabled Administrators group. Existing desktop and window-station permissions are never changed; fixtures verify they remain identical after success and timeout.
 
-The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.6.0-acceptance` as a separate private evidence artifact. Evidence verification allows only the exact JSON contract and bounded, regularly named diagnostic logs; elevated runs and unexpected files fail closed. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
+The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.6.0-acceptance` as a separate unpublished evidence artifact. Evidence verification allows only the exact JSON contract and bounded, regularly named diagnostic logs; elevated runs and unexpected files fail closed. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
 
 The builder refuses a dirty worktree, version drift among npm/Tauri/Cargo metadata, an output path outside Cargo's target directory, existing candidate output, reparse-point traversal, wrong artifact names, oversized files, and manifest/hash mismatches. It never prints the signing key or password.
 
 ## Gate 3: exact-byte acceptance
 
-Download the private candidate artifact from the successful run. Preserve the archive and its run ID. Test those exact bytes, not a local rebuild:
+Download the candidate artifact from the successful run. Preserve the archive and its run ID. Test those exact bytes, not a local rebuild:
 
 1. Clean Windows x64 install and first startup.
 2. Fixture download and conversion.
@@ -176,7 +197,7 @@ Only after exact-byte acceptance and explicit maintainer approval:
 5. Paste the exact `windows-x64-manual-acceptance.json` text into `manual_acceptance_json`.
 6. Approve the protected `production-release` environment.
 
-The publish workflow verifies that the selected run is a successful first-party **Release Candidate** workflow, checks out its recorded commit, downloads both the candidate and acceptance artifacts from that exact run ID, and validates that the evidence binds the source commit, candidate creation time, Windows x64 platform, every asset size/hash, and every automated acceptance result. It separately verifies the structured Windows 11 manual evidence, including its candidate inventory digest, complete asset list, submitter, environment versions, seven passed cases, operators, and timestamps. The verified manual record is retained as a private Actions artifact before any draft mutation. It then fetches the exact `minisign-verify` 0.2.5 source pinned in `Cargo.lock` to crates.io checksum `22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e`. Verification resolves offline with `--locked`, checks the registry source and checksum lock entry, and reruns the complete structural/hash/inventory and detached-signature verification. It compiles only a temporary zero-dependency signature-verification helper; it does not rebuild or sign any application, installer, portable, runtime, manifest, or release asset.
+The publish workflow verifies that the selected run is a successful first-party **Release Candidate** workflow, checks out its recorded commit, downloads both the candidate and acceptance artifacts from that exact run ID, and validates that the evidence binds the source commit, candidate creation time, Windows x64 platform, every asset size/hash, and every automated acceptance result. It separately verifies the structured Windows 11 manual evidence, including its candidate inventory digest, complete asset list, submitter, environment versions, seven passed cases, operators, and timestamps. The verified manual record is retained as a unpublished Actions artifact before any draft mutation. It then fetches the exact `minisign-verify` 0.2.5 source pinned in `Cargo.lock` to crates.io checksum `22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e`. Verification resolves offline with `--locked`, checks the registry source and checksum lock entry, and reruns the complete structural/hash/inventory and detached-signature verification. It compiles only a temporary zero-dependency signature-verification helper; it does not rebuild or sign any application, installer, portable, runtime, manifest, or release asset.
 
 The workflow then creates a draft `v0.6.0` release targeted at the candidate commit and uploads only the ten inventoried public files. It discovers unpublished drafts through the release listing and verifies them by numeric release ID, not the published-release tag endpoint. Every asset must be fully uploaded and have the exact inventoried name, size, and SHA-256 digest. The draft must also target the exact candidate commit. Only after those checks does the workflow publish that verified release ID and mark it latest.
 

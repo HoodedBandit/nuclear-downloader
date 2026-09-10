@@ -1,169 +1,138 @@
 # Nuclear Downloader
 
-If you want to support my work, donations are welcome: [ko-fi.com/hoodedbandit](https://ko-fi.com/hoodedbandit)
+[![CI](https://github.com/HoodedBandit/nuclear-downloader/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/HoodedBandit/nuclear-downloader/actions/workflows/ci.yml)
 
-Nuclear Downloader is an easy-to-use Windows desktop app for downloading videos from YouTube, X (Twitter), and many other sites supported by `yt-dlp`.
+A Windows desktop app for downloading video and audio from YouTube, X, and other
+sites supported by yt-dlp. Paste a link, choose the items, format, and quality,
+then download to your chosen folder.
 
-It is built for people who want a simple desktop interface instead of memorizing command-line flags. Paste a URL, choose format and quality, optionally provide cookies for login-required downloads, and download to your chosen folder.
+[Download](https://github.com/HoodedBandit/nuclear-downloader/releases) ·
+[Changelog](CHANGELOG.md) · [Documentation](docs/README.md) ·
+[Report a bug](https://github.com/HoodedBandit/nuclear-downloader/issues/new/choose) ·
+[Support the project](https://ko-fi.com/hoodedbandit)
 
-Production UI assets are embedded in the Windows executable and run inside its native app window. Nuclear Downloader does not host a website or require a browser; localhost is used only by the development server.
+## Download and run
 
-Installed Windows builds can also check the latest stable GitHub Release from inside the app and reinstall automatically through the published NSIS installer.
+**Target platform: Windows 11 x64.** Windows on ARM64 is not supported.
+
+1. Open [GitHub Releases](https://github.com/HoodedBandit/nuclear-downloader/releases).
+2. Choose the **x64 setup executable** for an installation, or the **x64 portable
+   ZIP** and extract the entire archive into one folder.
+3. Launch Nuclear Downloader. Paste a link, review its media, and add it to the queue.
+4. Choose the output folder, format, and quality, then start the download.
+
+Release bundles include the downloader and media tools. Using the app does not
+require Node.js, Rust, or a command prompt. Microsoft Edge WebView2 is required
+for the native window. The app's interface is embedded in its executable; it
+does not run a public website or require a browser tab.
+
+Keep the portable app and its adjacent tools together. A loose `nuclear.exe`
+needs those tools or an authenticated managed runtime. The installed app can
+check for published updates and hand off to a verified installer.
+
+**Source versus release:** the latest published release is **0.6.0**. The
+refactor and fixes described under **Unreleased** in the changelog are on
+`main`; they are not included in those existing downloads. This includes the
+yt-dlp `2026.08.19` YouTube fix. Publishing new installer and portable artifacts
+is a separate, qualified release step.
 
 ## Features
 
-- Download single videos and supported playlists
-- Download from YouTube, X, and many other `yt-dlp`-supported sites
-- Choose video quality and output format per item
-- Rename queued files before download with inline title editing
-- Extract audio-only downloads in common formats
-- Use browser cookies or a `cookies.txt` file when a supported site requires login
-- Track progress, speed, ETA, and per-download status in the desktop UI
-- Build Windows releases that can package `yt-dlp`, `ffmpeg`, `ffprobe`, and Deno when you provide the sidecar binaries locally
+- Single videos, supported playlists, and individual media from multi-video posts.
+- MP4, MKV, and WebM video; MP3, FLAC, WAV, AAC, and Opus audio.
+- Per-item format and quality choices, inline filenames, selection, and queue actions.
+- Progress, speed, ETA, conversion status, cancellation, and explicit retry.
+- Saved queues and recent operation history across restarts. Interrupted work stays
+  paused until you choose to retry.
+- Collision-safe output names that preserve files already in the destination.
+- Optional browser cookies or a `cookies.txt` file for content your account can access.
+- Runtime health, repair/update controls, app updates, and redacted diagnostics.
 
-## Windows Support
+Five downloads can run concurrently, with one inspection and one explicit WebM
+conversion at a time. Large queues use virtual rows and playlists use pages to
+keep the interface responsive.
 
-Nuclear Downloader 0.6.0 supports 64-bit Windows on x64 processors. Windows on
-ARM64 is not supported; the app, installer, portable bundle, managed runtime,
-and checked sidecars are all built for `windows-x86_64`.
+## What changed on main
 
-## Dependencies
+The refactor preserves the existing interface and workflows while making their
+ownership explicit:
 
-Required system dependencies on Windows:
+- Each mounted page has one lifecycle owner. Late async results cannot update a
+  disposed page, and renderer reloads do not cancel durable backend downloads.
+- Queue presentation and workflow controllers are separated from the Svelte
+  components that render them. Rust remains the authority for saved state.
+- State commands, process supervision/output readers, staging, output resolution,
+  and file publication have focused modules with source-matched reviews.
+- Follow-up fixes address stale state events, filename-edit races, late cancellation,
+  duplicate inspection work, X multi-video selection, and the reproduced YouTube 403.
 
-- Node.js 22.23.1 and npm 10.9.9
-- Rust 1.94.1 via `rustup`
-- Microsoft Visual Studio Build Tools with the C++ workload
-- Microsoft Edge WebView2 runtime
+See the [refactor record](docs/internal-cleanup.md) and
+[current evidence guide](docs/README.md#validation-and-qualification) for executed
+checks and their limits. Browser comparisons and earlier two-hour soaks are
+recorded against specific candidates. Native Windows scaling, exact release
+artifacts, cookies, and signed-update qualification remain separate requirements.
 
-Required downloader/media tools:
+## Build from source
 
-- `yt-dlp`
-- `ffmpeg`
-- `ffprobe`
-- Deno is recommended for modern YouTube extraction and is included in official release bundles
+The source is available under the repository's [license](LICENSE); it is not
+open-source. Development requires:
 
-This source repository intentionally does not include third-party binary dependencies.
+- Windows 11 x64 and PowerShell 7.
+- Node.js **22.23.1** and npm **10.9.9**.
+- Rust **1.94.1** through rustup, plus Visual Studio Build Tools with the C++ workload.
+- Microsoft Edge WebView2; Python 3 for architecture and source-review checks.
 
-- For development, the app can use `yt-dlp`, `ffmpeg`, `ffprobe`, and optionally Deno from your system `PATH`
-- For Windows release bundling, fetch the exact x64 inputs recorded in
-  `nuclear-app/src-tauri/sidecars.lock.json`; the build rejects missing,
-  wrong-hash, or wrong-architecture sidecars
-
-## Download and Run
-
-Prebuilt downloads are published on the GitHub Releases page:
-
-- [GitHub Releases](https://github.com/HoodedBandit/nuclear-downloader/releases)
-
-Use the NSIS setup executable for a normal installation. The self-contained Windows portable ZIP includes the app plus all downloader sidecars; the raw `nuclear.exe` expects a managed runtime or adjacent sidecars.
-
-This source repository does not store release `.exe` files. If you want a ready-to-run installer or portable build, download it from Releases.
-
-If you install Nuclear Downloader with the Windows NSIS installer, the app can later check GitHub Releases for updates and hand off to the latest published installer automatically. It does not patch files in place.
-
-If you want to create your own local build instead, use the compile steps below.
-
-## Developer Setup
-
-The JavaScript and Rust package dependencies are declared in the repo. Install the system dependencies above first, then install the app packages from the `nuclear-app` directory.
-
-## Compile From Source
-
-Install the app dependencies exactly as locked:
-
-```powershell
-cd nuclear-app
-npm ci
-```
-
-Run in development:
-
-```powershell
-npm run tauri dev
-```
-
-Run the local quality gate:
-
-```powershell
-npm run format:check
-npm run lint
-npm run check
-npm test
-npm run test:e2e:renderer
-npm run build
-npm run test:e2e:production-bundle
-npm run audit:production
-cd src-tauri
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
-cargo deny check
-cd ..\..
-pwsh -NoProfile -File .\scripts\test-packaging.ps1
-pwsh -NoProfile -File .\scripts\test-e2e-contracts.ps1
-python .\scripts\inventory-backend-methods.py check
-```
-
-Official release candidates are built only by the protected, manually
-dispatched workflow described in [docs/release-process.md](docs/release-process.md).
-It verifies locked sidecars, builds the x64 NSIS and portable artifacts, signs
-the exact app/runtime manifests, and records an immutable candidate inventory.
-Publication is a separate maintainer-approved workflow that reuses those exact
-bytes without rebuilding them.
-
-For local sidecar preparation:
+From the repository root:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\fetch-sidecars.ps1
+cd nuclear-app
+npm ci
+npm run tauri dev
 ```
 
-## More Detail
+The fetcher verifies the exact inputs recorded in
+[`sidecars.lock.json`](nuclear-app/src-tauri/sidecars.lock.json). Third-party
+executables are not stored in Git.
 
-See [docs/quickstart.md](docs/quickstart.md) for the full setup, development, and release build workflow.
+| Tool             | Current source pin |
+| ---------------- | ------------------ |
+| yt-dlp           | 2026.08.19         |
+| FFmpeg / ffprobe | 8.1                |
+| Deno             | 2.9.2              |
 
-Backend contributors can start with the [ownership and module map](docs/backend-maintainability.md)
-and [feature preservation checklist](docs/backend-feature-preservation.md). The
-[method review ledger workflow](docs/backend-method-review-schema.md) explains how
-to review changed methods and keep their source identities current. The ledger now
-covers every current backend review unit and is enforced before dependency installation
-in CI and release-candidate builds; discovery alone never counts as review. This
-completes the source method review. The separate two-hour isolated backend soak
-also passed; external native release acceptance remains blocked as recorded in the
-[qualification checklist](docs/backend-qualification.md).
+See [developer setup](docs/quickstart.md) for local builds and
+[testing](docs/testing.md) for the complete checks, isolated renderer profiles,
+visual comparisons, performance measurements, and native acceptance.
+
+## Code and contribution guide
+
+| Area                                        | Starting point                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Page composition and lifecycle wiring       | [`+page.svelte`](nuclear-app/src/routes/+page.svelte)                                                                 |
+| Frontend state, controllers, and components | [Frontend ownership map](docs/frontend-ownership.md)                                                                  |
+| Rust commands and application wiring        | [`lib.rs`](nuclear-app/src-tauri/src/lib.rs)                                                                          |
+| State, lifecycle, downloads, and updates    | [Backend ownership map](docs/backend-maintainability.md)                                                              |
+| Behavior and regression obligations         | [Feature checklist](docs/backend-feature-preservation.md) and [frontend baseline](docs/frontend-behavior-baseline.md) |
+| Method reviews and architecture rules       | [Review ledger workflow](docs/backend-method-review-schema.md)                                                        |
+| Candidate construction and publication      | [Release process](docs/release-process.md)                                                                            |
+
+Bug reports should include the app/runtime version, source site, selected
+format/quality, reproduction steps, and redacted error details. Never attach
+cookies, tokens, account credentials, or private media links. See
+[CONTRIBUTING.md](CONTRIBUTING.md) before proposing code changes.
+
+## Site support and responsible use
+
+Site support follows yt-dlp and can change when a site changes. Login-required,
+private, or region-restricted media may require valid cookies and may still be
+unavailable. Supporting an extractor does not guarantee every link will work.
+
+Use the app only for content you have the right to access and download, in
+accordance with applicable laws and platform terms. Do not use it to infringe
+copyright or bypass access controls you are not authorized to bypass.
 
 ## License
 
-This repository is source-available, not open-source.
-
-All rights are reserved by the author. You may not use, copy, modify, or distribute this code without explicit written permission.
-
-See [LICENSE](LICENSE) for the full terms.
-
-## Login-Required Downloads
-
-Some supported sites require login before media can be fetched. Nuclear Downloader supports:
-
-- Browser cookie import for supported browsers
-- Manual `cookies.txt` selection
-
-If a site uses login walls, private media, or regional restrictions, you may need to provide valid cookies from an account that is allowed to access that content.
-
-## Supported Sites
-
-Nuclear Downloader supports sites that `yt-dlp` supports. That includes YouTube and X, along with many other platforms. Site support can change over time as upstream extractors change.
-
-If a site is unsupported, broken, or requires credentials that cannot be exported cleanly, the app may not be able to download from it.
-
-## Legal and Responsible Use
-
-Use Nuclear Downloader only where you have the right to access and download the content.
-
-Do not use it to:
-
-- Infringe copyright
-- Bypass access controls you are not authorized to bypass
-- Violate platform terms of service
-- Evade DMCA restrictions or other applicable law
-
-You are responsible for complying with the laws and platform rules that apply to your jurisdiction and the content you download.
+All rights are reserved. You may not use, copy, modify, or distribute the source
+without explicit written permission from the author. See [LICENSE](LICENSE).

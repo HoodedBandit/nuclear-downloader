@@ -63,7 +63,9 @@ and raw verbose logs are not committed. The independent source review found no
 active-default, hash, or selector inconsistency.
 
 This evidence establishes the exact link's standalone downloader correction.
-The rebuilt application's native queue retry remains a separate user test.
+After the verified app launch below, the maintainer reported that the download
+works in the application. That confirms the reported Best/MP4 workflow informally;
+it is not a complete native acceptance receipt.
 Installer/portable acceptance, controlled extractor coverage, cookies,
 signed-update handoff, and the two-hour soak have not been repeated for this
 candidate. Contract fixture success does not qualify those workflows. No push
@@ -80,6 +82,7 @@ window was verified. App executable SHA-256:
 All four adjacent runtime executable hashes matched the embedded lock manifest;
 the adjacent yt-dlp version probe returned `2026.08.19`. No managed runtime was
 present to override the bundle. The existing failed queue item was left for the
-user's explicit retry. Build and launch receipts are
+user's explicit retry, which the maintainer subsequently reported as working.
+Build and launch receipts are
 `target/youtube-403/native-build-result.json` and
 `target/youtube-403/launch-result.json`.

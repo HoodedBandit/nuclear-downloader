@@ -61,4 +61,4 @@ At every step, the release that changes trusted public keys must itself be signe
 
 Key IDs are metadata selectors, not secrets and not cryptographic fingerprints. Use 1-64 ASCII letters, digits, `.`, `_`, or `-`; never recycle an ID for different key material, and ensure app and runtime manifests use the same active ID.
 
-For every signed candidate, retain the private candidate inventory and acceptance record. They should identify the key ID, exact commit, exact artifact hashes, toolchain versions, candidate workflow run ID, approver, and test result. They must not contain private-key bytes, passwords, cookies, tokens, or exported user diagnostics.
+For every signed candidate, retain the candidate inventory and acceptance record. They should identify the key ID, exact commit, exact artifact hashes, toolchain versions, candidate workflow run ID, approver, and test result. They must not contain private-key bytes, passwords, cookies, tokens, or exported user diagnostics.

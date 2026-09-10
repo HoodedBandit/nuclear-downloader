@@ -1,6 +1,60 @@
 # Changelog
 
-## v0.6.0 - 2026-08-25
+## Unreleased
+
+These changes are on `main` after the published 0.6.0 release. Existing release
+downloads do not contain them; the application version remains 0.6.0 until a new
+release is prepared.
+
+### Internal structure
+
+- Gave each mounted page one resource owner for subscriptions, timers, observers,
+  startup work, and operation waiters. Startup and reloads reject stale results;
+  disposing the renderer leaves durable backend downloads running.
+- Separated queue presentation and inspection, queue, runtime, app-update, and
+  settings/diagnostics workflows from Svelte rendering. Extracted the existing
+  header, settings, queue, dialogs, and diagnostics into typed components.
+- Split StateStore commands into queue, operation, and maintenance modules;
+  separated process supervision from output reading/draining and staging from
+  final-output resolution and destination publication.
+- Preserved the existing screens, labels, controls, keyboard interactions,
+  concurrency limits, encrypted journal schema, and explicit retry policy.
+
+### Fixes
+
+- Prevented late subscription/snapshot/waiter results from affecting a replacement
+  page or leaving renderer resources behind.
+- Rejected stale queue events and prevented delayed filename-save results from
+  clearing a newer edit or saving another row's draft.
+- Made cancellation tolerate an operation completing or being dismissed during
+  the cancellation request, while retaining errors for truly missing live work.
+- Removed a redundant metadata request when adding links. Inspection now uses one
+  bounded pass; observed extractor timings are documented without claiming a
+  universal Add-button response time.
+- Preserved exact child identity for multi-video X posts and playlist entries
+  through selection, queueing, retry, and output validation. Fixed cancellation
+  winning immediately before playlist admission.
+- Updated the pinned yt-dlp runtime from `2026.07.04` to `2026.08.19`, resolving the
+  reproduced YouTube HTTP 403 for the reported Best/MP4 download. Deno and FFmpeg
+  versions are unchanged.
+
+### Validation and maintenance
+
+- Added repeatable renderer workflow cases, exact pixel/geometry/control/focus
+  comparisons, and source inventories with explicit ownership maps.
+- Recorded matched 1/100/1,000-item performance comparisons and two-hour backend
+  and renderer lifecycle soaks for the structural candidate. Later fixes have
+  separate regression evidence; earlier qualification does not transfer to them.
+- Added regressions for the confirmed races, inspection behavior, media identity,
+  and stale runtime detection. The latest runtime correction passed 332 Rust tests;
+  the preceding inspection fix passed 188 frontend tests, 11 renderer workflows,
+  and 60 browser-emulated visual comparisons.
+
+See the [documentation index](docs/README.md) for source-bound evidence and open
+native release gates. The maintainer's successful YouTube retry is a useful
+real-app check, not complete installer, cookie, or signed-update acceptance.
+
+## v0.6.0 - 2026-09-05
 
 Nuclear Downloader 0.6.0 is a quiet kind of big release. The app should still
 feel familiar, but almost everything behind the window has been rebuilt to be
@@ -39,7 +93,7 @@ steadier, safer, and much easier to trust when a download goes sideways.
 - Windows x64 sidecars are locked to known hashes and verified before release
   builds. ARM64 is not supported in this release, and the documentation now says
   so plainly.
-- The private candidate and public release workflows build once, test those exact
+- The candidate and public release workflows build once, test those exact
   bytes, inventory every artifact, and publish without rebuilding.
 - CI now covers formatting, linting, Svelte checks, frontend and Rust tests,
   strict Clippy, dependency and license policy, production audits, packaging

@@ -8,6 +8,14 @@ The compiler-backed inventory contains **420 callables across 32 production file
 
 `scripts/frontend-source-inventory.mjs` uses the repository-installed TypeScript and Svelte compilers. It scans `.js`, `.ts`, and `.svelte` under `nuclear-app/src`, excluding tests, generated bindings, and the declared accessible-dialog harness. Files without callables remain hashed so drift is detected. Entries record path, lexical owner, symbol, source location, classification, async flag, file and span hashes, responsibility, and workflows. Parse diagnostics fail generation. This is not a type check, reachability proof, behavioral review, or workflow result.
 
+The current inventory includes the typed `media-identity.ts` owner and the
+playlist cancellation guard in `inspection-workflow.ts`. The associated final
+short gates passed 188 frontend tests with the opt-in soak skipped, Svelte check,
+strict ESLint, Prettier, the production build, all 11 browser workflows, and all
+60 browser-emulated visual comparisons. Those results are bound to the current
+inspection follow-up; they do not transfer the earlier `fd58050` performance and
+two-hour soak qualification or establish native Windows behavior.
+
 ## Ownership map
 
 | Source | Entries | Responsibility | Workflows |
