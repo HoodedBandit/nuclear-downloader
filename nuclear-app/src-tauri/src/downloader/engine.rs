@@ -6,8 +6,8 @@ use super::naming::{
     build_final_output_path, build_staged_webm_output_path, build_webm_final_path, path_to_string,
 };
 use super::process::{
-    wait_with_bounded_output, wait_with_streamed_stdout, DownloadJob, MAX_PROCESS_LINE_BYTES,
-    MAX_STDERR_BYTES,
+    wait_with_bounded_output, wait_with_streamed_stdout, DownloadJob, ProcessSpawnError,
+    MAX_PROCESS_LINE_BYTES, MAX_STDERR_BYTES,
 };
 use super::progress::{
     parse_ffmpeg_progress_percent, DOWNLOAD_ETA_RE, DOWNLOAD_MERGE_RE, DOWNLOAD_PROGRESS_RE,
@@ -105,7 +105,10 @@ async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<
 
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = job.spawn(&mut cmd, "ffprobe", false).await?;
+    let child = job
+        .spawn(&mut cmd, "ffprobe", false)
+        .await
+        .map_err(ProcessSpawnError::into_message)?;
 
     let output = wait_with_bounded_output(
         child,
@@ -147,6 +150,16 @@ enum DownloadAttemptResult {
     Cancelled,
     RetryWithTwitterSyndication,
     Error(DownloadErrorInfo),
+}
+
+fn spawn_error_result(process_name: &str, error: ProcessSpawnError) -> DownloadAttemptResult {
+    match error {
+        ProcessSpawnError::Cancelled => DownloadAttemptResult::Cancelled,
+        ProcessSpawnError::Failed(message) => DownloadAttemptResult::Error(simple_error(
+            "runtime_missing",
+            format!("Failed to start {process_name}: {message}"),
+        )),
+    }
 }
 
 fn terminal_outcome_from_attempt(result: DownloadAttemptResult) -> DownloadOutcome {
@@ -195,12 +208,7 @@ async fn run_download_attempt(
 
     let child = match job.spawn(&mut cmd, "yt-dlp", true).await {
         Ok(child) => child,
-        Err(error) => {
-            return DownloadAttemptResult::Error(simple_error(
-                "runtime_missing",
-                format!("Failed to start yt-dlp: {}", error),
-            ));
-        }
+        Err(error) => return spawn_error_result("yt-dlp", error),
     };
 
     let output = match wait_with_streamed_stdout(child, job, "yt-dlp", |line| {
@@ -350,12 +358,7 @@ async fn run_webm_conversion(
 
     let child = match job.spawn(&mut cmd, "ffmpeg", true).await {
         Ok(child) => child,
-        Err(error) => {
-            return DownloadAttemptResult::Error(simple_error(
-                "runtime_missing",
-                format!("Failed to start ffmpeg: {error}"),
-            ));
-        }
+        Err(error) => return spawn_error_result("ffmpeg", error),
     };
 
     let mut last_progress: f64 = 0.0;
@@ -689,8 +692,35 @@ pub async fn start_download(
 
 #[cfg(test)]
 mod tests {
-    use super::{DownloadAttemptResult, DownloadOutcome};
+    use super::{spawn_error_result, DownloadAttemptResult, DownloadOutcome};
     use crate::downloader::errors::DownloadErrorInfo;
+    use crate::downloader::process::ProcessSpawnError;
+
+    #[test]
+    fn typed_spawn_cancellation_becomes_a_cancelled_attempt() {
+        assert!(matches!(
+            spawn_error_result("yt-dlp", ProcessSpawnError::Cancelled),
+            DownloadAttemptResult::Cancelled
+        ));
+    }
+
+    #[test]
+    fn typed_spawn_failure_preserves_the_existing_runtime_failure_context() {
+        let result = spawn_error_result(
+            "yt-dlp",
+            ProcessSpawnError::Failed("Failed to start yt-dlp: fixture failure".to_string()),
+        );
+        match result {
+            DownloadAttemptResult::Error(error) => {
+                assert_eq!(error.code, "runtime_missing");
+                assert_eq!(
+                    error.message,
+                    "Failed to start yt-dlp: Failed to start yt-dlp: fixture failure"
+                );
+            }
+            _ => panic!("spawn failure did not remain an error"),
+        }
+    }
 
     #[test]
     fn terminal_outcome_preserves_published_filename() {

@@ -2,7 +2,7 @@ use super::command_args::{
     append_cookie_args, append_twitter_syndication_args, append_ytdlp_runtime_args,
 };
 use super::errors::{error_for_fetch, should_retry_with_twitter_syndication};
-use super::process::{wait_with_bounded_output, DownloadJob, MAX_STDERR_BYTES};
+use super::process::{wait_with_bounded_output, DownloadJob, ProcessSpawnError, MAX_STDERR_BYTES};
 use super::validation::validate_fetch_request;
 use crate::models::{CookieConfig, MediaSelection, UrlInspection};
 use std::future::Future;
@@ -60,7 +60,10 @@ async fn run_fetch_info_command(
     cmd.args(&args);
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = job.spawn(&mut cmd, "yt-dlp", false).await?;
+    let child = job
+        .spawn(&mut cmd, "yt-dlp", false)
+        .await
+        .map_err(ProcessSpawnError::into_message)?;
     wait_with_bounded_output(
         child,
         job,

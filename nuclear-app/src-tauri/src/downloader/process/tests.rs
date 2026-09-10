@@ -1,4 +1,6 @@
-use super::{wait_with_bounded_output_and_drain, wait_with_streamed_stdout, DownloadJob};
+use super::{
+    wait_with_bounded_output_and_drain, wait_with_streamed_stdout, DownloadJob, ProcessSpawnError,
+};
 use std::time::Duration;
 
 #[cfg(windows)]
@@ -260,7 +262,7 @@ if ($createError -ne 0) {
         Ok(child) => child,
         Err(error) => {
             let _ = std::fs::remove_dir_all(&fixture_root);
-            return Err(error);
+            return Err(error.into_message());
         }
     };
     Ok((child, fixture_root))
@@ -447,9 +449,32 @@ async fn cancelled_job_never_runs_suspended_child_first_instruction() {
         .await
         .unwrap_err();
 
-    assert!(error.contains("cancelled"), "{error}");
+    assert_eq!(error, ProcessSpawnError::Cancelled);
     assert!(!sentinel.exists());
     let _ = std::fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested() {
+    let job = DownloadJob::new().unwrap();
+    let mut command = tokio::process::Command::new(format!(
+        "nuclear-missing-process-fixture-{}",
+        uuid::Uuid::new_v4()
+    ));
+    let error = job
+        .spawn(&mut command, "missing fixture", false)
+        .await
+        .unwrap_err();
+
+    match error {
+        ProcessSpawnError::Failed(message) => {
+            assert!(
+                message.starts_with("Failed to start missing fixture:"),
+                "{message}"
+            );
+        }
+        ProcessSpawnError::Cancelled => panic!("missing executable was classified as cancellation"),
+    }
 }
 
 #[cfg(windows)]

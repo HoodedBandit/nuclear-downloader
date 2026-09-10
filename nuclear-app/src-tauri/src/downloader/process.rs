@@ -21,6 +21,21 @@ use windows_sys::Win32::System::JobObjects::{
 #[cfg(windows)]
 use windows_sys::Win32::System::Threading::{OpenThread, ResumeThread, THREAD_SUSPEND_RESUME};
 
+#[derive(Debug, Eq, PartialEq)]
+pub(super) enum ProcessSpawnError {
+    Cancelled,
+    Failed(String),
+}
+
+impl ProcessSpawnError {
+    pub(super) fn into_message(self) -> String {
+        match self {
+            Self::Cancelled => "Operation was cancelled.".to_string(),
+            Self::Failed(message) => message,
+        }
+    }
+}
+
 pub(super) const MAX_STDERR_BYTES: usize = 64 * 1024;
 pub(super) const MAX_PROCESS_LINE_BYTES: usize = 64 * 1024;
 const PROCESS_DRAIN_TIMEOUT: Duration = Duration::from_secs(5);
@@ -43,6 +58,9 @@ pub(crate) struct DownloadJob {
 struct ProcessSupervisor {
     cancellation: CancellationToken,
     runtime_tools: std::sync::Mutex<HashMap<String, runtime::RuntimeToolLease>>,
+    // Cancellation must not terminate a suspended child during thread resumption.
+    #[cfg(windows)]
+    attachment: std::sync::Mutex<()>,
     #[cfg(windows)]
     process_job: Arc<WindowsProcessJob>,
 }
@@ -176,6 +194,8 @@ impl DownloadJob {
                 cancellation: CancellationToken::new(),
                 runtime_tools: std::sync::Mutex::new(HashMap::new()),
                 #[cfg(windows)]
+                attachment: std::sync::Mutex::new(()),
+                #[cfg(windows)]
                 process_job: Arc::new(WindowsProcessJob::new()?),
             }),
         })
@@ -190,8 +210,18 @@ impl DownloadJob {
     }
 
     pub(crate) fn cancel(&self) {
+        #[cfg(windows)]
+        {
+            let _attachment = self
+                .supervisor
+                .attachment
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            self.supervisor.cancellation.cancel();
+            self.supervisor.process_job.terminate();
+        }
+        #[cfg(not(windows))]
         self.supervisor.cancellation.cancel();
-        self.terminate_processes();
     }
 
     pub(crate) fn terminate_processes(&self) {
@@ -237,6 +267,11 @@ impl DownloadJob {
     fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> {
         #[cfg(windows)]
         {
+            let _attachment = self
+                .supervisor
+                .attachment
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             self.supervisor.process_job.assign(child)?;
             if self.is_cancelled() {
                 return Ok(false);
@@ -251,26 +286,26 @@ impl DownloadJob {
         command: &mut Command,
         process_name: &str,
         below_normal_priority: bool,
-    ) -> Result<tokio::process::Child, String> {
+    ) -> Result<tokio::process::Child, ProcessSpawnError> {
         if self.is_cancelled() {
-            return Err(format!("{process_name} operation was cancelled."));
+            return Err(ProcessSpawnError::Cancelled);
         }
         #[cfg(windows)]
         command.creation_flags(supervised_process_flags(below_normal_priority));
         #[cfg(not(windows))]
         let _ = below_normal_priority;
-        let mut child = command
-            .spawn()
-            .map_err(|error| format!("Failed to start {process_name}: {error}"))?;
+        let mut child = command.spawn().map_err(|error| {
+            ProcessSpawnError::Failed(format!("Failed to start {process_name}: {error}"))
+        })?;
         match self.attach_process(&child) {
             Ok(true) => Ok(child),
             Ok(false) => {
                 let _ = terminate_and_reap_child(&mut child, self, process_name).await;
-                Err(format!("{process_name} operation was cancelled."))
+                Err(ProcessSpawnError::Cancelled)
             }
             Err(error) => {
                 let _ = terminate_and_reap_child(&mut child, self, process_name).await;
-                Err(error)
+                Err(ProcessSpawnError::Failed(error))
             }
         }
     }
@@ -290,7 +325,10 @@ pub(crate) async fn run_supervised_probe(
         .args(arguments)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    let child = job.spawn(&mut command, "runtime probe", false).await?;
+    let child = job
+        .spawn(&mut command, "runtime probe", false)
+        .await
+        .map_err(ProcessSpawnError::into_message)?;
     wait_with_bounded_output(
         child,
         &job,
@@ -327,7 +365,8 @@ pub(crate) async fn test_run_supervised_absolute_child(
         .stderr(std::process::Stdio::piped());
     let child = job
         .spawn(&mut command, "test supervised child", false)
-        .await?;
+        .await
+        .map_err(ProcessSpawnError::into_message)?;
     wait_with_bounded_output(child, job, stdout_limit, stderr_limit, timeout).await
 }
 

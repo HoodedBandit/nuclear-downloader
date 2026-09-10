@@ -1313,11 +1313,11 @@
       "classification": "production",
       "file": "src/downloader/engine.rs",
       "line": 88,
-      "endLine": 135,
+      "endLine": 138,
       "symbol": "probe_media_duration_seconds",
       "qualifiedName": "downloader::engine::probe_media_duration_seconds",
       "signature": "async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<f64, String>",
-      "sourceDigest": "6cf1ecd1275c45279efd60abc83926965fa6d28bfa93c082ad41dc34d378672b",
+      "sourceDigest": "7b7abc39b6e2ab7f8949a0b4210d700ad8434f1ab374a860e40f2126900b125c",
       "cfg": [],
       "callers": [
         "run_webm_conversion."
@@ -1329,13 +1329,15 @@
         "Resolves retained ffprobe, spawns/reaps it, and reads bounded stdout/stderr for at most 30 seconds."
       ],
       "errors": [
-        "Pre-cancel, runtime, spawn, output, nonzero status, parse, and nonpositive/nonfinite duration return String errors."
+        "Pre-cancel, runtime, spawn, output, nonzero status, parse, and nonpositive/nonfinite duration return String errors.",
+        "Maps ProcessSpawnError through into_message; preserves bounded-output/status/parse errors."
       ],
       "ownership": [
         "DownloadJob retains ffprobe lease/process job; this function owns Child/Output until reap."
       ],
       "locks": [
-        "No engine mutex; DownloadJob/lifecycle/injected callbacks own their synchronization boundaries."
+        "No engine mutex; DownloadJob/lifecycle/injected callbacks own their synchronization boundaries.",
+        "DownloadJob owns attachment synchronization."
       ],
       "invariants": [
         "Only a successful supervised ffprobe with a positive finite scalar produces progress duration."
@@ -1344,16 +1346,19 @@
         "process supervisor/output-limit tests and WebM conversion integration."
       ],
       "evidence": [
-        "Source review src/downloader/engine.rs:88-135 (6cf1ecd1275c45279efd60abc83926965fa6d28bfa93c082ad41dc34d378672b): async fn probe_media_duration_seconds(path: &Path, job: &DownloadJob) -> Result<f64, String> { if job.is_cancelled() { return Err(\"Conversion was cancelled.\".into()); } let ffprobe = job.required_runtime_tool(\"ffprobe\")?; let mut cmd = Command::new(ffprobe); c"
+        "Frozen span src/downloader/engine.rs:88-138; digest 7b7abc39b6e2ab7f8949a0b4210d700ad8434f1ab374a860e40f2126900b125c.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Run verified ffprobe under supervision and parse a positive finite duration for conversion progress.",
       "output": "Positive finite f64 duration or String error.",
-      "cancellation": "Checks cancellation before resolution and supervisor cancellation remains live during bounded wait.",
+      "cancellation": "Checks cancellation before resolution and supervisor cancellation remains live during bounded wait. Typed spawn cancellation maps to stable string at this existing API boundary.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed after Stage 4 callback injection; engine owns no AppHandle, state lookup, or direct Tauri event emission.",
       "ownerCall": null
@@ -1363,8 +1368,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 137,
-      "endLine": 143,
+      "line": 140,
+      "endLine": 146,
       "symbol": "publish_converted_output",
       "qualifiedName": "downloader::engine::publish_converted_output",
       "signature": "async fn publish_converted_output( staged_output: &Path, final_path: &Path, job: &DownloadJob, ) -> Result<PathBuf, String>",
@@ -1414,8 +1419,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 152,
-      "endLine": 163,
+      "line": 165,
+      "endLine": 176,
       "symbol": "terminal_outcome_from_attempt",
       "qualifiedName": "downloader::engine::terminal_outcome_from_attempt",
       "signature": "fn terminal_outcome_from_attempt(result: DownloadAttemptResult) -> DownloadOutcome",
@@ -1466,12 +1471,12 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 165,
-      "endLine": 273,
+      "line": 178,
+      "endLine": 281,
       "symbol": "run_download_attempt",
       "qualifiedName": "downloader::engine::run_download_attempt",
       "signature": "async fn run_download_attempt( notifications: &DownloadNotifications, download_id: &str, request: &DownloadRequest, job: &DownloadJob, use_twitter_syndication: bool, ) -> DownloadAttemptResult",
-      "sourceDigest": "d3ece5048d4371a2e70bb2cffd639cdd069c3613f3927deebf20cac5dbc11940",
+      "sourceDigest": "90547c8851cc6a6ed4600f7883473c7093ffd7e8979afe66e9c6feba7444d7c4",
       "cfg": [],
       "callers": [
         "start_download and run_webm_download retry loops."
@@ -1483,7 +1488,8 @@
         "Resolves retained runtime config/tool, builds argv, spawns/reaps yt-dlp, parses stdout progress lines, awaits injected progress callbacks, and captures bounded stderr."
       ],
       "errors": [
-        "Runtime/config/spawn/output/callback failures become structured errors; nonzero exit is classified; eligible first X/Twitter failure returns one retry signal."
+        "Runtime/config/spawn/output/callback failures become structured errors; nonzero exit is classified; eligible first X/Twitter failure returns one retry signal.",
+        "Typed yt-dlp cancellation returns Cancelled; Failed retains runtime_missing and existing launch wording; other errors unchanged."
       ],
       "ownership": [
         "DownloadJob owns runtime/process lifetime; this call owns Command/Child/output and callback updates."
@@ -1492,33 +1498,38 @@
         "No engine mutex; DownloadJob/lifecycle/injected callbacks own their synchronization boundaries."
       ],
       "invariants": [
-        "No shell is involved, only nonterminal progress is published through the injected callback, and syndication retry is signaled only on the first eligible attempt."
+        "No shell is involved, only nonterminal progress is published through the injected callback, and syndication retry is signaled only on the first eligible attempt.",
+        "Cancel All cannot surface pre-spawn cancellation as Failed to start yt-dlp."
       ],
       "tests": [
         "command-argument/error tests plus process cancellation/blocked-callback/output tests."
       ],
       "evidence": [
-        "Source review src/downloader/engine.rs:165-273 (d3ece5048d4371a2e70bb2cffd639cdd069c3613f3927deebf20cac5dbc11940): async fn run_download_attempt( notifications: &DownloadNotifications, download_id: &str, request: &DownloadRequest, job: &DownloadJob, use_twitter_syndication: bool, ) -> DownloadAttemptResult { if job.is_cancelled() { return DownloadAttemptResult::Cancelled; "
+        "Frozen span src/downloader/engine.rs:178-281; digest 90547c8851cc6a6ed4600f7883473c7093ffd7e8979afe66e9c6feba7444d7c4.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Run one yt-dlp attempt, stream nonterminal progress, and classify success, cancellation, retry eligibility, or failure.",
       "output": "DownloadAttemptResult.",
-      "cancellation": "Checks before work; streamed waiter races cancellation and returned output is rechecked with the job token.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "cancellation": "Checks before work; streamed waiter races cancellation and returned output is rechecked with the job token. Pre-spawn yt-dlp cancellation is terminal cancellation, with later process/output cancellation unchanged.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed after Stage 4 callback injection; engine owns no AppHandle, state lookup, or direct Tauri event emission.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/engine.rs::downloader::engine::run_download_attempt::async_block#1@238[cfg=all]",
+      "id": "src/downloader/engine.rs::downloader::engine::run_download_attempt::async_block#1@246[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 238,
-      "endLine": 243,
+      "line": 246,
+      "endLine": 251,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::engine::run_download_attempt::async_block#1",
       "signature": "async move",
@@ -1551,7 +1562,11 @@
         "process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked"
       ],
       "evidence": [
-        "Source review src/downloader/engine.rs:238-243 (27a206f6a28557576c02e1b30d4d93315fa399844d2d00a717d1701c3d030ced): async move { if let Some((status, progress, fields)) = update { emit_progress(notifications, download_id, status, progress, fields).await; } Ok(()) }"
+        "Frozen span src/downloader/engine.rs:246-251; digest 27a206f6a28557576c02e1b30d4d93315fa399844d2d00a717d1701c3d030ced.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Own one stdout progress callback future inside run_download_attempt.",
       "output": "Result<(), String> after any progress publication.",
@@ -1559,8 +1574,8 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed after Stage 4 injection; the engine callback future owns no AppHandle or application-state lookup."
     },
@@ -1569,12 +1584,12 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 275,
-      "endLine": 423,
+      "line": 283,
+      "endLine": 426,
       "symbol": "run_webm_conversion",
       "qualifiedName": "downloader::engine::run_webm_conversion",
       "signature": "async fn run_webm_conversion( notifications: &DownloadNotifications, download_id: &str, input_path: &Path, staged_output: &Path, final_path: &Path, job: &DownloadJob, ) -> DownloadAttemptResult",
-      "sourceDigest": "cc16ed6a9fe49f238abdc27d62b615c0dcbb77f9212d0757a7fafbea58918940",
+      "sourceDigest": "139250c72b3a4b7f18446b8a9b7f3268e529d0404f9b1aa928e0804dedc18a22",
       "cfg": [],
       "callers": [
         "run_webm_download while holding a conversion permit."
@@ -1586,7 +1601,8 @@
         "Runs supervised ffprobe then FFmpeg, parses progress, invokes injected progress callbacks, and publishes the synced converted file."
       ],
       "errors": [
-        "Probe/runtime/spawn/output/callback/nonzero-exit/publication failures become structured errors; cancellation becomes Cancelled."
+        "Probe/runtime/spawn/output/callback/nonzero-exit/publication failures become structured errors; cancellation becomes Cancelled.",
+        "Typed ffmpeg cancellation returns Cancelled; Failed retains runtime_missing and existing launch wording; other errors unchanged."
       ],
       "ownership": [
         "DownloadJob owns tool/process lifetime; function owns commands/output and transfers successful staged file to publication."
@@ -1595,33 +1611,38 @@
         "No engine mutex; DownloadJob/lifecycle/injected callbacks own their synchronization boundaries."
       ],
       "invariants": [
-        "Conversion progress never decreases and completion carries the actual collision-resolved published filename."
+        "Conversion progress never decreases and completion carries the actual collision-resolved published filename.",
+        "Cancel All cannot surface pre-spawn cancellation as Failed to start ffmpeg."
       ],
       "tests": [
         "FFmpeg progress tests, process supervisor tests, publication tests, and isolated soak."
       ],
       "evidence": [
-        "Source review src/downloader/engine.rs:275-423 (cc16ed6a9fe49f238abdc27d62b615c0dcbb77f9212d0757a7fafbea58918940): async fn run_webm_conversion( notifications: &DownloadNotifications, download_id: &str, input_path: &Path, staged_output: &Path, final_path: &Path, job: &DownloadJob, ) -> DownloadAttemptResult { let duration_seconds = match probe_media_duration_seconds(input_"
+        "Frozen span src/downloader/engine.rs:283-426; digest 139250c72b3a4b7f18446b8a9b7f3268e529d0404f9b1aa928e0804dedc18a22.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Probe duration, run supervised FFmpeg conversion, stream monotonic progress, and publish the converted file.",
       "output": "DownloadAttemptResult.",
-      "cancellation": "Supervisor observes cancellation during both processes; output/job state is checked before publication and publication checks between suffixes.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "cancellation": "Supervisor observes cancellation during both processes; output/job state is checked before publication and publication checks between suffixes. Pre-spawn ffmpeg cancellation is terminal cancellation, with later process/output cancellation unchanged.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed after Stage 4 callback injection; engine owns no AppHandle, state lookup, or direct Tauri event emission.",
       "ownerCall": null
     },
     {
-      "id": "src/downloader/engine.rs::downloader::engine::run_webm_conversion::async_block#1@373[cfg=all]",
+      "id": "src/downloader/engine.rs::downloader::engine::run_webm_conversion::async_block#1@376[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 373,
-      "endLine": 391,
+      "line": 376,
+      "endLine": 394,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::engine::run_webm_conversion::async_block#1",
       "signature": "async move",
@@ -1654,7 +1675,11 @@
         "process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked"
       ],
       "evidence": [
-        "Source review src/downloader/engine.rs:373-391 (453bf54427e1ef5ff81a2c722c57348bf7afec573ce9009ea7479995c4891849): async move { if let Some(progress) = update { emit_progress( notifications, download_id, \"postprocessing\", progress, ProgressFields { filename: None, phase: Some(\"conversion\"), download_progress: Some(100.0), conversion_progress: Some(progress), ..Default::def"
+        "Frozen span src/downloader/engine.rs:376-394; digest 453bf54427e1ef5ff81a2c722c57348bf7afec573ce9009ea7479995c4891849.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Own one stdout progress callback future inside run_webm_conversion.",
       "output": "Result<(), String> after any progress publication.",
@@ -1662,8 +1687,8 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed after Stage 4 injection; the engine callback future owns no AppHandle or application-state lookup."
     },
@@ -1672,8 +1697,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 425,
-      "endLine": 533,
+      "line": 428,
+      "endLine": 536,
       "symbol": "run_webm_download",
       "qualifiedName": "downloader::engine::run_webm_download",
       "signature": "async fn run_webm_download( notifications: &DownloadNotifications, download_id: &str, request: &DownloadRequest, manager: &DownloadManager, job: &DownloadJob, ) -> DownloadAttemptResult",
@@ -1727,8 +1752,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 535,
-      "endLine": 688,
+      "line": 538,
+      "endLine": 691,
       "symbol": "start_download",
       "qualifiedName": "downloader::engine::start_download",
       "signature": "pub async fn start_download( notifications: DownloadNotifications, download_id: String, mut request: DownloadRequest, manager: DownloadManager, job: DownloadJob, ) -> DownloadOutcome",
@@ -1782,8 +1807,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 696,
-      "endLine": 709,
+      "line": 726,
+      "endLine": 739,
       "symbol": "terminal_outcome_preserves_published_filename",
       "qualifiedName": "downloader::engine::tests::terminal_outcome_preserves_published_filename",
       "signature": "fn terminal_outcome_preserves_published_filename()",
@@ -1835,8 +1860,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 712,
-      "endLine": 729,
+      "line": 742,
+      "endLine": 759,
       "symbol": "terminal_outcome_preserves_structured_failure",
       "qualifiedName": "downloader::engine::tests::terminal_outcome_preserves_structured_failure",
       "signature": "fn terminal_outcome_preserves_structured_failure()",
@@ -2617,11 +2642,11 @@
       "classification": "production",
       "file": "src/downloader/inspection.rs",
       "line": 39,
-      "endLine": 72,
+      "endLine": 75,
       "symbol": "run_fetch_info_command",
       "qualifiedName": "downloader::inspection::run_fetch_info_command",
       "signature": "async fn run_fetch_info_command( url: &str, cookie_config: Option<&CookieConfig>, compat_config_path: Option<&str>, selection: Option<&MediaSelection>, use_twitter_syndication: bool, job: &DownloadJob, ) -> Result<std::process::Output, String>",
-      "sourceDigest": "ccffddb7f694c8761489d52340e9087ca87d1079bbdd78f8983f8175cad4a2f6",
+      "sourceDigest": "9cc20aefa6016d350b13faaab5005bb5e3ec411b4cb8a806f0aad08e6a2dbfc4",
       "cfg": [],
       "callers": [
         "inspect_url_inner, including the Twitter syndication retry."
@@ -2633,13 +2658,15 @@
         "Resolves the pinned tool/config, builds argv, spawns through DownloadJob, and concurrently captures stdout/stderr within byte and time limits."
       ],
       "errors": [
-        "Returns runtime, spawn, timeout, output-limit, or drain errors."
+        "Returns runtime, spawn, timeout, output-limit, or drain errors.",
+        "Maps ProcessSpawnError through into_message; preserves runtime/bounded-output errors."
       ],
       "ownership": [
         "DownloadJob owns process/job lifetime; returned Output owns captured bytes."
       ],
       "locks": [
-        "DownloadJob process registry synchronization is delegated to spawn/wait helpers."
+        "DownloadJob process registry synchronization is delegated to spawn/wait helpers.",
+        "DownloadJob owns attachment synchronization."
       ],
       "invariants": [
         "Both first attempt and retry retain the same selection; stdout has the 8 MiB inspection cap and stderr its separate cap."
@@ -2648,18 +2675,19 @@
         "inspection_command_uses_one_bounded_pass_and_selected_ordinal; stalled_inspection_hits_deadline_without_becoming_user_cancelled."
       ],
       "evidence": [
-        "Current source span src/downloader/inspection.rs:39-72, digest ccffddb7f694c8761489d52340e9087ca87d1079bbdd78f8983f8175cad4a2f6.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Frozen span src/downloader/inspection.rs:39-75; digest 9cc20aefa6016d350b13faaab5005bb5e3ec411b4cb8a806f0aad08e6a2dbfc4.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Run one bounded yt-dlp metadata command for discovery or an exact selection.",
       "output": "Bounded std::process::Output.",
-      "cancellation": "Dropping/timeout terminates through DownloadJob; timeout is reported separately from user cancellation.",
+      "cancellation": "Dropping/timeout terminates through DownloadJob; timeout is reported separately from user cancellation. Typed spawn cancellation maps to stable string for service terminal classification.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/inspection.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null,
@@ -2671,8 +2699,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/inspection.rs",
-      "line": 74,
-      "endLine": 89,
+      "line": 77,
+      "endLine": 92,
       "symbol": "with_inspection_timeout",
       "qualifiedName": "downloader::inspection::with_inspection_timeout",
       "signature": "async fn with_inspection_timeout<T, F>( job: &DownloadJob, timeout: Duration, operation: F, ) -> Result<T, String> where F: Future<Output = Result<T, String>>,",
@@ -2722,8 +2750,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/inspection.rs",
-      "line": 91,
-      "endLine": 108,
+      "line": 94,
+      "endLine": 111,
       "symbol": "inspect_url",
       "qualifiedName": "downloader::inspection::inspect_url",
       "signature": "pub(crate) async fn inspect_url( url: &str, cookie_config: Option<&CookieConfig>, compat_config_path: Option<&str>, selection: Option<&MediaSelection>, job: &DownloadJob, ) -> Result<UrlInspection, String>",
@@ -2777,8 +2805,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/inspection.rs",
-      "line": 110,
-      "endLine": 145,
+      "line": 113,
+      "endLine": 148,
       "symbol": "inspect_url_inner",
       "qualifiedName": "downloader::inspection::inspect_url_inner",
       "signature": "async fn inspect_url_inner( url: &str, cookie_config: Option<&CookieConfig>, compat_config_path: Option<&str>, selection: Option<&MediaSelection>, job: &DownloadJob, ) -> Result<UrlInspection, String>",
@@ -3644,7 +3672,7 @@
         "downloader::naming::tests::normalizes_reserved_extensions_and_utf16_length"
       ],
       "evidence": [
-        "Source review src/downloader/naming.rs:265-275: fn normalizes_reserved_extensions_and_utf16_length() { assert_eq!( normalize_filename_override(\"NUL.txt\"), Some(\"NUL_.txt\".into()) ); assert_eq!(normalize_filename_override(\"clip.MP4\"), Some(\"clip\".into())); let long_name = format!(\"{}ðŸ˜€\", \"a\".repeat(179)); let"
+        "Source review src/downloader/naming.rs:265-275: fn normalizes_reserved_extensions_and_utf16_length() { assert_eq!( normalize_filename_override(\"NUL.txt\"), Some(\"NUL_.txt\".into()) ); assert_eq!(normalize_filename_override(\"clip.MP4\"), Some(\"clip\".into())); let long_name = format!(\"{}ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬\", \"a\".repeat(179)); let"
       ],
       "purpose": "Verify Windows-safe output naming and path construction: normalizes reserved extensions and utf16 length.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -3876,8 +3904,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 56,
-      "endLine": 56,
+      "line": 74,
+      "endLine": 74,
       "symbol": "impl Send for WindowsProcessJob",
       "qualifiedName": "impl Send for WindowsProcessJob",
       "signature": "impl Send for WindowsProcessJob",
@@ -3932,8 +3960,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 58,
-      "endLine": 58,
+      "line": 76,
+      "endLine": 76,
       "symbol": "impl Sync for WindowsProcessJob",
       "qualifiedName": "impl Sync for WindowsProcessJob",
       "signature": "impl Sync for WindowsProcessJob",
@@ -3988,8 +4016,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 62,
-      "endLine": 91,
+      "line": 80,
+      "endLine": 109,
       "symbol": "new",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::new",
       "signature": "fn new() -> Result<Self, String>",
@@ -4045,8 +4073,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 93,
-      "endLine": 106,
+      "line": 111,
+      "endLine": 124,
       "symbol": "assign",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::assign",
       "signature": "fn assign(&self, child: &tokio::process::Child) -> Result<(), String>",
@@ -4102,8 +4130,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 108,
-      "endLine": 154,
+      "line": 126,
+      "endLine": 172,
       "symbol": "resume",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::resume",
       "signature": "fn resume(&self, child: &tokio::process::Child) -> Result<(), String>",
@@ -4159,8 +4187,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 156,
-      "endLine": 160,
+      "line": 174,
+      "endLine": 178,
       "symbol": "terminate",
       "qualifiedName": "downloader::process::impl WindowsProcessJob::terminate",
       "signature": "fn terminate(&self)",
@@ -4216,8 +4244,8 @@
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 164,
-      "endLine": 170,
+      "line": 182,
+      "endLine": 188,
       "symbol": "impl Drop for WindowsProcessJob",
       "qualifiedName": "impl Drop for WindowsProcessJob",
       "signature": "impl Drop for WindowsProcessJob",
@@ -4272,8 +4300,8 @@
       "kind": "destructor",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 165,
-      "endLine": 169,
+      "line": 183,
+      "endLine": 187,
       "symbol": "drop",
       "qualifiedName": "downloader::process::impl Drop for WindowsProcessJob::drop",
       "signature": "fn drop(&mut self)",
@@ -4328,12 +4356,12 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 173,
-      "endLine": 182,
+      "line": 191,
+      "endLine": 202,
       "symbol": "new",
       "qualifiedName": "downloader::process::impl DownloadJob::new",
       "signature": "pub(crate) fn new() -> Result<Self, String>",
-      "sourceDigest": "8e2cc1120c209ecaf31e6eb0a9a89be6eca76101440d991687477b42b0273132",
+      "sourceDigest": "a56d9a7edc89b9c2549a7a8e1f2823a4161e088fc6ae367c4ce92520e181c56b",
       "cfg": [],
       "callers": [
         "lifecycle registration, inspection service, run_supervised_probe, and tests."
@@ -4342,28 +4370,33 @@
         "none."
       ],
       "sideEffects": [
-        "Creates a cancellation token, empty runtime-lease mutex/map, and Windows kill-on-close job."
+        "Creates a cancellation token, empty runtime-lease mutex/map, and Windows kill-on-close job.",
+        "Creates cancellation token, runtime lease mutex, Windows attachment mutex, and process job."
       ],
       "errors": [
         "Only Windows job creation/configuration can return a String error."
       ],
       "ownership": [
-        "Returns an Arc-backed job owning the supervisor and Windows job handle."
+        "Returns an Arc-backed job owning the supervisor and Windows job handle.",
+        "Arc-owned supervisor retains all four resources for the job lifetime."
       ],
       "locks": [
-        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization."
+        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization.",
+        "Constructs unlocked mutexes; acquires none."
       ],
       "invariants": [
-        "One job groups cancellation, retained runtime files, and every descendant process for one operation."
+        "One job groups cancellation, retained runtime files, and every descendant process for one operation.",
+        "Attachment mutex and Windows process job share the same supervisor lifetime."
       ],
       "tests": [
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:203-212 (8e2cc1120c209ecaf31e6eb0a9a89be6eca76101440d991687477b42b0273132): pub(crate) fn new() -> Result<Self, String> { Ok(Self { supervisor: Arc::new(ProcessSupervisor { cancellation: CancellationToken::new(), runtime_tools: std::sync::Mutex::new(HashMap::new()), #[cfg(windows)] process_job: Arc::new(WindowsProcessJob::new()?), }),",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:191-202; digest a56d9a7edc89b9c2549a7a8e1f2823a4161e088fc6ae367c4ce92520e181c56b.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Create one cancellation/process/runtime-lease supervisor for a download or inspection.",
       "output": "Result<DownloadJob, String>.",
@@ -4372,7 +4405,7 @@
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4382,8 +4415,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 184,
-      "endLine": 186,
+      "line": 204,
+      "endLine": 206,
       "symbol": "is_cancelled",
       "qualifiedName": "downloader::process::impl DownloadJob::is_cancelled",
       "signature": "pub(crate) fn is_cancelled(&self) -> bool",
@@ -4436,8 +4469,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 188,
-      "endLine": 190,
+      "line": 208,
+      "endLine": 210,
       "symbol": "cancelled",
       "qualifiedName": "downloader::process::impl DownloadJob::cancelled",
       "signature": "pub(crate) async fn cancelled(&self)",
@@ -4471,7 +4504,8 @@
         "Source review src/downloader/process.rs:218-220: pub(crate) async fn cancelled(&self) { self.supervisor.cancellation.cancelled().await; }",
         "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Await DownloadJob cancellation.",
       "output": "Unit when the token becomes cancelled.",
@@ -4490,12 +4524,12 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 192,
-      "endLine": 195,
+      "line": 212,
+      "endLine": 225,
       "symbol": "cancel",
       "qualifiedName": "downloader::process::impl DownloadJob::cancel",
       "signature": "pub(crate) fn cancel(&self)",
-      "sourceDigest": "4533b7132ccd1e911e109f10a03e91f1956bddabb54d8032ceb29b67c9b47580",
+      "sourceDigest": "39db76311d2fe49cf326e4d3a7b1e3a56c173c81f308415c461bee97c71897f0",
       "cfg": [],
       "callers": [
         "lifecycle cancel/cancel-all and process tests."
@@ -4504,37 +4538,42 @@
         "Borrowed DownloadJob."
       ],
       "sideEffects": [
-        "Cancels the token and terminates the Windows job."
+        "Cancels the token and terminates the Windows job.",
+        "Windows: holds attachment mutex while cancelling token and terminating process job; non-Windows: cancels token."
       ],
       "errors": [
         "Termination is best-effort and returns no error."
       ],
       "ownership": [
-        "Borrows shared supervisor; does not consume job handles/leases."
+        "Borrows shared supervisor; does not consume job handles/leases.",
+        "Borrows shared supervisor."
       ],
       "locks": [
-        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization."
+        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization.",
+        "Windows attachment std::sync::Mutex spans cancel+terminate only; poison recovery takes inner guard; no await while held."
       ],
       "invariants": [
-        "Cancellation is one-way and process-tree termination is requested in the same call."
+        "Cancellation is one-way and process-tree termination is requested in the same call.",
+        "Cancel cannot interleave between child assignment, cancellation check, and resume."
       ],
       "tests": [
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:222-225 (4533b7132ccd1e911e109f10a03e91f1956bddabb54d8032ceb29b67c9b47580): pub(crate) fn cancel(&self) { self.supervisor.cancellation.cancel(); self.terminate_processes(); }",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:212-225; digest 39db76311d2fe49cf326e4d3a7b1e3a56c173c81f308415c461bee97c71897f0.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Mark the job cancelled and terminate all supervised descendants.",
       "output": "Unit.",
-      "cancellation": "This is the user/coordinator cancellation transition.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "cancellation": "This is the user/coordinator cancellation transition. This method triggers job cancellation.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4544,8 +4583,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 197,
-      "endLine": 200,
+      "line": 227,
+      "endLine": 230,
       "symbol": "terminate_processes",
       "qualifiedName": "downloader::process::impl DownloadJob::terminate_processes",
       "signature": "pub(crate) fn terminate_processes(&self)",
@@ -4598,8 +4637,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 202,
-      "endLine": 220,
+      "line": 232,
+      "endLine": 250,
       "symbol": "runtime_tool",
       "qualifiedName": "downloader::process::impl DownloadJob::runtime_tool",
       "signature": "fn runtime_tool(&self, name: &str, required: bool) -> Result<Option<PathBuf>, String>",
@@ -4652,8 +4691,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 222,
-      "endLine": 225,
+      "line": 252,
+      "endLine": 255,
       "symbol": "required_runtime_tool",
       "qualifiedName": "downloader::process::impl DownloadJob::required_runtime_tool",
       "signature": "pub(super) fn required_runtime_tool(&self, name: &str) -> Result<PathBuf, String>",
@@ -4706,8 +4745,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 227,
-      "endLine": 235,
+      "line": 257,
+      "endLine": 265,
       "symbol": "ytdlp_runtime_config",
       "qualifiedName": "downloader::process::impl DownloadJob::ytdlp_runtime_config",
       "signature": "pub(super) fn ytdlp_runtime_config(&self) -> Result<YtdlpCommandConfig, String>",
@@ -4760,12 +4799,12 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 237,
-      "endLine": 247,
+      "line": 267,
+      "endLine": 282,
       "symbol": "attach_process",
       "qualifiedName": "downloader::process::impl DownloadJob::attach_process",
       "signature": "fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String>",
-      "sourceDigest": "9eb5c6766c3724ef04ccaae621f2488db362818f44b77699dbc495ab722ac8a0",
+      "sourceDigest": "aaf2898839e03e27ea59259c4552a3d4c9cd594674df775f4bab75ece9fe9bc7",
       "cfg": [],
       "callers": [
         "DownloadJob::spawn immediately after OS spawn."
@@ -4774,37 +4813,43 @@
         "Borrowed newly spawned Child."
       ],
       "sideEffects": [
-        "Assigns/resumes through WindowsProcessJob on Windows; reads cancellation before and after attachment."
+        "Assigns/resumes through WindowsProcessJob on Windows; reads cancellation before and after attachment.",
+        "Windows: under attachment mutex, assigns suspended child to job, checks cancellation, then resumes only if live."
       ],
       "errors": [
-        "Returns missing process handle/ID, assignment, enumeration, thread-open, or resume errors."
+        "Returns missing process handle/ID, assignment, enumeration, thread-open, or resume errors.",
+        "Returns assignment/resume errors or Ok(false) when cancellation won."
       ],
       "ownership": [
-        "Borrows child and job; ownership remains with spawn."
+        "Borrows child and job; ownership remains with spawn.",
+        "Windows job takes process ownership on assignment; child is borrowed."
       ],
       "locks": [
-        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization."
+        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization.",
+        "Holds non-async attachment mutex across assign/check/resume; no await."
       ],
       "invariants": [
-        "On Windows, no child first instruction executes before successful assignment and cancellation check."
+        "On Windows, no child first instruction executes before successful assignment and cancellation check.",
+        "Cancelled suspended child cannot execute its first instruction."
       ],
       "tests": [
         "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:267-277 (9eb5c6766c3724ef04ccaae621f2488db362818f44b77699dbc495ab722ac8a0): fn attach_process(&self, child: &tokio::process::Child) -> Result<bool, String> { #[cfg(windows)] { self.supervisor.process_job.assign(child)?; if self.is_cancelled() { return Ok(false); } self.supervisor.process_job.resume(child)?; } Ok(!self.is_cancelled()) ",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:267-282; digest aaf2898839e03e27ea59259c4552a3d4c9cd594674df775f4bab75ece9fe9bc7.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
       "purpose": "Assign a suspended child to the Windows job, recheck cancellation, then resume it.",
       "output": "Result<bool, String> indicating whether execution may continue.",
-      "cancellation": "Returns false instead of resume when cancellation is observed after assignment; final return rechecks cancellation.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "cancellation": "Returns false instead of resume when cancellation is observed after assignment; final return rechecks cancellation. Returns false without resuming when cancellation is set.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4814,51 +4859,60 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 249,
-      "endLine": 276,
+      "line": 284,
+      "endLine": 311,
       "symbol": "spawn",
       "qualifiedName": "downloader::process::impl DownloadJob::spawn",
-      "signature": "pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, String>",
-      "sourceDigest": "04369c93fef52d58302604793fefeb9c7e9923f47a15d810c8b57953efd364d5",
+      "signature": "pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, ProcessSpawnError>",
+      "sourceDigest": "3aa5d2a5778ae8ba48d300e2fead9115c9a9a8a089fca98b97d20d3f61833eb8",
       "cfg": [],
       "callers": [
-        "Engine, inspection, runtime probe, and test fixtures."
+        "Engine, inspection, runtime probe, and test fixtures.",
+        "yt-dlp download; ffmpeg conversion; ffprobe; inspection; runtime probe; supervised tests."
       ],
       "inputs": [
-        "Mutable configured Command, process label, and below-normal-priority boolean."
+        "Mutable configured Command, process label, and below-normal-priority boolean.",
+        "Mutable Command, process label, priority flag."
       ],
       "sideEffects": [
-        "Checks cancellation, applies Windows flags, spawns, attaches/resumes, or terminates/reaps the child."
+        "Checks cancellation, applies Windows flags, spawns, attaches/resumes, or terminates/reaps the child.",
+        "Checks cancellation, spawns suspended on Windows, attaches/resumes, and terminates/reaps every unsuccessful spawned child."
       ],
       "errors": [
-        "Returns pre-cancel, OS spawn, attach/resume, post-attach cancel, or bounded reap-context errors."
+        "Returns pre-cancel, OS spawn, attach/resume, post-attach cancel, or bounded reap-context errors.",
+        "Cancelled before spawn or during attachment returns Cancelled; OS/attachment errors return Failed with existing text."
       ],
       "ownership": [
-        "Takes ownership of the new Child locally and transfers it only after successful supervision."
+        "Takes ownership of the new Child locally and transfers it only after successful supervision.",
+        "Successful child is owned by Windows job; unsuccessful child is reaped before return."
       ],
       "locks": [
-        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization."
+        "No Rust mutex is acquired directly; Windows job/CancellationToken internals provide their own synchronization.",
+        "No lock spans await; attach_process releases attachment mutex before cleanup await."
       ],
       "invariants": [
-        "No returned child is unsupervised, and every failed attachment path attempts bounded reap."
+        "No returned child is unsupervised, and every failed attachment path attempts bounded reap.",
+        "Returned Windows child was attached and resumed while live; cancellation cannot masquerade as launch failure."
       ],
       "tests": [
-        "runtime lease tests, process cancellation/reap tests, and isolated backend soak."
+        "runtime lease tests, process cancellation/reap tests, and isolated backend soak.",
+        "cancelled_job_never_runs_suspended_child_first_instruction; missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested; typed_spawn_cancellation_becomes_a_cancelled_attempt."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:279-306 (04369c93fef52d58302604793fefeb9c7e9923f47a15d810c8b57953efd364d5): pub(super) async fn spawn( &self, command: &mut Command, process_name: &str, below_normal_priority: bool, ) -> Result<tokio::process::Child, String> { if self.is_cancelled() { return Err(format!(\"{process_name} operation was cancelled.\")); } #[cfg(windows)] co",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:284-311; digest 3aa5d2a5778ae8ba48d300e2fead9115c9a9a8a089fca98b97d20d3f61833eb8.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
-      "purpose": "Spawn one command under the job supervisor and guarantee failed/cancelled attachment is terminated and reaped.",
-      "output": "Owned tokio Child or String error.",
-      "cancellation": "Checks before spawn and after job assignment; cancellation before resume produces termination/reap and error.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "purpose": "Spawn under DownloadJob supervision with typed cancellation distinct from true failure.",
+      "output": "Attached child or ProcessSpawnError.",
+      "cancellation": "Checks before spawn and after job assignment; cancellation before resume produces termination/reap and error. Pre-spawn and post-spawn/pre-resume cancellation are typed Cancelled outcomes.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "I/O or orchestration boundary reviewed for bounded resources, cleanup, and error propagation. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4868,12 +4922,12 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 279,
-      "endLine": 302,
+      "line": 314,
+      "endLine": 340,
       "symbol": "run_supervised_probe",
       "qualifiedName": "downloader::process::run_supervised_probe",
       "signature": "pub(crate) async fn run_supervised_probe( binary: &Path, arguments: &[&str], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String>",
-      "sourceDigest": "ae1904eb49779ba4121343254d6ad0958fb3578e23b2e51596429e9ce37f3ed8",
+      "sourceDigest": "f316c34cbfa185b95fce5ce9bb2a54abfc9501e2bbb543f90653d414ad271b76",
       "cfg": [],
       "callers": [
         "runtime and updater health/probe paths."
@@ -4885,7 +4939,8 @@
         "Creates one DownloadJob, spawns one piped child, and waits with bounded output."
       ],
       "errors": [
-        "Job creation, spawn, pipe, timeout, output, cancellation, and reap failures return String errors."
+        "Job creation, spawn, pipe, timeout, output, cancellation, and reap failures return String errors.",
+        "Maps ProcessSpawnError through into_message and preserves bounded-output errors."
       ],
       "ownership": [
         "Owns its DownloadJob and Child through terminal reap."
@@ -4900,10 +4955,10 @@
         "process child-module cancellation, blocked-callback, split-line, oversized-output, and inherited-pipe regressions."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:309-332 (ae1904eb49779ba4121343254d6ad0958fb3578e23b2e51596429e9ce37f3ed8): pub(crate) async fn run_supervised_probe( binary: &Path, arguments: &[&str], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { let job = DownloadJob::new()?; let mut command = Command::new(binary); command",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:314-340; digest f316c34cbfa185b95fce5ce9bb2a54abfc9501e2bbb543f90653d414ad271b76.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Run an absolute/verified runtime probe with bounded stdout, stderr, timeout, cancellation, and process-tree cleanup.",
       "output": "std::process::Output or String error.",
@@ -4912,7 +4967,7 @@
       "disposition": "keep",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Process ownership and cancellation boundary retained in the process leaf module. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4922,12 +4977,12 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process.rs",
-      "line": 305,
-      "endLine": 332,
+      "line": 343,
+      "endLine": 371,
       "symbol": "test_run_supervised_absolute_child",
       "qualifiedName": "downloader::process::test_run_supervised_absolute_child",
       "signature": "pub(crate) async fn test_run_supervised_absolute_child( job: &DownloadJob, executable: &Path, arguments: &[String], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String>",
-      "sourceDigest": "569dcda8b9f32d90b146588e3585a8f9d641726e511002b17dee43e5a0e00ae9",
+      "sourceDigest": "2156a771c905d06d69be35ed418d638c2dab41fccd14895a6bd238446ca634a1",
       "cfg": [
         "test"
       ],
@@ -4941,7 +4996,8 @@
         "Validates the executable path, constructs and spawns a supervised child, captures bounded output, and waits/reaps it."
       ],
       "errors": [
-        "Rejects non-absolute, missing, symlink, or non-file executables and propagates spawn, cancellation, timeout, output-limit, wait, and reap errors."
+        "Rejects non-absolute, missing, symlink, or non-file executables and propagates spawn, cancellation, timeout, output-limit, wait, and reap errors.",
+        "Maps ProcessSpawnError through into_message and preserves bounded-wait errors."
       ],
       "ownership": [
         "Owns the spawned child until bounded wait/reap; borrows the caller-owned DownloadJob."
@@ -4956,10 +5012,10 @@
         "soak_harness::run_cycle_job exercises success and exit-7 failure; soak_harness::exercise_process_cancellation exercises cancellation and prompt reap."
       ],
       "evidence": [
-        "Source review src/downloader/process.rs:335-362: pub(crate) async fn test_run_supervised_absolute_child( job: &DownloadJob, executable: &Path, arguments: &[String], timeout: Duration, stdout_limit: usize, stderr_limit: usize, ) -> Result<std::process::Output, String> { if !executable.is_absolute() { return E",
-        "Stage 5 static assembly proof retained this supervisor callable body in process.rs exactly, including executable leases, suspended-child job registration, cancellation, and terminate/reap ownership; only imports and the private output facade changed (target/internal-cleanup-stage5/process-drafts/verify-assembled-bodies.py and verify-assembled-declarations.py).",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "Post-application downloader::process::tests receipt: 8 passed, 0 failed (target/internal-cleanup-stage5/process-tests.log), covering inherited pipes, cancellation, blocked callbacks, suspended-child ordering, and bounded drains."
+        "Frozen span src/downloader/process.rs:343-371; digest 2156a771c905d06d69be35ed418d638c2dab41fccd14895a6bd238446ca634a1.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Run a caller-selected absolute regular executable through the real DownloadJob supervisor for the isolated soak.",
       "output": "Returns bounded std::process::Output or a setup/supervision String error.",
@@ -4968,7 +5024,7 @@
       "disposition": "test_only",
       "destination": "src/downloader/process.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T09:12:01Z",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged. Stage 5 context review preserves the substantive review authored by download-engine-review; declarations, constants, cfg gates, derives, and unsafe impls were checked separately across the parent/child boundary.",
       "ownerCall": null
@@ -4978,8 +5034,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process.rs",
-      "line": 346,
-      "endLine": 368,
+      "line": 385,
+      "endLine": 407,
       "symbol": "test_run_supervised_inherited_pipe_fixture",
       "qualifiedName": "downloader::process::test_run_supervised_inherited_pipe_fixture",
       "signature": "pub(crate) async fn test_run_supervised_inherited_pipe_fixture( job: &DownloadJob, options: TestInheritedPipeFixtureOptions<'_>, ) -> Result<std::process::Output, String>",
@@ -5034,8 +5090,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 370,
-      "endLine": 378,
+      "line": 409,
+      "endLine": 417,
       "symbol": "supervised_process_flags",
       "qualifiedName": "downloader::process::supervised_process_flags",
       "signature": "fn supervised_process_flags(below_normal_priority: bool) -> u32",
@@ -5777,8 +5833,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/process.rs",
-      "line": 380,
-      "endLine": 396,
+      "line": 419,
+      "endLine": 435,
       "symbol": "terminate_and_reap_child",
       "qualifiedName": "downloader::process::terminate_and_reap_child",
       "signature": "async fn terminate_and_reap_child( child: &mut tokio::process::Child, job: &DownloadJob, process_name: &str, ) -> Result<std::process::ExitStatus, String>",
@@ -6310,8 +6366,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process/tests.rs",
-      "line": 5,
-      "endLine": 62,
+      "line": 7,
+      "endLine": 64,
       "symbol": "spawn_powershell_fixture",
       "qualifiedName": "downloader::process::tests::spawn_powershell_fixture",
       "signature": "async fn spawn_powershell_fixture(job: &DownloadJob, script: &str) -> tokio::process::Child",
@@ -6362,12 +6418,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::spawn_powershell_fixture::async_block#1@30[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::spawn_powershell_fixture::async_block#1@32[cfg=test,windows]",
       "kind": "async_block",
       "classification": "test_support",
       "file": "src/downloader/process/tests.rs",
-      "line": 30,
-      "endLine": 45,
+      "line": 32,
+      "endLine": 47,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::process::tests::spawn_powershell_fixture::async_block#1",
       "signature": "async",
@@ -6404,7 +6460,10 @@
         "downloader::process::tests::supervised_process_stops_oversized_output_without_draining_producer"
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:30-45: let readiness = tokio::time::timeout(Duration::from_secs(60), async { loop { if readiness_path.is_file() { return Ok(()); } if let Some(status) = child .try_wait() .map_err(|error| format!(\"fixture readiness check failed: {error}\"))? { return Err(format!( \"fix"
+        "Frozen span src/downloader/process/tests.rs:32-47; digest 363a96eab2f41f47d8d7b529e58f6aa0eed42267efa9586ad79ab5a95f09863d.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Poll the readiness file and direct-child status until the fixture is ready, exits, errors, or reaches the enclosing timeout.",
       "output": "Completes after best-effort removal of the exact test script.",
@@ -6412,8 +6471,8 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
@@ -6422,12 +6481,12 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/process/tests.rs",
-      "line": 65,
-      "endLine": 267,
+      "line": 67,
+      "endLine": 269,
       "symbol": "spawn_inherited_pipe_fixture",
       "qualifiedName": "downloader::process::tests::spawn_inherited_pipe_fixture",
       "signature": "pub(crate) async fn spawn_inherited_pipe_fixture( job: &DownloadJob, caller_root: &std::path::Path, parent_script: &str, descendant_script: &str, ) -> Result<(tokio::process::Child, std::path::PathBuf), String>",
-      "sourceDigest": "d2b1abbe80a070ede0849ee31297803d630c9ba8d9b8ac17cde57eb3fdeab406",
+      "sourceDigest": "20538279f71f106866c5b2b05ca2c51d077ae4a4d1dc51d0329a3fc48c13eda4",
       "cfg": [
         "test",
         "windows"
@@ -6461,7 +6520,10 @@
         "soak_harness::exercise_inherited_pipe"
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:65-267: pub(crate) async fn spawn_inherited_pipe_fixture( job: &DownloadJob, caller_root: &std::path::Path, parent_script: &str, descendant_script: &str, ) -> Result<(tokio::process::Child, std::path::PathBuf), String> { let root_metadata = std::fs::symlink_metadata(c"
+        "Frozen span src/downloader/process/tests.rs:67-269; digest 20538279f71f106866c5b2b05ca2c51d077ae4a4d1dc51d0329a3fc48c13eda4.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Create the Windows parent/descendant duplicated-handle fixture under an explicit regular caller-owned root.",
       "output": "Returns the supervised parent Child and UUID fixture root or String error.",
@@ -6469,8 +6531,8 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
@@ -6480,8 +6542,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 271,
-      "endLine": 294,
+      "line": 273,
+      "endLine": 296,
       "symbol": "supervised_process_cancels_and_reaps_promptly",
       "qualifiedName": "downloader::process::tests::supervised_process_cancels_and_reaps_promptly",
       "signature": "async fn supervised_process_cancels_and_reaps_promptly()",
@@ -6530,12 +6592,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1@275[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1@277[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 275,
-      "endLine": 278,
+      "line": 277,
+      "endLine": 280,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1",
       "signature": "async move",
@@ -6570,7 +6632,10 @@
         "downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1"
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:275-278: tokio::spawn(async move { tokio::time::sleep(Duration::from_millis(100)).await; cancellation.cancel(); });"
+        "Frozen span src/downloader/process/tests.rs:277-280; digest ee65c58c20f9e8b42bfbfd54242a60de55a836a75f1a8953ed9317267c5c9dd0.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: owned async closure#1.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -6578,8 +6643,8 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
@@ -6588,8 +6653,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 298,
-      "endLine": 336,
+      "line": 300,
+      "endLine": 338,
       "symbol": "cancellation_remains_live_while_progress_callback_is_blocked",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked",
       "signature": "async fn cancellation_remains_live_while_progress_callback_is_blocked()",
@@ -6638,12 +6703,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1@310[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1@312[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 310,
-      "endLine": 321,
+      "line": 312,
+      "endLine": 323,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1",
       "signature": "async move",
@@ -6678,7 +6743,10 @@
         "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1"
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:310-321: let waiter = tokio::spawn(async move { wait_with_streamed_stdout(child, &wait_job, \"test fixture\", move |_| { let entered = wait_entered.clone(); let release = wait_release.clone(); async move { entered.notify_one(); release.notified().await; Ok(()) } }) .awai"
+        "Frozen span src/downloader/process/tests.rs:312-323; digest 98f9e0885cabb0aed307364f172be7f5ca549c7cb39853db1ebbb65c92d93e64.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: owned async closure#1.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -6686,18 +6754,18 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1@314[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1@316[cfg=test,windows]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 314,
-      "endLine": 318,
+      "line": 316,
+      "endLine": 320,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1",
       "signature": "async move",
@@ -6707,51 +6775,54 @@
         "windows"
       ],
       "ownerCall": null,
-      "callers": [
-        "Rust libtest invokes this cfg(test) case by its qualified test name."
-      ],
-      "inputs": [
-        "Deterministic fixtures and literals declared at src/downloader/process/tests.rs:314-318."
-      ],
-      "sideEffects": [
-        "Uses only test-owned in-memory state, temporary filesystem state, or supervised fixture processes shown in this test body."
-      ],
-      "errors": [
-        "Panics on failed setup or assertion so the regression gate fails closed."
-      ],
-      "ownership": [
-        "The test owns its fixtures, temporary directories, jobs, tasks, and child processes until explicit cleanup or scope drop."
-      ],
-      "locks": [
-        "No production mutex is acquired unless the test explicitly invokes DownloadJob or lifecycle code under review."
-      ],
-      "invariants": [
-        "The assertions in async_block#1 must remain true after refactors of supervised child cancellation, pipe draining, and output bounds."
-      ],
-      "tests": [
-        "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1"
-      ],
-      "evidence": [
-        "Source review src/downloader/process/tests.rs:314-318: async move { entered.notify_one(); release.notified().await; Ok(()) }"
-      ],
-      "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: async block#1.",
-      "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
-      "cancellation": "Exercises cancellation only when named in the test; otherwise the test is bounded by its fixture and Tokio test runtime.",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
-      "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
+      "callers": [
+        "Current direct source caller."
+      ],
+      "inputs": [
+        "Current signature inputs."
+      ],
+      "output": "Current signature output.",
+      "sideEffects": [
+        "Only effects in this source span."
+      ],
+      "errors": [
+        "Errors described by current source."
+      ],
+      "ownership": [
+        "Current source ownership."
+      ],
+      "locks": [
+        "No direct lock unless stated."
+      ],
+      "cancellation": "No independent cancellation unless stated.",
+      "invariants": [
+        "Current source behavior remains invariant."
+      ],
+      "tests": [
+        "Focused downloader suite."
+      ],
+      "purpose": "Support typed supervised process spawning.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/process/tests.rs:316-320; digest ca9c8078657d1941ad8cad7b4b59fcce5f7e92804a3ef2a9ea4a964c2016dd7b.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
+      ]
     },
     {
       "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked[cfg=test,windows]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 340,
-      "endLine": 380,
+      "line": 342,
+      "endLine": 382,
       "symbol": "child_exit_starts_drain_deadline_while_progress_callback_is_blocked",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked",
       "signature": "async fn child_exit_starts_drain_deadline_while_progress_callback_is_blocked()",
@@ -6800,12 +6871,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1@355[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1@357[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 355,
-      "endLine": 366,
+      "line": 357,
+      "endLine": 368,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1",
       "signature": "async move",
@@ -6840,7 +6911,10 @@
         "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1"
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:355-366: let waiter = tokio::spawn(async move { wait_with_streamed_stdout(child, &job, \"test fixture\", move |_| { let entered = wait_entered.clone(); let release = wait_release.clone(); async move { entered.notify_one(); release.notified().await; Ok(()) } }) .await });"
+        "Frozen span src/downloader/process/tests.rs:357-368; digest 027f85d13f8075ccf2a3b2409949812af3e967259701c97cf3d62673c55048af.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
       ],
       "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: owned async closure#1.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -6848,18 +6922,18 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1@359[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1@361[cfg=test,windows]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 359,
-      "endLine": 363,
+      "line": 361,
+      "endLine": 365,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1",
       "signature": "async move",
@@ -6869,51 +6943,54 @@
         "windows"
       ],
       "ownerCall": null,
-      "callers": [
-        "Rust libtest invokes this cfg(test) case by its qualified test name."
-      ],
-      "inputs": [
-        "Deterministic fixtures and literals declared at src/downloader/process/tests.rs:359-363."
-      ],
-      "sideEffects": [
-        "Uses only test-owned in-memory state, temporary filesystem state, or supervised fixture processes shown in this test body."
-      ],
-      "errors": [
-        "Panics on failed setup or assertion so the regression gate fails closed."
-      ],
-      "ownership": [
-        "The test owns its fixtures, temporary directories, jobs, tasks, and child processes until explicit cleanup or scope drop."
-      ],
-      "locks": [
-        "No production mutex is acquired unless the test explicitly invokes DownloadJob or lifecycle code under review."
-      ],
-      "invariants": [
-        "The assertions in async_block#1 must remain true after refactors of supervised child cancellation, pipe draining, and output bounds."
-      ],
-      "tests": [
-        "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1"
-      ],
-      "evidence": [
-        "Source review src/downloader/process/tests.rs:359-363: async move { entered.notify_one(); release.notified().await; Ok(()) }"
-      ],
-      "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: async block#1.",
-      "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
-      "cancellation": "Exercises cancellation only when named in the test; otherwise the test is bounded by its fixture and Tokio test runtime.",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
-      "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
+      "callers": [
+        "Current direct source caller."
+      ],
+      "inputs": [
+        "Current signature inputs."
+      ],
+      "output": "Current signature output.",
+      "sideEffects": [
+        "Only effects in this source span."
+      ],
+      "errors": [
+        "Errors described by current source."
+      ],
+      "ownership": [
+        "Current source ownership."
+      ],
+      "locks": [
+        "No direct lock unless stated."
+      ],
+      "cancellation": "No independent cancellation unless stated.",
+      "invariants": [
+        "Current source behavior remains invariant."
+      ],
+      "tests": [
+        "Focused downloader suite."
+      ],
+      "purpose": "Support typed supervised process spawning.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/process/tests.rs:361-365; digest ca9c8078657d1941ad8cad7b4b59fcce5f7e92804a3ef2a9ea4a964c2016dd7b.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
+      ]
     },
     {
       "id": "src/downloader/process/tests.rs::downloader::process::tests::split_stdout_line_survives_parent_exit_selection[cfg=test,windows]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 384,
-      "endLine": 417,
+      "line": 386,
+      "endLine": 419,
       "symbol": "split_stdout_line_survives_parent_exit_selection",
       "qualifiedName": "downloader::process::tests::split_stdout_line_survives_parent_exit_selection",
       "signature": "async fn split_stdout_line_survives_parent_exit_selection()",
@@ -6966,12 +7043,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 421,
-      "endLine": 453,
+      "line": 423,
+      "endLine": 455,
       "symbol": "cancelled_job_never_runs_suspended_child_first_instruction",
       "qualifiedName": "downloader::process::tests::cancelled_job_never_runs_suspended_child_first_instruction",
       "signature": "async fn cancelled_job_never_runs_suspended_child_first_instruction()",
-      "sourceDigest": "c2f2742a0158d03a2dd0ed3cda1af0967d29b10e274ac7ed719a34d953462282",
+      "sourceDigest": "4a9f153cf1dd1ba2c818a8a527c28b89de84ef2f8a4d8a325198b841d9a7e422",
       "cfg": [
         "test",
         "windows"
@@ -6995,22 +7072,28 @@
         "No production mutex is acquired unless the test explicitly invokes DownloadJob or lifecycle code under review."
       ],
       "invariants": [
-        "The assertions in cancelled_job_never_runs_suspended_child_first_instruction must remain true after refactors of supervised child cancellation, pipe draining, and output bounds."
+        "The assertions in cancelled_job_never_runs_suspended_child_first_instruction must remain true after refactors of supervised child cancellation, pipe draining, and output bounds.",
+        "Error is exactly ProcessSpawnError::Cancelled and sentinel remains absent."
       ],
       "tests": [
-        "downloader::process::tests::cancelled_job_never_runs_suspended_child_first_instruction"
+        "downloader::process::tests::cancelled_job_never_runs_suspended_child_first_instruction",
+        "cancelled_job_never_runs_suspended_child_first_instruction; passed in focused 80-test run."
       ],
       "evidence": [
-        "Source review src/downloader/process/tests.rs:421-453: async fn cancelled_job_never_runs_suspended_child_first_instruction() { let root = std::env::temp_dir().join(format!( \"nuclear-suspended-child-test-{}\", uuid::Uuid::new_v4() )); std::fs::create_dir_all(&root).unwrap(); let sentinel = root.join(\"child-ran.txt\")"
+        "Frozen span src/downloader/process/tests.rs:423-455; digest 4a9f153cf1dd1ba2c818a8a527c28b89de84ef2f8a4d8a325198b841d9a7e422.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ],
-      "purpose": "Verify supervised child cancellation, pipe draining, and output bounds: cancelled job never runs suspended child first instruction.",
+      "purpose": "Verify cancelled Windows job never resumes a suspended child.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
       "cancellation": "Exercises cancellation only when named in the test; otherwise the test is bounded by its fixture and Tokio test runtime.",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
       "status": "reviewed",
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
@@ -7020,8 +7103,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 457,
-      "endLine": 480,
+      "line": 482,
+      "endLine": 505,
       "symbol": "supervised_process_stops_oversized_output_without_draining_producer",
       "qualifiedName": "downloader::process::tests::supervised_process_stops_oversized_output_without_draining_producer",
       "signature": "async fn supervised_process_stops_oversized_output_without_draining_producer()",
@@ -7075,8 +7158,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 484,
-      "endLine": 507,
+      "line": 509,
+      "endLine": 532,
       "symbol": "supervised_process_bounds_inherited_stderr_after_parent_exit",
       "qualifiedName": "downloader::process::tests::supervised_process_bounds_inherited_stderr_after_parent_exit",
       "signature": "async fn supervised_process_bounds_inherited_stderr_after_parent_exit()",
@@ -7129,8 +7212,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 511,
-      "endLine": 527,
+      "line": 536,
+      "endLine": 552,
       "symbol": "streamed_process_bounds_inherited_pipes_after_parent_exit",
       "qualifiedName": "downloader::process::tests::streamed_process_bounds_inherited_pipes_after_parent_exit",
       "signature": "async fn streamed_process_bounds_inherited_pipes_after_parent_exit()",
@@ -13699,6 +13782,287 @@
       "status": "reviewed",
       "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null
+    },
+    {
+      "id": "src/downloader/engine.rs::downloader::engine::spawn_error_result[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/downloader/engine.rs",
+      "line": 155,
+      "endLine": 163,
+      "symbol": "spawn_error_result",
+      "qualifiedName": "downloader::engine::spawn_error_result",
+      "signature": "fn spawn_error_result(process_name: &str, error: ProcessSpawnError) -> DownloadAttemptResult",
+      "sourceDigest": "f93120b18ba0e72f79a91a8e489beb893285f81b6f42a245745ba7583ecda5ae",
+      "cfg": [],
+      "ownerCall": null,
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
+      "findingStatus": "resolved",
+      "disposition": "fix",
+      "destination": "src/downloader/engine.rs",
+      "callers": [
+        "run_download_attempt; run_webm_conversion."
+      ],
+      "inputs": [
+        "Process name and ProcessSpawnError."
+      ],
+      "output": "Cancelled attempt or runtime_missing error attempt.",
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Failed(message) retains the existing Failed to start <process>: <message> context; Cancelled is not an error."
+      ],
+      "ownership": [
+        "Consumes the owned error/message."
+      ],
+      "locks": [
+        "None."
+      ],
+      "cancellation": "Cancelled maps exactly to DownloadAttemptResult::Cancelled.",
+      "invariants": [
+        "Pre-spawn cancellation never becomes Failed to start yt-dlp/ffmpeg; true spawn failures preserve prior code and wording."
+      ],
+      "tests": [
+        "typed_spawn_cancellation_becomes_a_cancelled_attempt; typed_spawn_failure_preserves_the_existing_runtime_failure_context."
+      ],
+      "purpose": "Map typed process-spawn outcomes into download-attempt terminal semantics.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/engine.rs:155-163; digest f93120b18ba0e72f79a91a8e489beb893285f81b6f42a245745ba7583ecda5ae.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
+      ]
+    },
+    {
+      "id": "src/downloader/engine.rs::downloader::engine::tests::typed_spawn_cancellation_becomes_a_cancelled_attempt[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/engine.rs",
+      "line": 700,
+      "endLine": 705,
+      "symbol": "typed_spawn_cancellation_becomes_a_cancelled_attempt",
+      "qualifiedName": "downloader::engine::tests::typed_spawn_cancellation_becomes_a_cancelled_attempt",
+      "signature": "fn typed_spawn_cancellation_becomes_a_cancelled_attempt()",
+      "sourceDigest": "3dda21b498352ea6e1579ece9552bd7e33c34ebb7c989efcf4c19a12c24dcd93",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/engine.rs",
+      "callers": [
+        "Current direct source caller."
+      ],
+      "inputs": [
+        "Current signature inputs."
+      ],
+      "output": "Current signature output.",
+      "sideEffects": [
+        "Only effects in this source span."
+      ],
+      "errors": [
+        "Errors described by current source."
+      ],
+      "ownership": [
+        "Current source ownership."
+      ],
+      "locks": [
+        "No direct lock unless stated."
+      ],
+      "cancellation": "No independent cancellation unless stated.",
+      "invariants": [
+        "Result is DownloadAttemptResult::Cancelled."
+      ],
+      "tests": [
+        "typed_spawn_cancellation_becomes_a_cancelled_attempt; passed in focused 80-test run."
+      ],
+      "purpose": "Verify typed cancellation maps to a cancelled download attempt.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/engine.rs:700-705; digest 3dda21b498352ea6e1579ece9552bd7e33c34ebb7c989efcf4c19a12c24dcd93.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
+      ]
+    },
+    {
+      "id": "src/downloader/engine.rs::downloader::engine::tests::typed_spawn_failure_preserves_the_existing_runtime_failure_context[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/engine.rs",
+      "line": 708,
+      "endLine": 723,
+      "symbol": "typed_spawn_failure_preserves_the_existing_runtime_failure_context",
+      "qualifiedName": "downloader::engine::tests::typed_spawn_failure_preserves_the_existing_runtime_failure_context",
+      "signature": "fn typed_spawn_failure_preserves_the_existing_runtime_failure_context()",
+      "sourceDigest": "25af80131546542c28b97b749d0fd20c88aa9db667a569730613cf3603cd1d87",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/engine.rs",
+      "callers": [
+        "Current direct source caller."
+      ],
+      "inputs": [
+        "Current signature inputs."
+      ],
+      "output": "Current signature output.",
+      "sideEffects": [
+        "Only effects in this source span."
+      ],
+      "errors": [
+        "Errors described by current source."
+      ],
+      "ownership": [
+        "Current source ownership."
+      ],
+      "locks": [
+        "No direct lock unless stated."
+      ],
+      "cancellation": "No independent cancellation unless stated.",
+      "invariants": [
+        "Code and nested Failed to start yt-dlp wording are exact."
+      ],
+      "tests": [
+        "typed_spawn_failure_preserves_the_existing_runtime_failure_context; passed in focused 80-test run."
+      ],
+      "purpose": "Verify true spawn failure preserves runtime_missing and existing message context.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/engine.rs:708-723; digest 25af80131546542c28b97b749d0fd20c88aa9db667a569730613cf3603cd1d87.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
+      ]
+    },
+    {
+      "id": "src/downloader/process.rs::downloader::process::impl ProcessSpawnError::into_message[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/downloader/process.rs",
+      "line": 31,
+      "endLine": 36,
+      "symbol": "into_message",
+      "qualifiedName": "downloader::process::impl ProcessSpawnError::into_message",
+      "signature": "pub(super) fn into_message(self) -> String",
+      "sourceDigest": "d7a40724ab2dd9abcc71ee3486f425b8344e5e62a3c8697ec7d3ee5fb2a03481",
+      "cfg": [],
+      "ownerCall": null,
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
+      "findingStatus": "resolved",
+      "disposition": "fix",
+      "destination": "src/downloader/process.rs",
+      "callers": [
+        "probe_media_duration_seconds; run_fetch_info_command; run_supervised_probe; test adapter."
+      ],
+      "inputs": [
+        "Owned ProcessSpawnError."
+      ],
+      "output": "Owned message String.",
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Infallible conversion."
+      ],
+      "ownership": [
+        "Consumes the variant and returns its string or fixed cancellation text."
+      ],
+      "locks": [
+        "None."
+      ],
+      "cancellation": "Cancelled becomes Operation was cancelled.; Failed preserves its message.",
+      "invariants": [
+        "Download attempts match the typed variant before this lossy API conversion."
+      ],
+      "tests": [
+        "typed engine mapping tests; missing executable process test."
+      ],
+      "purpose": "Convert typed spawn outcomes for callers that retain a string error API.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/process.rs:31-36; digest d7a40724ab2dd9abcc71ee3486f425b8344e5e62a3c8697ec7d3ee5fb2a03481.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
+      ]
+    },
+    {
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/process/tests.rs",
+      "line": 458,
+      "endLine": 478,
+      "symbol": "missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested",
+      "qualifiedName": "downloader::process::tests::missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested",
+      "signature": "async fn missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested()",
+      "sourceDigest": "345229a56e5aec73a91826e765408951d3627c90252b3bc0706779209ee83427",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T05:40:50Z",
+      "status": "reviewed",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/process/tests.rs",
+      "callers": [
+        "Current direct source caller."
+      ],
+      "inputs": [
+        "Current signature inputs."
+      ],
+      "output": "Current signature output.",
+      "sideEffects": [
+        "Only effects in this source span."
+      ],
+      "errors": [
+        "Errors described by current source."
+      ],
+      "ownership": [
+        "Current source ownership."
+      ],
+      "locks": [
+        "No direct lock unless stated."
+      ],
+      "cancellation": "No independent cancellation unless stated.",
+      "invariants": [
+        "Variant is Failed with expected prefix, never Cancelled."
+      ],
+      "tests": [
+        "missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested; passed in focused 80-test run."
+      ],
+      "purpose": "Verify missing executable remains a true spawn failure.",
+      "notes": "Frozen-source spawn-cancellation review.",
+      "evidence": [
+        "Frozen span src/downloader/process/tests.rs:458-478; digest 345229a56e5aec73a91826e765408951d3627c90252b3bc0706779209ee83427.",
+        "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
+        "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
+      ]
     }
   ]
 }

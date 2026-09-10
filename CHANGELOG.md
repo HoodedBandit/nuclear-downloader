@@ -31,6 +31,8 @@ ownership, closing several async races, and refreshing the bundled downloader.
   clearing a newer edit or saving another row's draft.
 - Made cancellation tolerate an operation completing or being dismissed during
   the cancellation request, while retaining errors for truly missing live work.
+- Kept cancellation during yt-dlp or FFmpeg startup distinct from a launch
+  failure, so Cancel All does not leave a cancelled download in an error state.
 - Removed a redundant metadata request when adding links. Inspection now uses one
   bounded pass; observed extractor timings are documented without claiming a
   universal Add-button response time.
