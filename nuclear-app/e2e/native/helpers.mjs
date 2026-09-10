@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { Key } from 'webdriverio';
 
 export async function waitForTerminalQueueStatus(row, expected, timeout) {
   const status = await row.$('.status-pill');
@@ -59,7 +60,9 @@ export async function editQueuedFilename(row, filename) {
   await edit.click();
   const input = await row.$('input[aria-label="Edit queued filename"]');
   await input.waitForDisplayed({ timeout: 30_000 });
-  await input.setValue(filename);
-  await input.keys('Enter');
+  await input.click();
+  await browser.keys([Key.Ctrl, 'a']);
+  await browser.keys(filename);
+  await browser.keys('Enter');
   await row.$('.title-text').waitForDisplayed({ timeout: 30_000 });
 }

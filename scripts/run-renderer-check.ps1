@@ -79,6 +79,9 @@ function Harness-InputPaths([string] $SelectedSpec) {
         (Join-Path $appRoot 'vite.config.js')
     )
     $paths += @(Get-ChildItem -LiteralPath $supportRoot -File -Recurse -Force | ForEach-Object FullName)
+    if ($SelectedSpec -ceq 'e2e/browser/renderer-workflows.e2e.mjs') {
+        $paths += (Join-Path $appRoot 'e2e/native/helpers.mjs')
+    }
     @(Sort-OrdinalUnique $paths)
 }
 function Input-Manifest([string] $Kind, [string[]] $Paths, [string] $ArchiveRoot) {

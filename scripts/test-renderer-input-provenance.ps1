@@ -18,6 +18,7 @@ $needed = @(
     'Sort-OrdinalUnique',
     'Assert-RegularDirectoryTree',
     'Production-InputPaths',
+    'Harness-InputPaths',
     'Input-Manifest',
     'Manifests-Match'
 )
@@ -29,7 +30,12 @@ if ($definitions.Count -ne $needed.Count) {
     throw 'Could not load the runner provenance functions.'
 }
 foreach ($definition in $definitions) {
-    Invoke-Expression $definition.Extent.Text
+    $functionText = $definition.Extent.Text
+    if ($definition.Name -ceq 'Harness-InputPaths') {
+        $quotedRunnerPath = "'$($runnerPath.Replace("'", "''"))'"
+        $functionText = $functionText.Replace('$PSCommandPath', $quotedRunnerPath)
+    }
+    Invoke-Expression $functionText
 }
 
 $fixtureLeaf = "nuclear-renderer-provenance-$([Guid]::NewGuid().ToString('N'))"
@@ -44,9 +50,13 @@ $script:appRoot = Join-Path $fixtureRoot 'nuclear-app'
 try {
     $sourceRoot = Join-Path $appRoot 'src'
     $staticRoot = Join-Path $appRoot 'static'
+    $supportRoot = Join-Path $appRoot 'e2e/browser/support'
+    $nativeRoot = Join-Path $appRoot 'e2e/native'
     $runRoot = Join-Path $fixtureRoot 'evidence'
     [IO.Directory]::CreateDirectory((Join-Path $sourceRoot 'lib/bindings')) | Out-Null
     [IO.Directory]::CreateDirectory($staticRoot) | Out-Null
+    [IO.Directory]::CreateDirectory($supportRoot) | Out-Null
+    [IO.Directory]::CreateDirectory($nativeRoot) | Out-Null
     [IO.Directory]::CreateDirectory($runRoot) | Out-Null
 
     $firstPath = Join-Path $sourceRoot 'lib/first.ts'
@@ -70,6 +80,12 @@ try {
     foreach ($name in @('package.json', 'package-lock.json', 'jsconfig.json', 'svelte.config.js', 'vite.config.js')) {
         [IO.File]::WriteAllText((Join-Path $appRoot $name), "fixture:$name", [Text.UTF8Encoding]::new($false))
     }
+    $sharedHelperPath = Join-Path $nativeRoot 'helpers.mjs'
+    [IO.File]::WriteAllText(
+        $sharedHelperPath,
+        'export const editQueuedFilename = 1;',
+        [Text.UTF8Encoding]::new($false)
+    )
 
     $beforePaths = @(Production-InputPaths)
     $beforeRelative = @($beforePaths | ForEach-Object { Relative-InputPath $_ })
@@ -113,7 +129,42 @@ try {
         throw 'A source-set addition was not detected by frozen replay.'
     }
 
-    'Renderer input provenance fixtures passed: enumeration, archived bytes, modified content, and added files.'
+    $workflowHarnessPaths = @(Harness-InputPaths 'e2e/browser/renderer-workflows.e2e.mjs')
+    $workflowHarnessRelative = @($workflowHarnessPaths | ForEach-Object { Relative-InputPath $_ })
+    if ($workflowHarnessRelative -notcontains 'nuclear-app/e2e/native/helpers.mjs') {
+        throw 'Workflow harness enumeration missed the shared native helper.'
+    }
+    $visualHarnessRelative = @(
+        Harness-InputPaths 'e2e/browser/visual-baseline.e2e.mjs' |
+            ForEach-Object { Relative-InputPath $_ }
+    )
+    if ($visualHarnessRelative -contains 'nuclear-app/e2e/native/helpers.mjs') {
+        throw 'An unrelated renderer harness included the workflow-only shared native helper.'
+    }
+
+    $helperBefore = Input-Manifest 'harness' @($sharedHelperPath) $runRoot
+    $helperEntry = @($helperBefore.files)[0]
+    $expectedHelperHash = (Get-FileHash -LiteralPath $sharedHelperPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($helperEntry.path -cne 'nuclear-app/e2e/native/helpers.mjs' -or
+        $helperEntry.sha256 -cne $expectedHelperHash) {
+        throw 'The shared native helper was not recorded with its exact content hash.'
+    }
+    $archivedHelper = Join-Path $runRoot $helperEntry.archivePath
+    if (-not [IO.File]::Exists($archivedHelper)) {
+        throw 'The shared native helper was not archived with the workflow harness.'
+    }
+
+    [IO.File]::WriteAllText(
+        $sharedHelperPath,
+        'export const editQueuedFilename = 2;',
+        [Text.UTF8Encoding]::new($false)
+    )
+    $helperAfterEdit = Input-Manifest 'harness' @($sharedHelperPath) $null
+    if (Manifests-Match $helperBefore $helperAfterEdit) {
+        throw 'A shared native helper mutation was not detected by frozen harness replay.'
+    }
+
+    'Renderer input provenance fixtures passed: production enumeration, archived bytes, modified content, added files, and shared workflow helper coverage.'
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixtureRoot)
     $resolvedParent = [IO.Path]::GetDirectoryName($resolvedFixture)

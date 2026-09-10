@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { Key } from 'webdriverio';
+import { editQueuedFilename } from '../native/helpers.mjs';
 import {
   IDS,
   applyDelta,
@@ -319,9 +320,9 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await mocks.update_queue_item.update();
     assert.equal(mocks.update_queue_item.mock.calls.length, 1);
 
-    await $('.title-button').click();
-    await replaceFilenameDraft('CON.txt');
-    await browser.keys('Enter');
+    // Exercise the native acceptance helper here so an unsupported WebDriver
+    // command fails during ordinary CI, before a signed candidate is built.
+    await editQueuedFilename(await $('tr.queue-item'), 'CON.txt');
     await waitForMockCalls(mocks.update_queue_item, 2);
     assert.deepEqual(mocks.update_queue_item.mock.calls[1][0], {
       itemId: IDS.item,
