@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [ValidatePattern('^0\.6\.0$')]
-    [string] $Version = '0.6.0',
+    [ValidatePattern('^0\.7\.1$')]
+    [string] $Version = '0.7.1',
 
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+$')]
     [string] $RuntimeVersion = '2026.08.19',
@@ -14,7 +14,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$script:ExpectedVersion = '0.6.0'
+$script:ExpectedVersion = '0.7.1'
 $script:AppPlatform = 'windows-x86_64'
 $script:RuntimePlatform = 'windows-x64'
 $script:Utf8NoBom = [System.Text.UTF8Encoding]::new($false)

@@ -2,9 +2,12 @@
 
 ## Unreleased
 
-These changes are on `main` after the published 0.6.0 release. Existing release
-downloads do not contain them; the application version remains 0.6.0 until a new
-release is prepared.
+No changes have been recorded after 0.7.1 yet.
+
+## v0.7.1 - 2026-09-10
+
+This release keeps the existing interface and workflows while separating their
+ownership, closing several async races, and refreshing the bundled downloader.
 
 ### Internal structure
 

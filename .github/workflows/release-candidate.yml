@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: Exact application version (this workflow is pinned to 0.6.0)
+        description: Exact application version (this workflow is pinned to 0.7.1)
         required: true
-        default: 0.6.0
+        default: 0.7.1
         type: string
       runtime_version:
         description: Exact three-component managed-runtime version
@@ -18,7 +18,7 @@ on:
         required: false
         type: string
       confirmation:
-        description: Type BUILD v0.6.0
+        description: Type BUILD v0.7.1
         required: true
         type: string
 
@@ -44,13 +44,13 @@ jobs:
           INPUT_RUNTIME_VERSION: ${{ inputs.runtime_version }}
           INPUT_CONFIRMATION: ${{ inputs.confirmation }}
         run: |
-          if ($env:INPUT_RELEASE_VERSION -cne '0.6.0') {
-            throw 'This workflow is pinned to application version 0.6.0.'
+          if ($env:INPUT_RELEASE_VERSION -cne '0.7.1') {
+            throw 'This workflow is pinned to application version 0.7.1.'
           }
           if ($env:INPUT_RUNTIME_VERSION -cnotmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
             throw 'runtime_version must contain exactly three numeric dotted components.'
           }
-          if ($env:INPUT_CONFIRMATION -cne 'BUILD v0.6.0') {
+          if ($env:INPUT_CONFIRMATION -cne 'BUILD v0.7.1') {
             throw 'The candidate confirmation text is not exact.'
           }
 
@@ -207,7 +207,7 @@ jobs:
           $arguments = @{
             Version = $env:INPUT_RELEASE_VERSION
             RuntimeVersion = $env:INPUT_RUNTIME_VERSION
-            OutputDirectory = 'nuclear-app\src-tauri\target\release-candidate-0.6.0'
+            OutputDirectory = 'nuclear-app\src-tauri\target\release-candidate-0.7.1'
           }
           if (-not [string]::IsNullOrWhiteSpace($env:INPUT_PUBLISHED_AT)) {
             $arguments.PublishedAt = $env:INPUT_PUBLISHED_AT
@@ -231,9 +231,9 @@ jobs:
           NUCLEAR_E2E_X_FIXTURE_ID: ${{ vars.NUCLEAR_E2E_X_FIXTURE_ID }}
         run: |
           & scripts/run-windows-candidate-acceptance-user.ps1 `
-            -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.6.0' `
-            -ResultsDirectory 'nuclear-app\src-tauri\target\release-acceptance-0.6.0' `
-            -ExpectedVersion '0.6.0' `
+            -CandidateDirectory 'nuclear-app\src-tauri\target\release-candidate-0.7.1' `
+            -ResultsDirectory 'nuclear-app\src-tauri\target\release-acceptance-0.7.1' `
+            -ExpectedVersion '0.7.1' `
             -ExpectedCommitSha '${{ github.sha }}' `
             -ExpectedCandidateRunId '${{ github.run_id }}'
 
@@ -241,8 +241,8 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: nuclear-downloader-0.6.0-acceptance
-          path: nuclear-app/src-tauri/target/release-acceptance-0.6.0/*
+          name: nuclear-downloader-0.7.1-acceptance
+          path: nuclear-app/src-tauri/target/release-acceptance-0.7.1/*
           if-no-files-found: warn
           compression-level: 0
           retention-days: 30
@@ -251,8 +251,8 @@ jobs:
       - name: Upload unpublished candidate bytes
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: nuclear-downloader-0.6.0-candidate
-          path: nuclear-app/src-tauri/target/release-candidate-0.6.0/*
+          name: nuclear-downloader-0.7.1-candidate
+          path: nuclear-app/src-tauri/target/release-candidate-0.7.1/*
           if-no-files-found: error
           compression-level: 0
           retention-days: 30

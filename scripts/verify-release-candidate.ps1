@@ -3,8 +3,8 @@ param(
     [Parameter(Mandatory)]
     [string] $CandidateDirectory,
 
-    [ValidatePattern('^0\.6\.0$')]
-    [string] $ExpectedVersion = '0.6.0',
+    [ValidatePattern('^0\.7\.1$')]
+    [string] $ExpectedVersion = '0.7.1',
 
     [ValidatePattern('^$|^[0-9a-f]{40}$')]
     [string] $ExpectedCommitSha = '',
@@ -440,8 +440,8 @@ function Assert-VersionParity {
     }
 }
 
-if ($ExpectedVersion -cne '0.6.0') {
-    throw 'This verification contract is intentionally pinned to release 0.6.0.'
+if ($ExpectedVersion -cne '0.7.1') {
+    throw 'This verification contract is intentionally pinned to release 0.7.1.'
 }
 Assert-KeyPairConfiguration `
     -ConfiguredCurrentKeyId $CurrentKeyId `
@@ -528,7 +528,7 @@ $legacyFile = Get-CandidateFile -Name $legacyName -Root $candidateRoot
 $legacyExpected = "$installerHash  $installerName`n"
 $legacyActual = [System.IO.File]::ReadAllText($legacyFile.FullName, [System.Text.Encoding]::ASCII)
 if ($legacyActual -cne $legacyExpected) {
-    throw 'The v0.5.4 bridge checksum does not exactly bind the 0.6.0 installer.'
+    throw 'The v0.5.4 bridge checksum does not exactly bind the 0.7.1 installer.'
 }
 
 $portable = Get-CandidateFile -Name $portableName -Root $candidateRoot

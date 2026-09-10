@@ -8,12 +8,12 @@ on:
         required: true
         type: string
       release_version:
-        description: Exact application version (this workflow is pinned to 0.6.0)
+        description: Exact application version (this workflow is pinned to 0.7.1)
         required: true
-        default: 0.6.0
+        default: 0.7.1
         type: string
       confirmation:
-        description: Type PUBLISH v0.6.0
+        description: Type PUBLISH v0.7.1
         required: true
         type: string
       manual_acceptance_json:
@@ -48,10 +48,10 @@ jobs:
           INPUT_CONFIRMATION: ${{ inputs.confirmation }}
           INPUT_CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
         run: |
-          if ($env:INPUT_RELEASE_VERSION -cne '0.6.0') {
-            throw 'This workflow is pinned to application version 0.6.0.'
+          if ($env:INPUT_RELEASE_VERSION -cne '0.7.1') {
+            throw 'This workflow is pinned to application version 0.7.1.'
           }
-          if ($env:INPUT_CONFIRMATION -cne 'PUBLISH v0.6.0') {
+          if ($env:INPUT_CONFIRMATION -cne 'PUBLISH v0.7.1') {
             throw 'The publish confirmation text is not exact.'
           }
           if ($env:INPUT_CANDIDATE_RUN_ID -cnotmatch '^[1-9][0-9]*$') {
@@ -88,7 +88,7 @@ jobs:
       - name: Download the candidate by run ID
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: nuclear-downloader-0.6.0-candidate
+          name: nuclear-downloader-0.7.1-candidate
           path: candidate
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -97,7 +97,7 @@ jobs:
       - name: Download exact-run acceptance evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: nuclear-downloader-0.6.0-acceptance
+          name: nuclear-downloader-0.7.1-acceptance
           path: acceptance
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -155,7 +155,7 @@ jobs:
       - name: Retain private manual acceptance evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: nuclear-downloader-0.6.0-manual-acceptance
+          name: nuclear-downloader-0.7.1-manual-acceptance
           path: manual-acceptance/windows-x64-manual-acceptance.json
           if-no-files-found: error
           compression-level: 0
@@ -170,7 +170,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $tag = 'v0.6.0'
+          $tag = 'v0.7.1'
           function Get-CandidateDraft {
             # The tag endpoint only finds published releases, not untagged drafts.
             $pages = gh api "repos/$env:GH_REPO/releases?per_page=100" --paginate --slurp | ConvertFrom-Json -DateKind String
@@ -202,27 +202,30 @@ jobs:
           }
 
           $releaseNotes = @(
-            'Nuclear Downloader 0.6.0 is a quiet kind of big release. The app should feel familiar, but the machinery behind it is now far more dependable.'
+            'Nuclear Downloader 0.7.1 completes a substantial internal refactor while preserving the existing interface and workflows.'
             ''
             '### Highlights'
             ''
-            '- Reliable link inspection and queue recovery, even when a window event is missed.'
-            '- No more browser-style URL history suggestions in the link box.'
-            '- Safer cancellation, process-tree cleanup, staging, and collision-proof file publication.'
-            '- Signed app and runtime manifests with strict size, hash, platform, and rollback checks.'
-            '- Clearer diagnostics, stronger accessibility, and a much broader automated test suite.'
+            '- Clear ownership for page lifecycle, queue presentation, and inspection, download, update, and settings workflows.'
+            '- Focused backend modules for state commands, process supervision, output handling, and safe file publication.'
+            '- Fixed stale asynchronous results, filename-edit races, and cancellation during playlist admission.'
+            '- Removed a redundant link-inspection request and fixed multi-video X posts resolving to another playlist.'
+            '- Updated yt-dlp to 2026.08.19, resolving the reproduced YouTube HTTP 403 for Best-quality MP4.'
+            '- Expanded regression, lifecycle, architecture, and performance checks without changing the existing user experience.'
             ''
-            'This is still the Nuclear Downloader you know, just with a much stronger foundation. Thank you for using it and for helping make the rough edges visible.'
+            'This is a normal 0.7.1 release. Work toward 1.0 continues.'
             ''
             'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
           ) -join "`n"
+          $releaseNotesPath = Join-Path (Get-Location).Path 'release-notes.md'
+          [System.IO.File]::WriteAllText($releaseNotesPath, $releaseNotes, [System.Text.UTF8Encoding]::new($false))
 
           if ($null -eq $existingDraft) {
             & gh release create $tag @assetPaths `
               --repo $env:GH_REPO `
               --target $env:EXPECTED_COMMIT_SHA `
-              --title 'Nuclear Downloader 0.6.0' `
-              --notes $releaseNotes `
+              --title 'Nuclear Downloader 0.7.1' `
+              --notes-file $releaseNotesPath `
               --draft
             if ($LASTEXITCODE -ne 0) {
               throw 'GitHub failed to create the draft release.'

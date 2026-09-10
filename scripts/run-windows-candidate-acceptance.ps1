@@ -6,8 +6,8 @@ param(
     [Parameter(Mandatory)]
     [string] $ResultsDirectory,
 
-    [ValidatePattern('^0\.6\.0$')]
-    [string] $ExpectedVersion = '0.6.0',
+    [ValidatePattern('^0\.7\.1$')]
+    [string] $ExpectedVersion = '0.7.1',
 
     [ValidatePattern('^[0-9a-f]{40}$')]
     [string] $ExpectedCommitSha,

@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory)] [string] $EvidenceDirectory,
     [Parameter(Mandatory)] [string] $CandidateDirectory,
-    [ValidatePattern('^0\.6\.0$')] [string] $ExpectedVersion = '0.6.0',
+    [ValidatePattern('^0\.7\.1$')] [string] $ExpectedVersion = '0.7.1',
     [ValidatePattern('^[0-9a-f]{40}$')] [string] $ExpectedCommitSha,
     [ValidatePattern('^[1-9][0-9]*$')] [string] $ExpectedCandidateRunId
 )

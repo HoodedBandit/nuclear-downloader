@@ -30,11 +30,11 @@ Keep the portable app and its adjacent tools together. A loose `nuclear.exe`
 needs those tools or an authenticated managed runtime. The installed app can
 check for published updates and hand off to a verified installer.
 
-**Source versus release:** the latest published release is **0.6.0**. The
-refactor and fixes described under **Unreleased** in the changelog are on
-`main`; they are not included in those existing downloads. This includes the
-yt-dlp `2026.08.19` YouTube fix. Publishing new installer and portable artifacts
-is a separate, qualified release step.
+**Source versus release:** `main` is preparing the **0.7.1** release. Its source
+includes the ownership refactor, async-race fixes, selected-media handling, and
+the yt-dlp `2026.08.19` YouTube fix described in the changelog. Existing GitHub
+downloads remain the previously published release until the 0.7.1 installer and
+portable artifacts are published and verified.
 
 ## Features
 
@@ -52,7 +52,7 @@ Five downloads can run concurrently, with one inspection and one explicit WebM
 conversion at a time. Large queues use virtual rows and playlists use pages to
 keep the interface responsive.
 
-## What changed on main
+## What is preparing for 0.7.1
 
 The refactor preserves the existing interface and workflows while making their
 ownership explicit:

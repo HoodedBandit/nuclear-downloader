@@ -1,8 +1,8 @@
 # Documentation
 
 Start with the [project README](../README.md) for downloads, supported platforms,
-features, and development prerequisites. The latest published release is 0.6.0;
-the refactor and recent downloader fixes on `main` are **unreleased**.
+features, and development prerequisites. The latest published release remains 0.6.0; `main` contains the prepared 0.7.1
+source and release contracts until exact candidate bytes complete publication.
 
 ## Setup and maintenance
 

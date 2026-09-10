@@ -62,7 +62,7 @@ fn main() {
 
     if profile == "release" && (target_os != "windows" || target != WINDOWS_X64_TARGET) {
         panic!(
-            "Nuclear Downloader 0.6.0 release builds support only {WINDOWS_X64_TARGET}; got {target}"
+            "Nuclear Downloader 0.7.1 release builds support only {WINDOWS_X64_TARGET}; got {target}"
         );
     }
     validate_update_key_environment(&profile);

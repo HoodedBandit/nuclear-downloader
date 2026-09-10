@@ -100,7 +100,7 @@ try {
     Assert-True -Condition ($candidateWorkflow -notmatch '(?m)^\s*gh\s+release\s') -Message 'Candidate workflow must never create or upload a GitHub Release.'
     Assert-True -Condition ($publishWorkflow.Contains('d3f86a106a0bac45b974a628896c90dbdf5c8093')) -Message 'Publish workflow must pin download-artifact.'
     Assert-True -Condition ($publishWorkflow.Contains('candidate_run_id')) -Message 'Publish workflow must download a prior candidate by run ID.'
-    Assert-True -Condition ($publishWorkflow.Contains('PUBLISH v0.6.0')) -Message 'Publish workflow must require the exact maintainer confirmation.'
+    Assert-True -Condition ($publishWorkflow.Contains('PUBLISH v0.7.1')) -Message 'Publish workflow must require the exact maintainer confirmation.'
     Assert-True -Condition ($publishWorkflow.Contains('gh release create')) -Message 'Publish workflow must publish through gh without rebuilding.'
     Assert-True -Condition ($publishWorkflow -notmatch 'tauri\s+build|build-release-candidate') -Message 'Publish workflow must not rebuild candidate bytes.'
     foreach ($publicVariable in @(
@@ -147,11 +147,11 @@ try {
 
     $fixtureRoot = Join-Path $testRoot 'candidate'
     New-Item -ItemType Directory -Path $fixtureRoot | Out-Null
-    $version = '0.6.0'
-    $installerName = 'Nuclear.Downloader_0.6.0_x64-setup.exe'
-    $portableName = 'Nuclear.Downloader_0.6.0_x64-portable.zip'
-    $manifestName = 'nuclear-downloader-v0.6.0-update.json'
-    $legacyName = 'nuclear-downloader-v0.6.0-sha256.txt'
+    $version = '0.7.1'
+    $installerName = 'Nuclear.Downloader_0.7.1_x64-setup.exe'
+    $portableName = 'Nuclear.Downloader_0.7.1_x64-portable.zip'
+    $manifestName = 'nuclear-downloader-v0.7.1-update.json'
+    $legacyName = 'nuclear-downloader-v0.7.1-sha256.txt'
     $runtimeVersion = '2026.07.04'
     $runtimeDescriptorName = 'nuclear-downloader-runtime-windows-x64.json'
     $runtimeArchiveName = "nuclear-downloader-runtime-$runtimeVersion-windows-x64.zip"
@@ -330,7 +330,20 @@ try {
             -CurrentKeyId $keyId `
             -CurrentPublicKey $testPublicKey
     )
-    Assert-True -Condition ($verificationOutput.Count -eq 1 -and $verificationOutput[0] -match '^Verified Nuclear Downloader 0\.6\.0 candidate') -Message 'Valid fixture candidate did not pass verification.'
+    Assert-True -Condition ($verificationOutput.Count -eq 1 -and $verificationOutput[0] -match '^Verified Nuclear Downloader 0\.7\.1 candidate') -Message 'Valid fixture candidate did not pass verification.'
+
+    $oldVersionRejected = $false
+    try {
+        & $verifyScript `
+            -CandidateDirectory $fixtureRoot `
+            -ExpectedVersion '0.6.0' `
+            -ExpectedCommitSha ('a' * 40) `
+            -CurrentKeyId $keyId `
+            -CurrentPublicKey $testPublicKey *> $null
+    } catch {
+        $oldVersionRejected = $true
+    }
+    Assert-True -Condition $oldVersionRejected -Message 'The release verifier accepted an old 0.6.0 candidate version.'
 
     $manifestSignaturePath = Join-Path $fixtureRoot "$manifestName.sig"
     $validManifestSignature = [System.IO.File]::ReadAllText($manifestSignaturePath, $utf8NoBom)

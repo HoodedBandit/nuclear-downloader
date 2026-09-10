@@ -44,8 +44,8 @@ function gh {
         $pages[1] = @($script:drafts)
         return ConvertTo-Json -InputObject $pages -Depth 10 -Compress
     }
-    if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/git/matching-refs/tags/v0.6.0") {
-        if ($script:tagExists) { return '[{"ref":"refs/tags/v0.6.0"}]' }
+    if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/git/matching-refs/tags/v0.7.1") {
+        if ($script:tagExists) { return '[{"ref":"refs/tags/v0.7.1"}]' }
         return '[]'
     }
     if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/releases/123") {
@@ -53,9 +53,17 @@ function gh {
     }
     if ($args[0] -ceq 'release' -and $args[1] -ceq 'create') {
         $script:createCount++
-        if ($args[2] -cne 'v0.6.0' -or $args -cnotcontains '--draft' -or
+        if ($args[2] -cne 'v0.7.1' -or $args -cnotcontains '--draft' -or
             $args[([array]::IndexOf($args, '--target') + 1)] -cne $env:EXPECTED_COMMIT_SHA) {
             throw 'The workflow attempted to create a release with the wrong identity or visibility.'
+        }
+        $notesFlagIndex = [array]::IndexOf($args, '--notes-file')
+        if ($notesFlagIndex -lt 0) { throw 'Release notes must use a file argument.' }
+        $notesPath = [string]$args[$notesFlagIndex + 1]
+        if ($notesPath -cne (Join-Path $fixtureRoot 'release-notes.md') -or
+            -not (Test-Path -LiteralPath $notesPath -PathType Leaf) -or
+            -not ([IO.File]::ReadAllText($notesPath).Contains("`n### Highlights`n"))) {
+            throw 'Release notes must preserve newlines in the owned working directory.'
         }
         if (-not $script:hideCreatedDraft) { $script:drafts = @($script:validDraft) }
         return 'https://example.invalid/releases/tag/untagged-fixture'
@@ -70,7 +78,7 @@ function gh {
 function Invoke-PublishCase {
     param([string] $Name, [scriptblock] $Mutate, [bool] $Reject = $true, [int] $ExpectedCreates = 0)
     $script:validDraft = @{
-        id = 123; tag_name = 'v0.6.0'; target_commitish = ('b' * 40)
+        id = 123; tag_name = 'v0.7.1'; target_commitish = ('b' * 40)
         draft = $true; prerelease = $false
         assets = @($fixtureAssets | ForEach-Object {
             @{ name = $_.fileName; size = $_.size; digest = "sha256:$($_.sha256)"; state = 'uploaded' }
@@ -140,7 +148,7 @@ try {
         $env:VERIFIED_RELEASE_ID = '123'
         & $publishCode
         if ($script:publishCount -ne 1) { throw 'Publishing did not use the exact verified numeric release ID.' }
-        foreach ($badId in @('', 'v0.6.0', '../123')) {
+        foreach ($badId in @('', 'v0.7.1', '../123')) {
             $env:VERIFIED_RELEASE_ID = $badId
             $rejected = $false
             try { & $publishCode } catch { $rejected = $true }

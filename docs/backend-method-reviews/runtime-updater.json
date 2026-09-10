@@ -78,7 +78,7 @@
       "symbol": "main",
       "qualifiedName": "main",
       "signature": "fn main()",
-      "sourceDigest": "5542e0e2a583796dd4c5b4a8b373cf019ca58d08bdc147bc05edde356e911c7e",
+      "sourceDigest": "877613e7bc2d2ca9a57dc256fec1b864e36d1624502c6a590155a91b3b4aadb3",
       "cfg": [],
       "ownerCall": null,
       "purpose": "Validate release inputs and locked sidecars, merge the Tauri external-binary overlay, and invoke the Tauri build script.",
@@ -110,17 +110,17 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span build.rs:46-108, digest 5542e0e2a583796dd4c5b4a8b373cf019ca58d08bdc147bc05edde356e911c7e.",
+        "Current source span build.rs:46-108, digest 877613e7bc2d2ca9a57dc256fec1b864e36d1624502c6a590155a91b3b4aadb3.",
         "Current direct caller resolution: Cargo invokes this build-script entrypoint.",
         "Current direct named-test resolution: Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers.",
         "No separate source defect identified in this span."
       ],
       "disposition": "keep",
       "destination": "build.rs",
-      "reviewer": "/root/lifecycle_ledger",
-      "reviewedAt": "2026-09-09T01:09:07Z",
+      "reviewer": "/root",
+      "reviewedAt": "2026-09-10T03:57:53Z",
       "status": "reviewed",
-      "notes": "Reviewed against current source and authoritative 1,191-entry inventory; no checkpoint or pre-extraction path was used as source evidence."
+      "notes": "Reviewed the 0.7.1 version-only update to the unsupported release target message. Target validation, key checks, sidecar verification, and build ownership remain unchanged."
     },
     {
       "id": "build.rs::sha256_file[cfg=all]",

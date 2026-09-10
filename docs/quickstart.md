@@ -59,7 +59,7 @@ no managed or bundled runtime; an integrity error does not permit that fallback.
 Use the pinned sidecars for reproducible development. Deno is optional at runtime
 but is included in the locked release set for modern YouTube extraction.
 
-Nuclear Downloader 0.6.0 supports Windows x64 only. ARM64 is unsupported. For
+Nuclear Downloader 0.7.1 supports Windows x64 only. ARM64 is unsupported. For
 installer or portable release builds, use the exact Windows x64 binaries pinned
 in `nuclear-app/src-tauri/sidecars.lock.json`:
 
