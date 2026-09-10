@@ -96,6 +96,7 @@ $processInvocation = 0
 
 . (Join-Path $PSScriptRoot 'windows-edgedriver.ps1')
 . (Join-Path $PSScriptRoot 'acceptance-log-privacy.ps1')
+. (Join-Path $PSScriptRoot 'acceptance-uninstall.ps1')
 
 function Write-ProcessLogTail {
     param(
@@ -618,20 +619,25 @@ try {
         -ExpectedNativeDriverPath $edgeDriverPath
     $steps.portableStartup = 'passed'
 
+    $ownedApplicationPaths = @(
+        [System.IO.Path]::GetFullPath($installedExecutable),
+        [System.IO.Path]::GetFullPath($portableExecutable)
+    )
+    $activeOwnedApplications = @(
+        Get-CimInstance Win32_Process | Where-Object {
+            $_.ExecutablePath -and
+            [System.IO.Path]::GetFullPath([string]$_.ExecutablePath) -in $ownedApplicationPaths
+        }
+    )
+    if ($activeOwnedApplications.Count -ne 0) {
+        throw 'An owned candidate application was still active before uninstall verification.'
+    }
+    $journalBeforeUninstall = Get-AcceptanceFileFingerprint -Path $journalPath
     Invoke-OwnedProcess -FilePath $uninstaller -LogName 'nsis-uninstall' -ArgumentList @('/S') -TimeoutSeconds 300
-    # The uninstaller can hand off to a temporary process. Require the actual
-    # installed files to disappear, not merely the launcher process to exit.
-    $uninstallDeadline = [DateTimeOffset]::UtcNow.AddSeconds(30)
-    while ((Test-Path -LiteralPath $installedExecutable -PathType Leaf) -and
-        [DateTimeOffset]::UtcNow -lt $uninstallDeadline) {
-        Start-Sleep -Milliseconds 100
-    }
-    if (Test-Path -LiteralPath $installedExecutable -PathType Leaf) {
-        throw 'NSIS uninstall left the installed application executable behind.'
-    }
-    if (-not (Test-Path -LiteralPath $journalPath -PathType Leaf)) {
-        throw 'NSIS uninstall unexpectedly removed per-user queue history.'
-    }
+    # The uninstaller can hand off to a temporary process. Require the entire
+    # owned installation root to disappear, not merely its launcher executable.
+    Wait-AcceptanceInstallRootRemoved -InstallRoot $installRoot
+    Assert-AcceptanceFileUnchanged -Path $journalPath -Before $journalBeforeUninstall
     $steps.uninstallAndRetainedUserData = 'passed'
 
     & (Join-Path $PSScriptRoot 'verify-release-candidate.ps1') `

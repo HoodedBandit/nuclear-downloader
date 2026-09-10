@@ -90,6 +90,7 @@ foreach ($required in @(
 $acceptanceScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance.ps1')
 $acceptancePrivacyScriptPath = Join-Path $repositoryRoot 'scripts\acceptance-log-privacy.ps1'
 $acceptancePrivacyScript = Get-Content -Raw -LiteralPath $acceptancePrivacyScriptPath
+$acceptanceUninstallScriptPath = Join-Path $repositoryRoot 'scripts\acceptance-uninstall.ps1'
 foreach ($required in @('function Protect-AcceptanceLog', 'function Publish-SafeAcceptanceEvidence', 'Test-ByteSequence')) {
     if (-not $acceptancePrivacyScript.Contains($required)) {
         throw "Acceptance evidence privacy helper is missing required contract: $required"
@@ -177,6 +178,7 @@ foreach ($scriptPath in @(
     (Join-Path $repositoryRoot 'scripts\write-windows-manual-acceptance.ps1'),
     (Join-Path $repositoryRoot 'scripts\release-json.ps1'),
     $acceptancePrivacyScriptPath,
+    $acceptanceUninstallScriptPath,
     $PSCommandPath
 )) {
     $tokens = $null
@@ -192,6 +194,72 @@ foreach ($scriptPath in @(
 }
 
 . $acceptancePrivacyScriptPath
+. $acceptanceUninstallScriptPath
+$uninstallFixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) "nuclear-uninstall-contract-$([Guid]::NewGuid().ToString('N'))"
+try {
+    New-Item -ItemType Directory -Path $uninstallFixtureRoot | Out-Null
+    $journalPath = Join-Path $uninstallFixtureRoot 'state-v1.dpapi'
+    [System.IO.File]::WriteAllBytes($journalPath, [byte[]](1, 2, 3, 4))
+    $fingerprint = Get-AcceptanceFileFingerprint -Path $journalPath
+
+    $residualInstallRoot = Join-Path $uninstallFixtureRoot 'residual-install'
+    New-Item -ItemType Directory -Path $residualInstallRoot | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $residualInstallRoot 'left-behind.dll'), 'residue')
+    $residueRejected = $false
+    try {
+        Wait-AcceptanceInstallRootRemoved -InstallRoot $residualInstallRoot `
+            -TimeoutMilliseconds 10 -PollMilliseconds 1
+    } catch {
+        $residueRejected = $true
+    }
+    if (-not $residueRejected) {
+        throw 'Uninstall acceptance did not reject residue after the application executable disappeared.'
+    }
+
+    [System.IO.File]::WriteAllBytes($journalPath, [byte[]](1, 2))
+    $changedJournalRejected = $false
+    try {
+        Assert-AcceptanceFileUnchanged -Path $journalPath -Before $fingerprint
+    } catch {
+        $changedJournalRejected = $true
+    }
+    if (-not $changedJournalRejected) {
+        throw 'Uninstall acceptance did not reject a truncated retained journal.'
+    }
+
+    [System.IO.File]::WriteAllBytes($journalPath, [byte[]](4, 3, 2, 1))
+    $replacedJournalRejected = $false
+    try {
+        Assert-AcceptanceFileUnchanged -Path $journalPath -Before $fingerprint
+    } catch {
+        $replacedJournalRejected = $true
+    }
+    if (-not $replacedJournalRejected) {
+        throw 'Uninstall acceptance did not reject a same-sized replacement journal.'
+    }
+
+    [System.IO.File]::WriteAllBytes($journalPath, [byte[]](1, 2, 3, 4))
+    $removedInstallRoot = Join-Path $uninstallFixtureRoot 'removed-install'
+    New-Item -ItemType Directory -Path $removedInstallRoot | Out-Null
+    Remove-Item -LiteralPath $removedInstallRoot -Force
+    Wait-AcceptanceInstallRootRemoved -InstallRoot $removedInstallRoot `
+        -TimeoutMilliseconds 10 -PollMilliseconds 1
+    Assert-AcceptanceFileUnchanged -Path $journalPath -Before $fingerprint
+} finally {
+    foreach ($relativeFile in @('state-v1.dpapi', 'residual-install\left-behind.dll')) {
+        $fixtureFile = Join-Path $uninstallFixtureRoot $relativeFile
+        if (Test-Path -LiteralPath $fixtureFile) { Remove-Item -LiteralPath $fixtureFile -Force }
+    }
+    foreach ($relativeDirectory in @('residual-install', 'removed-install')) {
+        $fixtureDirectory = Join-Path $uninstallFixtureRoot $relativeDirectory
+        if (Test-Path -LiteralPath $fixtureDirectory) {
+            [System.IO.Directory]::Delete($fixtureDirectory, $false)
+        }
+    }
+    if (Test-Path -LiteralPath $uninstallFixtureRoot) {
+        [System.IO.Directory]::Delete($uninstallFixtureRoot, $false)
+    }
+}
 $privacyFixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) "nuclear-log-privacy-$([Guid]::NewGuid().ToString('N'))"
 try {
     $privacyUtf8 = [System.Text.UTF8Encoding]::new($false)
