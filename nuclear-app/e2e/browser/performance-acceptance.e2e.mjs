@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { performanceClockPath } from './support/performance-clock.mjs';
 
 const ROW_COUNT = Number(process.env.NUCLEAR_E2E_QUEUE_SIZE ?? '1000');
 if (![1, 100, 1000].includes(ROW_COUNT)) {
@@ -140,6 +141,29 @@ async function preparePerformanceRenderer() {
 
 describe('renderer performance acceptance', () => {
   it(`meets the ${ROW_COUNT}-row sustained progress thresholds`, async () => {
+    // The 100 us non-isolated clock rounds a healthy 60 Hz interval up to the
+    // strict 16.7 ms budget. Use the browser's 5 us clock without altering raw
+    // frame samples, the rendering cadence, or any acceptance threshold.
+    await browser.url(new URL(performanceClockPath, await browser.getUrl()).href);
+    const clock = await browser.execute(() => {
+      let previous = performance.now();
+      let minimumStepMs = Infinity;
+      let samples = 0;
+      for (let attempt = 0; attempt < 100_000 && samples < 32; attempt += 1) {
+        const current = performance.now();
+        if (current > previous) {
+          minimumStepMs = Math.min(minimumStepMs, current - previous);
+          samples += 1;
+        }
+        previous = current;
+      }
+      return { crossOriginIsolated, minimumStepMs, samples };
+    });
+    assert.equal(clock.crossOriginIsolated, true, 'Performance document must be isolated.');
+    assert.ok(
+      clock.samples === 32 && clock.minimumStepMs > 0 && clock.minimumStepMs < 0.02,
+      `Performance clock cannot resolve the frame budget: ${JSON.stringify(clock)}.`
+    );
     // Measure the same renderer clock while startup is still gated. This is
     // diagnostic context for frame-budget failures, never a replacement budget.
     const idleFrameDurations = await browser.executeAsync((done) => {
@@ -333,6 +357,7 @@ describe('renderer performance acceptance', () => {
     );
 
     const measured = {
+      clock,
       queueSize: ROW_COUNT,
       activeOperations: ACTIVE_COUNT,
       dispatched: metrics.dispatched,

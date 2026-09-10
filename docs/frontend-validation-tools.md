@@ -12,6 +12,16 @@ The first GitHub CI run after enabling these fixtures rejected valid archived in
 
 The original frame-time target remains unchanged. The initial single-run baseline exceeded it even during its idle control. Subsequent [matched measurements](internal-cleanup-stage5-frontend-performance.md) passed all 18 runs for the structural candidate `fd58050`. Later fixes need their own matched evidence; the comparison tool itself is not a performance result.
 
+## Performance clock precision
+
+GitHub run `34431620193` failed the strict `< 16.7 ms` frame-time gate with an idle p95 of `16.700000000000728 ms` and workload p95 of `16.70000000001164 ms`. Chrome's ordinary 100-microsecond timestamp precision cannot reliably distinguish the 60 Hz frame interval (about 16.667 ms) from this boundary. [Chrome documents](https://developer.chrome.com/blog/cross-origin-isolated-hr-timers/) a 5-microsecond clock for cross-origin-isolated documents.
+
+The WebDriver-only Vite server now adds isolation headers to the exact `/?nuclear-performance-clock=isolated` document. The performance spec navigates there before installing fixtures and checks both isolation and observed clock precision. Ordinary workflow and visual documents, application builds, and native WebView2 settings are unchanged. HTTP regression tests verify the header boundary. The performance record includes the observed clock; raw frame durations, percentiles, workload, and all acceptance thresholds remain unchanged. No rounding, smoothing, idle subtraction, or frame-rate override is applied.
+
+This harness change requires new matched baseline/candidate measurements for future comparisons; historical evidence remains bound to its original harness hash. The ordinary GitHub browser check is a CI regression check, not a pinned visual comparison or native Windows release qualification.
+
+Local verification passed four HTTP boundary tests and the existing ten comparison-contract tests. The pinned Chrome `152.0.7977.76` 1,000-item run confirmed isolation, an observed minimum clock step of about 0.005 ms, all 1,500 progress events, and every unchanged workload limit. Its frame p95 was 7.05 ms on this host; this is a single CI-fix regression run, not a new matched benchmark. Raw samples, input hashes, and the successful receipt are retained in `target/renderer-checks/performance-20260910T032003Z-244a3ed308a94b779ff6fe377cac53d7/`.
+
 ## Mounted renderer lifecycle soak
 
 `scripts/run-renderer-soak.ps1` runs the opt-in mounted-page test using pinned Node 22.23.1, a single Vitest fork, controlled GC, and mocked Tauri IPC. Its normal duration is 120 minutes. It archives and hashes source/test/configuration inputs, checks them again afterward, verifies the executable identity, owns its process tree, and retains a receipt even when execution fails.

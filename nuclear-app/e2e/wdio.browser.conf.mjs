@@ -2,6 +2,8 @@ import path from 'node:path';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
 import { createServer } from 'vite';
 
+import { performanceClockIsolation } from './browser/support/performance-clock.mjs';
+
 const devServerUrl = 'http://127.0.0.1:1420';
 const deviceScaleFactor = Number(process.env.NUCLEAR_E2E_SCALE ?? '1');
 if (![1, 1.5].includes(deviceScaleFactor)) {
@@ -126,6 +128,7 @@ export const config = {
     try {
       viteServer = await createServer({
         mode: 'webdriver',
+        plugins: [performanceClockIsolation()],
         optimizeDeps: {
           include: [
             '@tauri-apps/api/app',

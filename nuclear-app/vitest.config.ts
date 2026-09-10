@@ -12,7 +12,11 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    // This standalone fixture uses node:test and is run by node --test.
-    exclude: [...configDefaults.exclude, 'e2e/browser/support/visual-fixtures.test.mjs']
+    // These standalone fixtures use node:test and are run by node --test.
+    exclude: [
+      ...configDefaults.exclude,
+      'e2e/browser/support/visual-fixtures.test.mjs',
+      'e2e/browser/support/performance-clock.test.mjs'
+    ]
   }
 });

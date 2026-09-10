@@ -67,6 +67,7 @@ jobs:
           node scripts/frontend-source-inventory.mjs --check
           node scripts/page-style-contract.test.mjs
           node scripts/compare-frontend-performance.test.mjs
+          node --test nuclear-app/e2e/browser/support/performance-clock.test.mjs
           pwsh -NoProfile -File scripts/test-backend-performance-contracts.ps1
           pwsh -NoProfile -File scripts/test-renderer-input-provenance.ps1
           pwsh -NoProfile -File scripts/test-renderer-baseline.ps1
