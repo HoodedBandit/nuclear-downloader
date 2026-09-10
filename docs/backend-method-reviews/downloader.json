@@ -3672,7 +3672,7 @@
         "downloader::naming::tests::normalizes_reserved_extensions_and_utf16_length"
       ],
       "evidence": [
-        "Source review src/downloader/naming.rs:265-275: fn normalizes_reserved_extensions_and_utf16_length() { assert_eq!( normalize_filename_override(\"NUL.txt\"), Some(\"NUL_.txt\".into()) ); assert_eq!(normalize_filename_override(\"clip.MP4\"), Some(\"clip\".into())); let long_name = format!(\"{}ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬\", \"a\".repeat(179)); let"
+        "Source review src/downloader/naming.rs:265-275: fn normalizes_reserved_extensions_and_utf16_length() { assert_eq!( normalize_filename_override(\"NUL.txt\"), Some(\"NUL_.txt\".into()) ); assert_eq!(normalize_filename_override(\"clip.MP4\"), Some(\"clip\".into())); let long_name = format!(\"{}ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¹ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬\", \"a\".repeat(179)); let"
       ],
       "purpose": "Verify Windows-safe output naming and path construction: normalizes reserved extensions and utf16 length.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -6482,11 +6482,11 @@
       "classification": "test_support",
       "file": "src/downloader/process/tests.rs",
       "line": 67,
-      "endLine": 269,
+      "endLine": 355,
       "symbol": "spawn_inherited_pipe_fixture",
       "qualifiedName": "downloader::process::tests::spawn_inherited_pipe_fixture",
       "signature": "pub(crate) async fn spawn_inherited_pipe_fixture( job: &DownloadJob, caller_root: &std::path::Path, parent_script: &str, descendant_script: &str, ) -> Result<(tokio::process::Child, std::path::PathBuf), String>",
-      "sourceDigest": "20538279f71f106866c5b2b05ca2c51d077ae4a4d1dc51d0329a3fc48c13eda4",
+      "sourceDigest": "6a12aaba02341ad89eb7cf2317446ebd22ed31c5f4fd3952077d2739d885d5fa",
       "cfg": [
         "test",
         "windows"
@@ -6498,19 +6498,24 @@
         "Deterministic fixtures and literals declared at src/downloader/process/tests.rs:65-267."
       ],
       "sideEffects": [
-        "Validates/canonicalizes the caller root, creates a UUID fixture directory and two scripts, spawns a supervised PowerShell parent with piped output, and removes the fixture directory on spawn failure."
+        "Validates/canonicalizes the caller root, creates a UUID fixture directory and two scripts, spawns a supervised PowerShell parent with piped output, and removes the fixture directory on spawn failure.",
+        "Creates parent and descendant readiness/start barriers; releases the parent only after both processes report setup readiness."
       ],
       "errors": [
-        "Returns root metadata/canonicalization, directory/script creation, or supervised spawn errors; successful callers own cleanup of the returned fixture directory."
+        "Returns root metadata/canonicalization, directory/script creation, or supervised spawn errors; successful callers own cleanup of the returned fixture directory.",
+        "On script-write, readiness timeout/early-exit, or start-signal failure, removes owned setup artifacts; after spawn it first cancels and reaps the supervised child before removing the fixture root."
       ],
       "ownership": [
-        "Owns the generated parent/descendant scripts and UUID fixture root until returning them with the supervised parent child; the embedded PowerShell fixture closes every duplicated/process/thread handle it creates."
+        "Owns the generated parent/descendant scripts and UUID fixture root until returning them with the supervised parent child; the embedded PowerShell fixture closes every duplicated/process/thread handle it creates.",
+        "Retains the mutable child through the readiness barrier; setup failure transfers it only to terminate_and_reap_child, so no process survives cleanup."
       ],
       "locks": [
-        "Uses DownloadJob process-job synchronization; all filesystem mutations stay under the validated caller-owned UUID directory."
+        "Uses DownloadJob process-job synchronization; all filesystem mutations stay under the validated caller-owned UUID directory.",
+        "The readiness future holds no mutex across its 25 ms sleeps; DownloadJob owns process attachment/cancellation synchronization."
       ],
       "invariants": [
-        "Rejects missing, non-directory, symlink, or reparse roots; attaches the parent before resume and scopes every created file to the canonical caller-root UUID child."
+        "Rejects missing, non-directory, symlink, or reparse roots; attaches the parent before resume and scopes every created file to the canonical caller-root UUID child.",
+        "The returned child has completed parent and descendant setup but has not begun the measured parent behavior until the helper writes the start marker."
       ],
       "tests": [
         "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked",
@@ -6523,18 +6528,19 @@
         "Frozen span src/downloader/process/tests.rs:67-269; digest 20538279f71f106866c5b2b05ca2c51d077ae4a4d1dc51d0329a3fc48c13eda4.",
         "Native RED candidate 34438718733 exposed pre-spawn Cancel All as a false yt-dlp start failure and second-job error; target/release-0.7.1-34438718733/acceptance.",
         "Focused downloader GREEN: 80 passed, 0 failed; target/release-0.7.1-cancellation-downloader-tests-green.log. Named tests are direct evidence; suite count is supporting evidence.",
-        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log."
+        "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
+        "Rereviewed readiness-barrier helper at src/downloader/process/tests.rs:67-355, digest 6a12aaba02341ad89eb7cf2317446ebd22ed31c5f4fd3952077d2739d885d5fa; execution pending root."
       ],
       "purpose": "Create the Windows parent/descendant duplicated-handle fixture under an explicit regular caller-owned root.",
       "output": "Returns the supervised parent Child and UUID fixture root or String error.",
-      "cancellation": "The returned child is attached to DownloadJob before execution and is subsequently bounded by the invoking waiter/cancellation path.",
+      "cancellation": "The returned child is attached to DownloadJob before execution and is subsequently bounded by the invoking waiter/cancellation path. Readiness/setup failure performs bounded DownloadJob cancellation and terminate-and-reap cleanup before filesystem removal.",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/process/tests.rs",
       "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T05:40:50Z",
+      "reviewedAt": "2026-09-10T07:06:57Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Current helper separates bounded PowerShell/Add-Type setup from behavior timing and cleans every post-spawn setup failure through the shared terminate-and-reap path.",
       "ownerCall": null
     },
     {
@@ -6542,8 +6548,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 273,
-      "endLine": 296,
+      "line": 359,
+      "endLine": 382,
       "symbol": "supervised_process_cancels_and_reaps_promptly",
       "qualifiedName": "downloader::process::tests::supervised_process_cancels_and_reaps_promptly",
       "signature": "async fn supervised_process_cancels_and_reaps_promptly()",
@@ -6592,12 +6598,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1@277[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1@363[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 277,
-      "endLine": 280,
+      "line": 363,
+      "endLine": 366,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::supervised_process_cancels_and_reaps_promptly::owned_async_closure#1",
       "signature": "async move",
@@ -6653,8 +6659,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 300,
-      "endLine": 338,
+      "line": 386,
+      "endLine": 424,
       "symbol": "cancellation_remains_live_while_progress_callback_is_blocked",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked",
       "signature": "async fn cancellation_remains_live_while_progress_callback_is_blocked()",
@@ -6703,12 +6709,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1@312[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1@398[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 312,
-      "endLine": 323,
+      "line": 398,
+      "endLine": 409,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::owned_async_closure#1",
       "signature": "async move",
@@ -6760,12 +6766,12 @@
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1@316[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1@402[cfg=test,windows]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 316,
-      "endLine": 320,
+      "line": 402,
+      "endLine": 406,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::process::tests::cancellation_remains_live_while_progress_callback_is_blocked::async_block#1",
       "signature": "async move",
@@ -6821,8 +6827,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 342,
-      "endLine": 382,
+      "line": 428,
+      "endLine": 468,
       "symbol": "child_exit_starts_drain_deadline_while_progress_callback_is_blocked",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked",
       "signature": "async fn child_exit_starts_drain_deadline_while_progress_callback_is_blocked()",
@@ -6871,12 +6877,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1@357[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1@443[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 357,
-      "endLine": 368,
+      "line": 443,
+      "endLine": 454,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::owned_async_closure#1",
       "signature": "async move",
@@ -6928,12 +6934,12 @@
       "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged."
     },
     {
-      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1@361[cfg=test,windows]",
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1@447[cfg=test,windows]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 361,
-      "endLine": 365,
+      "line": 447,
+      "endLine": 451,
       "symbol": "async_block#1",
       "qualifiedName": "downloader::process::tests::child_exit_starts_drain_deadline_while_progress_callback_is_blocked::async_block#1",
       "signature": "async move",
@@ -6989,8 +6995,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 386,
-      "endLine": 419,
+      "line": 472,
+      "endLine": 505,
       "symbol": "split_stdout_line_survives_parent_exit_selection",
       "qualifiedName": "downloader::process::tests::split_stdout_line_survives_parent_exit_selection",
       "signature": "async fn split_stdout_line_survives_parent_exit_selection()",
@@ -7043,8 +7049,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 423,
-      "endLine": 455,
+      "line": 509,
+      "endLine": 541,
       "symbol": "cancelled_job_never_runs_suspended_child_first_instruction",
       "qualifiedName": "downloader::process::tests::cancelled_job_never_runs_suspended_child_first_instruction",
       "signature": "async fn cancelled_job_never_runs_suspended_child_first_instruction()",
@@ -7103,8 +7109,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 482,
-      "endLine": 505,
+      "line": 568,
+      "endLine": 591,
       "symbol": "supervised_process_stops_oversized_output_without_draining_producer",
       "qualifiedName": "downloader::process::tests::supervised_process_stops_oversized_output_without_draining_producer",
       "signature": "async fn supervised_process_stops_oversized_output_without_draining_producer()",
@@ -7158,8 +7164,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 509,
-      "endLine": 532,
+      "line": 595,
+      "endLine": 618,
       "symbol": "supervised_process_bounds_inherited_stderr_after_parent_exit",
       "qualifiedName": "downloader::process::tests::supervised_process_bounds_inherited_stderr_after_parent_exit",
       "signature": "async fn supervised_process_bounds_inherited_stderr_after_parent_exit()",
@@ -7212,8 +7218,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 536,
-      "endLine": 552,
+      "line": 622,
+      "endLine": 638,
       "symbol": "streamed_process_bounds_inherited_pipes_after_parent_exit",
       "qualifiedName": "downloader::process::tests::streamed_process_bounds_inherited_pipes_after_parent_exit",
       "signature": "async fn streamed_process_bounds_inherited_pipes_after_parent_exit()",
@@ -14012,8 +14018,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/process/tests.rs",
-      "line": 458,
-      "endLine": 478,
+      "line": 544,
+      "endLine": 564,
       "symbol": "missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested",
       "qualifiedName": "downloader::process::tests::missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested",
       "signature": "async fn missing_executable_is_a_spawn_failure_even_when_cancellation_is_not_requested()",
@@ -14063,6 +14069,62 @@
         "Full Rust library GREEN: 335 passed, 0 failed, 3 ignored; target/release-0.7.1-cancellation-rust-tests.log.",
         "Strict Clippy all targets/features with warnings denied passed; target/release-0.7.1-cancellation-clippy.log."
       ]
+    },
+    {
+      "id": "src/downloader/process/tests.rs::downloader::process::tests::spawn_inherited_pipe_fixture::async_block#1@320[cfg=test,windows]",
+      "kind": "async_block",
+      "classification": "test_support",
+      "file": "src/downloader/process/tests.rs",
+      "line": 320,
+      "endLine": 335,
+      "symbol": "async_block#1",
+      "qualifiedName": "downloader::process::tests::spawn_inherited_pipe_fixture::async_block#1",
+      "signature": "async",
+      "sourceDigest": "f14757be7f8ce7d31d9f869ce2d6eca3522e98bafbc5934fd2fe59c44f0c123f",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": null,
+      "purpose": "Poll the inherited-pipe parent readiness barrier while detecting early process exit.",
+      "callers": [
+        "Inline future passed to tokio::time::timeout by spawn_inherited_pipe_fixture."
+      ],
+      "inputs": [
+        "Borrowed readiness marker path and mutable supervised child."
+      ],
+      "output": "Result<(), String> before the outer 60-second timeout mapping.",
+      "sideEffects": [
+        "Checks readiness-path file metadata, polls child exit status, and yields with 25 ms Tokio sleeps."
+      ],
+      "errors": [
+        "Returns a try_wait error or an error containing the early child exit status; the enclosing timeout supplies the 60-second timeout error."
+      ],
+      "ownership": [
+        "Borrows the marker path and child only for this bounded future; the enclosing helper retains child and fixture-root ownership."
+      ],
+      "locks": [
+        "No mutex or process-job lock is acquired."
+      ],
+      "cancellation": "No independent cancellation select; the outer timeout bounds the poll, and every failure branch in the enclosing helper cancels and reaps the child before fixture cleanup.",
+      "invariants": [
+        "The helper returns success only after both parent setup and descendant readiness are complete, so behavior deadlines exclude PowerShell/Add-Type startup.",
+        "An early exit cannot be mistaken for readiness."
+      ],
+      "tests": [
+        "Indirectly exercised by the inherited-pipe process tests; current execution is pending root."
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "Frozen source span src/downloader/process/tests.rs:320-335, digest f14757be7f8ce7d31d9f869ce2d6eca3522e98bafbc5934fd2fe59c44f0c123f.",
+        "Source review confirms this newly inventoried async block is the explicit readiness polling future passed to tokio::time::timeout; it was not present in the 1,251-entry scan."
+      ],
+      "disposition": "test_only",
+      "destination": "src/downloader/process/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T07:06:57Z",
+      "status": "reviewed",
+      "notes": "New test-support async block introduced to separate fixture setup latency from inherited-pipe behavior timing."
     }
   ]
 }

@@ -88,11 +88,36 @@ pub(crate) async fn spawn_inherited_pipe_fixture(
     ));
     std::fs::create_dir(&fixture_root)
         .map_err(|error| format!("Failed to create inherited-pipe fixture root: {error}"))?;
+    let readiness_path = fixture_root.join("fixture-ready");
+    let start_path = fixture_root.join("fixture-start");
+    let descendant_readiness_path = fixture_root.join("descendant-ready");
+    let descendant_start_path = fixture_root.join("descendant-start");
     let descendant_path = fixture_root.join("descendant.ps1");
-    std::fs::write(&descendant_path, descendant_script)
-        .map_err(|error| format!("Failed to write inherited-pipe descendant: {error}"))?;
+    let escaped_descendant_readiness_path = descendant_readiness_path
+        .to_string_lossy()
+        .replace('\'', "''");
+    let escaped_descendant_start_path = descendant_start_path.to_string_lossy().replace('\'', "''");
+    let synchronized_descendant_script = format!(
+        r#"[IO.File]::WriteAllText('{escaped_descendant_readiness_path}', 'ready')
+$startDeadline = [DateTime]::UtcNow.AddSeconds(60)
+while (-not (Test-Path -LiteralPath '{escaped_descendant_start_path}' -PathType Leaf)) {{
+    if ([DateTime]::UtcNow -ge $startDeadline) {{
+        throw 'timed out waiting for the inherited-pipe descendant start signal'
+    }}
+    Start-Sleep -Milliseconds 10
+}}
+{descendant_script}"#
+    );
+    if let Err(error) = std::fs::write(&descendant_path, synchronized_descendant_script) {
+        let _ = std::fs::remove_dir_all(&fixture_root);
+        return Err(format!(
+            "Failed to write inherited-pipe descendant: {error}"
+        ));
+    }
     let parent_path = fixture_root.join("parent.ps1");
     let escaped_descendant_path = descendant_path.to_string_lossy().replace('\'', "''");
+    let escaped_readiness_path = readiness_path.to_string_lossy().replace('\'', "''");
+    let escaped_start_path = start_path.to_string_lossy().replace('\'', "''");
     let script = r#"
 $nativeSource = @'
 using System;
@@ -227,8 +252,6 @@ public static class NuclearFixtureNativeMethods {
 '@
 
 Add-Type -TypeDefinition $nativeSource
-__PARENT_SCRIPT__
-
 $powershellPath = Join-Path $PSHOME 'powershell.exe'
 $createError = [NuclearFixtureNativeMethods]::SpawnPowerShellWithInheritedOutput(
     $powershellPath,
@@ -236,11 +259,39 @@ $createError = [NuclearFixtureNativeMethods]::SpawnPowerShellWithInheritedOutput
 if ($createError -ne 0) {
     throw "failed to create fixture descendant: $createError"
 }
+$readinessDeadline = [DateTime]::UtcNow.AddSeconds(60)
+while (-not (Test-Path -LiteralPath '__DESCENDANT_READINESS_PATH__' -PathType Leaf)) {
+    if ([DateTime]::UtcNow -ge $readinessDeadline) {
+        throw 'timed out waiting for inherited-pipe descendant readiness'
+    }
+    Start-Sleep -Milliseconds 10
+}
+# Exclude PowerShell and Add-Type startup from behavior deadlines while retaining
+# the parent-exit and inherited-pipe ordering exercised by the tests.
+[IO.File]::WriteAllText('__READINESS_PATH__', 'ready')
+$startDeadline = [DateTime]::UtcNow.AddSeconds(60)
+while (-not (Test-Path -LiteralPath '__START_PATH__' -PathType Leaf)) {
+    if ([DateTime]::UtcNow -ge $startDeadline) {
+        throw 'timed out waiting for the inherited-pipe fixture start signal'
+    }
+    Start-Sleep -Milliseconds 10
+}
+__PARENT_SCRIPT__
+[IO.File]::WriteAllText('__DESCENDANT_START_PATH__', 'start')
 "#
     .replace("__PARENT_SCRIPT__", parent_script)
-    .replace("__DESCENDANT_PATH__", &escaped_descendant_path);
-    std::fs::write(&parent_path, script)
-        .map_err(|error| format!("Failed to write inherited-pipe parent: {error}"))?;
+    .replace("__DESCENDANT_PATH__", &escaped_descendant_path)
+    .replace(
+        "__DESCENDANT_READINESS_PATH__",
+        &escaped_descendant_readiness_path,
+    )
+    .replace("__DESCENDANT_START_PATH__", &escaped_descendant_start_path)
+    .replace("__READINESS_PATH__", &escaped_readiness_path)
+    .replace("__START_PATH__", &escaped_start_path);
+    if let Err(error) = std::fs::write(&parent_path, script) {
+        let _ = std::fs::remove_dir_all(&fixture_root);
+        return Err(format!("Failed to write inherited-pipe parent: {error}"));
+    }
     let mut command = tokio::process::Command::new("powershell.exe");
     command
         .kill_on_drop(true)
@@ -265,6 +316,41 @@ if ($createError -ne 0) {
             return Err(error.into_message());
         }
     };
+    let mut child = child;
+    let readiness = tokio::time::timeout(Duration::from_secs(60), async {
+        loop {
+            if readiness_path.is_file() {
+                return Ok(());
+            }
+            if let Some(status) = child
+                .try_wait()
+                .map_err(|error| format!("inherited-pipe readiness check failed: {error}"))?
+            {
+                return Err(format!(
+                    "inherited-pipe fixture exited before signalling readiness: {status}"
+                ));
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+    })
+    .await
+    .unwrap_or_else(|_| {
+        Err("inherited-pipe fixture readiness timed out after 60 seconds".to_string())
+    });
+    if let Err(error) = readiness {
+        job.cancel();
+        let _ = super::terminate_and_reap_child(&mut child, job, "inherited-pipe fixture").await;
+        let _ = std::fs::remove_dir_all(&fixture_root);
+        return Err(error);
+    }
+    if let Err(error) = std::fs::write(&start_path, b"start") {
+        job.cancel();
+        let _ = super::terminate_and_reap_child(&mut child, job, "inherited-pipe fixture").await;
+        let _ = std::fs::remove_dir_all(&fixture_root);
+        return Err(format!(
+            "Failed to release inherited-pipe fixture after readiness: {error}"
+        ));
+    }
     Ok((child, fixture_root))
 }
 
