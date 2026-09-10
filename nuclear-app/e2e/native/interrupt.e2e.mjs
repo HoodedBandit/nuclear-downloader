@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
-import { addUrl, editQueuedFilename, waitForWorkReady } from './helpers.mjs';
+import {
+  addUrl,
+  editQueuedFilename,
+  startQueuedDownloadByTitle,
+  waitForWorkReady
+} from './helpers.mjs';
 
 describe('forced active-process interruption seed', () => {
   it('keeps a real download active until the acceptance runner terminates the app process', async () => {
@@ -15,10 +20,8 @@ describe('forced active-process interruption seed', () => {
     await $('#format').selectByAttribute('value', 'mp4');
     const row = await addUrl(`${slowFixtureUrl}?case=forced-active-restart`);
     await editQueuedFilename(row, expectedTitle);
-    const download = await row.$('button[aria-label^="Download "]');
-    await download.waitForClickable({ timeout: 60_000 });
-    await download.click();
-    const cancel = await row.$('button[aria-label^="Cancel "]');
+    await startQueuedDownloadByTitle(expectedTitle);
+    const cancel = await $(`button[aria-label=${JSON.stringify(`Cancel ${expectedTitle}`)}]`);
     await cancel.waitForClickable({
       timeout: 60_000,
       timeoutMsg: 'The forced-restart fixture never entered an active download state.'

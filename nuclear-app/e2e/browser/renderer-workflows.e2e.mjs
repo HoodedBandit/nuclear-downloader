@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { Key } from 'webdriverio';
-import { editQueuedFilename } from '../native/helpers.mjs';
+import { editQueuedFilename, startQueuedDownloadByTitle } from '../native/helpers.mjs';
 import {
   IDS,
   applyDelta,
@@ -342,6 +342,54 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       itemId: IDS.item,
       input: { filenameOverride: 'Blur Commit' }
     });
+  });
+
+  it('keeps the ninth queue row actionable for filename editing and download at 1000x700', async () => {
+    const originalSize = await browser.getWindowSize();
+    const renamed = 'nuclear-interrupted-34442304569';
+    try {
+      await browser.setWindowSize(1000, 700);
+      const queued = Array.from({ length: 9 }, (_, index) => {
+        const suffix = String(index + 1).padStart(12, '0');
+        return queueItem(
+          `20000000-0000-4000-8000-${suffix}`,
+          {
+            ...video,
+            id: `seed-video-${index + 1}`,
+            title: `Seed Video ${index + 1}`,
+            url: `https://fixture.test/seed-video-${index + 1}`
+          },
+          10 + index
+        );
+      });
+      const fixture = await startRenderer({ ...structuredClone(initialSnapshot), queue: queued });
+      const { mocks } = fixture;
+      const rows = await $$('tr.queue-item');
+      assert.equal(rows.length, 9);
+      const ninthRow = rows[8];
+
+      await editQueuedFilename(ninthRow, renamed);
+      await waitForMockCalls(mocks.update_queue_item, 1);
+      assert.deepEqual(mocks.update_queue_item.mock.calls[0][0], {
+        itemId: queued[8].id,
+        input: { filenameOverride: renamed }
+      });
+      await fixture.emit('queue_item_upserted', {
+        ...queued[8],
+        filenameOverride: renamed,
+        updatedAtMs: 30
+      });
+
+      await startQueuedDownloadByTitle(renamed);
+      await waitForMockCalls(mocks.enqueue_queue_items, 1);
+      assert.equal(mocks.enqueue_queue_items.mock.calls.length, 1);
+      assert.deepEqual(mocks.enqueue_queue_items.mock.calls[0][0], {
+        itemIds: [queued[8].id],
+        priority: 'front'
+      });
+    } finally {
+      await browser.setWindowSize(originalSize.width, originalSize.height);
+    }
   });
 
   it('covers settings and output, cookie, and compatibility paths', async () => {

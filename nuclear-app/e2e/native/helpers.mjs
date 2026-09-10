@@ -66,3 +66,15 @@ export async function editQueuedFilename(row, filename) {
   await browser.keys('Enter');
   await row.$('.title-text').waitForDisplayed({ timeout: 30_000 });
 }
+
+export async function startQueuedDownloadByTitle(title) {
+  const selector = `button[aria-label=${JSON.stringify(`Download ${title}`)}]`;
+  const download = await $(selector);
+  // The exact accessible name waits for the authoritative filename update,
+  // without retaining a pre-edit row handle across that update and scrolling.
+  await download.waitForExist({ timeout: 30_000 });
+  assert.equal((await $$(selector)).length, 1, 'The download title must identify exactly one row.');
+  await download.scrollIntoView({ block: 'center', inline: 'center' });
+  await download.waitForClickable({ timeout: 30_000 });
+  await download.click();
+}
