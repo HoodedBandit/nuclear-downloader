@@ -1,6 +1,89 @@
 use super::*;
 use ts_rs::{Config, TS};
 
+fn valid_media_selection() -> MediaSelection {
+    MediaSelection {
+        entry_id: "2097430424205295616".to_string(),
+        extractor_key: "Twitter".to_string(),
+        playlist_index: 1,
+    }
+}
+
+#[test]
+fn media_selection_accepts_the_complete_valid_range() {
+    let first = valid_media_selection();
+    let mut last = first.clone();
+    last.playlist_index = 1_000;
+    last.entry_id = "i".repeat(4 * 1024);
+    last.extractor_key = "e".repeat(4 * 1024);
+
+    assert!(first.validate().is_ok());
+    assert!(last.validate().is_ok());
+}
+
+#[test]
+fn media_selection_rejects_out_of_range_indexes() {
+    for playlist_index in [0, 1_001] {
+        let mut selection = valid_media_selection();
+        selection.playlist_index = playlist_index;
+
+        assert!(selection.validate().is_err());
+    }
+}
+
+#[test]
+fn media_selection_rejects_invalid_entry_ids_and_extractor_keys() {
+    for entry_id in ["", " ", " media-id", "media-id ", "media\nid"] {
+        let mut selection = valid_media_selection();
+        selection.entry_id = entry_id.to_string();
+
+        assert!(
+            selection.validate().is_err(),
+            "accepted entry ID {entry_id:?}"
+        );
+    }
+    for extractor_key in ["", " ", " Twitter", "Twitter ", "Twitter\r"] {
+        let mut selection = valid_media_selection();
+        selection.extractor_key = extractor_key.to_string();
+
+        assert!(
+            selection.validate().is_err(),
+            "accepted extractor key {extractor_key:?}"
+        );
+    }
+}
+
+#[test]
+fn media_selection_rejects_fields_over_four_kibibytes() {
+    let mut oversized_id = valid_media_selection();
+    oversized_id.entry_id = "i".repeat(4 * 1024 + 1);
+    assert!(oversized_id.validate().is_err());
+
+    let mut oversized_extractor = valid_media_selection();
+    oversized_extractor.extractor_key = "e".repeat(4 * 1024 + 1);
+    assert!(oversized_extractor.validate().is_err());
+}
+
+#[test]
+fn begin_inspection_defaults_missing_or_null_selection_to_none() {
+    let missing: BeginInspectionInput = serde_json::from_value(serde_json::json!({
+        "url": "https://example.com/video",
+        "cookieConfig": null,
+        "compatConfigPath": null
+    }))
+    .unwrap();
+    let explicit_null: BeginInspectionInput = serde_json::from_value(serde_json::json!({
+        "url": "https://example.com/video",
+        "cookieConfig": null,
+        "compatConfigPath": null,
+        "selection": null
+    }))
+    .unwrap();
+
+    assert!(missing.selection.is_none());
+    assert!(explicit_null.selection.is_none());
+}
+
 #[test]
 fn update_filename_distinguishes_missing_null_and_value() {
     let missing = serde_json::from_str::<UpdateQueueItemInput>("{}").unwrap();
@@ -113,6 +196,7 @@ macro_rules! check_binding {
 fn committed_typescript_bindings_match_every_public_contract() {
     check_binding!(crate::app_error::AppError, "AppError");
     check_binding!(VideoInfo, "VideoInfo");
+    check_binding!(MediaSelection, "MediaSelection");
     check_binding!(CookieConfig, "CookieConfig");
     check_binding!(PlaylistEntry, "PlaylistEntry");
     check_binding!(PlaylistInfo, "PlaylistInfo");

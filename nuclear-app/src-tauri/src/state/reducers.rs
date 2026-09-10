@@ -137,6 +137,9 @@ pub(super) fn normalize_inspection(
             validate_actionable_field("video URL", &video.url)?;
             shrink_string(&mut video.id);
             shrink_string(&mut video.url);
+            if let Some(selection) = &video.selection {
+                selection.validate().map_err(AppError::invalid)?;
+            }
             if let Some(thumbnail) = &mut video.thumbnail {
                 validate_actionable_field("thumbnail URL", thumbnail)?;
                 shrink_string(thumbnail);
@@ -161,6 +164,9 @@ pub(super) fn normalize_inspection(
                 validate_actionable_field("playlist entry URL", &entry.url)?;
                 shrink_string(&mut entry.id);
                 shrink_string(&mut entry.url);
+                if let Some(selection) = &entry.selection {
+                    selection.validate().map_err(AppError::invalid)?;
+                }
                 if let Some(thumbnail) = &mut entry.thumbnail {
                     validate_actionable_field("thumbnail URL", thumbnail)?;
                     shrink_string(thumbnail);

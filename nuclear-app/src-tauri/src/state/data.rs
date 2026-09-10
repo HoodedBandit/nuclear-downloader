@@ -132,6 +132,12 @@ pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usiz
             video.channel.as_ref().map_or(0, String::capacity),
             video.thumbnail.as_ref().map_or(0, String::capacity),
             video.url.capacity(),
+            video.selection.as_ref().map_or(0, |selection| {
+                selection
+                    .entry_id
+                    .capacity()
+                    .saturating_add(selection.extractor_key.capacity())
+            }),
             video
                 .available_qualities
                 .capacity()
@@ -151,6 +157,12 @@ pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usiz
                     entry.title.as_ref().map_or(0, String::capacity),
                     entry.url.capacity(),
                     entry.thumbnail.as_ref().map_or(0, String::capacity),
+                    entry.selection.as_ref().map_or(0, |selection| {
+                        selection
+                            .entry_id
+                            .capacity()
+                            .saturating_add(selection.extractor_key.capacity())
+                    }),
                 ]
                 .into_iter()
                 .fold(total, usize::saturating_add)

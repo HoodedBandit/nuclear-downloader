@@ -23,6 +23,9 @@ pub(crate) async fn begin_inspection(
         input.compat_config_path.as_deref(),
     )
     .map_err(AppError::invalid)?;
+    if let Some(selection) = &input.selection {
+        selection.validate().map_err(AppError::invalid)?;
+    }
     let coordinator = backend.download_manager.clone();
     run_tracked_command(&coordinator, TrackedTaskKind::Admission, async move {
         let admission = backend.download_manager.begin_job_admission(1).await?;
@@ -182,6 +185,7 @@ async fn execute_inspection(
         &input.url,
         input.cookie_config.as_ref(),
         input.compat_config_path.as_deref(),
+        input.selection.as_ref(),
         job,
     )
     .await

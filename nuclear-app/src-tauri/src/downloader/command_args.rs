@@ -3,7 +3,6 @@ use super::validation::is_x_or_twitter_url;
 use crate::models::{CookieConfig, DownloadRequest};
 use crate::runtime::YtdlpCommandConfig;
 use std::path::Path;
-use tokio::process::Command;
 
 pub(super) const FINAL_OUTPUT_RECORD_NAME: &str = ".nuclear-final-output-v1.jsonl";
 
@@ -14,7 +13,10 @@ pub(super) fn append_final_output_record_args(args: &mut Vec<String>, staging_di
         .replace('\\', "/")
         .replace('%', "%%");
     args.push("--print-to-file".to_string());
-    args.push(r#"after_move:{"schema_version":1,"filepath":%(filepath)j}"#.to_string());
+    args.push(
+        r#"after_move:{"schema_version":1,"filepath":%(filepath)j,"id":%(id)j,"extractor_key":%(extractor_key)j}"#
+            .to_string(),
+    );
     args.push(record_path);
 }
 
@@ -68,14 +70,6 @@ pub(super) fn append_cookie_args(args: &mut Vec<String>, config: &CookieConfig) 
             args.push(config.browser.clone());
         }
         _ => {}
-    }
-}
-
-pub(super) fn configure_cookie_args(cmd: &mut Command, cookie_config: Option<&CookieConfig>) {
-    if let Some(config) = cookie_config {
-        let mut args = Vec::new();
-        append_cookie_args(&mut args, config);
-        cmd.args(args);
     }
 }
 
@@ -166,7 +160,13 @@ pub(super) fn build_download_args_with_runtime(
     args.push("--progress".to_string());
     args.push("--progress-delta".to_string());
     args.push("0.5".to_string());
-    args.push("--no-playlist".to_string());
+    if let Some(selection) = request.selection.as_ref() {
+        args.push("--yes-playlist".to_string());
+        args.push("--playlist-items".to_string());
+        args.push(selection.playlist_index.to_string());
+    } else {
+        args.push("--no-playlist".to_string());
+    }
     append_twitter_syndication_args(&mut args, &request.url, use_twitter_syndication);
     args.push("-o".to_string());
     args.push(build_output_template(request));
@@ -215,6 +215,7 @@ mod tests {
             cookie_config: None,
             filename_override: None,
             compat_config_path: None,
+            selection: None,
         }
     }
 
@@ -284,7 +285,9 @@ mod tests {
         );
         assert_eq!(
             arg_value_after(&args, "--print-to-file"),
-            Some(r#"after_move:{"schema_version":1,"filepath":%(filepath)j}"#)
+            Some(
+                r#"after_move:{"schema_version":1,"filepath":%(filepath)j,"id":%(id)j,"extractor_key":%(extractor_key)j}"#
+            )
         );
         assert!(args.iter().any(|argument| {
             argument.ends_with("/.nuclear-final-output-v1.jsonl")
@@ -385,11 +388,33 @@ mod tests {
         assert_eq!(args[0], "--print-to-file");
         assert_eq!(
             args[1],
-            r#"after_move:{"schema_version":1,"filepath":%(filepath)j}"#
+            r#"after_move:{"schema_version":1,"filepath":%(filepath)j,"id":%(id)j,"extractor_key":%(extractor_key)j}"#
         );
         assert_eq!(
             args[2],
             format!("C:/Downloads/100%% Ready/{FINAL_OUTPUT_RECORD_NAME}")
+        );
+    }
+
+    #[test]
+    fn selected_media_uses_exact_playlist_ordinal_and_machine_identity_record() {
+        let mut request = download_request("mp4", "best");
+        request.selection = Some(crate::models::MediaSelection {
+            entry_id: "clip-id".into(),
+            extractor_key: "Youtube".into(),
+            playlist_index: 7,
+        });
+
+        let args = build_download_args(&request, false);
+
+        assert!(args.iter().any(|arg| arg == "--yes-playlist"));
+        assert_eq!(arg_value_after(&args, "--playlist-items"), Some("7"));
+        assert!(!args.iter().any(|arg| arg == "--no-playlist"));
+        assert_eq!(
+            arg_value_after(&args, "--print-to-file"),
+            Some(
+                r#"after_move:{"schema_version":1,"filepath":%(filepath)j,"id":%(id)j,"extractor_key":%(extractor_key)j}"#
+            )
         );
     }
 }

@@ -106,7 +106,7 @@ function commandResult(command: string): unknown {
   }
 }
 
-async function openPlaylist() {
+async function openPlaylist(completed: OperationSnapshot = completedInspection) {
   const view = render(Page);
   const input = view.getByLabelText('Video or playlist URL');
   const add = view.getByRole('button', { name: 'Add' });
@@ -123,10 +123,13 @@ async function openPlaylist() {
       sequence: 1,
       emittedAtMs: 2,
       kind: 'operation_upserted',
-      value: completedInspection
+      value: completed
     }
   });
-  await view.findByRole('dialog', { name: 'Large mounted playlist' });
+  const playlist =
+    completed.inspectionResult?.kind === 'playlist' ? completed.inspectionResult.playlist : null;
+  if (!playlist) throw new Error('Mounted playlist fixture must contain a playlist inspection.');
+  await view.findByRole('dialog', { name: playlist.title });
   return { view, input };
 }
 
@@ -151,6 +154,113 @@ afterEach(() => {
 });
 
 describe('mounted page playlist dialog baseline', () => {
+  it('renders and admits two selected siblings that share a parent URL', async () => {
+    const parentUrl = 'https://social.example/parent';
+    const entries = [
+      {
+        id: 'first',
+        title: 'First sibling',
+        duration: 10,
+        url: parentUrl,
+        thumbnail: null,
+        selection: { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 }
+      },
+      {
+        id: 'second',
+        title: 'Second sibling',
+        duration: 20,
+        url: parentUrl,
+        thumbnail: null,
+        selection: { entryId: 'media-two', extractorKey: 'twitter', playlistIndex: 2 }
+      }
+    ] satisfies PlaylistEntry[];
+    const parentOperation = {
+      ...completedInspection,
+      inspectionResult: {
+        kind: 'playlist',
+        playlist: {
+          title: 'Shared-parent playlist',
+          channel: 'Test channel',
+          entry_count: 2,
+          truncated: false,
+          entries
+        }
+      }
+    } satisfies OperationSnapshot;
+    let beginCount = 0;
+    ipc.invoke.mockImplementation(async (command: string) => {
+      if (command === 'begin_inspection') {
+        const operationId =
+          beginCount === 0 ? inspectionId : `00000000-0000-4000-8000-00000000000${beginCount + 1}`;
+        beginCount += 1;
+        return { operationId };
+      }
+      if (command === 'add_inspection_result_to_queue') return { id: `queue-${beginCount}` };
+      return commandResult(command);
+    });
+    const { view } = await openPlaylist(parentOperation);
+    const dialog = view.getByRole('dialog', { name: 'Shared-parent playlist' });
+    expect(within(dialog).getByText('First sibling').isConnected).toBe(true);
+    expect(within(dialog).getByText('Second sibling').isConnected).toBe(true);
+
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Add 2 Videos to Queue' }));
+    for (let index = 0; index < entries.length; index += 1) {
+      await waitFor(() =>
+        expect(
+          ipc.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
+        ).toHaveLength(index + 2)
+      );
+      const operationId = `00000000-0000-4000-8000-00000000000${index + 2}`;
+      handlers.get('app-state-changed')?.({
+        payload: {
+          schemaVersion: 1,
+          sequence: index + 2,
+          emittedAtMs: index + 3,
+          kind: 'operation_upserted',
+          value: {
+            ...completedInspection,
+            id: operationId,
+            inspectionResult: {
+              kind: 'video',
+              video: {
+                id: entries[index].selection.entryId,
+                title: entries[index].title ?? entries[index].id,
+                duration: entries[index].duration,
+                channel: 'Test channel',
+                thumbnail: null,
+                url: parentUrl,
+                available_qualities: ['1080p'],
+                has_audio: true,
+                selection: entries[index].selection
+              }
+            }
+          }
+        }
+      });
+    }
+
+    await waitFor(() =>
+      expect(
+        ipc.invoke.mock.calls.filter(([command]) => command === 'add_inspection_result_to_queue')
+      ).toHaveLength(2)
+    );
+    expect(
+      ipc.invoke.mock.calls
+        .filter(([command]) => command === 'begin_inspection')
+        .slice(1)
+        .map(([, arguments_]) => arguments_)
+    ).toEqual(
+      entries.map((entry) => ({
+        input: {
+          url: parentUrl,
+          cookieConfig: null,
+          compatConfigPath: null,
+          selection: entry.selection
+        }
+      }))
+    );
+  });
+
   it('pages 205 entries in 100-row windows and preserves global-index selection', async () => {
     const { view } = await openPlaylist();
     const dialog = view.getByRole('dialog', { name: 'Large mounted playlist' });

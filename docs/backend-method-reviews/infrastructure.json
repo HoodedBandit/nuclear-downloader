@@ -173,11 +173,11 @@
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
       "line": 106,
-      "endLine": 160,
+      "endLine": 161,
       "symbol": "rejected_inspection_metadata_finishes_the_registered_operation",
       "qualifiedName": "backend_lifecycle_tests::rejected_inspection_metadata_finishes_the_registered_operation",
       "signature": "async fn rejected_inspection_metadata_finishes_the_registered_operation()",
-      "sourceDigest": "522044245ddeafd00ed490ed6e77251d671def7b41c1177d8483fca0c59ae8f7",
+      "sourceDigest": "175dd3262d49b21aaed453613b8d5fd2f70d8f575eb38d75f343cba1e104b804",
       "cfg": [
         "test"
       ],
@@ -211,12 +211,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:106-160; SHA-256 522044245ddeafd00ed490ed6e77251d671def7b41c1177d8483fca0c59ae8f7."
+        "Current source span src/backend_lifecycle_tests.rs:106-160; SHA-256 522044245ddeafd00ed490ed6e77251d671def7b41c1177d8483fca0c59ae8f7.",
+        "Rereviewed current changed test span src/backend_lifecycle_tests.rs:106-161, digest 175dd3262d49b21aaed453613b8d5fd2f70d8f575eb38d75f343cba1e104b804; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -225,8 +226,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 163,
-      "endLine": 218,
+      "line": 164,
+      "endLine": 219,
       "symbol": "panic_after_durable_inspection_before_publish_is_cleaned_up",
       "qualifiedName": "backend_lifecycle_tests::panic_after_durable_inspection_before_publish_is_cleaned_up",
       "signature": "async fn panic_after_durable_inspection_before_publish_is_cleaned_up()",
@@ -274,12 +275,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::panic_after_durable_inspection_before_publish_is_cleaned_up::async_block#1@182[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::panic_after_durable_inspection_before_publish_is_cleaned_up::async_block#1@183[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 182,
-      "endLine": 186,
+      "line": 183,
+      "endLine": 187,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::panic_after_durable_inspection_before_publish_is_cleaned_up::async_block#1",
       "signature": "async move",
@@ -317,12 +318,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:182-186; SHA-256 90a7247efa1006fb3dab6a9e28b1cb0f0b424c87617d2036f136a970fa10dd1a."
+        "Current source span src/backend_lifecycle_tests.rs:182-186; SHA-256 90a7247efa1006fb3dab6a9e28b1cb0f0b424c87617d2036f136a970fa10dd1a.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:183-187 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -331,8 +333,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 220,
-      "endLine": 236,
+      "line": 221,
+      "endLine": 237,
       "symbol": "coordinator",
       "qualifiedName": "backend_lifecycle_tests::coordinator",
       "signature": "pub(crate) async fn coordinator() -> DownloadManager",
@@ -383,12 +385,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_async_closure#1@224[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_async_closure#1@225[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 224,
-      "endLine": 226,
+      "line": 225,
+      "endLine": 227,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "backend_lifecycle_tests::coordinator::owned_async_closure#1",
       "signature": "async move",
@@ -426,22 +428,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:224-226; SHA-256 49a128d9047f2cddc8c7fb5162b6574bf263d83aa86faf6cdd5a64453669204a."
+        "Current source span src/backend_lifecycle_tests.rs:224-226; SHA-256 49a128d9047f2cddc8c7fb5162b6574bf263d83aa86faf6cdd5a64453669204a.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:225-227 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_async_closure#2@230[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_async_closure#2@231[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 230,
-      "endLine": 230,
+      "line": 231,
+      "endLine": 231,
       "symbol": "owned_async_closure#2",
       "qualifiedName": "backend_lifecycle_tests::coordinator::owned_async_closure#2",
       "signature": "async",
@@ -479,22 +482,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:230-230; SHA-256 06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4."
+        "Current source span src/backend_lifecycle_tests.rs:230-230; SHA-256 06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:231-231 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_work_closure#1@230[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::coordinator::owned_work_closure#1@231[cfg=test]",
       "kind": "owned_work_closure",
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 230,
-      "endLine": 232,
+      "line": 231,
+      "endLine": 233,
       "symbol": "owned_work_closure#1",
       "qualifiedName": "backend_lifecycle_tests::coordinator::owned_work_closure#1",
       "signature": "move |result|",
@@ -532,12 +536,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:230-232; SHA-256 383ae3d2ff4e5a6a60e9bb8339e88c68ed9a4f090090bfa980dcfd7f013213cb."
+        "Current source span src/backend_lifecycle_tests.rs:230-232; SHA-256 383ae3d2ff4e5a6a60e9bb8339e88c68ed9a4f090090bfa980dcfd7f013213cb.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:231-233 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -546,8 +551,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 239,
-      "endLine": 302,
+      "line": 240,
+      "endLine": 303,
       "symbol": "tracked_command_waits_for_startup_and_preserves_state_on_startup_failure",
       "qualifiedName": "backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure",
       "signature": "async fn tracked_command_waits_for_startup_and_preserves_state_on_startup_failure()",
@@ -595,12 +600,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#1@251[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#1@252[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 251,
-      "endLine": 255,
+      "line": 252,
+      "endLine": 256,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#1",
       "signature": "async move",
@@ -609,51 +614,55 @@
         "test"
       ],
       "ownerCall": "spawn_startup",
-      "purpose": "Signals startup entry, waits for test release, then returns the injected startup failure.",
+      "purpose": "Execute the owned async step inside backend lifecycle tests tracked command waits for startup and preserves state on startup failure.",
       "callers": [
-        "tracked_command_waits_for_startup_and_preserves_state_on_startup_failure via spawn_startup."
+        "Rust test harness or the lexically enclosing named test."
       ],
       "inputs": [
-        "Moved started_sender and finish_receiver oneshot endpoints."
+        "Deterministic fixtures and values constructed in this test body."
       ],
-      "output": "Err(AppError::internal(\"Startup recovery failed.\")) after signaling start and receiving release.",
+      "output": "Unit after assertions.",
       "sideEffects": [
-        "Sends startup-entered signal and awaits release receiver."
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
       ],
       "errors": [
-        "Ignores send/receive channel errors, then deliberately returns the fixed AppError."
+        "Panics on an unmet assertion or fixture/setup failure."
       ],
       "ownership": [
-        "Owns both channel endpoints until completion."
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
       ],
       "locks": [
-        "No application lock; oneshot channel synchronization only."
+        "Only synchronization explicitly constructed by this test or delegated production code."
       ],
-      "cancellation": "Can be cancelled while awaiting finish_receiver; manager tracks the startup future.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "invariants": [
-        "It cannot publish failure until finish_receiver resolves or is dropped."
+        "The scenario owned async closure#1 remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
       ],
       "tests": [
-        "Covered by tracked_command_waits_for_startup_and_preserves_state_on_startup_failure."
+        "Indirectly executed by backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure."
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:251-255; SHA-256 d9f2160fb1ccce57d72a6c40d477de04f41af80067332a365b65c97796204a3c."
+        "Current source span src/backend_lifecycle_tests.rs:252-256, digest d9f2160fb1ccce57d72a6c40d477de04f41af80067332a365b65c97796204a3c.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
-      "disposition": "test_only",
+      "disposition": "keep",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "movedFrom": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#1@251[cfg=test]",
+      "staleReason": "moved_requires_context_review"
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_work_closure#1@256[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_work_closure#1@257[cfg=test]",
       "kind": "owned_work_closure",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 256,
-      "endLine": 256,
+      "line": 257,
+      "endLine": 257,
       "symbol": "owned_work_closure#1",
       "qualifiedName": "backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_work_closure#1",
       "signature": "|_|",
@@ -662,51 +671,55 @@
         "test"
       ],
       "ownerCall": "spawn_startup",
-      "purpose": "Consumes and ignores the controlled startup completion callback value.",
+      "purpose": "Execute the owned async step inside backend lifecycle tests tracked command waits for startup and preserves state on startup failure.",
       "callers": [
-        "tracked_command_waits_for_startup_and_preserves_state_on_startup_failure as spawn_startup completion callback."
+        "Rust test harness or the lexically enclosing named test."
       ],
       "inputs": [
-        "One startup Result value, intentionally ignored."
+        "Deterministic fixtures and values constructed in this test body."
       ],
-      "output": "Unit.",
+      "output": "Unit after assertions.",
       "sideEffects": [
-        "No side effects."
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
       ],
       "errors": [
-        "No error channel or panic path."
+        "Panics on an unmet assertion or fixture/setup failure."
       ],
       "ownership": [
-        "Consumes and discards the Result."
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
       ],
       "locks": [
-        "No locks."
+        "Only synchronization explicitly constructed by this test or delegated production code."
       ],
-      "cancellation": "Synchronous callback with no cancellation point.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "invariants": [
-        "The callback performs no mutation."
+        "The scenario owned work closure#1 remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
       ],
       "tests": [
-        "Covered by tracked_command_waits_for_startup_and_preserves_state_on_startup_failure."
+        "Indirectly executed by backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure."
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:256-256; SHA-256 02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e."
+        "Current source span src/backend_lifecycle_tests.rs:257-257, digest 02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
-      "disposition": "test_only",
+      "disposition": "keep",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "movedFrom": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_work_closure#1@256[cfg=test]",
+      "staleReason": "moved_requires_context_review"
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#2@265[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#2@266[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 265,
-      "endLine": 274,
+      "line": 266,
+      "endLine": 275,
       "symbol": "owned_async_closure#2",
       "qualifiedName": "backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::owned_async_closure#2",
       "signature": "async move",
@@ -744,22 +757,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:265-274; SHA-256 d6be61f61335848bf2ac41869f5b6de2215b134ad84f9600cb65958324e04b77."
+        "Current source span src/backend_lifecycle_tests.rs:265-274; SHA-256 d6be61f61335848bf2ac41869f5b6de2215b134ad84f9600cb65958324e04b77.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:266-275 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::async_block#1@266[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::async_block#1@267[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 266,
-      "endLine": 272,
+      "line": 267,
+      "endLine": 273,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::tracked_command_waits_for_startup_and_preserves_state_on_startup_failure::async_block#1",
       "signature": "async move",
@@ -797,12 +811,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:266-272; SHA-256 bdb1420a6f347f59d42400dfa59344889485496f08fb96d164c798cc2f41dfe6."
+        "Current source span src/backend_lifecycle_tests.rs:266-272; SHA-256 bdb1420a6f347f59d42400dfa59344889485496f08fb96d164c798cc2f41dfe6.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:267-273 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -811,12 +826,12 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 304,
-      "endLine": 340,
+      "line": 305,
+      "endLine": 342,
       "symbol": "fixture",
       "qualifiedName": "backend_lifecycle_tests::fixture",
       "signature": "pub(crate) async fn fixture(store: &StateStore, root: &std::path::Path) -> QueueItemRecord",
-      "sourceDigest": "86eab560e802ebb4d1ac4512f0912c0cbf05329bbe2aadff713dae65eaf9f525",
+      "sourceDigest": "31b52331555b9321045e8363739c98981aea078bc68a328ffe894cefe1f09bd3",
       "cfg": [
         "test"
       ],
@@ -852,12 +867,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:304-340; SHA-256 86eab560e802ebb4d1ac4512f0912c0cbf05329bbe2aadff713dae65eaf9f525."
+        "Current source span src/backend_lifecycle_tests.rs:304-340; SHA-256 86eab560e802ebb4d1ac4512f0912c0cbf05329bbe2aadff713dae65eaf9f525.",
+        "Rereviewed current changed test span src/backend_lifecycle_tests.rs:305-342, digest 31b52331555b9321045e8363739c98981aea078bc68a328ffe894cefe1f09bd3; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -866,8 +882,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 343,
-      "endLine": 398,
+      "line": 345,
+      "endLine": 400,
       "symbol": "cancellation_after_dequeue_before_lookup_never_calls_the_process_factory",
       "qualifiedName": "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory",
       "signature": "async fn cancellation_after_dequeue_before_lookup_never_calls_the_process_factory()",
@@ -915,12 +931,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1@374[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1@376[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 374,
-      "endLine": 377,
+      "line": 376,
+      "endLine": 379,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1",
       "signature": "async",
@@ -958,12 +974,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:374-377; SHA-256 705aa37b698f6c701476791925f2a433895bf1f137063af2a051824d2cc5899a."
+        "Current source span src/backend_lifecycle_tests.rs:374-377; SHA-256 705aa37b698f6c701476791925f2a433895bf1f137063af2a051824d2cc5899a.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:376-379 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -972,8 +989,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 401,
-      "endLine": 452,
+      "line": 403,
+      "endLine": 454,
       "symbol": "dropping_an_admission_response_does_not_abandon_committed_work_registration",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration",
       "signature": "async fn dropping_an_admission_response_does_not_abandon_committed_work_registration()",
@@ -1021,12 +1038,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1@412[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1@414[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 412,
-      "endLine": 429,
+      "line": 414,
+      "endLine": 431,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1",
       "signature": "async move",
@@ -1064,22 +1081,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:412-429; SHA-256 ed9c13d2e1412d51559a4ffe72da64bd487e6ad2395f0b0ee6ee9def2adde8e1."
+        "Current source span src/backend_lifecycle_tests.rs:412-429; SHA-256 ed9c13d2e1412d51559a4ffe72da64bd487e6ad2395f0b0ee6ee9def2adde8e1.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:414-431 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1@414[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1@416[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 414,
-      "endLine": 427,
+      "line": 416,
+      "endLine": 429,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1",
       "signature": "async move",
@@ -1117,12 +1135,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:414-427; SHA-256 414897c51687582a520e4be755215fc03cbaa9f88c5ae2838ae1b590ae817e70."
+        "Current source span src/backend_lifecycle_tests.rs:414-427; SHA-256 414897c51687582a520e4be755215fc03cbaa9f88c5ae2838ae1b590ae817e70.",
+        "Digest-identical context remapped to current span src/backend_lifecycle_tests.rs:416-429 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -1556,11 +1575,11 @@
       "classification": "test_support",
       "file": "src/performance_harness.rs",
       "line": 350,
-      "endLine": 371,
+      "endLine": 372,
       "symbol": "fixture_queue",
       "qualifiedName": "performance_harness::fixture_queue",
       "signature": "fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord>",
-      "sourceDigest": "4cadb2959b0a85a881f63b0bda66ec8ce0dd4a955c4c72bbadfde066a29b5fb1",
+      "sourceDigest": "f01039bd80c646396eb412f69aa5d05e75c134b8a081782deeeba608a64d9faf",
       "cfg": [
         "test"
       ],
@@ -1594,12 +1613,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/performance_harness.rs:350-371; SHA-256 4cadb2959b0a85a881f63b0bda66ec8ce0dd4a955c4c72bbadfde066a29b5fb1."
+        "Current source span src/performance_harness.rs:350-371; SHA-256 4cadb2959b0a85a881f63b0bda66ec8ce0dd4a955c4c72bbadfde066a29b5fb1.",
+        "Rereviewed current changed test span src/performance_harness.rs:350-372, digest f01039bd80c646396eb412f69aa5d05e75c134b8a081782deeeba608a64d9faf; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/performance_harness.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -1608,8 +1628,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 373,
-      "endLine": 386,
+      "line": 374,
+      "endLine": 387,
       "symbol": "seed_journal",
       "qualifiedName": "performance_harness::seed_journal",
       "signature": "fn seed_journal(path: &Path, queue: Vec<QueueItemRecord>)",
@@ -1661,8 +1681,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 388,
-      "endLine": 427,
+      "line": 389,
+      "endLine": 428,
       "symbol": "blocked_snapshot_probe",
       "qualifiedName": "performance_harness::blocked_snapshot_probe",
       "signature": "async fn blocked_snapshot_probe(store: &StateStore, item_id: &str) -> BlockedJournalSnapshot",
@@ -1710,12 +1730,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/performance_harness.rs::performance_harness::blocked_snapshot_probe::owned_async_closure#1@392[cfg=test]",
+      "id": "src/performance_harness.rs::performance_harness::blocked_snapshot_probe::owned_async_closure#1@393[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 392,
-      "endLine": 402,
+      "line": 393,
+      "endLine": 403,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "performance_harness::blocked_snapshot_probe::owned_async_closure#1",
       "signature": "async move",
@@ -1753,12 +1773,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/performance_harness.rs:392-402; SHA-256 700da3842d4c46e0f97495cfea29f9aa6821e13c3120da73e00b966ae2c3164d."
+        "Current source span src/performance_harness.rs:392-402; SHA-256 700da3842d4c46e0f97495cfea29f9aa6821e13c3120da73e00b966ae2c3164d.",
+        "Digest-identical context remapped to current span src/performance_harness.rs:393-403 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/performance_harness.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -1767,8 +1788,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 429,
-      "endLine": 441,
+      "line": 430,
+      "endLine": 442,
       "symbol": "quality_update",
       "qualifiedName": "performance_harness::quality_update",
       "signature": "fn quality_update(sample: usize) -> UpdateQueueItemInput",
@@ -1820,8 +1841,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 443,
-      "endLine": 458,
+      "line": 444,
+      "endLine": 459,
       "symbol": "measure_journal_saves",
       "qualifiedName": "performance_harness::measure_journal_saves",
       "signature": "fn measure_journal_saves(path: &Path, queue: Vec<QueueItemRecord>) -> Vec<std::time::Duration>",
@@ -1873,8 +1894,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 460,
-      "endLine": 469,
+      "line": 461,
+      "endLine": 470,
       "symbol": "summarize",
       "qualifiedName": "performance_harness::summarize",
       "signature": "fn summarize(mut samples: Vec<std::time::Duration>) -> LatencySummary",
@@ -1926,8 +1947,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 471,
-      "endLine": 481,
+      "line": 472,
+      "endLine": 482,
       "symbol": "percentile_micros",
       "qualifiedName": "performance_harness::percentile_micros",
       "signature": "fn percentile_micros(samples: &[std::time::Duration], percentile: usize) -> u64",
@@ -1979,8 +2000,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 483,
-      "endLine": 485,
+      "line": 484,
+      "endLine": 486,
       "symbol": "micros",
       "qualifiedName": "performance_harness::micros",
       "signature": "fn micros(duration: std::time::Duration) -> u64",
@@ -2034,8 +2055,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 487,
-      "endLine": 493,
+      "line": 488,
+      "endLine": 494,
       "symbol": "serialized_len",
       "qualifiedName": "performance_harness::serialized_len",
       "signature": "fn serialized_len<T: Serialize>(value: &T) -> u64",
@@ -2087,8 +2108,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 495,
-      "endLine": 497,
+      "line": 496,
+      "endLine": 498,
       "symbol": "file_len",
       "qualifiedName": "performance_harness::file_len",
       "signature": "fn file_len(path: &Path) -> u64",
@@ -2140,8 +2161,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 499,
-      "endLine": 511,
+      "line": 500,
+      "endLine": 512,
       "symbol": "write_evidence",
       "qualifiedName": "performance_harness::write_evidence",
       "signature": "fn write_evidence(path: &Path, json: &str)",
@@ -2193,8 +2214,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 513,
-      "endLine": 568,
+      "line": 514,
+      "endLine": 569,
       "symbol": "process_memory",
       "qualifiedName": "performance_harness::process_memory",
       "signature": "fn process_memory() -> Option<MemorySample>",
@@ -2246,8 +2267,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 531,
-      "endLine": 531,
+      "line": 532,
+      "endLine": 532,
       "symbol": "GetCurrentProcess",
       "qualifiedName": "performance_harness::process_memory::local::GetCurrentProcess",
       "signature": "fn GetCurrentProcess() -> isize",
@@ -2299,8 +2320,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 535,
-      "endLine": 539,
+      "line": 536,
+      "endLine": 540,
       "symbol": "GetProcessMemoryInfo",
       "qualifiedName": "performance_harness::process_memory::local::GetProcessMemoryInfo",
       "signature": "fn GetProcessMemoryInfo( process: isize, counters: *mut ProcessMemoryCountersEx, size: u32, ) -> i32",
@@ -3784,11 +3805,11 @@
       "classification": "test_support",
       "file": "src/soak_harness.rs",
       "line": 981,
-      "endLine": 1002,
+      "endLine": 1003,
       "symbol": "fixture_queue",
       "qualifiedName": "soak_harness::fixture_queue",
       "signature": "fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord>",
-      "sourceDigest": "09d3eb04f21ee852b5c85b1b75bda30eb4003ee7671ceb90049d564c0ffc5ee1",
+      "sourceDigest": "52a35b60655841b73f43c8270dd432d595f859c13c5df89c3cdf054f7ba11a14",
       "cfg": [
         "test"
       ],
@@ -3822,12 +3843,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span src/soak_harness.rs:981-1002; SHA-256 09d3eb04f21ee852b5c85b1b75bda30eb4003ee7671ceb90049d564c0ffc5ee1."
+        "Current source span src/soak_harness.rs:981-1002; SHA-256 09d3eb04f21ee852b5c85b1b75bda30eb4003ee7671ceb90049d564c0ffc5ee1.",
+        "Rereviewed current changed test span src/soak_harness.rs:981-1003, digest 52a35b60655841b73f43c8270dd432d595f859c13c5df89c3cdf054f7ba11a14; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/soak_harness.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
@@ -3836,8 +3858,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1004,
-      "endLine": 1018,
+      "line": 1005,
+      "endLine": 1019,
       "symbol": "seed_journal",
       "qualifiedName": "soak_harness::seed_journal",
       "signature": "fn seed_journal(path: &Path, queue: Vec<QueueItemRecord>) -> Result<(), String>",
@@ -3889,8 +3911,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1020,
-      "endLine": 1038,
+      "line": 1021,
+      "endLine": 1039,
       "symbol": "publish_json",
       "qualifiedName": "soak_harness::publish_json",
       "signature": "fn publish_json<T: Serialize>(path: &Path, value: &T, create_new: bool) -> Result<(), String>",
@@ -3942,8 +3964,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1040,
-      "endLine": 1054,
+      "line": 1041,
+      "endLine": 1055,
       "symbol": "append_sample",
       "qualifiedName": "soak_harness::append_sample",
       "signature": "fn append_sample(path: &Path, sample: &ResourceSample) -> Result<(), String>",
@@ -3995,8 +4017,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1056,
-      "endLine": 1064,
+      "line": 1057,
+      "endLine": 1065,
       "symbol": "remove_owned_fixture_tree",
       "qualifiedName": "soak_harness::remove_owned_fixture_tree",
       "signature": "fn remove_owned_fixture_tree(context: &Context) -> Result<(), String>",
@@ -4048,8 +4070,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1066,
-      "endLine": 1068,
+      "line": 1067,
+      "endLine": 1069,
       "symbol": "required_text",
       "qualifiedName": "soak_harness::required_text",
       "signature": "fn required_text(name: &str) -> Result<String, String>",
@@ -4101,8 +4123,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1070,
-      "endLine": 1076,
+      "line": 1071,
+      "endLine": 1077,
       "symbol": "required_absolute_path",
       "qualifiedName": "soak_harness::required_absolute_path",
       "signature": "fn required_absolute_path(name: &str) -> Result<PathBuf, String>",
@@ -4154,8 +4176,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1078,
-      "endLine": 1084,
+      "line": 1079,
+      "endLine": 1085,
       "symbol": "required_contained_path",
       "qualifiedName": "soak_harness::required_contained_path",
       "signature": "fn required_contained_path(name: &str, root: &Path) -> Result<PathBuf, String>",
@@ -4207,8 +4229,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1086,
-      "endLine": 1088,
+      "line": 1087,
+      "endLine": 1089,
       "symbol": "to_string",
       "qualifiedName": "soak_harness::to_string",
       "signature": "fn to_string(context: &'static str) -> impl FnOnce(std::io::Error) -> String",
@@ -4260,8 +4282,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1090,
-      "endLine": 1092,
+      "line": 1091,
+      "endLine": 1093,
       "symbol": "display_error",
       "qualifiedName": "soak_harness::display_error",
       "signature": "fn display_error(error: AppError) -> String",
@@ -4313,8 +4335,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1094,
-      "endLine": 1098,
+      "line": 1095,
+      "endLine": 1099,
       "symbol": "file_len",
       "qualifiedName": "soak_harness::file_len",
       "signature": "fn file_len(path: &Path) -> u64",
@@ -4366,8 +4388,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1100,
-      "endLine": 1120,
+      "line": 1101,
+      "endLine": 1121,
       "symbol": "recursive_regular_file_bytes",
       "qualifiedName": "soak_harness::recursive_regular_file_bytes",
       "signature": "fn recursive_regular_file_bytes(root: &Path) -> Result<u64, String>",
@@ -4419,8 +4441,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1122,
-      "endLine": 1128,
+      "line": 1123,
+      "endLine": 1129,
       "symbol": "panic_message",
       "qualifiedName": "soak_harness::panic_message",
       "signature": "fn panic_message(panic: Box<dyn std::any::Any + Send>) -> String",
@@ -4472,8 +4494,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1130,
-      "endLine": 1150,
+      "line": 1131,
+      "endLine": 1151,
       "symbol": "recursive_entry_count",
       "qualifiedName": "soak_harness::recursive_entry_count",
       "signature": "fn recursive_entry_count(root: &Path) -> Result<usize, String>",
@@ -4525,8 +4547,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1152,
-      "endLine": 1159,
+      "line": 1153,
+      "endLine": 1160,
       "symbol": "remove_empty_staging_root",
       "qualifiedName": "soak_harness::remove_empty_staging_root",
       "signature": "fn remove_empty_staging_root(output_root: &Path) -> Result<(), String>",
@@ -4578,8 +4600,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1161,
-      "endLine": 1172,
+      "line": 1162,
+      "endLine": 1173,
       "symbol": "process_handle_count",
       "qualifiedName": "soak_harness::process_handle_count",
       "signature": "fn process_handle_count() -> Result<u32, String>",
@@ -4631,8 +4653,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1174,
-      "endLine": 1240,
+      "line": 1175,
+      "endLine": 1241,
       "symbol": "descendant_processes",
       "qualifiedName": "soak_harness::descendant_processes",
       "signature": "fn descendant_processes() -> Result<Vec<DescendantEvidence>, String>",
@@ -4684,8 +4706,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1242,
-      "endLine": 1259,
+      "line": 1243,
+      "endLine": 1260,
       "symbol": "process_creation_time",
       "qualifiedName": "soak_harness::process_creation_time",
       "signature": "fn process_creation_time(pid: u32) -> Option<u64>",
@@ -4737,8 +4759,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1261,
-      "endLine": 1300,
+      "line": 1262,
+      "endLine": 1301,
       "symbol": "process_memory",
       "qualifiedName": "soak_harness::process_memory",
       "signature": "fn process_memory() -> Result<(u64, u64), String>",
@@ -4790,8 +4812,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1278,
-      "endLine": 1278,
+      "line": 1279,
+      "endLine": 1279,
       "symbol": "GetProcessMemoryInfo",
       "qualifiedName": "soak_harness::process_memory::local::GetProcessMemoryInfo",
       "signature": "fn GetProcessMemoryInfo(process: isize, counters: *mut Counters, size: u32) -> i32",

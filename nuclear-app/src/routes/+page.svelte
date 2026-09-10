@@ -170,7 +170,8 @@
     readCompat: () => settingsWorkflow.getCompatConfigSnapshot(),
     queue: {
       getItems: () => queuePresentation.getItems(),
-      retainMetadata: (url, metadata) => queuePresentation.retainMetadata(url, metadata)
+      retainMetadata: (url, metadata, selection) =>
+        queuePresentation.retainMetadata(url, metadata, selection)
     },
     setQueueActionError: (message) => {
       queueActionState.queueActionError = message;

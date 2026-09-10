@@ -451,21 +451,22 @@ async fn run_webm_download(
         .await
         {
             DownloadAttemptResult::Completed(_) => {
-                let intermediate_path = match resolve_staged_output(&staging_dir) {
-                    Ok(path) => path,
-                    Err(error) => {
-                        cleanup_staging_with_warning(
-                            notifications,
-                            &staging_dir,
-                            output_dir,
-                            download_id,
-                        );
-                        return DownloadAttemptResult::Error(simple_error(
-                            error.code,
-                            error.message,
-                        ));
-                    }
-                };
+                let intermediate_path =
+                    match resolve_staged_output(&staging_dir, request.selection.as_ref()) {
+                        Ok(path) => path,
+                        Err(error) => {
+                            cleanup_staging_with_warning(
+                                notifications,
+                                &staging_dir,
+                                output_dir,
+                                download_id,
+                            );
+                            return DownloadAttemptResult::Error(simple_error(
+                                error.code,
+                                error.message,
+                            ));
+                        }
+                    };
 
                 let final_path = build_webm_final_path(request, &intermediate_path);
                 let staged_output = build_staged_webm_output_path(&staging_dir, &final_path);
@@ -598,18 +599,19 @@ pub async fn start_download(
         .await
         {
             DownloadAttemptResult::Completed(_) => {
-                let staged_path = match resolve_staged_output(&staging_dir) {
-                    Ok(path) => path,
-                    Err(error) => {
-                        cleanup_staging_with_warning(
-                            &notifications,
-                            &staging_dir,
-                            output_dir,
-                            &download_id,
-                        );
-                        return simple_error(error.code, error.message).into();
-                    }
-                };
+                let staged_path =
+                    match resolve_staged_output(&staging_dir, request.selection.as_ref()) {
+                        Ok(path) => path,
+                        Err(error) => {
+                            cleanup_staging_with_warning(
+                                &notifications,
+                                &staging_dir,
+                                output_dir,
+                                &download_id,
+                            );
+                            return simple_error(error.code, error.message).into();
+                        }
+                    };
 
                 let desired_path = match build_final_output_path(&request, &staged_path) {
                     Ok(path) => path,

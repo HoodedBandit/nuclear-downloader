@@ -126,6 +126,14 @@ const OWNERSHIP = new Map([
     },
   ],
   [
+    "src/lib/media-identity.ts",
+    {
+      responsibility:
+        "Define stable media identity keys from a URL and optional exact media selection.",
+      workflows: ["inspection", "queue", "state-sync"],
+    },
+  ],
+  [
     "src/lib/inspection-workflow.ts",
     {
       responsibility:

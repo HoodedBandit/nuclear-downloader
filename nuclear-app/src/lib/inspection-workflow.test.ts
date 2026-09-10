@@ -116,7 +116,8 @@ describe('InspectionWorkflow', () => {
     });
     expect(context.dependencies.queue.retainMetadata).toHaveBeenCalledWith(
       'https://example.com/video',
-      { duration: 42, channel: 'Channel', thumbnail: 'thumb' }
+      { duration: 42, channel: 'Channel', thumbnail: 'thumb' },
+      undefined
     );
     expect(context.state.urlInput).toBe('');
     expect(context.state.playlistLoading).toBe(false);
@@ -150,6 +151,30 @@ describe('InspectionWorkflow', () => {
     expect(context.state.urlError).toBe(
       'Work is disabled because renderer event delivery could not be initialized. Restart the app.'
     );
+  });
+
+  it('allows reopening a parent URL when only a selected child identity is queued', async () => {
+    const url = 'https://social.example/parent';
+    const context = setup({
+      queue: {
+        getItems: () =>
+          [
+            {
+              url,
+              selection: { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 }
+            }
+          ] as never,
+        retainMetadata: vi.fn(() => () => undefined)
+      }
+    });
+    context.state.urlInput = url;
+
+    await context.workflow.addToQueue();
+
+    expect(context.invoke).toHaveBeenCalledWith('begin_inspection', {
+      input: { url, cookieConfig: null, compatConfigPath: null }
+    });
+    expect(context.state.urlError).toBe('');
   });
 
   it('opens a selected playlist and exposes bounded 100-entry pages', async () => {
@@ -300,6 +325,287 @@ describe('InspectionWorkflow', () => {
     expect(
       context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
     ).toHaveLength(5);
+  });
+
+  it('dismisses a nested playlist result, reports it, and continues with later selections', async () => {
+    const context = setup();
+    const entries = [
+      {
+        id: 'nested',
+        title: 'Nested entry',
+        duration: null,
+        url: 'https://example.com/nested',
+        thumbnail: null,
+        selected: true
+      },
+      {
+        id: 'video',
+        title: 'Video entry',
+        duration: null,
+        url: 'https://example.com/video-child',
+        thumbnail: null,
+        selected: true
+      }
+    ];
+    context.state.playlistModal = {
+      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+      inspectionOperationId: 'playlist-operation',
+      url: 'https://example.com/list',
+      cookieConfig: null,
+      entries
+    };
+    let next = 0;
+    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
+      if (command === 'begin_inspection') return { operationId: `child-operation-${next++}` };
+      if (command === 'add_inspection_result_to_queue') return { id: 'queue-video' };
+      return undefined;
+    });
+    context.waitForOperation
+      .mockResolvedValueOnce(
+        operation(
+          {
+            kind: 'playlist',
+            playlist: {
+              title: 'Nested',
+              channel: null,
+              entry_count: 0,
+              truncated: false,
+              entries: []
+            }
+          },
+          'child-operation-0'
+        )
+      )
+      .mockResolvedValueOnce(
+        operation(
+          { kind: 'video', video: video('https://example.com/video-child') },
+          'child-operation-1'
+        )
+      );
+
+    await context.workflow.addPlaylistSelection();
+
+    expect(context.invoke).toHaveBeenCalledWith('dismiss_operation', {
+      operationId: 'child-operation-0'
+    });
+    expect(context.invoke).toHaveBeenCalledWith('add_inspection_result_to_queue', {
+      input: expect.objectContaining({ inspectionOperationId: 'child-operation-1' })
+    });
+    expect(context.state.urlError).toBe(
+      'Some playlist entries could not be added. Nested entry: A selected playlist entry unexpectedly resolved to another playlist.'
+    );
+  });
+
+  it('dismisses a completed playlist child when cancellation wins before admission', async () => {
+    const context = setup();
+    const entries = [
+      {
+        id: 'first',
+        title: 'First entry',
+        duration: null,
+        url: 'https://example.com/first',
+        thumbnail: null,
+        selected: true
+      },
+      {
+        id: 'second',
+        title: 'Second entry',
+        duration: null,
+        url: 'https://example.com/second',
+        thumbnail: null,
+        selected: true
+      }
+    ];
+    context.state.playlistModal = {
+      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+      inspectionOperationId: 'playlist-operation',
+      url: 'https://example.com/list',
+      cookieConfig: null,
+      entries
+    };
+    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
+      if (command === 'begin_inspection') return { operationId: 'child-operation' };
+      if (command === 'add_inspection_result_to_queue') return { id: 'unexpected-queue-item' };
+      return undefined;
+    });
+    context.waitForOperation.mockImplementationOnce(async () => {
+      await context.workflow.cancelInspection();
+      return operation(
+        { kind: 'video', video: video('https://example.com/first') },
+        'child-operation'
+      );
+    });
+
+    await context.workflow.addPlaylistSelection();
+
+    expect(context.invoke).toHaveBeenCalledWith('cancel_operation', {
+      operationId: 'child-operation'
+    });
+    expect(context.invoke).toHaveBeenCalledWith('dismiss_operation', {
+      operationId: 'child-operation'
+    });
+    expect(
+      context.invoke.mock.calls.filter(([command]) => command === 'add_inspection_result_to_queue')
+    ).toHaveLength(0);
+    expect(
+      context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
+    ).toHaveLength(1);
+  });
+
+  it('inspects and admits two selected media identities that share a parent URL', async () => {
+    const context = setup();
+    const parentUrl = 'https://social.example/parent';
+    const entries = [
+      {
+        id: 'first',
+        title: 'First entry',
+        duration: null,
+        url: parentUrl,
+        thumbnail: null,
+        selection: { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 },
+        selected: true
+      },
+      {
+        id: 'second',
+        title: 'Second entry',
+        duration: null,
+        url: parentUrl,
+        thumbnail: null,
+        selection: { entryId: 'media-two', extractorKey: 'twitter', playlistIndex: 2 },
+        selected: true
+      }
+    ];
+    context.state.playlistModal = {
+      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+      inspectionOperationId: 'playlist-operation',
+      url: 'https://example.com/list',
+      cookieConfig: null,
+      entries
+    };
+    let next = 0;
+    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
+      if (command === 'begin_inspection') return { operationId: `child-operation-${next++}` };
+      if (command === 'add_inspection_result_to_queue') return { id: `queue-${next}` };
+      return undefined;
+    });
+    context.waitForOperation
+      .mockResolvedValueOnce(
+        operation(
+          { kind: 'video', video: { ...video(parentUrl), selection: entries[0].selection } },
+          'child-operation-0'
+        )
+      )
+      .mockResolvedValueOnce(
+        operation(
+          { kind: 'video', video: { ...video(parentUrl), selection: entries[1].selection } },
+          'child-operation-1'
+        )
+      );
+
+    await context.workflow.addPlaylistSelection();
+
+    expect(
+      context.invoke.mock.calls
+        .filter(([command]) => command === 'begin_inspection')
+        .map(([, arguments_]) => arguments_)
+    ).toEqual([
+      {
+        input: {
+          url: parentUrl,
+          cookieConfig: null,
+          compatConfigPath: null,
+          selection: entries[0].selection
+        }
+      },
+      {
+        input: {
+          url: parentUrl,
+          cookieConfig: null,
+          compatConfigPath: null,
+          selection: entries[1].selection
+        }
+      }
+    ]);
+    expect(
+      context.invoke.mock.calls
+        .filter(([command]) => command === 'add_inspection_result_to_queue')
+        .map(
+          ([, arguments_]) =>
+            (arguments_ as { input: { inspectionOperationId: string } }).input.inspectionOperationId
+        )
+    ).toEqual(['child-operation-0', 'child-operation-1']);
+    expect(context.state.urlError).toBe('');
+  });
+
+  it('skips an already queued selected identity but still admits its sibling', async () => {
+    const parentUrl = 'https://social.example/parent';
+    const firstSelection = { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 };
+    const secondSelection = { entryId: 'media-two', extractorKey: 'twitter', playlistIndex: 2 };
+    const context = setup({
+      queue: {
+        getItems: () => [{ url: parentUrl, selection: firstSelection }] as never,
+        retainMetadata: vi.fn(() => () => undefined)
+      }
+    });
+    const entries = [
+      {
+        id: 'first',
+        title: 'First entry',
+        duration: null,
+        url: parentUrl,
+        thumbnail: null,
+        selection: firstSelection,
+        selected: true
+      },
+      {
+        id: 'second',
+        title: 'Second entry',
+        duration: null,
+        url: parentUrl,
+        thumbnail: null,
+        selection: secondSelection,
+        selected: true
+      }
+    ];
+    context.state.playlistModal = {
+      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+      inspectionOperationId: 'playlist-operation',
+      url: parentUrl,
+      cookieConfig: null,
+      entries
+    };
+    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
+      if (command === 'begin_inspection') return { operationId: 'child-operation' };
+      if (command === 'add_inspection_result_to_queue') return { id: 'queue-two' };
+      return undefined;
+    });
+    context.waitForOperation.mockResolvedValueOnce(
+      operation(
+        { kind: 'video', video: { ...video(parentUrl), selection: secondSelection } },
+        'child-operation'
+      )
+    );
+
+    await context.workflow.addPlaylistSelection();
+
+    expect(context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')).toEqual(
+      [
+        [
+          'begin_inspection',
+          {
+            input: {
+              url: parentUrl,
+              cookieConfig: null,
+              compatConfigPath: null,
+              selection: secondSelection
+            }
+          }
+        ]
+      ]
+    );
+    expect(context.invoke).toHaveBeenCalledWith('add_inspection_result_to_queue', {
+      input: expect.objectContaining({ inspectionOperationId: 'child-operation' })
+    });
   });
 
   it('suppresses continuations and backend cleanup after disposal', async () => {

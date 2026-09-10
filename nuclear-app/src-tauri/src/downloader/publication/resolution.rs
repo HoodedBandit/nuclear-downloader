@@ -1,5 +1,6 @@
 use super::staging::is_reparse_metadata;
 use crate::downloader::command_args::FINAL_OUTPUT_RECORD_NAME;
+use crate::models::MediaSelection;
 use serde::Deserialize;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -16,6 +17,10 @@ thread_local! {
 struct FinalOutputRecord {
     schema_version: u8,
     filepath: String,
+    #[serde(default)]
+    id: Option<String>,
+    #[serde(default)]
+    extractor_key: Option<String>,
 }
 
 #[derive(Debug)]
@@ -69,12 +74,21 @@ fn validate_staged_file(path: &Path, staging_dir: &Path) -> Result<PathBuf, Stri
 
 pub(in crate::downloader) fn resolve_staged_output(
     staging_dir: &Path,
+    selection: Option<&MediaSelection>,
 ) -> Result<PathBuf, StagedOutputError> {
     let record_path = final_output_record_path(staging_dir);
     match std::fs::symlink_metadata(&record_path) {
-        Ok(metadata) => resolve_recorded_output(&record_path, &metadata, staging_dir),
+        Ok(metadata) => resolve_recorded_output(&record_path, &metadata, staging_dir, selection),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            resolve_unambiguous_fallback(staging_dir)
+            if selection.is_some() {
+                Err(StagedOutputError {
+                    code: "staging_output_record_invalid",
+                    message: "Selected media completed without an output identity record."
+                        .to_string(),
+                })
+            } else {
+                resolve_unambiguous_fallback(staging_dir)
+            }
         }
         Err(error) => Err(StagedOutputError {
             code: "staging_output_record_invalid",
@@ -87,6 +101,7 @@ pub(super) fn resolve_recorded_output(
     record_path: &Path,
     metadata: &std::fs::Metadata,
     staging_dir: &Path,
+    selection: Option<&MediaSelection>,
 ) -> Result<PathBuf, StagedOutputError> {
     if !metadata.file_type().is_file()
         || metadata.file_type().is_symlink()
@@ -190,6 +205,16 @@ pub(super) fn resolve_recorded_output(
             code: "staging_output_record_invalid",
             message: "Downloader output record did not contain a filepath.".to_string(),
         });
+    }
+    if let Some(selection) = selection {
+        if record.id.as_deref() != Some(selection.entry_id.as_str())
+            || record.extractor_key.as_deref() != Some(selection.extractor_key.as_str())
+        {
+            return Err(StagedOutputError {
+                code: "staging_output_identity_mismatch",
+                message: "Downloader output identity did not match the selected media.".to_string(),
+            });
+        }
     }
 
     validate_staged_file(Path::new(&record.filepath), staging_dir).map_err(|message| {

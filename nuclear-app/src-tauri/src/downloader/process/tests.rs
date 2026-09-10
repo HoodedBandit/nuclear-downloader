@@ -458,7 +458,7 @@ async fn supervised_process_stops_oversized_output_without_draining_producer() {
     let job = DownloadJob::new().unwrap();
     let child = spawn_powershell_fixture(
         &job,
-        "[Console]::Out.Write('x' * 70000); Start-Sleep -Seconds 30",
+        "[Console]::Out.Write('x' * 131073); Start-Sleep -Seconds 30",
     )
     .await;
 

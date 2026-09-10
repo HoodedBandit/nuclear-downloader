@@ -418,21 +418,6 @@ where
     }
 }
 
-pub(in crate::downloader) fn record_streamed_output_bytes(
-    total: &mut usize,
-    line_bytes: usize,
-    limit: usize,
-) -> Result<(), String> {
-    *total = total.saturating_add(line_bytes.saturating_add(1));
-    if *total > limit {
-        Err(format!(
-            "process_output_limit: inspection output exceeded the {limit}-byte limit"
-        ))
-    } else {
-        Ok(())
-    }
-}
-
 async fn read_stream_bounded<R>(mut reader: R, max_bytes: usize) -> Result<Vec<u8>, String>
 where
     R: AsyncRead + Unpin,
@@ -440,7 +425,6 @@ where
     let mut retained = Vec::new();
     let mut buffer = [0_u8; 8 * 1024];
     let mut total = 0usize;
-    let mut current_line = 0usize;
     loop {
         let read = reader
             .read(&mut buffer)
@@ -455,19 +439,9 @@ where
                 "process_output_limit: output exceeded the {max_bytes}-byte limit"
             ));
         }
-        for byte in &buffer[..read] {
-            if *byte == b'\n' {
-                current_line = 0;
-            } else {
-                current_line = current_line.saturating_add(1);
-                if current_line > MAX_PROCESS_LINE_BYTES {
-                    return Err(
-                        "process_output_limit: output contained a line larger than 64 KiB"
-                            .to_string(),
-                    );
-                }
-            }
-        }
+        // Captured JSON is one document and can legitimately exceed the line
+        // budget used by streamed progress readers. The caller's cumulative
+        // byte limit still bounds every read and retained allocation here.
         retained.extend_from_slice(&buffer[..read]);
     }
     Ok(retained)
@@ -638,4 +612,37 @@ pub(super) async fn wait_with_bounded_output_and_drain(
         stdout: stdout_result.unwrap_or_default(),
         stderr: stderr_result.unwrap_or_default(),
     })
+}
+
+#[cfg(test)]
+mod captured_output_tests {
+    use super::{read_bounded_line, read_stream_bounded, MAX_PROCESS_LINE_BYTES};
+
+    #[tokio::test]
+    async fn captured_json_can_exceed_progress_line_limit_within_aggregate_budget() {
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "entries": vec!["metadata"; MAX_PROCESS_LINE_BYTES / 4]
+        }))
+        .unwrap();
+        assert!(bytes.len() > MAX_PROCESS_LINE_BYTES);
+        assert_eq!(
+            read_stream_bounded(bytes.as_slice(), bytes.len())
+                .await
+                .unwrap(),
+            bytes
+        );
+        let error = read_stream_bounded(bytes.as_slice(), bytes.len() - 1)
+            .await
+            .unwrap_err();
+        assert!(error.starts_with("process_output_limit:"));
+    }
+
+    #[tokio::test]
+    async fn streamed_progress_still_rejects_an_oversized_line() {
+        let bytes = vec![b'x'; MAX_PROCESS_LINE_BYTES + 1];
+        let mut reader = bytes.as_slice();
+        assert!(read_bounded_line(&mut reader, MAX_PROCESS_LINE_BYTES)
+            .await
+            .is_err());
+    }
 }

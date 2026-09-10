@@ -2,6 +2,7 @@ import { latestOperationForItem, publishedOutputPath, isTerminalOperation } from
 import type { AppSnapshot } from './bindings/AppSnapshot';
 import type { OperationSnapshot } from './bindings/OperationSnapshot';
 import type { QueueItemRecord } from './bindings/QueueItemRecord';
+import type { MediaSelection } from './bindings/MediaSelection';
 import type { StateDelta } from './bindings/StateDelta';
 import { normalizeAppError, normalizeDownloadError } from './frontend-errors';
 import type {
@@ -10,6 +11,7 @@ import type {
   DownloadStatus,
   QueueItem
 } from './frontend-types';
+import { mediaIdentityKey, sameMediaIdentity } from './media-identity';
 import { audioFormats, supportedBrowsers, videoFormats } from './frontend-types';
 import type { WorkflowCommands } from './frontend-workflow-ports';
 import { reduceOperationProgress, shouldIgnoreOperationProgress } from './operation-reducer';
@@ -66,7 +68,7 @@ export function createQueuePresentationState(): QueuePresentationState {
 }
 
 export class QueuePresentationController {
-  private readonly metadataByUrl = new Map<string, RetainedMetadata[]>();
+  private readonly metadataByIdentity = new Map<string, RetainedMetadata[]>();
   private readonly displayUpdatedAt = new Map<string, { operationId: string; updatedAt: number }>();
   private filenameEditGeneration = 0;
 
@@ -81,28 +83,33 @@ export class QueuePresentationController {
 
   retainMetadata(
     url: string,
-    metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
+    metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>,
+    selection?: MediaSelection | null
   ): () => void {
+    const key = mediaIdentityKey({ url, selection });
     const entry: RetainedMetadata = {
       metadata,
       existingIds: new Set(
         this.state.backendSnapshot?.queue
-          .filter((record) => record.sourceUrl === url)
+          .filter(
+            (record) =>
+              mediaIdentityKey({ url: record.sourceUrl, selection: record.selection }) === key
+          )
           .map((record) => record.id) ?? []
       )
     };
-    const entries = this.metadataByUrl.get(url) ?? [];
+    const entries = this.metadataByIdentity.get(key) ?? [];
     entries.push(entry);
-    this.metadataByUrl.set(url, entries);
+    this.metadataByIdentity.set(key, entries);
     let retained = true;
     return () => {
       if (!retained) return;
       retained = false;
-      const current = this.metadataByUrl.get(url);
+      const current = this.metadataByIdentity.get(key);
       if (!current) return;
       const next = current.filter((candidate) => candidate !== entry);
-      if (next.length === 0) this.metadataByUrl.delete(url);
-      else this.metadataByUrl.set(url, next);
+      if (next.length === 0) this.metadataByIdentity.delete(key);
+      else this.metadataByIdentity.set(key, next);
     };
   }
 
@@ -185,7 +192,7 @@ export class QueuePresentationController {
     this.displayUpdatedAt.delete(id);
   }
   dispose(): void {
-    this.metadataByUrl.clear();
+    this.metadataByIdentity.clear();
     this.displayUpdatedAt.clear();
   }
   replaceItem(id: string, mapper: (item: QueueItem) => QueueItem): void {
@@ -380,6 +387,7 @@ export class QueuePresentationController {
       id: record.id,
       downloadId: operation && !isTerminalOperation(operation) ? operation.id : null,
       url: record.sourceUrl,
+      ...(record.selection ? { selection: record.selection } : {}),
       title: record.title,
       customFilename: record.filenameOverride,
       duration: existing?.duration ?? metadata?.duration ?? null,
@@ -422,12 +430,13 @@ export class QueuePresentationController {
   private claimMetadata(
     record: QueueItemRecord
   ): Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'> | undefined {
-    const entries = this.metadataByUrl.get(record.sourceUrl);
+    const key = mediaIdentityKey({ url: record.sourceUrl, selection: record.selection });
+    const entries = this.metadataByIdentity.get(key);
     if (!entries) return undefined;
     const index = entries.findIndex((entry) => !entry.existingIds.has(record.id));
     const entry = index === -1 ? undefined : entries.splice(index, 1)[0];
     for (const remaining of entries) remaining.existingIds.add(record.id);
-    if (entries.length === 0) this.metadataByUrl.delete(record.sourceUrl);
+    if (entries.length === 0) this.metadataByIdentity.delete(key);
     return entry?.metadata;
   }
 
@@ -577,7 +586,10 @@ function projectionRecordChanged(
 ): boolean {
   if (!previous) return true;
   return (
-    previous.sourceUrl !== next.sourceUrl ||
+    !sameMediaIdentity(
+      { url: previous.sourceUrl, selection: previous.selection },
+      { url: next.sourceUrl, selection: next.selection }
+    ) ||
     previous.title !== next.title ||
     previous.hasAudio !== next.hasAudio ||
     previous.format !== next.format ||

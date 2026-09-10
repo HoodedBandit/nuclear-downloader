@@ -217,6 +217,7 @@ mod tests {
             cookie_config: None,
             filename_override: None,
             compat_config_path: None,
+            selection: None,
         };
 
         assert_eq!(
@@ -235,6 +236,7 @@ mod tests {
             cookie_config: None,
             filename_override: Some("My custom clip".into()),
             compat_config_path: None,
+            selection: None,
         };
 
         assert_eq!(
@@ -253,6 +255,7 @@ mod tests {
             cookie_config: None,
             filename_override: Some("CON: 100%?".into()),
             compat_config_path: None,
+            selection: None,
         };
 
         assert_eq!(
@@ -284,6 +287,7 @@ mod tests {
             cookie_config: None,
             filename_override: Some("Clip: 100%?".into()),
             compat_config_path: None,
+            selection: None,
         };
 
         assert_eq!(

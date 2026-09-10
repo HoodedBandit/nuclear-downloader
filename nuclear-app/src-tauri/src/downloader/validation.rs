@@ -45,6 +45,9 @@ pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String
         request.cookie_config.as_ref(),
         request.compat_config_path.as_deref(),
     )?;
+    if let Some(selection) = &request.selection {
+        selection.validate()?;
+    }
 
     validate_actionable_input("output format", &request.format)?;
     validate_actionable_input("quality", &request.quality)?;
@@ -303,7 +306,7 @@ pub(super) fn is_x_or_twitter_url(raw: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{validate_download_request, validate_fetch_request, MAX_ACTIONABLE_FIELD_BYTES};
-    use crate::models::{CookieConfig, DownloadRequest};
+    use crate::models::{CookieConfig, DownloadRequest, MediaSelection};
 
     fn download_request(format: &str, quality: &str) -> DownloadRequest {
         DownloadRequest {
@@ -314,6 +317,7 @@ mod tests {
             cookie_config: None,
             filename_override: None,
             compat_config_path: None,
+            selection: None,
         }
     }
     #[test]
@@ -326,6 +330,7 @@ mod tests {
             cookie_config: None,
             filename_override: None,
             compat_config_path: None,
+            selection: None,
         };
 
         assert!(validate_download_request(&request).is_err());
@@ -341,7 +346,20 @@ mod tests {
             cookie_config: None,
             filename_override: None,
             compat_config_path: None,
+            selection: None,
         };
+
+        assert!(validate_download_request(&request).is_err());
+    }
+
+    #[test]
+    fn rejects_invalid_media_selection() {
+        let mut request = download_request("mp4", "best");
+        request.selection = Some(MediaSelection {
+            entry_id: "video-id".into(),
+            extractor_key: "Twitter\n".into(),
+            playlist_index: 1,
+        });
 
         assert!(validate_download_request(&request).is_err());
     }

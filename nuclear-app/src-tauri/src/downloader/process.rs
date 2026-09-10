@@ -34,9 +34,7 @@ const BELOW_NORMAL_PRIORITY_CLASS: u32 = 0x00004000;
 mod output;
 #[cfg(test)]
 use output::wait_with_bounded_output_and_drain;
-pub(super) use output::{
-    record_streamed_output_bytes, wait_with_bounded_output, wait_with_streamed_stdout,
-};
+pub(super) use output::{wait_with_bounded_output, wait_with_streamed_stdout};
 #[derive(Clone)]
 pub(crate) struct DownloadJob {
     supervisor: Arc<ProcessSupervisor>,

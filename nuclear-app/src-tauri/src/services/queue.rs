@@ -29,6 +29,7 @@ pub(crate) async fn add_inspection_result_to_queue(
             cookie_config: input.cookie_config.clone(),
             filename_override: input.filename_override.clone(),
             compat_config_path: input.compat_config_path.clone(),
+            selection: inspection.selection.clone(),
         };
         downloader::validate_download_request(&request).map_err(AppError::invalid)?;
         if !inspection.has_audio

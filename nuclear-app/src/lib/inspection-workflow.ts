@@ -11,6 +11,8 @@ import type {
 } from './frontend-types';
 import type { OperationWorkflow } from './frontend-workflow-ports';
 import { resolveAvailableFormat, resolveAvailableQuality } from './queue-logic';
+import type { MediaSelection } from './bindings/MediaSelection';
+import { mediaIdentityKey } from './media-identity';
 
 const PLAYLIST_PAGE_SIZE = 100;
 const INSPECTION_TIMEOUT_MS = 5 * 60 * 1000;
@@ -51,7 +53,8 @@ export interface InspectionQueuePort {
   getItems: () => readonly QueueItem[];
   retainMetadata: (
     url: string,
-    metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>
+    metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>,
+    selection?: MediaSelection | null
   ) => () => void;
 }
 
@@ -78,16 +81,23 @@ export class InspectionWorkflow {
     return this.dependencies.isActive();
   }
 
-  private queueUrls(): Set<string> {
-    return new Set(this.dependencies.queue.getItems().map((item) => item.url));
+  private queueIdentities(): Set<string> {
+    return new Set(this.dependencies.queue.getItems().map(mediaIdentityKey));
   }
 
   private async inspect(
     url: string,
-    cookieConfig: CookieConfig | null
+    cookieConfig: CookieConfig | null,
+    selection?: MediaSelection | null
   ): Promise<CompletedInspection> {
+    const input = {
+      url,
+      cookieConfig,
+      compatConfigPath: this.dependencies.readCompat(),
+      ...(selection ? { selection } : {})
+    };
     const result = await this.dependencies.invoke('begin_inspection', {
-      input: { url, cookieConfig, compatConfigPath: this.dependencies.readCompat() }
+      input
     });
     if (!this.active()) throw this.dependencies.unloadedError;
     this.state.activeInspectionId = result.operationId;
@@ -108,11 +118,11 @@ export class InspectionWorkflow {
     inspectionOperationId: string,
     cookieConfig: CookieConfig | null
   ): Promise<QueueItemRecord> {
-    const discardMetadata = this.dependencies.queue.retainMetadata(info.url, {
-      duration: info.duration,
-      channel: info.channel,
-      thumbnail: info.thumbnail
-    });
+    const discardMetadata = this.dependencies.queue.retainMetadata(
+      info.url,
+      { duration: info.duration, channel: info.channel, thumbnail: info.thumbnail },
+      info.selection
+    );
     const availableQualities = ['best', ...info.available_qualities];
     const settings = this.dependencies.getSettings();
     try {
@@ -165,7 +175,7 @@ export class InspectionWorkflow {
       this.state.urlError = 'Please enter a valid URL (must start with http:// or https://)';
       return;
     }
-    if (this.queueUrls().has(url)) {
+    if (this.queueIdentities().has(mediaIdentityKey({ url }))) {
       this.state.urlError = 'URL already in queue';
       return;
     }
@@ -273,7 +283,7 @@ export class InspectionWorkflow {
     const modal = this.state.playlistModal;
     if (!modal) return;
     const selectedEntries = modal.entries.filter((entry) => entry.selected);
-    const queuedUrls = this.queueUrls();
+    const queuedIdentities = this.queueIdentities();
     const cookieConfig = modal.cookieConfig ? { ...modal.cookieConfig } : null;
     this.state.urlInput = '';
     this.closePlaylist();
@@ -284,10 +294,18 @@ export class InspectionWorkflow {
     try {
       for (const entry of selectedEntries) {
         if (this.state.cancelRequested) break;
-        if (queuedUrls.has(entry.url)) continue;
+        const identity = mediaIdentityKey(entry);
+        if (queuedIdentities.has(identity)) continue;
         try {
-          const completed = await this.inspect(entry.url, cookieConfig);
+          const completed = await this.inspect(entry.url, cookieConfig, entry.selection);
           if (!this.active()) return;
+          if (this.state.cancelRequested) {
+            await this.dependencies.invoke('dismiss_operation', {
+              operationId: completed.operationId
+            });
+            if (!this.active()) return;
+            break;
+          }
           if (completed.inspection.kind !== 'video') {
             await this.dependencies.invoke('dismiss_operation', {
               operationId: completed.operationId
@@ -297,7 +315,7 @@ export class InspectionWorkflow {
           }
           await this.admit(completed.inspection.video, completed.operationId, cookieConfig);
           if (!this.active()) return;
-          queuedUrls.add(entry.url);
+          queuedIdentities.add(identity);
         } catch (error) {
           if (!this.active()) return;
           if (this.state.cancelRequested) break;

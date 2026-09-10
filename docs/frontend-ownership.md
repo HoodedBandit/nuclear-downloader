@@ -2,7 +2,7 @@
 
 This document assigns current production TypeScript and Svelte callables to responsibilities and workflows. The generated companion is [`frontend-source-inventory.json`](frontend-source-inventory.json).
 
-The compiler-backed inventory contains **418 callables across 31 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
+The compiler-backed inventory contains **420 callables across 32 production files**. Inclusion is discovery, not substantive review. Review requires inspecting the current span, callers, effects, ordering, cleanup, and workflow obligations. A source or callable-span change alters its SHA-256 identity and requires renewed review.
 
 ## Scope and method
 
@@ -29,14 +29,15 @@ The compiler-backed inventory contains **418 callables across 31 production file
 | `src/lib/frontend-errors.ts` | 3 | Preserve existing user-facing error normalization and diagnostic detail. | inspection, download, diagnostics |
 | `src/lib/frontend-types.ts` | 0 | Define shared renderer presentation types and existing format defaults. | queue, inspection, settings |
 | `src/lib/frontend-workflow-ports.ts` | 0 | Declare typed command, operation-wait, and lifetime dependencies. | ipc, startup, cancellation |
-| `src/lib/inspection-workflow.ts` | 21 | Own URL and playlist inspection, admission, cancellation, and their display state. | inspection, queue, cancellation |
+| `src/lib/inspection-workflow.ts` | 20 | Own URL and playlist inspection, admission, cancellation, and their display state. | inspection, queue, cancellation |
 | `src/lib/ipc-client.ts` | 5 | Provide the typed command and event boundary used by renderer workflows. | ipc, state-sync |
+| `src/lib/media-identity.ts` | 2 | Define stable queue identity from URL plus optional exact media selection. | inspection, queue, state-sync |
 | `src/lib/operation-reducer.ts` | 6 | Order and reduce operation progress without regressing terminal state. | download, cancellation, state-sync |
 | `src/lib/operation-wait-registry.ts` | 19 | Own bounded renderer waiters for operation completion and teardown. | download, cancellation, runtime-update, app-update |
 | `src/lib/page-lifetime.ts` | 6 | Own page resources and suppress callbacks after renderer disposal. | startup, state-sync, cancellation |
 | `src/lib/queue-actions.ts` | 30 | Own queue command ordering, optimistic cancellation, retries, and settings changes. | queue, download, cancellation |
 | `src/lib/queue-logic.ts` | 7 | Validate and derive queue, format, selection, and redacted display behavior. | queue, download, diagnostics |
-| `src/lib/queue-presentation.ts` | 77 | Own queue projection, progress presentation, selection, and filename drafts. | queue, download, state-sync |
+| `src/lib/queue-presentation.ts` | 78 | Own queue projection, progress presentation, selection, and filename drafts. | queue, download, state-sync |
 | `src/lib/runtime-workflow.ts` | 20 | Own runtime checks, repair/update workflows, and runtime presentation state. | startup, runtime-update |
 | `src/lib/settings-diagnostics-workflow.ts` | 20 | Own output/cookie settings and diagnostic export, clear, and copy workflows. | startup, settings, diagnostics |
 | `src/lib/startup-state.ts` | 6 | Derive startup readiness and subsystem recovery state. | startup, runtime-update |
@@ -49,7 +50,7 @@ The compiler-backed inventory contains **418 callables across 31 production file
 | Workflow | Primary owners | Review obligations |
 | --- | --- | --- |
 | Startup/state sync | `+page.svelte`, `app-state-controller.ts`, `state-reconciler.ts`, `startup-state.ts`, `ipc-client.ts` | Install listeners before reconciliation, recover gaps, reject stale deltas, and release resources. |
-| Inspection/admission | `inspection-workflow.ts`, `queue-presentation.ts`, `queue-logic.ts` | Preserve validation, captured settings, single-use cleanup, deduplication, paging, cancellation, and errors. |
+| Inspection/admission | `inspection-workflow.ts`, `media-identity.ts`, `queue-presentation.ts`, `queue-logic.ts` | Preserve validation, exact selected-media identity, captured settings, single-use cleanup, deduplication, paging, cancellation, and errors. |
 | Queue display/editing | `queue-presentation.ts`, `queue-actions.ts`, `backend-state.ts` | Preserve projection, throttling, selection, filenames, payloads, filters, and rollback. |
 | Download/cancellation | `queue-actions.ts`, `operation-reducer.ts`, `operation-wait-registry.ts`, `backend-state.ts` | Preserve priority, terminal precedence, published paths, timeout/disposal, and cancellation diagnostics. |
 | Runtime updates | `runtime-workflow.ts`, `startup-state.ts`, `operation-wait-registry.ts` | Preserve readiness, progress, retries, prompts, waiting, and startup callbacks. |
@@ -61,15 +62,15 @@ The compiler-backed inventory contains **418 callables across 31 production file
 
 | Classification | Count |
 | --- | ---: |
-| Function declarations | 81 |
-| Methods | 118 |
+| Function declarations | 83 |
+| Methods | 119 |
 | Constructors | 10 |
 | Getters | 2 |
 | Function-valued declarations/properties | 76 |
-| Synchronous callbacks | 108 |
+| Synchronous callbacks | 107 |
 | Async callbacks | 1 |
 | Markup callbacks | 22 |
-| **Total** | **418** |
+| **Total** | **420** |
 
 Regenerate from a frozen source tree before assigning reviewers. Evidence should identify the exact inventory `id`, `sourceHash`, and `spanHash`.
 

@@ -993,6 +993,7 @@ fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord> {
             output_dir: output_root.to_string_lossy().into_owned(),
             filename_override: Some(format!("phase5-{index:03}")),
             compat_config_path: None,
+            selection: None,
             state: QueueItemState::Inert,
             latest_operation_id: None,
             created_at_ms: 1_700_000_000_000 + index as u64,

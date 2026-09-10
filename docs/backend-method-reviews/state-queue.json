@@ -3504,64 +3504,62 @@
       "classification": "production",
       "file": "src/journal.rs",
       "line": 496,
-      "endLine": 616,
+      "endLine": 622,
       "symbol": "validate_journal_structure",
       "qualifiedName": "journal::validate_journal_structure",
       "signature": "fn validate_journal_structure( journal: &PersistentJournal, latest_reference_policy: LatestReferencePolicy, ) -> Result<(), AppError>",
-      "sourceDigest": "ebcc150201bc9e6a2995e6120155150be5976dd7cb02b28a24a0f1181fba1d3d",
+      "sourceDigest": "a03a053ffe5bde114a905ff4b7177033a56d54f745f095bd772e046046677597",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Validates schema versions, record limits, IDs, references, and pending-update proof.",
+      "purpose": "Validate journal schemas, bounds, identities, references, and persisted media selections.",
       "callers": [
-        "prepare_for_persistence",
-        "save_prepared",
-        "JournalStore::read"
+        "Journal open and pre-publication save validation."
       ],
       "inputs": [
-        "&PersistentJournal",
-        "LatestReferencePolicy"
+        "PersistentJournal and latest-reference policy."
       ],
-      "output": "Result<(), AppError>",
+      "output": "Unit on structurally valid journal.",
       "sideEffects": [
-        "allocates ID sets and parses UUID/semantic-version fields; constructs AppErrors on violations"
+        "Allocates ID sets only."
       ],
       "errors": [
-        "journal_migration_required or journal_corrupt with stable reason"
+        "Returns migration_required or journal_corrupt for invalid schema, bounds, UUIDs, duplicate/reference errors, pending update errors, or invalid selection."
       ],
       "ownership": [
-        "borrows journal; owns temporary HashSets only"
+        "Borrows journal; owns temporary HashSets."
       ],
       "locks": [
-        "none"
+        "No lock inside; callers hold journal publication/read context."
       ],
-      "cancellation": "synchronous validation has no await point",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "record counts, schemas, IDs, queue references, and pending update proof are consistent",
-        "AllowDangling is limited to pre-repair read boundary"
+        "No invalid MediaSelection can be loaded or republished; required latest references remain consistent with download operations."
       ],
       "tests": [
-        "invalid_prepared_journal_preserves_previous_published_bytes",
-        "count_retention_repairs_references_to_evicted_attempts",
-        "restart_normalization_and_retention_preserve_pending_app_update_proof"
+        "journal_validation_rejects_an_invalid_media_selection; schema_one_queue_record_defaults_a_missing_media_selection."
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/journal.rs:496-616 at cb616a1"
+        "Current source span src/journal.rs:496-622, digest a03a053ffe5bde114a905ff4b7177033a56d54f745f095bd772e046046677597.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
-      "destination": "src/journal.rs: retained journal validation, crypto, locking, and atomic-publication responsibility",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "destination": "src/journal.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Source-reviewed validate_journal_structure with platform cfg, resource ownership, lock scope, preservation behavior, and failure mapping recorded above."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "ebcc150201bc9e6a2995e6120155150be5976dd7cb02b28a24a0f1181fba1d3d",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/journal.rs::journal::acquire_journal_lock[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 618,
-      "endLine": 642,
+      "line": 624,
+      "endLine": 648,
       "symbol": "acquire_journal_lock",
       "qualifiedName": "journal::acquire_journal_lock",
       "signature": "fn acquire_journal_lock(journal_path: &Path) -> Result<fs::File, AppError>",
@@ -3613,8 +3611,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 645,
-      "endLine": 677,
+      "line": 651,
+      "endLine": 683,
       "symbol": "atomic_replace",
       "qualifiedName": "journal::atomic_replace",
       "signature": "fn atomic_replace(source: &Path, destination: &Path) -> std::io::Result<()>",
@@ -3668,8 +3666,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 652,
-      "endLine": 652,
+      "line": 658,
+      "endLine": 658,
       "symbol": "MoveFileExW",
       "qualifiedName": "journal::atomic_replace::local::MoveFileExW",
       "signature": "fn MoveFileExW(existing: *const u16, new: *const u16, flags: u32) -> i32",
@@ -3722,8 +3720,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 680,
-      "endLine": 682,
+      "line": 686,
+      "endLine": 688,
       "symbol": "atomic_replace",
       "qualifiedName": "journal::atomic_replace",
       "signature": "fn atomic_replace(source: &Path, destination: &Path) -> std::io::Result<()>",
@@ -3777,8 +3775,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 685,
-      "endLine": 687,
+      "line": 691,
+      "endLine": 693,
       "symbol": "protect_for_current_user",
       "qualifiedName": "journal::protect_for_current_user",
       "signature": "fn protect_for_current_user(plaintext: &[u8]) -> Result<Vec<u8>, AppError>",
@@ -3832,8 +3830,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 690,
-      "endLine": 692,
+      "line": 696,
+      "endLine": 698,
       "symbol": "unprotect_for_current_user",
       "qualifiedName": "journal::unprotect_for_current_user",
       "signature": "fn unprotect_for_current_user(ciphertext: &[u8]) -> Result<Vec<u8>, AppError>",
@@ -3886,8 +3884,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 695,
-      "endLine": 788,
+      "line": 701,
+      "endLine": 794,
       "symbol": "crypt_protect",
       "qualifiedName": "journal::crypt_protect",
       "signature": "fn crypt_protect(input: &[u8], decrypt: bool) -> Result<Vec<u8>, AppError>",
@@ -3944,8 +3942,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 705,
-      "endLine": 713,
+      "line": 711,
+      "endLine": 719,
       "symbol": "CryptProtectData",
       "qualifiedName": "journal::crypt_protect::local::CryptProtectData",
       "signature": "fn CryptProtectData( input: *const DataBlob, description: *const u16, entropy: *const DataBlob, reserved: *mut core::ffi::c_void, prompt: *const core::ffi::c_void, flags: u32, output: *mut DataBlob, ) -> i32",
@@ -3998,8 +3996,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 714,
-      "endLine": 722,
+      "line": 720,
+      "endLine": 728,
       "symbol": "CryptUnprotectData",
       "qualifiedName": "journal::crypt_protect::local::CryptUnprotectData",
       "signature": "fn CryptUnprotectData( input: *const DataBlob, description: *mut *mut u16, entropy: *const DataBlob, reserved: *mut core::ffi::c_void, prompt: *const core::ffi::c_void, flags: u32, output: *mut DataBlob, ) -> i32",
@@ -4052,8 +4050,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 726,
-      "endLine": 726,
+      "line": 732,
+      "endLine": 732,
       "symbol": "LocalFree",
       "qualifiedName": "journal::crypt_protect::local::LocalFree",
       "signature": "fn LocalFree(memory: *mut core::ffi::c_void) -> *mut core::ffi::c_void",
@@ -4106,8 +4104,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 791,
-      "endLine": 796,
+      "line": 797,
+      "endLine": 802,
       "symbol": "protect_for_current_user",
       "qualifiedName": "journal::protect_for_current_user",
       "signature": "fn protect_for_current_user(_plaintext: &[u8]) -> Result<Vec<u8>, AppError>",
@@ -4160,8 +4158,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 799,
-      "endLine": 804,
+      "line": 805,
+      "endLine": 810,
       "symbol": "unprotect_for_current_user",
       "qualifiedName": "journal::unprotect_for_current_user",
       "signature": "fn unprotect_for_current_user(_ciphertext: &[u8]) -> Result<Vec<u8>, AppError>",
@@ -4213,8 +4211,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/journal.rs",
-      "line": 806,
-      "endLine": 813,
+      "line": 812,
+      "endLine": 819,
       "symbol": "now_ms",
       "qualifiedName": "journal::now_ms",
       "signature": "pub fn now_ms() -> u64",
@@ -4705,11 +4703,11 @@
       "classification": "test_support",
       "file": "src/journal/tests.rs",
       "line": 100,
-      "endLine": 119,
+      "endLine": 120,
       "symbol": "queue_item",
       "qualifiedName": "journal::tests::queue_item",
       "signature": "fn queue_item(index: usize, latest_operation_id: Option<String>) -> QueueItemRecord",
-      "sourceDigest": "568b1c6f43c9feb480319553267823476137ed881db3afff5fc60aa210446455",
+      "sourceDigest": "c9fd88e9f0d418ca5e37d091f81cc1790c3c916955fa002a3c57b406a3d49fbd",
       "cfg": [
         "test"
       ],
@@ -4746,12 +4744,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/journal/tests.rs:100-119 at cb616a1"
+        "final src/journal/tests.rs:100-119 at cb616a1",
+        "Rereviewed current changed test span src/journal/tests.rs:100-120, digest c9fd88e9f0d418ca5e37d091f81cc1790c3c916955fa002a3c57b406a3d49fbd; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/journal/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Uses Windows-style output text as inert persisted metadata; no filesystem access."
     },
@@ -4760,8 +4759,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 122,
-      "endLine": 130,
+      "line": 123,
+      "endLine": 131,
       "symbol": "schema_one_journal_defaults_a_missing_pending_update_record",
       "qualifiedName": "journal::tests::schema_one_journal_defaults_a_missing_pending_update_record",
       "signature": "fn schema_one_journal_defaults_a_missing_pending_update_record()",
@@ -4815,8 +4814,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 133,
-      "endLine": 169,
+      "line": 163,
+      "endLine": 199,
       "symbol": "restart_normalization_and_retention_preserve_pending_app_update_proof",
       "qualifiedName": "journal::tests::restart_normalization_and_retention_preserve_pending_app_update_proof",
       "signature": "fn restart_normalization_and_retention_preserve_pending_app_update_proof()",
@@ -4871,8 +4870,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 172,
-      "endLine": 199,
+      "line": 202,
+      "endLine": 229,
       "symbol": "pruning_retains_active_and_only_recent_bounded_terminal_attempts",
       "qualifiedName": "journal::tests::pruning_retains_active_and_only_recent_bounded_terminal_attempts",
       "signature": "fn pruning_retains_active_and_only_recent_bounded_terminal_attempts()",
@@ -4927,8 +4926,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 202,
-      "endLine": 220,
+      "line": 232,
+      "endLine": 250,
       "symbol": "dismiss_repair_clears_a_dangling_latest_operation_reference",
       "qualifiedName": "journal::tests::dismiss_repair_clears_a_dangling_latest_operation_reference",
       "signature": "fn dismiss_repair_clears_a_dangling_latest_operation_reference()",
@@ -4982,8 +4981,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 223,
-      "endLine": 245,
+      "line": 253,
+      "endLine": 275,
       "symbol": "age_pruning_clears_only_the_reference_to_the_expired_attempt",
       "qualifiedName": "journal::tests::age_pruning_clears_only_the_reference_to_the_expired_attempt",
       "signature": "fn age_pruning_clears_only_the_reference_to_the_expired_attempt()",
@@ -5037,8 +5036,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 248,
-      "endLine": 275,
+      "line": 278,
+      "endLine": 305,
       "symbol": "count_retention_repairs_references_to_evicted_attempts",
       "qualifiedName": "journal::tests::count_retention_repairs_references_to_evicted_attempts",
       "signature": "fn count_retention_repairs_references_to_evicted_attempts()",
@@ -5093,8 +5092,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 278,
-      "endLine": 290,
+      "line": 308,
+      "endLine": 320,
       "symbol": "restart_converts_nonterminal_operations_to_interrupted",
       "qualifiedName": "journal::tests::restart_converts_nonterminal_operations_to_interrupted",
       "signature": "fn restart_converts_nonterminal_operations_to_interrupted()",
@@ -5149,12 +5148,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 293,
-      "endLine": 316,
+      "line": 323,
+      "endLine": 347,
       "symbol": "persistence_strips_large_transient_inspection_results",
       "qualifiedName": "journal::tests::persistence_strips_large_transient_inspection_results",
       "signature": "fn persistence_strips_large_transient_inspection_results()",
-      "sourceDigest": "339a4a0b77d63591cbb7ff323d01c8b6776d8e554a5309243ab7d4125b6a7814",
+      "sourceDigest": "0c101210be97488c1a940c535ea31ff49e520d1ba6366272cde16bd14d4c227c",
       "cfg": [
         "test"
       ],
@@ -5191,12 +5190,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/journal/tests.rs:293-316 at cb616a1"
+        "final src/journal/tests.rs:293-316 at cb616a1",
+        "Rereviewed current changed test span src/journal/tests.rs:323-347, digest 0c101210be97488c1a940c535ea31ff49e520d1ba6366272cde16bd14d4c227c; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/journal/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Filesystem-independent journal contract regression."
     },
@@ -5205,8 +5205,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 320,
-      "endLine": 347,
+      "line": 351,
+      "endLine": 378,
       "symbol": "oversized_save_preserves_the_previous_journal_and_removes_temporary_files",
       "qualifiedName": "journal::tests::oversized_save_preserves_the_previous_journal_and_removes_temporary_files",
       "signature": "fn oversized_save_preserves_the_previous_journal_and_removes_temporary_files()",
@@ -5266,8 +5266,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 351,
-      "endLine": 373,
+      "line": 382,
+      "endLine": 404,
       "symbol": "oversized_existing_journal_is_preserved_without_quarantine",
       "qualifiedName": "journal::tests::oversized_existing_journal_is_preserved_without_quarantine",
       "signature": "fn oversized_existing_journal_is_preserved_without_quarantine()",
@@ -5325,8 +5325,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 377,
-      "endLine": 388,
+      "line": 408,
+      "endLine": 419,
       "symbol": "journal_lock_rejects_a_concurrent_instance_and_releases_on_drop",
       "qualifiedName": "journal::tests::journal_lock_rejects_a_concurrent_instance_and_releases_on_drop",
       "signature": "fn journal_lock_rejects_a_concurrent_instance_and_releases_on_drop()",
@@ -5384,8 +5384,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 392,
-      "endLine": 418,
+      "line": 423,
+      "endLine": 449,
       "symbol": "damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
       "qualifiedName": "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
       "signature": "fn damaged_dpapi_ciphertext_is_quarantined_as_corrupt()",
@@ -5444,8 +5444,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 422,
-      "endLine": 441,
+      "line": 453,
+      "endLine": 472,
       "symbol": "stale_journal_revision_cannot_overwrite_a_newer_snapshot",
       "qualifiedName": "journal::tests::stale_journal_revision_cannot_overwrite_a_newer_snapshot",
       "signature": "fn stale_journal_revision_cannot_overwrite_a_newer_snapshot()",
@@ -5501,8 +5501,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 445,
-      "endLine": 475,
+      "line": 476,
+      "endLine": 506,
       "symbol": "dangling_latest_reference_is_repaired_once_and_persisted",
       "qualifiedName": "journal::tests::dangling_latest_reference_is_repaired_once_and_persisted",
       "signature": "fn dangling_latest_reference_is_repaired_once_and_persisted()",
@@ -5562,8 +5562,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 479,
-      "endLine": 519,
+      "line": 510,
+      "endLine": 550,
       "symbol": "invalid_prepared_journal_preserves_previous_published_bytes",
       "qualifiedName": "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes",
       "signature": "fn invalid_prepared_journal_preserves_previous_published_bytes()",
@@ -5621,8 +5621,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 522,
-      "endLine": 541,
+      "line": 553,
+      "endLine": 572,
       "symbol": "structural_validation_rejects_duplicate_operation_ids",
       "qualifiedName": "journal::tests::structural_validation_rejects_duplicate_operation_ids",
       "signature": "fn structural_validation_rejects_duplicate_operation_ids()",
@@ -5675,8 +5675,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 545,
-      "endLine": 569,
+      "line": 576,
+      "endLine": 600,
       "symbol": "future_schema_fails_closed_without_quarantining_the_journal",
       "qualifiedName": "journal::tests::future_schema_fails_closed_without_quarantining_the_journal",
       "signature": "fn future_schema_fails_closed_without_quarantining_the_journal()",
@@ -5735,8 +5735,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 573,
-      "endLine": 597,
+      "line": 604,
+      "endLine": 628,
       "symbol": "future_record_schema_is_preserved_before_decoding_its_shape",
       "qualifiedName": "journal::tests::future_record_schema_is_preserved_before_decoding_its_shape",
       "signature": "fn future_record_schema_is_preserved_before_decoding_its_shape()",
@@ -5793,8 +5793,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/journal/tests.rs",
-      "line": 601,
-      "endLine": 613,
+      "line": 632,
+      "endLine": 644,
       "symbol": "malformed_encrypted_json_is_quarantined",
       "qualifiedName": "journal::tests::malformed_encrypted_json_is_quarantined",
       "signature": "fn malformed_encrypted_json_is_quarantined()",
@@ -5852,8 +5852,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 190,
-      "endLine": 195,
+      "line": 238,
+      "endLine": 243,
       "symbol": "is_editable",
       "qualifiedName": "models::impl QueueItemState::is_editable",
       "signature": "pub fn is_editable(self) -> bool",
@@ -5904,8 +5904,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 225,
-      "endLine": 230,
+      "line": 273,
+      "endLine": 278,
       "symbol": "is_terminal",
       "qualifiedName": "models::impl OperationState::is_terminal",
       "signature": "pub fn is_terminal(self) -> bool",
@@ -5956,61 +5956,63 @@
       "kind": "method",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 311,
-      "endLine": 321,
+      "line": 362,
+      "endLine": 373,
       "symbol": "to_download_request",
       "qualifiedName": "models::impl QueueItemRecord::to_download_request",
       "signature": "pub fn to_download_request(&self) -> DownloadRequest",
-      "sourceDigest": "560059bb3a6430eb5ddbab6eb45d65c03f0a6daf3442df704c9d0aba9114fdd2",
+      "sourceDigest": "b9bc3b5230a44e43012214f6532c91590f6d53f81ba943cc472a5bb715796786",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Projects persisted queue configuration into the downloader engine request contract.",
+      "purpose": "Rehydrate a queued record into the exact retry download request.",
       "callers": [
-        "services::queue update validation",
-        "scheduling/download worker request construction"
+        "StateStore retry/start mapping."
       ],
       "inputs": [
-        "borrowed persisted QueueItemRecord"
+        "Borrowed persisted QueueItemRecord."
       ],
       "output": "Owned DownloadRequest.",
       "sideEffects": [
-        "clones downloader-relevant strings and optional cookie metadata into a new request"
+        "None."
       ],
       "errors": [
-        "none; infallible classification/projection"
+        "No local error; upstream journal validation protects stored selection."
       ],
       "ownership": [
-        "returns an independent owned DownloadRequest; retains no borrow"
+        "Clones persisted request fields including MediaSelection."
       ],
       "locks": [
-        "none"
+        "None."
       ],
-      "cancellation": "Synchronous method with no await or cancellation point.",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "source URL, selected quality/format/output, cookie selector, filename override, and compatibility path are preserved",
-        "queue state/history fields are omitted"
+        "Retry preserves the original selected id, extractor, and ordinal rather than rediscovering or dropping selection."
       ],
       "tests": [
-        "static-only: no exact named behavioral test is claimed for this callable"
+        "distinct_media_selections_survive_queue_persistence_and_retry_mapping."
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/models.rs:311-321 at cb616a1"
+        "Current source span src/models.rs:362-373, digest b9bc3b5230a44e43012214f6532c91590f6d53f81ba943cc472a5bb715796786.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
       "destination": "src/models.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "The method copies metadata only; cookie contents are never stored in QueueItemRecord."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "560059bb3a6430eb5ddbab6eb45d65c03f0a6daf3442df704c9d0aba9114fdd2",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/models.rs::impl<'de> Deserialize<'de> for UpdateQueueItemInput[trait-impl,cfg=all]",
       "kind": "trait_impl",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 432,
-      "endLine": 455,
+      "line": 484,
+      "endLine": 507,
       "symbol": "impl<'de> Deserialize<'de> for UpdateQueueItemInput",
       "qualifiedName": "impl<'de> Deserialize<'de> for UpdateQueueItemInput",
       "signature": "impl<'de> Deserialize<'de> for UpdateQueueItemInput",
@@ -6060,8 +6062,8 @@
       "kind": "trait_method",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 433,
-      "endLine": 454,
+      "line": 485,
+      "endLine": 506,
       "symbol": "deserialize",
       "qualifiedName": "models::impl<'de> Deserialize<'de> for UpdateQueueItemInput::deserialize",
       "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de>,",
@@ -6114,8 +6116,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/models.rs",
-      "line": 457,
-      "endLine": 463,
+      "line": 509,
+      "endLine": 515,
       "symbol": "deserialize_double_option",
       "qualifiedName": "models::deserialize_double_option",
       "signature": "fn deserialize_double_option<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error> where D: Deserializer<'de>, T: Deserialize<'de>,",
@@ -6167,8 +6169,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/models/tests.rs",
-      "line": 5,
-      "endLine": 15,
+      "line": 88,
+      "endLine": 98,
       "symbol": "update_filename_distinguishes_missing_null_and_value",
       "qualifiedName": "models::tests::update_filename_distinguishes_missing_null_and_value",
       "signature": "fn update_filename_distinguishes_missing_null_and_value()",
@@ -6221,8 +6223,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/models/tests.rs",
-      "line": 18,
-      "endLine": 51,
+      "line": 101,
+      "endLine": 134,
       "symbol": "serialized_optional_output_fields_are_present_as_null",
       "qualifiedName": "models::tests::serialized_optional_output_fields_are_present_as_null",
       "signature": "fn serialized_optional_output_fields_are_present_as_null()",
@@ -6276,8 +6278,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/models/tests.rs",
-      "line": 54,
-      "endLine": 86,
+      "line": 137,
+      "endLine": 169,
       "symbol": "schema_one_snapshots_default_new_persistence_fields",
       "qualifiedName": "models::tests::schema_one_snapshots_default_new_persistence_fields",
       "signature": "fn schema_one_snapshots_default_new_persistence_fields()",
@@ -6330,8 +6332,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/models/tests.rs",
-      "line": 88,
-      "endLine": 97,
+      "line": 171,
+      "endLine": 180,
       "symbol": "assert_committed_binding",
       "qualifiedName": "models::tests::assert_committed_binding",
       "signature": "fn assert_committed_binding<T: TS + 'static>(committed: &str)",
@@ -6386,12 +6388,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/models/tests.rs",
-      "line": 113,
-      "endLine": 151,
+      "line": 196,
+      "endLine": 235,
       "symbol": "committed_typescript_bindings_match_every_public_contract",
       "qualifiedName": "models::tests::committed_typescript_bindings_match_every_public_contract",
       "signature": "fn committed_typescript_bindings_match_every_public_contract()",
-      "sourceDigest": "56e98a5047503b15a67d1188d3a1bc7bc041861d8c63301e89f77e3feb052e9c",
+      "sourceDigest": "c9a0c63aa174c8671ab5716604767c962efe66d60bde315de6d9a6d1a8b5e7fc",
       "cfg": [
         "test"
       ],
@@ -6427,12 +6429,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/models/tests.rs:113-151 at cb616a1"
+        "final src/models/tests.rs:113-151 at cb616a1",
+        "Rereviewed current changed test span src/models/tests.rs:196-235, digest c9a0c63aa174c8671ab5716604767c962efe66d60bde315de6d9a6d1a8b5e7fc; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/models/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Focused public serialization/binding compatibility regression."
     },
@@ -7789,70 +7792,62 @@
       "classification": "production",
       "file": "src/state/queue.rs",
       "line": 18,
-      "endLine": 77,
+      "endLine": 81,
       "symbol": "add_queue_item",
       "qualifiedName": "state::queue::impl StateStore::add_queue_item",
       "signature": "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
-      "sourceDigest": "110b96ecfd3deb027e4cb77d39b8c07f88cdfda090849aec8af540335b5ee040",
+      "sourceDigest": "4243ef656992da8fd27a89b65af084b41a3ffc505d2b270d827c6f87d60a6989",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Consumes a completed video inspection and durably creates an inert queue item.",
+      "purpose": "Persist a normalized inspected video as a new queue item.",
       "callers": [
-        "lib.rs::add_queue_item tracked admission workflow"
+        "services::queue::add_inspection_result_to_queue."
       ],
       "inputs": [
-        "&self",
-        "input"
+        "VideoInfo plus format/quality/output/cookie/filename/config settings."
       ],
-      "output": "Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
+      "output": "Added item and committed StateDelta.",
       "sideEffects": [
-        "validates and mutates an isolated candidate for: Consumes a completed video inspection and durably creates an inert queue item",
-        "may flush prior dirty/degraded state and prune retained history",
-        "persists encrypted journal, installs live candidate, then enqueues ordered authoritative deltas"
+        "Builds QueueItemRecord with a UUID and selection, validates normalized inspection/action fields, commits journal revision, and returns public item plus delta."
       ],
       "errors": [
-        "method-specific validation/not-found/busy errors before commit",
-        "journal preparation/crypto/write/sync/publication or live-state lock errors from commit"
+        "Returns validation, capacity, or persistence errors without partial publication."
       ],
       "ownership": [
-        "caller owns inputs until candidate construction; detached commit task owns candidate, deltas, and mutation guard through save/install/outbox",
-        "StateStore remains authoritative owner after installation"
+        "Commit closure owns new record values; StateStore owns durable journal after commit."
       ],
       "locks": [
-        "OwnedMutexGuard on mutation_gate is acquired before candidate creation and transferred to detached commit task",
-        "live state mutex is brief during candidate clone and installation; no live lock across disk I/O",
-        "JournalStore persisted_revision mutex is held by blocking save worker"
+        "Serialized commit path owns state lock/publication."
       ],
-      "cancellation": "before detached commit spawn, cancellation drops the gate with no live mutation; after spawn, commit task continues save/install/outbox despite caller abandonment",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "global sequence is monotonic",
-        "state installation precedes authoritative outbox visibility",
-        "Consumes a completed video inspection and durably creates an inert queue item"
+        "The optional selection is copied from inspected VideoInfo and participates in persisted retry identity."
       ],
       "tests": [
-        "queue_add_consumes_only_authoritative_completed_video_inspections",
-        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
-        "queued_operation_blocks_maintenance_before_worker_registration"
+        "distinct_media_selections_survive_queue_persistence_and_retry_mapping; inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected."
       ],
       "findingStatus": "none",
       "evidence": [
-        "Stage 5 extraction verifier records one exact normalized copy of the former src/state.rs method span in the child module and no copy in another assembled file (target/internal-cleanup-stage5/state-drafts/assembled/equivalence.json).",
-        "Post-application focused state::tests receipt: 35 passed, 0 failed, 272 filtered (target/internal-cleanup-stage5/state-tests.log)."
+        "Current source span src/state/queue.rs:18-81, digest 4243ef656992da8fd27a89b65af084b41a3ffc505d2b270d827c6f87d60a6989.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
-      "destination": "src/state/queue.rs: retained with impl StateStore::add_queue_item responsibility",
-      "reviewer": "root_ledger; root",
-      "reviewedAt": "2026-09-09T09:07:51Z",
+      "destination": "src/state/queue.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Source-reviewed durable facade path for impl StateStore::add_queue_item; candidate isolation, detached guard ownership, save/install/outbox order, and post-commit notifications are recorded explicitly. Stage 5 moved queue, operation, and maintenance responsibilities into private child modules; the accepted callable contract is unchanged."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "110b96ecfd3deb027e4cb77d39b8c07f88cdfda090849aec8af540335b5ee040",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/state/queue.rs::state::queue::impl StateStore::completed_inspection_video[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 79,
-      "endLine": 82,
+      "line": 83,
+      "endLine": 86,
       "symbol": "completed_inspection_video",
       "qualifiedName": "state::queue::impl StateStore::completed_inspection_video",
       "signature": "pub fn completed_inspection_video(&self, operation_id: &str) -> Result<VideoInfo, AppError>",
@@ -7904,8 +7899,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 84,
-      "endLine": 130,
+      "line": 88,
+      "endLine": 134,
       "symbol": "update_queue_item",
       "qualifiedName": "state::queue::impl StateStore::update_queue_item",
       "signature": "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>",
@@ -7971,8 +7966,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 132,
-      "endLine": 192,
+      "line": 136,
+      "endLine": 196,
       "symbol": "remove_queue_items",
       "qualifiedName": "state::queue::impl StateStore::remove_queue_items",
       "signature": "pub async fn remove_queue_items(&self, ids: &[String]) -> Result<Vec<StateDelta>, AppError>",
@@ -8035,8 +8030,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 194,
-      "endLine": 287,
+      "line": 198,
+      "endLine": 291,
       "symbol": "enqueue",
       "qualifiedName": "state::queue::impl StateStore::enqueue",
       "signature": "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
@@ -8894,8 +8889,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 289,
-      "endLine": 293,
+      "line": 293,
+      "endLine": 297,
       "symbol": "pending_operation_ids",
       "qualifiedName": "state::queue::impl StateStore::pending_operation_ids",
       "signature": "pub fn pending_operation_ids(&self) -> Vec<String>",
@@ -8948,8 +8943,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 295,
-      "endLine": 308,
+      "line": 299,
+      "endLine": 312,
       "symbol": "wait_pending_available",
       "qualifiedName": "state::queue::impl StateStore::wait_pending_available",
       "signature": "pub async fn wait_pending_available(&self)",
@@ -9001,8 +8996,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 310,
-      "endLine": 333,
+      "line": 314,
+      "endLine": 337,
       "symbol": "take_next_pending",
       "qualifiedName": "state::queue::impl StateStore::take_next_pending",
       "signature": "pub async fn take_next_pending(&self) -> Option<QueuedDownload>",
@@ -9054,8 +9049,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 335,
-      "endLine": 345,
+      "line": 339,
+      "endLine": 349,
       "symbol": "cancel_pending",
       "qualifiedName": "state::queue::impl StateStore::cancel_pending",
       "signature": "pub async fn cancel_pending(&self, operation_id: &str) -> bool",
@@ -9214,8 +9209,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/state/queue.rs",
-      "line": 347,
-      "endLine": 359,
+      "line": 351,
+      "endLine": 363,
       "symbol": "journaled_output_roots",
       "qualifiedName": "state::queue::impl StateStore::journaled_output_roots",
       "signature": "pub fn journaled_output_roots(&self) -> Vec<String>",
@@ -10918,52 +10913,54 @@
       "classification": "production",
       "file": "src/state/data.rs",
       "line": 125,
-      "endLine": 171,
+      "endLine": 183,
       "symbol": "estimate_inspection_allocation",
       "qualifiedName": "state::data::estimate_inspection_allocation",
       "signature": "pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usize",
-      "sourceDigest": "db7e132e79065fd2c8a2a76d0b10b7564a0e8f593dbd0ad9de65b5dee8721211",
+      "sourceDigest": "cfeaf92368a391490d8c02858a50afef2d50c0f222ece434ecf72251c0858992",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Conservatively estimates unique heap retention for an inspection payload.",
+      "purpose": "Estimate retained heap cost of an inspection result including media-selection strings.",
       "callers": [
-        "InspectionRetentionBudget::retain",
-        "outbox operation byte estimator"
+        "State snapshot/allocation accounting."
       ],
       "inputs": [
-        "&UrlInspection"
+        "Borrowed UrlInspection."
       ],
-      "output": "usize conservative retained allocation estimate",
+      "output": "Saturating byte estimate.",
       "sideEffects": [
-        "none"
+        "None."
       ],
       "errors": [
-        "none; uses saturating arithmetic where aggregate terms may overflow"
+        "None."
       ],
       "ownership": [
-        "borrows inspection and does not clone/retain it"
+        "Borrow only."
       ],
       "locks": [
-        "none"
+        "None."
       ],
-      "cancellation": "synchronous estimate has no await point",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "counts String capacities and Vec element storage, including empty quality/playlist records"
+        "Selection entry_id/extractor capacity contributes to the estimate for videos and playlist entries."
       ],
       "tests": [
-        "many_empty_quality_records_are_counted_by_the_inspection_budget",
-        "inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected"
+        "large_inspection."
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/data.rs:125-171 at cb616a1"
+        "Current source span src/state/data.rs:125-183, digest cfeaf92368a391490d8c02858a50afef2d50c0f222ece434ecf72251c0858992.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
-      "disposition": "move",
+      "disposition": "keep",
       "destination": "src/state/data.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Source-reviewed after extraction; this helper performs no persistence I/O, and any clock read or AppError correlation-ID construction is explicitly recorded."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "db7e132e79065fd2c8a2a76d0b10b7564a0e8f593dbd0ad9de65b5dee8721211",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/state/reducers.rs::state::reducers::apply_operation_transition[cfg=all]",
@@ -11207,64 +11204,62 @@
       "classification": "production",
       "file": "src/state/reducers.rs",
       "line": 131,
-      "endLine": 176,
+      "endLine": 182,
       "symbol": "normalize_inspection",
       "qualifiedName": "state::reducers::normalize_inspection",
       "signature": "pub(super) fn normalize_inspection( mut inspection: UrlInspection, ) -> Result<UrlInspection, AppError>",
-      "sourceDigest": "37cdab17f47255b586041e4038d6a2a8b5d2b2dcfec7091930a714a89c02a920",
+      "sourceDigest": "5839518a06752e8a476af2a6161a7c611a425b18c997bc60acbacd46358ff44c",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Normalizes inspection metadata before allocation accounting and durable completion.",
+      "purpose": "Normalize bounded display fields while preserving validated action identity.",
       "callers": [
-        "StateStore::complete_inspection"
+        "StateStore::add_queue_item."
       ],
       "inputs": [
-        "owned UrlInspection"
+        "Owned VideoInfo."
       ],
-      "output": "Result<UrlInspection, AppError>.",
+      "output": "Normalized VideoInfo.",
       "sideEffects": [
-        "validates actionable IDs/URLs/quality/thumbnail fields",
-        "truncates display titles/channels at UTF-8 boundary",
-        "shrinks String and Vec capacities",
-        "may construct field_too_large AppError with UUID"
+        "Truncates display text/qualities and returns normalized structure."
       ],
       "errors": [
-        "field_too_large when a retained actionable ID, URL, thumbnail, or quality label exceeds 4 KiB"
+        "Rejects invalid URL or MediaSelection rather than truncating action fields."
       ],
       "ownership": [
-        "mutates and returns the same owned inspection allocation before Arc retention"
+        "Consumes and returns owned VideoInfo."
       ],
       "locks": [
-        "none"
+        "None."
       ],
-      "cancellation": "Synchronous normalization before inspection-budget lock.",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "actionable data is rejected rather than truncated",
-        "display-only data may be truncated",
-        "retained capacities are compacted to prevent hidden allocation excess"
+        "Human-facing fields may be UTF-8 safely truncated; selection identity is validated exactly and never truncated."
       ],
       "tests": [
-        "inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected",
-        "many_empty_quality_records_are_counted_by_the_inspection_budget"
+        "inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected."
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/reducers.rs:131-176 at cb616a1"
+        "Current source span src/state/reducers.rs:131-182, digest 5839518a06752e8a476af2a6161a7c611a425b18c997bc60acbacd46358ff44c.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
-      "disposition": "move",
+      "disposition": "keep",
       "destination": "src/state/reducers.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Video and playlist variants normalize every nested retained string/vector explicitly."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "37cdab17f47255b586041e4038d6a2a8b5d2b2dcfec7091930a714a89c02a920",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/state/reducers.rs::state::reducers::validate_actionable_field[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 178,
-      "endLine": 187,
+      "line": 184,
+      "endLine": 193,
       "symbol": "validate_actionable_field",
       "qualifiedName": "state::reducers::validate_actionable_field",
       "signature": "pub(super) fn validate_actionable_field(name: &str, value: &str) -> Result<(), AppError>",
@@ -11319,8 +11314,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 189,
-      "endLine": 194,
+      "line": 195,
+      "endLine": 200,
       "symbol": "validate_optional_actionable_field",
       "qualifiedName": "state::reducers::validate_optional_actionable_field",
       "signature": "pub(super) fn validate_optional_actionable_field( name: &str, value: Option<&str>, ) -> Result<(), AppError>",
@@ -11374,8 +11369,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 196,
-      "endLine": 203,
+      "line": 202,
+      "endLine": 209,
       "symbol": "validate_cookie_config",
       "qualifiedName": "state::reducers::validate_cookie_config",
       "signature": "pub(super) fn validate_cookie_config(config: Option<&CookieConfig>) -> Result<(), AppError>",
@@ -11427,8 +11422,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 205,
-      "endLine": 214,
+      "line": 211,
+      "endLine": 220,
       "symbol": "truncate_display_field",
       "qualifiedName": "state::reducers::truncate_display_field",
       "signature": "pub(super) fn truncate_display_field(value: &mut String)",
@@ -11481,8 +11476,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 216,
-      "endLine": 218,
+      "line": 222,
+      "endLine": 224,
       "symbol": "shrink_string",
       "qualifiedName": "state::reducers::shrink_string",
       "signature": "fn shrink_string(value: &mut String)",
@@ -11534,8 +11529,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 220,
-      "endLine": 222,
+      "line": 226,
+      "endLine": 228,
       "symbol": "compact_vec",
       "qualifiedName": "state::reducers::compact_vec",
       "signature": "fn compact_vec<T>(value: &mut Vec<T>)",
@@ -11586,8 +11581,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 224,
-      "endLine": 234,
+      "line": 230,
+      "endLine": 240,
       "symbol": "pending_download_available",
       "qualifiedName": "state::reducers::pending_download_available",
       "signature": "pub(super) fn pending_download_available(state: &StateData) -> bool",
@@ -11639,8 +11634,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 236,
-      "endLine": 269,
+      "line": 242,
+      "endLine": 275,
       "symbol": "authoritative_inspection_video",
       "qualifiedName": "state::reducers::authoritative_inspection_video",
       "signature": "pub(super) fn authoritative_inspection_video( state: &StateData, operation_id: &str, ) -> Result<VideoInfo, AppError>",
@@ -11697,8 +11692,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 271,
-      "endLine": 290,
+      "line": 277,
+      "endLine": 296,
       "symbol": "ensure_operation_capacity",
       "qualifiedName": "state::reducers::ensure_operation_capacity",
       "signature": "pub(super) fn ensure_operation_capacity( state: &StateData, additional: usize, limit: usize, ) -> Result<(), AppError>",
@@ -11755,8 +11750,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 292,
-      "endLine": 350,
+      "line": 298,
+      "endLine": 356,
       "symbol": "prune_live_operations",
       "qualifiedName": "state::reducers::prune_live_operations",
       "signature": "pub(super) fn prune_live_operations(state: &mut StateData, now: u64) -> Vec<StateDelta>",
@@ -11812,8 +11807,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 352,
-      "endLine": 360,
+      "line": 358,
+      "endLine": 366,
       "symbol": "next_delta",
       "qualifiedName": "state::reducers::next_delta",
       "signature": "pub(super) fn next_delta(state: &mut StateData, delta: StateDeltaValue) -> StateDelta",
@@ -11869,8 +11864,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/state/reducers.rs",
-      "line": 362,
-      "endLine": 377,
+      "line": 368,
+      "endLine": 383,
       "symbol": "next_operation_delta",
       "qualifiedName": "state::reducers::next_operation_delta",
       "signature": "pub(super) fn next_operation_delta( state: &mut StateData, mut operation: OperationSnapshot, ) -> StateDelta",
@@ -12642,11 +12637,11 @@
       "classification": "test_support",
       "file": "src/state/tests.rs",
       "line": 109,
-      "endLine": 120,
+      "endLine": 121,
       "symbol": "video",
       "qualifiedName": "state::tests::video",
       "signature": "fn video(index: usize) -> VideoInfo",
-      "sourceDigest": "fee0859acf1dadb3000ed8679d50b9405f14108ba47b055c33e0b8d111f8ad00",
+      "sourceDigest": "781f38a849d7ac749045068527c211a5d53cbf77a1c445b5806e4237f8eddd80",
       "cfg": [
         "test"
       ],
@@ -12684,12 +12679,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:109-120 at cb616a1"
+        "final src/state/tests.rs:109-120 at cb616a1",
+        "Rereviewed current changed test span src/state/tests.rs:109-121, digest 781f38a849d7ac749045068527c211a5d53cbf77a1c445b5806e4237f8eddd80; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Shared fixture with explicit construction effects."
     },
@@ -12698,12 +12694,12 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/state/tests.rs",
-      "line": 122,
-      "endLine": 143,
+      "line": 123,
+      "endLine": 145,
       "symbol": "large_inspection",
       "qualifiedName": "state::tests::large_inspection",
       "signature": "fn large_inspection() -> UrlInspection",
-      "sourceDigest": "e33856a1cd019f83f72eaac2fc8ec9d6a3dc655a3577ab925b11cd43ee5c2f21",
+      "sourceDigest": "b5408d1a57908a90817c285e16d753599b4c3974f8ba3f1b553cade8107d0adc",
       "cfg": [
         "test"
       ],
@@ -12738,12 +12734,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:122-143 at cb616a1"
+        "final src/state/tests.rs:122-143 at cb616a1",
+        "Rereviewed current changed test span src/state/tests.rs:123-145, digest b5408d1a57908a90817c285e16d753599b4c3974f8ba3f1b553cade8107d0adc; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Shared fixture with explicit construction effects."
     },
@@ -12752,8 +12749,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/state/tests.rs",
-      "line": 145,
-      "endLine": 155,
+      "line": 147,
+      "endLine": 157,
       "symbol": "input",
       "qualifiedName": "state::tests::input",
       "signature": "fn input(inspection_operation_id: String) -> AddQueueItemInput",
@@ -12806,8 +12803,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/state/tests.rs",
-      "line": 157,
-      "endLine": 178,
+      "line": 159,
+      "endLine": 180,
       "symbol": "add_item",
       "qualifiedName": "state::tests::add_item",
       "signature": "async fn add_item( store: &StateStore, index: usize, ) -> ( crate::models::QueueItemRecord, Vec<crate::models::StateDelta>, )",
@@ -12862,8 +12859,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 181,
-      "endLine": 191,
+      "line": 183,
+      "endLine": 193,
       "symbol": "sequence_is_monotonic_and_snapshot_reports_latest",
       "qualifiedName": "state::tests::sequence_is_monotonic_and_snapshot_reports_latest",
       "signature": "async fn sequence_is_monotonic_and_snapshot_reports_latest()",
@@ -12921,8 +12918,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 194,
-      "endLine": 291,
+      "line": 196,
+      "endLine": 293,
       "symbol": "queue_add_consumes_only_authoritative_completed_video_inspections",
       "qualifiedName": "state::tests::queue_add_consumes_only_authoritative_completed_video_inspections",
       "signature": "async fn queue_add_consumes_only_authoritative_completed_video_inspections()",
@@ -12982,8 +12979,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 294,
-      "endLine": 312,
+      "line": 296,
+      "endLine": 314,
       "symbol": "retry_preserves_item_identity_and_creates_a_new_attempt",
       "qualifiedName": "state::tests::retry_preserves_item_identity_and_creates_a_new_attempt",
       "signature": "async fn retry_preserves_item_identity_and_creates_a_new_attempt()",
@@ -13041,8 +13038,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 315,
-      "endLine": 331,
+      "line": 317,
+      "endLine": 333,
       "symbol": "active_items_cannot_be_edited_or_removed",
       "qualifiedName": "state::tests::active_items_cannot_be_edited_or_removed",
       "signature": "async fn active_items_cannot_be_edited_or_removed()",
@@ -13099,8 +13096,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 334,
-      "endLine": 364,
+      "line": 336,
+      "endLine": 366,
       "symbol": "failed_durable_mutations_roll_back_memory_and_pending_work",
       "qualifiedName": "state::tests::failed_durable_mutations_roll_back_memory_and_pending_work",
       "signature": "async fn failed_durable_mutations_roll_back_memory_and_pending_work()",
@@ -13161,8 +13158,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 368,
-      "endLine": 407,
+      "line": 370,
+      "endLine": 409,
       "symbol": "removal_detaches_terminal_history_and_reopens_without_quarantine",
       "qualifiedName": "state::tests::removal_detaches_terminal_history_and_reopens_without_quarantine",
       "signature": "async fn removal_detaches_terminal_history_and_reopens_without_quarantine()",
@@ -13226,8 +13223,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 411,
-      "endLine": 437,
+      "line": 413,
+      "endLine": 439,
       "symbol": "first_mutation_after_high_revision_restart_is_persisted",
       "qualifiedName": "state::tests::first_mutation_after_high_revision_restart_is_persisted",
       "signature": "async fn first_mutation_after_high_revision_restart_is_persisted()",
@@ -13289,8 +13286,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 440,
-      "endLine": 448,
+      "line": 508,
+      "endLine": 516,
       "symbol": "front_priority_is_single_row_only",
       "qualifiedName": "state::tests::front_priority_is_single_row_only",
       "signature": "async fn front_priority_is_single_row_only()",
@@ -13347,8 +13344,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 451,
-      "endLine": 477,
+      "line": 519,
+      "endLine": 545,
       "symbol": "front_priority_is_next_after_the_five_admitted_rows",
       "qualifiedName": "state::tests::front_priority_is_next_after_the_five_admitted_rows",
       "signature": "async fn front_priority_is_next_after_the_five_admitted_rows()",
@@ -13408,8 +13405,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 480,
-      "endLine": 529,
+      "line": 548,
+      "endLine": 597,
       "symbol": "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
       "qualifiedName": "state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work",
       "signature": "async fn pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work()",
@@ -13467,12 +13464,12 @@
       "notes": "Focused StateStore contract regression; native reopen/DPAPI evidence applies only where cfg(windows)."
     },
     {
-      "id": "src/state/tests.rs::state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work::owned_async_closure#1@513[cfg=test]",
+      "id": "src/state/tests.rs::state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work::owned_async_closure#1@581[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 513,
-      "endLine": 515,
+      "line": 581,
+      "endLine": 583,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work::owned_async_closure#1",
       "signature": "async move",
@@ -13511,12 +13508,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:513-515 at cb616a1"
+        "final src/state/tests.rs:513-515 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:581-583 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
@@ -13525,8 +13523,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 532,
-      "endLine": 565,
+      "line": 600,
+      "endLine": 633,
       "symbol": "maintenance_operation_is_registered_in_the_same_state_transition",
       "qualifiedName": "state::tests::maintenance_operation_is_registered_in_the_same_state_transition",
       "signature": "async fn maintenance_operation_is_registered_in_the_same_state_transition()",
@@ -13587,8 +13585,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 568,
-      "endLine": 607,
+      "line": 636,
+      "endLine": 675,
       "symbol": "maintenance_operation_accepts_a_preregistered_unique_uuid",
       "qualifiedName": "state::tests::maintenance_operation_accepts_a_preregistered_unique_uuid",
       "signature": "async fn maintenance_operation_accepts_a_preregistered_unique_uuid()",
@@ -13648,8 +13646,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 610,
-      "endLine": 637,
+      "line": 678,
+      "endLine": 705,
       "symbol": "app_update_handoff_does_not_launch_from_an_unpersisted_marker",
       "qualifiedName": "state::tests::app_update_handoff_does_not_launch_from_an_unpersisted_marker",
       "signature": "async fn app_update_handoff_does_not_launch_from_an_unpersisted_marker()",
@@ -13709,8 +13707,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 640,
-      "endLine": 694,
+      "line": 708,
+      "endLine": 762,
       "symbol": "degraded_app_update_finalization_clears_and_flushes_the_pending_handoff",
       "qualifiedName": "state::tests::degraded_app_update_finalization_clears_and_flushes_the_pending_handoff",
       "signature": "async fn degraded_app_update_finalization_clears_and_flushes_the_pending_handoff()",
@@ -13773,8 +13771,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 698,
-      "endLine": 769,
+      "line": 766,
+      "endLine": 837,
       "symbol": "app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
       "qualifiedName": "state::tests::app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
       "signature": "async fn app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent()",
@@ -13838,8 +13836,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 773,
-      "endLine": 817,
+      "line": 841,
+      "endLine": 885,
       "symbol": "app_update_handoff_mismatch_becomes_retryable_interruption",
       "qualifiedName": "state::tests::app_update_handoff_mismatch_becomes_retryable_interruption",
       "signature": "async fn app_update_handoff_mismatch_becomes_retryable_interruption()",
@@ -13901,8 +13899,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 820,
-      "endLine": 834,
+      "line": 888,
+      "endLine": 902,
       "symbol": "queued_operation_blocks_maintenance_before_worker_registration",
       "qualifiedName": "state::tests::queued_operation_blocks_maintenance_before_worker_registration",
       "signature": "async fn queued_operation_blocks_maintenance_before_worker_registration()",
@@ -13959,8 +13957,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 837,
-      "endLine": 858,
+      "line": 905,
+      "endLine": 926,
       "symbol": "cancelled_maintenance_operation_cannot_start_after_cancellation",
       "qualifiedName": "state::tests::cancelled_maintenance_operation_cannot_start_after_cancellation",
       "signature": "async fn cancelled_maintenance_operation_cannot_start_after_cancellation()",
@@ -14021,8 +14019,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 861,
-      "endLine": 906,
+      "line": 929,
+      "endLine": 974,
       "symbol": "cancellation_cannot_regress_or_complete_from_late_progress",
       "qualifiedName": "state::tests::cancellation_cannot_regress_or_complete_from_late_progress",
       "signature": "async fn cancellation_cannot_regress_or_complete_from_late_progress()",
@@ -14081,8 +14079,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 909,
-      "endLine": 932,
+      "line": 977,
+      "endLine": 1000,
       "symbol": "cancellation_waiter_resolves_only_after_terminal_transition",
       "qualifiedName": "state::tests::cancellation_waiter_resolves_only_after_terminal_transition",
       "signature": "async fn cancellation_waiter_resolves_only_after_terminal_transition()",
@@ -14137,12 +14135,12 @@
       "notes": "Focused StateStore contract regression; native reopen/DPAPI evidence applies only where cfg(windows)."
     },
     {
-      "id": "src/state/tests.rs::state::tests::cancellation_waiter_resolves_only_after_terminal_transition::owned_async_closure#1@919[cfg=test]",
+      "id": "src/state/tests.rs::state::tests::cancellation_waiter_resolves_only_after_terminal_transition::owned_async_closure#1@987[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 919,
-      "endLine": 925,
+      "line": 987,
+      "endLine": 993,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "state::tests::cancellation_waiter_resolves_only_after_terminal_transition::owned_async_closure#1",
       "signature": "async move",
@@ -14181,12 +14179,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:919-925 at cb616a1"
+        "final src/state/tests.rs:919-925 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:987-993 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
@@ -14195,8 +14194,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 935,
-      "endLine": 956,
+      "line": 1003,
+      "endLine": 1024,
       "symbol": "cancelling_inspection_cannot_be_completed",
       "qualifiedName": "state::tests::cancelling_inspection_cannot_be_completed",
       "signature": "async fn cancelling_inspection_cannot_be_completed()",
@@ -14254,8 +14253,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 959,
-      "endLine": 989,
+      "line": 1027,
+      "endLine": 1057,
       "symbol": "terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
       "qualifiedName": "state::tests::terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas",
       "signature": "async fn terminal_operations_are_pruned_from_live_snapshots_with_removal_deltas()",
@@ -14313,8 +14312,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 992,
-      "endLine": 1015,
+      "line": 1060,
+      "endLine": 1083,
       "symbol": "concurrent_operation_admission_never_exceeds_the_limit",
       "qualifiedName": "state::tests::concurrent_operation_admission_never_exceeds_the_limit",
       "signature": "async fn concurrent_operation_admission_never_exceeds_the_limit()",
@@ -14369,12 +14368,12 @@
       "notes": "Focused StateStore contract regression; native reopen/DPAPI evidence applies only where cfg(windows)."
     },
     {
-      "id": "src/state/tests.rs::state::tests::concurrent_operation_admission_never_exceeds_the_limit::owned_async_closure#1@999[cfg=test]",
+      "id": "src/state/tests.rs::state::tests::concurrent_operation_admission_never_exceeds_the_limit::owned_async_closure#1@1067[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 999,
-      "endLine": 1004,
+      "line": 1067,
+      "endLine": 1072,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "state::tests::concurrent_operation_admission_never_exceeds_the_limit::owned_async_closure#1",
       "signature": "async move",
@@ -14413,12 +14412,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:999-1004 at cb616a1"
+        "final src/state/tests.rs:999-1004 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:1067-1072 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
@@ -14427,8 +14427,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1018,
-      "endLine": 1062,
+      "line": 1086,
+      "endLine": 1130,
       "symbol": "published_download_completion_wins_a_late_cancellation",
       "qualifiedName": "state::tests::published_download_completion_wins_a_late_cancellation",
       "signature": "async fn published_download_completion_wins_a_late_cancellation()",
@@ -14487,8 +14487,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1065,
-      "endLine": 1085,
+      "line": 1133,
+      "endLine": 1153,
       "symbol": "transient_terminal_save_failure_is_retried_before_completion_is_acknowledged",
       "qualifiedName": "state::tests::transient_terminal_save_failure_is_retried_before_completion_is_acknowledged",
       "signature": "async fn transient_terminal_save_failure_is_retried_before_completion_is_acknowledged()",
@@ -14548,8 +14548,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1088,
-      "endLine": 1176,
+      "line": 1156,
+      "endLine": 1244,
       "symbol": "exhausted_terminal_save_retries_retain_recovery_intent_until_the_next_commit",
       "qualifiedName": "state::tests::exhausted_terminal_save_retries_retain_recovery_intent_until_the_next_commit",
       "signature": "async fn exhausted_terminal_save_retries_retain_recovery_intent_until_the_next_commit()",
@@ -14610,8 +14610,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1179,
-      "endLine": 1240,
+      "line": 1247,
+      "endLine": 1308,
       "symbol": "failed_finalizer_task_installs_a_degraded_terminal_compensation",
       "qualifiedName": "state::tests::failed_finalizer_task_installs_a_degraded_terminal_compensation",
       "signature": "async fn failed_finalizer_task_installs_a_degraded_terminal_compensation()",
@@ -14675,8 +14675,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1243,
-      "endLine": 1312,
+      "line": 1311,
+      "endLine": 1380,
       "symbol": "abandoned_caller_cannot_abandon_a_panicked_owned_finalizer",
       "qualifiedName": "state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer",
       "signature": "async fn abandoned_caller_cannot_abandon_a_panicked_owned_finalizer()",
@@ -14729,12 +14729,12 @@
       "notes": "Current source reviewed after final extraction."
     },
     {
-      "id": "src/state/tests.rs::state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer::owned_async_closure#1@1258[cfg=test]",
+      "id": "src/state/tests.rs::state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer::owned_async_closure#1@1326[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1258,
-      "endLine": 1267,
+      "line": 1326,
+      "endLine": 1335,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer::owned_async_closure#1",
       "signature": "async move",
@@ -14773,12 +14773,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:1258-1267 at cb616a1"
+        "final src/state/tests.rs:1258-1267 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:1326-1335 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Current source reviewed after final extraction."
     },
@@ -14787,8 +14788,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1316,
-      "endLine": 1405,
+      "line": 1384,
+      "endLine": 1473,
       "symbol": "failure_after_save_advances_compensation_past_the_persisted_candidate_revision",
       "qualifiedName": "state::tests::failure_after_save_advances_compensation_past_the_persisted_candidate_revision",
       "signature": "async fn failure_after_save_advances_compensation_past_the_persisted_candidate_revision()",
@@ -14852,8 +14853,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1409,
-      "endLine": 1465,
+      "line": 1477,
+      "endLine": 1533,
       "symbol": "detached_commit_keeps_the_gate_until_save_and_swap_finish",
       "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish",
       "signature": "async fn detached_commit_keeps_the_gate_until_save_and_swap_finish()",
@@ -14914,12 +14915,12 @@
       "notes": "Focused StateStore contract regression; native reopen/DPAPI evidence applies only where cfg(windows)."
     },
     {
-      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#1@1419[cfg=test,windows]",
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#1@1487[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1419,
-      "endLine": 1429,
+      "line": 1487,
+      "endLine": 1497,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#1",
       "signature": "async move",
@@ -14959,22 +14960,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:1419-1429 at cb616a1"
+        "final src/state/tests.rs:1419-1429 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:1487-1497 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
     {
-      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#2@1434[cfg=test,windows]",
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#2@1502[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1434,
-      "endLine": 1438,
+      "line": 1502,
+      "endLine": 1506,
       "symbol": "owned_async_closure#2",
       "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#2",
       "signature": "async move",
@@ -15014,22 +15016,23 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:1434-1438 at cb616a1"
+        "final src/state/tests.rs:1434-1438 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:1502-1506 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
     {
-      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#3@1441[cfg=test,windows]",
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#3@1509[cfg=test,windows]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1441,
-      "endLine": 1451,
+      "line": 1509,
+      "endLine": 1519,
       "symbol": "owned_async_closure#3",
       "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#3",
       "signature": "async move",
@@ -15069,12 +15072,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:1441-1451 at cb616a1"
+        "final src/state/tests.rs:1441-1451 at cb616a1",
+        "Digest-identical context remapped to current span src/state/tests.rs:1509-1519 during the typed-selection inventory refresh."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Closure ownership is recorded separately from its enclosing test."
     },
@@ -15083,8 +15087,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1468,
-      "endLine": 1496,
+      "line": 1536,
+      "endLine": 1564,
       "symbol": "inspection_budget_counts_payloads_retained_only_by_the_outbox",
       "qualifiedName": "state::tests::inspection_budget_counts_payloads_retained_only_by_the_outbox",
       "signature": "async fn inspection_budget_counts_payloads_retained_only_by_the_outbox()",
@@ -15146,8 +15150,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1499,
-      "endLine": 1529,
+      "line": 1567,
+      "endLine": 1597,
       "symbol": "inspection_budget_counts_payloads_retained_by_a_snapshot",
       "qualifiedName": "state::tests::inspection_budget_counts_payloads_retained_by_a_snapshot",
       "signature": "async fn inspection_budget_counts_payloads_retained_by_a_snapshot()",
@@ -15211,12 +15215,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1532,
-      "endLine": 1586,
+      "line": 1600,
+      "endLine": 1679,
       "symbol": "inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected",
       "qualifiedName": "state::tests::inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected",
       "signature": "async fn inspection_display_fields_are_utf8_safely_truncated_and_action_fields_rejected()",
-      "sourceDigest": "6119a3adfe130fa643bc43f30ccb36126486332f126dbae345dca237ce94e44d",
+      "sourceDigest": "8dc32b2fb113ff641de2154166d9a4a2e72ef3d27d050143c2914e93136bfec0",
       "cfg": [
         "test"
       ],
@@ -15259,12 +15263,13 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "final src/state/tests.rs:1532-1586 at cb616a1"
+        "final src/state/tests.rs:1532-1586 at cb616a1",
+        "Rereviewed current changed test span src/state/tests.rs:1600-1679, digest 8dc32b2fb113ff641de2154166d9a4a2e72ef3d27d050143c2914e93136bfec0; existing scenario ownership and assertions remain applicable with typed selection fixtures."
       ],
       "disposition": "test_only",
       "destination": "src/state/tests.rs",
-      "reviewer": "state_queue_review",
-      "reviewedAt": "2026-09-09T01:31:59Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Focused StateStore contract regression; native reopen/DPAPI evidence applies only where cfg(windows)."
     },
@@ -15273,8 +15278,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1589,
-      "endLine": 1612,
+      "line": 1682,
+      "endLine": 1705,
       "symbol": "many_empty_quality_records_are_counted_by_the_inspection_budget",
       "qualifiedName": "state::tests::many_empty_quality_records_are_counted_by_the_inspection_budget",
       "signature": "async fn many_empty_quality_records_are_counted_by_the_inspection_budget()",
@@ -15333,8 +15338,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/state/tests.rs",
-      "line": 1615,
-      "endLine": 1637,
+      "line": 1708,
+      "endLine": 1730,
       "symbol": "operation_failure_log_uses_snapshot_correlation_and_redacts_detail",
       "qualifiedName": "state::tests::operation_failure_log_uses_snapshot_correlation_and_redacts_detail",
       "signature": "async fn operation_failure_log_uses_snapshot_correlation_and_redacts_detail()",
@@ -16085,6 +16090,555 @@
       "reviewedAt": "2026-09-09T01:31:59Z",
       "status": "reviewed",
       "notes": "Closure row records ownership distinct from its enclosing regression."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::schema_one_queue_record_defaults_a_missing_media_selection[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/journal/tests.rs",
+      "line": 134,
+      "endLine": 141,
+      "symbol": "schema_one_queue_record_defaults_a_missing_media_selection",
+      "qualifiedName": "journal::tests::schema_one_queue_record_defaults_a_missing_media_selection",
+      "signature": "fn schema_one_queue_record_defaults_a_missing_media_selection()",
+      "sourceDigest": "59f1ca9ac5c376dd48d74af35b951dcf2dfb2e8abaee44f1d4c2789feeb5f442",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario schema one queue record defaults a missing media selection remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "journal::tests::schema_one_queue_record_defaults_a_missing_media_selection"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:134-141, digest 59f1ca9ac5c376dd48d74af35b951dcf2dfb2e8abaee44f1d4c2789feeb5f442.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: schema one queue record defaults a missing media selection.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::journal_validation_rejects_an_invalid_media_selection[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/journal/tests.rs",
+      "line": 144,
+      "endLine": 160,
+      "symbol": "journal_validation_rejects_an_invalid_media_selection",
+      "qualifiedName": "journal::tests::journal_validation_rejects_an_invalid_media_selection",
+      "signature": "fn journal_validation_rejects_an_invalid_media_selection()",
+      "sourceDigest": "8f535ae4e6441af8577c8fb962620be92c293f218e43e02a5679cf3f06d862c3",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario journal validation rejects an invalid media selection remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "journal::tests::journal_validation_rejects_an_invalid_media_selection"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:144-160, digest 8f535ae4e6441af8577c8fb962620be92c293f218e43e02a5679cf3f06d862c3.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: journal validation rejects an invalid media selection.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models.rs::models::impl MediaSelection::validate[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/models.rs",
+      "line": 23,
+      "endLine": 46,
+      "symbol": "validate",
+      "qualifiedName": "models::impl MediaSelection::validate",
+      "signature": "pub fn validate(&self) -> Result<(), String>",
+      "sourceDigest": "430513f15e36356f3c596b805dad915005abda69588347eb892a74976dd387ab",
+      "cfg": [],
+      "callers": [
+        "inspection, download-request validation, journal validation, and tests."
+      ],
+      "inputs": [
+        "entry_id, extractor_key, and one-based playlist_index."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Rejects zero or above-1000 indexes, blank/control-character identity fields, and fields above 4096 bytes."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "A valid selector is bounded, nonblank, control-free, and within the discovery ordinal range."
+      ],
+      "tests": [
+        "media_selection_accepts_the_complete_valid_range; media_selection_rejects_out_of_range_indexes; media_selection_rejects_invalid_entry_ids_and_extractor_keys; media_selection_rejects_fields_over_four_kibibytes."
+      ],
+      "evidence": [
+        "Current source span src/models.rs:23-46, digest 430513f15e36356f3c596b805dad915005abda69588347eb892a74976dd387ab.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Validate an exact playlist replay identity.",
+      "output": "Unit on success.",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::valid_media_selection[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/models/tests.rs",
+      "line": 4,
+      "endLine": 10,
+      "symbol": "valid_media_selection",
+      "qualifiedName": "models::tests::valid_media_selection",
+      "signature": "fn valid_media_selection() -> MediaSelection",
+      "sourceDigest": "a08c8c6423b8ff5a32829afa80825e7fcd58505e7701c7bc13f0064905198997",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario valid media selection remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::valid_media_selection"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:4-10, digest a08c8c6423b8ff5a32829afa80825e7fcd58505e7701c7bc13f0064905198997.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: valid media selection.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::media_selection_accepts_the_complete_valid_range[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 13,
+      "endLine": 22,
+      "symbol": "media_selection_accepts_the_complete_valid_range",
+      "qualifiedName": "models::tests::media_selection_accepts_the_complete_valid_range",
+      "signature": "fn media_selection_accepts_the_complete_valid_range()",
+      "sourceDigest": "8b26c1b566bced3a05fddd6554af91995a51a9bd70c433601d9cc02322a6533b",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario media selection accepts the complete valid range remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::media_selection_accepts_the_complete_valid_range"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:13-22, digest 8b26c1b566bced3a05fddd6554af91995a51a9bd70c433601d9cc02322a6533b.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: media selection accepts the complete valid range.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::media_selection_rejects_out_of_range_indexes[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 25,
+      "endLine": 32,
+      "symbol": "media_selection_rejects_out_of_range_indexes",
+      "qualifiedName": "models::tests::media_selection_rejects_out_of_range_indexes",
+      "signature": "fn media_selection_rejects_out_of_range_indexes()",
+      "sourceDigest": "ba59039395c123abd086645d36840d7876ef2311944a64c8b8413914735d2561",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario media selection rejects out of range indexes remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::media_selection_rejects_out_of_range_indexes"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:25-32, digest ba59039395c123abd086645d36840d7876ef2311944a64c8b8413914735d2561.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: media selection rejects out of range indexes.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::media_selection_rejects_invalid_entry_ids_and_extractor_keys[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 35,
+      "endLine": 54,
+      "symbol": "media_selection_rejects_invalid_entry_ids_and_extractor_keys",
+      "qualifiedName": "models::tests::media_selection_rejects_invalid_entry_ids_and_extractor_keys",
+      "signature": "fn media_selection_rejects_invalid_entry_ids_and_extractor_keys()",
+      "sourceDigest": "cf321dd41e2fb68479d0219be74ed540ac7d87b2ef1e1867a6512037e26ec363",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario media selection rejects invalid entry ids and extractor keys remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::media_selection_rejects_invalid_entry_ids_and_extractor_keys"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:35-54, digest cf321dd41e2fb68479d0219be74ed540ac7d87b2ef1e1867a6512037e26ec363.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: media selection rejects invalid entry ids and extractor keys.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::media_selection_rejects_fields_over_four_kibibytes[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 57,
+      "endLine": 65,
+      "symbol": "media_selection_rejects_fields_over_four_kibibytes",
+      "qualifiedName": "models::tests::media_selection_rejects_fields_over_four_kibibytes",
+      "signature": "fn media_selection_rejects_fields_over_four_kibibytes()",
+      "sourceDigest": "1341f70314a2656516b76455c58d20c8b37ac9aa0fa73a686a9fadb45f6d3ac8",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario media selection rejects fields over four kibibytes remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::media_selection_rejects_fields_over_four_kibibytes"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:57-65, digest 1341f70314a2656516b76455c58d20c8b37ac9aa0fa73a686a9fadb45f6d3ac8.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: media selection rejects fields over four kibibytes.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::begin_inspection_defaults_missing_or_null_selection_to_none[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 68,
+      "endLine": 85,
+      "symbol": "begin_inspection_defaults_missing_or_null_selection_to_none",
+      "qualifiedName": "models::tests::begin_inspection_defaults_missing_or_null_selection_to_none",
+      "signature": "fn begin_inspection_defaults_missing_or_null_selection_to_none()",
+      "sourceDigest": "6c3b29e18b63c0f1c9ca4663e07daea28acab1aef458008151842e66cad5b63a",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario begin inspection defaults missing or null selection to none remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "models::tests::begin_inspection_defaults_missing_or_null_selection_to_none"
+      ],
+      "evidence": [
+        "Current source span src/models/tests.rs:68-85, digest 6c3b29e18b63c0f1c9ca4663e07daea28acab1aef458008151842e66cad5b63a.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: begin inspection defaults missing or null selection to none.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::distinct_media_selections_survive_queue_persistence_and_retry_mapping[cfg=test,windows]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 443,
+      "endLine": 505,
+      "symbol": "distinct_media_selections_survive_queue_persistence_and_retry_mapping",
+      "qualifiedName": "state::tests::distinct_media_selections_survive_queue_persistence_and_retry_mapping",
+      "signature": "async fn distinct_media_selections_survive_queue_persistence_and_retry_mapping()",
+      "sourceDigest": "7329f9ad98c306af4e7472b2a7cc0c9659f19ac4e9b07ebc37e9d56b9fd0e60b",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "callers": [
+        "Rust test harness or the lexically enclosing named test."
+      ],
+      "inputs": [
+        "Deterministic fixtures and values constructed in this test body."
+      ],
+      "sideEffects": [
+        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+      ],
+      "errors": [
+        "Panics on an unmet assertion or fixture/setup failure."
+      ],
+      "ownership": [
+        "The test or enclosing async task owns its fixtures and releases them at scope end."
+      ],
+      "locks": [
+        "Only synchronization explicitly constructed by this test or delegated production code."
+      ],
+      "invariants": [
+        "The scenario distinct media selections survive queue persistence and retry mapping remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+      ],
+      "tests": [
+        "state::tests::distinct_media_selections_survive_queue_persistence_and_retry_mapping"
+      ],
+      "evidence": [
+        "Current source span src/state/tests.rs:443-505, digest 7329f9ad98c306af4e7472b2a7cc0c9659f19ac4e9b07ebc37e9d56b9fd0e60b.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+      ],
+      "purpose": "Provide or verify the concrete regression scenario: distinct media selections survive queue persistence and retry mapping.",
+      "output": "Unit after assertions.",
+      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     }
   ]
 }

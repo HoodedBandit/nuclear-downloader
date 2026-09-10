@@ -4,8 +4,8 @@ use super::{
     MAX_TERMINAL_ATTEMPTS, TERMINAL_RETENTION_MS,
 };
 use crate::models::{
-    OperationKind, OperationSnapshot, OperationState, PendingAppUpdateRecovery, QueueItemRecord,
-    QueueItemState, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
+    MediaSelection, OperationKind, OperationSnapshot, OperationState, PendingAppUpdateRecovery,
+    QueueItemRecord, QueueItemState, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
 };
 use std::io::Read;
 use std::sync::atomic::Ordering;
@@ -111,6 +111,7 @@ fn queue_item(index: usize, latest_operation_id: Option<String>) -> QueueItemRec
         output_dir: "C:\\Downloads".to_string(),
         filename_override: None,
         compat_config_path: None,
+        selection: None,
         state: QueueItemState::Completed,
         latest_operation_id,
         created_at_ms: 1,
@@ -127,6 +128,35 @@ fn schema_one_journal_defaults_a_missing_pending_update_record() {
 
     assert!(journal.pending_app_update.is_none());
     assert_eq!(journal.schema_version, APP_SCHEMA_VERSION);
+}
+
+#[test]
+fn schema_one_queue_record_defaults_a_missing_media_selection() {
+    let mut value = serde_json::to_value(queue_item(1, None)).unwrap();
+    value.as_object_mut().unwrap().remove("selection");
+
+    let item: QueueItemRecord = serde_json::from_value(value).unwrap();
+
+    assert!(item.selection.is_none());
+}
+
+#[test]
+fn journal_validation_rejects_an_invalid_media_selection() {
+    let mut item = queue_item(1, None);
+    item.selection = Some(MediaSelection {
+        entry_id: "video-id".into(),
+        extractor_key: "Twitter".into(),
+        playlist_index: 0,
+    });
+    let journal = PersistentJournal {
+        queue: vec![item],
+        ..PersistentJournal::default()
+    };
+
+    let error = super::validate_journal_structure(&journal, LatestReferencePolicy::RequirePresent)
+        .unwrap_err();
+
+    assert_eq!(error.code, "journal_corrupt");
 }
 
 #[test]
@@ -304,6 +334,7 @@ fn persistence_strips_large_transient_inspection_results() {
             url: "https://example.com/video".to_string(),
             available_qualities: vec!["720p".to_string()],
             has_audio: true,
+            selection: None,
         },
     }));
     journal.operations.push(completed);

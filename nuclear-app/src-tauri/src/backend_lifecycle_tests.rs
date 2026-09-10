@@ -137,6 +137,7 @@ async fn rejected_inspection_metadata_finishes_the_registered_operation() {
                 url: format!("https://fixture.invalid/{}", "x".repeat(4096)),
                 available_qualities: vec!["720p".into()],
                 has_audio: true,
+                selection: None,
             },
         })),
     )
@@ -319,6 +320,7 @@ pub(crate) async fn fixture(store: &StateStore, root: &std::path::Path) -> Queue
                     url: "https://example.com/fixture".into(),
                     available_qualities: vec!["720p".into()],
                     has_audio: true,
+                    selection: None,
                 },
             },
         )

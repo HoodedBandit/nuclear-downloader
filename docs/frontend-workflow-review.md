@@ -16,6 +16,14 @@ Stage 3 moved the large workflow implementations out of `+page.svelte` while ret
 
 Shared contracts now live in `frontend-types.ts`, `frontend-errors.ts`, and `frontend-workflow-ports.ts`. Existing reducers, wait registries, backend derivations, startup state, and IPC typing retain their lower-level ownership.
 
+The typed-selection follow-up adds `media-identity.ts` as the single owner of
+queue identity for a URL plus optional media id, extractor key, and playlist
+ordinal. Inspection and queue presentation use that identity so two embedded
+clips sharing one parent URL remain distinct through admission and projection.
+`inspection-workflow.ts` also rechecks playlist cancellation after a child
+inspection resolves and before admission; a completed child is dismissed and
+cannot be queued after cancellation wins that boundary.
+
 ## Mechanical fidelity review
 
 The extraction was compared with the frozen Stage 2 page for command names and payloads, guards, defaults, error strings, dialog options, confirmation text, optimistic rollback, reload timing, `Promise.all` fanout, single-use inspection cleanup, update sequencing, and disposal guards. Independent boundary reviews found no intentional behavior change in the moved workflows.
@@ -27,3 +35,10 @@ The workflow/presentation work adds **54 focused tests**. Completed Stage 3 veri
 The mechanical extraction in `bda6138` preserved the original non-evicting metadata map and display timestamps. A separate correction now releases admission metadata on failure, transfers it into its newly projected row, and clears retained maps on page disposal. Each retained entry records already observed same-URL rows so an old row or a repeated snapshot cannot consume another admission's metadata. Discard closures affect only their own entry. Display cadence records belong to a row/operation pair and are removed on authoritative terminal state, row removal, or operation replacement.
 
 The initial regression run failed three tests for missing admission cleanup, retained claimed metadata, and retained terminal display ownership. Review then demonstrated a fourth case: two same-URL admissions followed by repeated snapshots caused the first row to consume the second row's metadata. The dedicated overlap test failed with null metadata on the second row, then passed after observed IDs were carried into the remaining entries. Original and follow-up RED/GREEN logs are retained under `nuclear-app/target/internal-cleanup-stage3/`. The final focused suites passed **29 tests**; the integrated suite passed **161 tests**, with the opt-in long soak explicitly skipped. Type checking reported zero errors/warnings, strict lint and formatting passed. The next component comparison will also cover this candidate's renderer output.
+
+For the typed-selection and cancellation follow-up, the retained negative test
+first demonstrated an unwanted playlist admission after cancellation. The final
+frontend suite passed **188 tests** with the opt-in soak skipped; Svelte check,
+strict ESLint, Prettier, the production build, all **11 browser workflows**, and
+all **60 visual comparisons** also passed. These renderer checks do not replace
+the deferred native Windows qualification.

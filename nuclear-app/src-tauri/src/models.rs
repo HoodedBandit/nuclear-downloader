@@ -7,6 +7,45 @@ use ts_rs::TS;
 
 pub const APP_SCHEMA_VERSION: u32 = 1;
 
+const MAX_MEDIA_SELECTION_FIELD_BYTES: usize = 4 * 1024;
+const MAX_MEDIA_SELECTION_INDEX: u32 = 1_000;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct MediaSelection {
+    pub entry_id: String,
+    pub extractor_key: String,
+    pub playlist_index: u32,
+}
+
+impl MediaSelection {
+    pub fn validate(&self) -> Result<(), String> {
+        for (name, value) in [
+            ("entry ID", self.entry_id.as_str()),
+            ("extractor key", self.extractor_key.as_str()),
+        ] {
+            if value.is_empty() || value.trim() != value {
+                return Err(format!(
+                    "Media selection {name} must be non-empty and trimmed."
+                ));
+            }
+            if value.len() > MAX_MEDIA_SELECTION_FIELD_BYTES {
+                return Err(format!("Media selection {name} exceeds the 4 KiB limit."));
+            }
+            if value.chars().any(char::is_control) {
+                return Err(format!(
+                    "Media selection {name} contains control characters."
+                ));
+            }
+        }
+        if !(1..=MAX_MEDIA_SELECTION_INDEX).contains(&self.playlist_index) {
+            return Err("Media selection playlist index must be between 1 and 1,000.".into());
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export, export_to = "../../src/lib/bindings/")]
 pub struct VideoInfo {
@@ -18,6 +57,9 @@ pub struct VideoInfo {
     pub url: String,
     pub available_qualities: Vec<String>,
     pub has_audio: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub selection: Option<MediaSelection>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
@@ -37,6 +79,9 @@ pub struct PlaylistEntry {
     pub duration: Option<f64>,
     pub url: String,
     pub thumbnail: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub selection: Option<MediaSelection>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -70,6 +115,9 @@ pub struct DownloadRequest {
     pub filename_override: Option<String>,
     #[ts(optional = nullable)]
     pub compat_config_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub selection: Option<MediaSelection>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -299,6 +347,9 @@ pub struct QueueItemRecord {
     pub output_dir: String,
     pub filename_override: Option<String>,
     pub compat_config_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub selection: Option<MediaSelection>,
     pub state: QueueItemState,
     pub latest_operation_id: Option<String>,
     #[ts(type = "number")]
@@ -317,6 +368,7 @@ impl QueueItemRecord {
             cookie_config: self.cookie_config.clone(),
             filename_override: self.filename_override.clone(),
             compat_config_path: self.compat_config_path.clone(),
+            selection: self.selection.clone(),
         }
     }
 }
@@ -471,6 +523,9 @@ pub struct BeginInspectionInput {
     pub cookie_config: Option<CookieConfig>,
     #[ts(optional = nullable)]
     pub compat_config_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub selection: Option<MediaSelection>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

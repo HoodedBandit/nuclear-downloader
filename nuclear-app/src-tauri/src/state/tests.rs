@@ -3,8 +3,8 @@ use crate::app_error::AppError;
 use crate::diagnostics::Diagnostics;
 use crate::journal::{JournalStore, TestJournalSavePause, MAX_TERMINAL_ATTEMPTS};
 use crate::models::{
-    AddQueueItemInput, OperationState, PlaylistEntry, PlaylistInfo, QueueItemState, QueuePriority,
-    RuntimeReadiness, UpdateQueueItemInput, UrlInspection, VideoInfo,
+    AddQueueItemInput, MediaSelection, OperationState, PlaylistEntry, PlaylistInfo, QueueItemState,
+    QueuePriority, RuntimeReadiness, UpdateQueueItemInput, UrlInspection, VideoInfo,
 };
 use crate::outbox::StateOutboxStats;
 use std::path::PathBuf;
@@ -116,6 +116,7 @@ fn video(index: usize) -> VideoInfo {
         url: format!("https://example.com/{index}"),
         available_qualities: vec!["720p".to_string()],
         has_audio: true,
+        selection: None,
     }
 }
 
@@ -136,6 +137,7 @@ fn large_inspection() -> UrlInspection {
                     duration: None,
                     url: large_url.clone(),
                     thumbnail: None,
+                    selection: None,
                 })
                 .collect(),
         },
@@ -433,6 +435,72 @@ async fn first_mutation_after_high_revision_restart_is_persisted() {
     assert_eq!(snapshot.latest_sequence, expected_revision);
     assert_eq!(snapshot.queue.len(), 2);
     drop(verified);
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn distinct_media_selections_survive_queue_persistence_and_retry_mapping() {
+    let root = std::env::temp_dir().join(format!(
+        "nuclear-media-selection-reopen-{}",
+        uuid::Uuid::new_v4()
+    ));
+    let journal_path = root.join("journal.dpapi");
+    let diagnostics_path = root.join("diagnostics");
+    let store = StateStore::open_at(journal_path.clone(), diagnostics_path.clone()).unwrap();
+    let parent_url = "https://x.com/fixture/status/123";
+    let mut expected = Vec::new();
+
+    for (index, entry_id) in [(1, "media-a"), (2, "media-b")] {
+        let (operation, _) = store
+            .begin_operation(crate::models::OperationKind::Inspection, None)
+            .await
+            .unwrap();
+        let mut inspected = video(index);
+        inspected.url = parent_url.into();
+        inspected.selection = Some(MediaSelection {
+            entry_id: entry_id.into(),
+            extractor_key: "Twitter".into(),
+            playlist_index: index as u32,
+        });
+        store
+            .complete_inspection(&operation.id, UrlInspection::Video { video: inspected })
+            .await
+            .unwrap();
+        let (item, _) = store.add_queue_item(input(operation.id)).await.unwrap();
+        expected.push((item.id, item.selection.unwrap()));
+    }
+    drop(store);
+
+    let reopened = StateStore::open_at(journal_path, diagnostics_path).unwrap();
+    let snapshot = reopened.snapshot().unwrap();
+    assert_eq!(snapshot.queue.len(), 2);
+    assert_eq!(snapshot.queue[0].source_url, parent_url);
+    assert_eq!(snapshot.queue[1].source_url, parent_url);
+    for (item, (expected_id, expected_selection)) in snapshot.queue.iter().zip(&expected) {
+        assert_eq!(&item.id, expected_id);
+        assert_eq!(item.selection.as_ref(), Some(expected_selection));
+        assert_eq!(
+            item.to_download_request().selection.as_ref(),
+            Some(expected_selection)
+        );
+    }
+    let item_ids = expected
+        .iter()
+        .map(|(item_id, _)| item_id.clone())
+        .collect::<Vec<_>>();
+    reopened
+        .enqueue(&item_ids, QueuePriority::Normal)
+        .await
+        .unwrap();
+    for (_, expected_selection) in &expected {
+        let retry = reopened.take_next_pending().await.unwrap();
+        assert_eq!(
+            retry.queue_item.to_download_request().selection.as_ref(),
+            Some(expected_selection)
+        );
+    }
+    drop(reopened);
     let _ = std::fs::remove_dir_all(root);
 }
 
@@ -1583,6 +1651,31 @@ async fn inspection_display_fields_are_utf8_safely_truncated_and_action_fields_r
         .await
         .unwrap_err();
     assert_eq!(error.code, "field_too_large");
+
+    let (selection_operation, _) = store
+        .begin_operation(crate::models::OperationKind::Inspection, None)
+        .await
+        .unwrap();
+    let mut selected_video = video(3);
+    selected_video.selection = Some(MediaSelection {
+        entry_id: " media-id".into(),
+        extractor_key: "Twitter".into(),
+        playlist_index: 1,
+    });
+    let error = store
+        .complete_inspection(
+            &selection_operation.id,
+            UrlInspection::Video {
+                video: selected_video,
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(error.code, "invalid_request");
+    assert_eq!(
+        store.operation_state(&selection_operation.id),
+        Some(OperationState::Queued)
+    );
 }
 
 #[tokio::test]

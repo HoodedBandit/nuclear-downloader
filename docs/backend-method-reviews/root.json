@@ -2625,60 +2625,62 @@
       "classification": "production",
       "file": "src/services/inspection.rs",
       "line": 16,
-      "endLine": 92,
+      "endLine": 95,
       "symbol": "begin_inspection",
       "qualifiedName": "services::inspection::begin_inspection",
       "signature": "pub(crate) async fn begin_inspection( backend: Backend, input: BeginInspectionInput, ) -> Result<BeginOperationResult, AppError>",
-      "sourceDigest": "9fe64445609d6c441def98c05dacf4f6dbff5f9e7915aaa5fbfe45e4f8c54f9e",
+      "sourceDigest": "42a47186743acb02b933c2bf5ac8db827025806b8e51a2650a39fb2c68c8b011",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Validates and admits an inspection, publishes its lifecycle job, and registers the bounded inspection task.",
+      "purpose": "Register and launch one owned inspection operation with optional exact selection.",
       "callers": [
-        "src/lib.rs::begin_inspection"
+        "Tauri command adapter and lifecycle tests."
       ],
       "inputs": [
-        "pub(crate) async fn begin_inspection( backend: Backend, input: BeginInspectionInput, ) -> Result<BeginOperationResult, AppError>"
+        "AppState and BeginInspectionInput."
       ],
-      "output": "Returns the admitted inspection operation ID after its task registers.",
+      "output": "Operation identifier.",
       "sideEffects": [
-        "Creates and publishes the inspection operation, starts the downloader inspector, commits its terminal result, and finishes its lifecycle registration."
+        "Validates request/selection, tracks inspection work, spawns owned async execution, and publishes terminal operation state."
       ],
       "errors": [
-        "Returns the `Result<BeginOperationResult, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns initial validation/admission errors; owned task records later execution failure."
       ],
       "ownership": [
-        "Consumes Backend and input into tracked admission; detached task owns job/input/store/manager/result ID after the response returns."
+        "Tracked operation/work owner holds lifecycle beyond command response; cloned selection moves into task."
       ],
       "locks": [
-        "Job admission/inspection permit comes from DownloadManager; StateStore serializes each durable state transition."
+        "Delegates admission/state synchronization to coordinator and StateStore."
       ],
-      "cancellation": "DownloadJob cancellation is checked before/after permit acquisition and converts cancellation races to Cancelled terminal state; timeout terminates children.",
+      "cancellation": "Cancellation is coordinated by tracked work and DownloadJob; detached ownership completes terminal publication.",
       "invariants": [
-        "Validates and admits an inspection, publishes its lifecycle job, and registers the bounded inspection task."
+        "The registered operation and spawned task carry the same URL and selection; failures finalize rather than orphan work."
       ],
       "tests": [
-        "Static call-path review of services::inspection::begin_inspection at src/services/inspection.rs:16; no dedicated behavioral test targets this helper alone."
+        "rejected_inspection_metadata_finishes_the_registered_operation and inspection service tests."
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/inspection.rs:16",
-        "Signature: pub(crate) async fn begin_inspection( backend: Backend, input: BeginInspectionInput, ) -> Result<BeginOperationResult, AppError>",
-        "Direct source call sites for begin_inspection reviewed after Stage4 move."
+        "Current source span src/services/inspection.rs:16-95, digest 42a47186743acb02b933c2bf5ac8db827025806b8e51a2650a39fb2c68c8b011.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "9fe64445609d6c441def98c05dacf4f6dbff5f9e7915aaa5fbfe45e4f8c54f9e",
+      "staleReason": "source_changed"
     },
     {
-      "id": "src/services/inspection.rs::services::inspection::begin_inspection::async_block#1@27[cfg=all]",
+      "id": "src/services/inspection.rs::services::inspection::begin_inspection::async_block#1@30[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/inspection.rs",
-      "line": 27,
-      "endLine": 90,
+      "line": 30,
+      "endLine": 93,
       "symbol": "async_block#1",
       "qualifiedName": "services::inspection::begin_inspection::async_block#1",
       "signature": "async move",
@@ -2717,22 +2719,23 @@
       "evidence": [
         "src/services/inspection.rs:27",
         "Enclosing callable: src/services/inspection.rs::services::inspection::begin_inspection.",
-        "Owns Backend and validated input while reserving admission, creating durable inspection state, publishing the job, and spawning its task."
+        "Owns Backend and validated input while reserving admission, creating durable inspection state, publishing the job, and spawning its task.",
+        "Digest-identical context remapped to current span src/services/inspection.rs:30-93 during the typed-selection inventory refresh."
       ],
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
     {
-      "id": "src/services/inspection.rs::services::inspection::begin_inspection::async_block#2@53[cfg=all]",
+      "id": "src/services/inspection.rs::services::inspection::begin_inspection::async_block#2@56[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/inspection.rs",
-      "line": 53,
-      "endLine": 81,
+      "line": 56,
+      "endLine": 84,
       "symbol": "async_block#2",
       "qualifiedName": "services::inspection::begin_inspection::async_block#2",
       "signature": "async move",
@@ -2771,12 +2774,13 @@
       "evidence": [
         "src/services/inspection.rs:53",
         "Enclosing callable: src/services/inspection.rs::services::inspection::begin_inspection.",
-        "Owns job/store/manager/result ID/input, runs bounded inspection under unwind capture, commits terminal state, and finishes registration."
+        "Owns job/store/manager/result ID/input, runs bounded inspection under unwind capture, commits terminal state, and finishes registration.",
+        "Digest-identical context remapped to current span src/services/inspection.rs:56-84 during the typed-selection inventory refresh."
       ],
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
@@ -2785,8 +2789,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/inspection.rs",
-      "line": 94,
-      "endLine": 121,
+      "line": 97,
+      "endLine": 124,
       "symbol": "finalize_inspection_result",
       "qualifiedName": "services::inspection::finalize_inspection_result",
       "signature": "pub(crate) async fn finalize_inspection_result( store: &StateStore, operation_id: &str, result: Result<Option<models::UrlInspection>, AppError>, ) -> Result<Vec<models::StateDelta>, AppError>",
@@ -2839,8 +2843,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/inspection.rs",
-      "line": 123,
-      "endLine": 146,
+      "line": 126,
+      "endLine": 149,
       "symbol": "bounded_inspection",
       "qualifiedName": "services::inspection::bounded_inspection",
       "signature": "async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,",
@@ -2892,53 +2896,55 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/inspection.rs",
-      "line": 148,
-      "endLine": 193,
+      "line": 151,
+      "endLine": 197,
       "symbol": "execute_inspection",
       "qualifiedName": "services::inspection::execute_inspection",
       "signature": "async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>",
-      "sourceDigest": "e07d42bcf38dbd2a7a043c6a62e3b362d5e3aa16168bcbb72f84a6ecf7ee0d9a",
+      "sourceDigest": "6a606a66ae897011b9cac15f0f07dc19b980e534f02aa2809de2f2645758a7e4",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Acquires the inspection permit, commits Running, and invokes the downloader inspector with cancellation checks.",
+      "purpose": "Execute one registered inspection and durably publish its result.",
       "callers": [
-        "services::inspection::begin_inspection via bounded_inspection"
+        "begin_inspection owned task."
       ],
       "inputs": [
-        "async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>"
+        "State, operation id, URL/config/selection, and tracked work."
       ],
-      "output": "Returns Some inspection, None for cancellation, or typed inspection/scheduler/state failure.",
+      "output": "Unit after terminal handling.",
       "sideEffects": [
-        "Creates and publishes the inspection operation, starts the downloader inspector, commits its terminal result, and finishes its lifecycle registration."
+        "Creates DownloadJob, calls downloader inspection, commits success/error unless cancelled, and sends state deltas."
       ],
       "errors": [
-        "Returns the `Result<Option<models::UrlInspection>, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Normalizes downloader and persistence errors into operation finalization."
       ],
       "ownership": [
-        "Borrows store/manager/job and operation ID/input fields; the inspection permit is local and drops on return."
+        "Tracked work owns cancellation; DownloadJob owns child processes."
       ],
       "locks": [
-        "Job admission/inspection permit comes from DownloadManager; StateStore serializes each durable state transition."
+        "State commits acquire store synchronization through delegated APIs."
       ],
-      "cancellation": "DownloadJob cancellation is checked before/after permit acquisition and converts cancellation races to Cancelled terminal state; timeout terminates children.",
+      "cancellation": "Checks tracked cancellation and preserves cancellation terminal semantics.",
       "invariants": [
-        "Acquires the inspection permit, commits Running, and invokes the downloader inspector with cancellation checks."
+        "Selected identity flows unchanged into downloader inspection; terminal commit corresponds to the registered operation."
       ],
       "tests": [
-        "Static call-path review of services::inspection::execute_inspection at src/services/inspection.rs:148; no dedicated behavioral test targets this helper alone."
+        "rejected_inspection_metadata_finishes_the_registered_operation; panic_after_durable_inspection_before_publish_is_cleaned_up."
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/inspection.rs:148",
-        "Signature: async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>",
-        "Direct source call sites for execute_inspection reviewed after Stage4 move."
+        "Current source span src/services/inspection.rs:151-197, digest 6a606a66ae897011b9cac15f0f07dc19b980e534f02aa2809de2f2645758a7e4.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "e07d42bcf38dbd2a7a043c6a62e3b362d5e3aa16168bcbb72f84a6ecf7ee0d9a",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/services/maintenance.rs::services::maintenance::impl AppMaintenanceLease::release[cfg=all]",
@@ -3264,52 +3270,54 @@
       "classification": "production",
       "file": "src/services/queue.rs",
       "line": 12,
-      "endLine": 48,
+      "endLine": 49,
       "symbol": "add_inspection_result_to_queue",
       "qualifiedName": "services::queue::add_inspection_result_to_queue",
       "signature": "pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>",
-      "sourceDigest": "069824924730aba109e71a5118c49952589d5b82b10bf4eff2b6e84991222c90",
+      "sourceDigest": "e1a1c357a08ff7bdb6a7bf80b7cf6082daf3f02036351e1201d7590c99d93226",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Validates a completed inspection and download request before durably adding a queue item.",
+      "purpose": "Add an inspected video to the queue while preserving its typed selection.",
       "callers": [
-        "src/lib.rs::add_inspection_result_to_queue"
+        "Tauri command adapter and frontend inspection workflow."
       ],
       "inputs": [
-        "pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>"
+        "State and AddInspectionResultInput containing inspected VideoInfo and queue settings."
       ],
-      "output": "Returns the new QueueItemRecord or validation/state AppError.",
+      "output": "Added QueueItem.",
       "sideEffects": [
-        "Validates request fields/paths and mutates durable queue/pending-operation state; enqueue also publishes lifecycle registrations or compensates them."
+        "Validates/normalizes fields, commits the queue item, and emits resulting state delta."
       ],
       "errors": [
-        "Returns the `Result<QueueItemRecord, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Rejects invalid action fields or selection and propagates state persistence errors."
       ],
       "ownership": [
-        "Consumes Backend and mutable input inside tracked admission; cloned inspection fields exist only in request validation."
+        "Moves normalized metadata/selection into the new queue record."
       ],
       "locks": [
-        "JobAdmission keeps capacity reserved through StateStore enqueue and registration publication; StateStore serializes queue mutation."
+        "Delegates commit serialization to StateStore."
       ],
-      "cancellation": "Tracked admission waits for startup; after it begins, the bounded durable queue mutation/compensation runs to completion even if IPC disconnects.",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "Validates a completed inspection and download request before durably adding a queue item."
+        "Queue identity includes optional MediaSelection, so two clips sharing a parent URL remain distinct and retryable."
       ],
       "tests": [
-        "Static call-path review of services::queue::add_inspection_result_to_queue at src/services/queue.rs:12; no dedicated behavioral test targets this helper alone."
+        "distinct_media_selections_survive_queue_persistence_and_retry_mapping; inspection display/action validation tests."
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:12",
-        "Signature: pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>",
-        "Direct source call sites for add_inspection_result_to_queue reviewed after Stage4 move."
+        "Current source span src/services/queue.rs:12-49, digest e1a1c357a08ff7bdb6a7bf80b7cf6082daf3f02036351e1201d7590c99d93226.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "069824924730aba109e71a5118c49952589d5b82b10bf4eff2b6e84991222c90",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue::async_block#1@17[cfg=all]",
@@ -3317,60 +3325,62 @@
       "classification": "production",
       "file": "src/services/queue.rs",
       "line": 17,
-      "endLine": 46,
+      "endLine": 47,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::add_inspection_result_to_queue::async_block#1",
       "signature": "async move",
-      "sourceDigest": "1253404f3f3dc436b418801ee24ac634343e7fc53bdc6a62c1fe35d2546544c9",
+      "sourceDigest": "0bc08622a54b629f743e96bd6f6d02961aad86067646d98dddd8caa530790e2e",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion.",
+      "purpose": "Execute the current services queue add inspection result to queue async block#1 adapter/owned closure after typed selection propagation.",
       "callers": [
-        "Created only by its enclosing callable src/services/queue.rs::services::queue::add_inspection_result_to_queue."
+        "Lexically enclosing callable or current direct source call site."
       ],
       "inputs": [
-        "async move"
+        "Arguments named by the current signature, validated at the boundary described below."
       ],
-      "output": "Returns the enclosing queue command result after validation and its durable mutation/publication.",
+      "output": "The Result or value in the current signature.",
       "sideEffects": [
-        "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion."
+        "No external side effect beyond the explicit mutation, process, persistence, or publication action described below."
       ],
       "errors": [
-        "Propagates inspection lookup, request validation, output-path validation, audio-compatibility, or StateStore insertion AppError."
+        "Propagates the current validation, I/O, process, or state error without converting an invalid selection into an unselected fallback."
       ],
       "ownership": [
-        "Owns Backend and the command input values through the single tracked admission transaction."
+        "Borrows caller inputs and owns only values created in this body unless an explicit job, store, or process owner is named below."
       ],
       "locks": [
-        "Tracked Admission spans the command; enqueue additionally retains JobAdmission through publication/compensation."
+        "No lock is acquired directly unless delegated state or job ownership is named below."
       ],
-      "cancellation": "Runs admitted durable mutation to completion despite IPC disconnection.",
+      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion."
+        "The closure captures and forwards the same typed selection/state values as its enclosing owner; it does not manufacture or discard identity."
       ],
       "tests": [
-        "Static source and caller review of services::queue::add_inspection_result_to_queue::async_block#1; no dedicated test directly isolates this service block."
+        "Covered through its named enclosing test or caller; no standalone direct invocation exists for compiler-generated closures."
       ],
       "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:17",
-        "Enclosing callable: src/services/queue.rs::services::queue::add_inspection_result_to_queue.",
-        "Owns Backend and queue input while validating the referenced inspection, request fields, output path, and audio compatibility before durable insertion."
+        "Current source span src/services/queue.rs:17-47, digest 0bc08622a54b629f743e96bd6f6d02961aad86067646d98dddd8caa530790e2e.",
+        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
       ],
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "previousDigest": "1253404f3f3dc436b418801ee24ac634343e7fc53bdc6a62c1fe35d2546544c9",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/services/queue.rs::services::queue::update_queue_item[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 50,
-      "endLine": 92,
+      "line": 51,
+      "endLine": 93,
       "symbol": "update_queue_item",
       "qualifiedName": "services::queue::update_queue_item",
       "signature": "pub(crate) async fn update_queue_item( backend: Backend, item_id: String, mut input: UpdateQueueItemInput, ) -> Result<(), AppError>",
@@ -3418,12 +3428,12 @@
       "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
     },
     {
-      "id": "src/services/queue.rs::services::queue::update_queue_item::async_block#1@56[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::update_queue_item::async_block#1@57[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 56,
-      "endLine": 90,
+      "line": 57,
+      "endLine": 91,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::update_queue_item::async_block#1",
       "signature": "async move",
@@ -3461,12 +3471,13 @@
       "evidence": [
         "src/services/queue.rs:56",
         "Enclosing callable: src/services/queue.rs::services::queue::update_queue_item.",
-        "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch."
+        "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch.",
+        "Digest-identical context remapped to current span src/services/queue.rs:57-91 during the typed-selection inventory refresh."
       ],
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
@@ -3475,8 +3486,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 94,
-      "endLine": 104,
+      "line": 95,
+      "endLine": 105,
       "symbol": "remove_queue_items",
       "qualifiedName": "services::queue::remove_queue_items",
       "signature": "pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>",
@@ -3524,12 +3535,12 @@
       "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
     },
     {
-      "id": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@99[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@100[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 99,
-      "endLine": 102,
+      "line": 100,
+      "endLine": 103,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::remove_queue_items::async_block#1",
       "signature": "async move",
@@ -3567,12 +3578,13 @@
       "evidence": [
         "src/services/queue.rs:99",
         "Enclosing callable: src/services/queue.rs::services::queue::remove_queue_items.",
-        "Owns Backend and item IDs and awaits the durable queue removal mutation."
+        "Owns Backend and item IDs and awaits the durable queue removal mutation.",
+        "Digest-identical context remapped to current span src/services/queue.rs:100-103 during the typed-selection inventory refresh."
       ],
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
@@ -3581,8 +3593,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 106,
-      "endLine": 129,
+      "line": 107,
+      "endLine": 130,
       "symbol": "enqueue_queue_items",
       "qualifiedName": "services::queue::enqueue_queue_items",
       "signature": "pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
@@ -3630,12 +3642,12 @@
       "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
     },
     {
-      "id": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@112[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@113[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 112,
-      "endLine": 127,
+      "line": 113,
+      "endLine": 128,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::enqueue_queue_items::async_block#1",
       "signature": "async move",
@@ -3673,12 +3685,13 @@
       "evidence": [
         "src/services/queue.rs:112",
         "Enclosing callable: src/services/queue.rs::services::queue::enqueue_queue_items.",
-        "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure."
+        "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure.",
+        "Digest-identical context remapped to current span src/services/queue.rs:113-128 during the typed-selection inventory refresh."
       ],
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T00:40:09Z",
       "status": "reviewed",
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
@@ -3687,8 +3700,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 131,
-      "endLine": 147,
+      "line": 132,
+      "endLine": 148,
       "symbol": "cancel_unregistered_operations",
       "qualifiedName": "services::queue::cancel_unregistered_operations",
       "signature": "async fn cancel_unregistered_operations(store: &StateStore, ids: &[String])",
@@ -3740,8 +3753,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 149,
-      "endLine": 154,
+      "line": 150,
+      "endLine": 155,
       "symbol": "default_download_dir",
       "qualifiedName": "services::queue::default_download_dir",
       "signature": "pub(crate) fn default_download_dir() -> Result<String, AppError>",
@@ -3793,8 +3806,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 156,
-      "endLine": 158,
+      "line": 157,
+      "endLine": 159,
       "symbol": "validate_output_directory",
       "qualifiedName": "services::queue::validate_output_directory",
       "signature": "pub(crate) fn validate_output_directory(path: String) -> Result<String, AppError>",
@@ -3846,8 +3859,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 160,
-      "endLine": 171,
+      "line": 161,
+      "endLine": 172,
       "symbol": "display_output_directory",
       "qualifiedName": "services::queue::display_output_directory",
       "signature": "pub(crate) fn display_output_directory(path: String) -> String",
@@ -5246,7 +5259,9 @@
       "reviewer": "root_ledger",
       "reviewedAt": "2026-09-09T17:01:45Z",
       "status": "reviewed",
-      "notes": "The bounded loop synchronizes on actual admission ownership, then checks durable maintenance state; it does not assume task scheduling order."
+      "notes": "The bounded loop synchronizes on actual admission ownership, then checks durable maintenance state; it does not assume task scheduling order.",
+      "previousDigest": "713a377591f438ad7721979a2acf3d4e7bdb7c0b49f83c5b7c1c56d6de802d7e",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/services/updates/tests.rs::services::updates::tests::failed_installer_launch_finalizes_and_reopens_admission_without_exit::async_block#1@158[cfg=all(test, windows)]",
@@ -5359,7 +5374,9 @@
       "reviewer": "root_ledger",
       "reviewedAt": "2026-09-09T17:01:45Z",
       "status": "reviewed",
-      "notes": "Test-only synchronization boundary for the coordinator lease release."
+      "notes": "Test-only synchronization boundary for the coordinator lease release.",
+      "previousDigest": "950e08b6980e49a24b4ee22218130de6e9e0d436e8fc8808772b72703dd70c01",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/windows_file.rs::windows_file::identity[cfg=windows]",

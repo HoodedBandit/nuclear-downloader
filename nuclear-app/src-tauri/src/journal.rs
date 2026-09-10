@@ -527,10 +527,16 @@ fn validate_journal_structure(
     }
     let mut queue_ids = HashSet::with_capacity(journal.queue.len());
     for item in &journal.queue {
-        if uuid::Uuid::parse_str(&item.id).is_err() || !queue_ids.insert(item.id.as_str()) {
+        if uuid::Uuid::parse_str(&item.id).is_err()
+            || !queue_ids.insert(item.id.as_str())
+            || item
+                .selection
+                .as_ref()
+                .is_some_and(|selection| selection.validate().is_err())
+        {
             return Err(AppError::new(
                 "journal_corrupt",
-                "The application journal contained invalid or duplicate queue IDs.",
+                "The application journal contained invalid queue records.",
             ));
         }
     }

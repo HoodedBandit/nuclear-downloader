@@ -2,6 +2,7 @@
   import { accessibleDialog } from '$lib/accessible-dialog';
   import type { PlaylistModal, PlaylistModalEntry } from '$lib/frontend-types';
   import type { SelectionState } from '$lib/queue-logic';
+  import { mediaIdentityKey } from '$lib/media-identity';
 
   interface VisiblePlaylistEntry {
     entry: PlaylistModalEntry;
@@ -84,7 +85,7 @@
       <span class="muted"> {selectedCount} of {modal.entries.length} selected </span>
     </div>
     <div class="modal-list">
-      {#each visibleEntries as row (row.entry.url)}
+      {#each visibleEntries as row (mediaIdentityKey(row.entry))}
         {@const entry = row.entry}
         <label class="playlist-entry" class:entry-selected={entry.selected}>
           <input

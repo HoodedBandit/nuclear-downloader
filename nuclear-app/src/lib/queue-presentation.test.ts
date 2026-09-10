@@ -109,12 +109,14 @@ describe('QueuePresentationController', () => {
     });
     controller.applySnapshot(snapshot([record('other')]));
     expect(
-      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+      (controller as unknown as { metadataByIdentity: Map<string, unknown> }).metadataByIdentity
+        .size
     ).toBe(1);
     controller.applySnapshot(snapshot());
     expect(state.items[0].duration).toBe(65);
     expect(
-      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+      (controller as unknown as { metadataByIdentity: Map<string, unknown> }).metadataByIdentity
+        .size
     ).toBe(0);
   });
 
@@ -163,6 +165,42 @@ describe('QueuePresentationController', () => {
     ]);
   });
 
+  it('keeps retained metadata isolated between selected siblings with one parent URL', () => {
+    const { controller, state } = setup();
+    const url = 'https://social.example/parent';
+    const firstSelection = { entryId: 'one', extractorKey: 'twitter', playlistIndex: 1 };
+    const secondSelection = { entryId: 'two', extractorKey: 'twitter', playlistIndex: 2 };
+    controller.retainMetadata(
+      url,
+      { duration: 10, channel: 'first', thumbnail: 'first-thumb' },
+      firstSelection
+    );
+    controller.retainMetadata(
+      url,
+      { duration: 20, channel: 'second', thumbnail: 'second-thumb' },
+      secondSelection
+    );
+
+    controller.applySnapshot(
+      snapshot([
+        { ...record('second'), sourceUrl: url, selection: secondSelection },
+        { ...record('first'), sourceUrl: url, selection: firstSelection }
+      ])
+    );
+
+    expect(
+      state.items.map(({ id, duration, channel, thumbnail }) => ({
+        id,
+        duration,
+        channel,
+        thumbnail
+      }))
+    ).toEqual([
+      { id: 'second', duration: 20, channel: 'second', thumbnail: 'second-thumb' },
+      { id: 'first', duration: 10, channel: 'first', thumbnail: 'first-thumb' }
+    ]);
+  });
+
   it('clears retained metadata and display ownership on disposal', () => {
     const { controller } = setup();
     controller.retainMetadata('pending', { duration: null, channel: null, thumbnail: null });
@@ -173,7 +211,8 @@ describe('QueuePresentationController', () => {
     controller.applyProgress(progress(10));
     controller.dispose();
     expect(
-      (controller as unknown as { metadataByUrl: Map<string, unknown> }).metadataByUrl.size
+      (controller as unknown as { metadataByIdentity: Map<string, unknown> }).metadataByIdentity
+        .size
     ).toBe(0);
     expect(
       (controller as unknown as { displayUpdatedAt: Map<string, unknown> }).displayUpdatedAt.size

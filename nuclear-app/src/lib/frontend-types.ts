@@ -2,6 +2,7 @@ import type { CookieConfig as BackendCookieConfig } from './bindings/CookieConfi
 import type { PlaylistEntry } from './bindings/PlaylistEntry';
 import type { PlaylistInfo } from './bindings/PlaylistInfo';
 import type { EventMap } from './ipc-client';
+import type { MediaSelection } from './bindings/MediaSelection';
 
 export type DownloadStatus =
   | 'fetching'
@@ -52,6 +53,7 @@ export interface QueueItem {
   id: string;
   downloadId: string | null;
   url: string;
+  selection?: MediaSelection | null;
   title: string;
   customFilename: string | null;
   duration: number | null;

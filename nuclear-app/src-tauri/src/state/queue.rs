@@ -38,6 +38,9 @@ impl StateStore {
             ));
         }
         let inspection = authoritative_inspection_video(&state, &input.inspection_operation_id)?;
+        if let Some(selection) = &inspection.selection {
+            selection.validate().map_err(AppError::invalid)?;
+        }
         let id = uuid::Uuid::new_v4().to_string();
         let item = QueueItemRecord {
             schema_version: APP_SCHEMA_VERSION,
@@ -52,6 +55,7 @@ impl StateStore {
             output_dir: input.output_dir,
             filename_override: input.filename_override,
             compat_config_path: input.compat_config_path,
+            selection: inspection.selection,
             state: QueueItemState::Inert,
             latest_operation_id: None,
             created_at_ms: now,

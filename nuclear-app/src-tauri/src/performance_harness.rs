@@ -362,6 +362,7 @@ fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord> {
             output_dir: "C:\\phase4-fixture-output".to_owned(),
             filename_override: Some(format!("fixture-{index:04}")),
             compat_config_path: None,
+            selection: None,
             state: QueueItemState::Inert,
             latest_operation_id: None,
             created_at_ms: 1_700_000_000_000 + index as u64,
