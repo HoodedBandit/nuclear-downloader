@@ -15,6 +15,42 @@ export async function waitForTerminalQueueStatus(row, expected, timeout) {
   assert.equal(actual, expected, `The queue item ended in ${actual}, expected ${expected}.`);
 }
 
+export async function assertInterruptedQueueRow(row, timeout = 30_000) {
+  await waitForTerminalQueueStatus(row, 'error', timeout);
+
+  const summary = await row.$('.error-summary');
+  assert.equal(
+    (await summary.getText()).trim(),
+    'The application stopped before this operation finished.',
+    'The restored queue item did not show the interruption-specific summary.'
+  );
+
+  const retry = await row.$('button=Retry');
+  await retry.waitForDisplayed({
+    timeout,
+    timeoutMsg: 'The interrupted queue item did not expose Retry.'
+  });
+
+  const diagnosticsToggle = await row.$('button[title="Show diagnostics"]');
+  await diagnosticsToggle.click();
+  try {
+    const diagnosticsCode = await row.$(
+      './following-sibling::tr[1][contains(@class, "diagnostics-row")]//div[contains(@class, "diagnostics-header")]/span[1]'
+    );
+    await diagnosticsCode.waitForDisplayed({
+      timeout,
+      timeoutMsg: 'The interrupted queue item did not expose diagnostics.'
+    });
+    assert.equal(
+      (await diagnosticsCode.getText()).trim(),
+      'interrupted',
+      'The restored queue item diagnostics did not retain the backend interruption code.'
+    );
+  } finally {
+    await diagnosticsToggle.click();
+  }
+}
+
 export async function waitForWorkReady() {
   await $('h1').waitForDisplayed();
   // The heading can render before hydration, runtime probes, folder validation,

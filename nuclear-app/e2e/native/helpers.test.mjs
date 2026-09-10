@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { addUrl, waitForTerminalQueueStatus } from './helpers.mjs';
+import { addUrl, assertInterruptedQueueRow, waitForTerminalQueueStatus } from './helpers.mjs';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -32,6 +32,64 @@ describe('rendered terminal status', () => {
       ).rejects.toThrow(`ended in ${rendered.toLowerCase()}, expected completed`);
     }
   );
+});
+
+describe('restored interruption evidence', () => {
+  function interruptedRow({
+    summary = 'The application stopped before this operation finished.',
+    code = 'interrupted'
+  } = {}) {
+    const events = [];
+    const status = {
+      getText: async () => 'Error',
+      waitUntil: async (predicate) => expect(await predicate()).toBe(true)
+    };
+    const diagnosticsToggle = {
+      click: async () => events.push('toggle')
+    };
+    const elements = {
+      '.status-pill': status,
+      '.error-summary': { getText: async () => summary },
+      'button=Retry': {
+        waitForDisplayed: async () => events.push('retry')
+      },
+      'button[title="Show diagnostics"]': diagnosticsToggle
+    };
+    return {
+      events,
+      row: {
+        $: async (selector) =>
+          selector.startsWith('./following-sibling::')
+            ? {
+                getText: async () => code,
+                waitForDisplayed: async () => events.push('diagnostics')
+              }
+            : elements[selector]
+      }
+    };
+  }
+
+  it('proves the visible error is a retryable backend interruption', async () => {
+    const { row, events } = interruptedRow();
+    await assertInterruptedQueueRow(row);
+    expect(events).toEqual(['retry', 'toggle', 'diagnostics', 'toggle']);
+  });
+
+  it.each([
+    {
+      summary: 'Download failed.',
+      code: 'interrupted',
+      expected: 'interruption-specific summary'
+    },
+    {
+      summary: 'The application stopped before this operation finished.',
+      code: 'download_failed',
+      expected: 'backend interruption code'
+    }
+  ])('rejects an ordinary failure with $expected missing', async ({ summary, code, expected }) => {
+    const { row } = interruptedRow({ summary, code });
+    await expect(assertInterruptedQueueRow(row)).rejects.toThrow(expected);
+  });
 });
 
 it('waits for startup readiness and a newly added row instead of an existing row', async () => {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { waitForTerminalQueueStatus } from './helpers.mjs';
+import { assertInterruptedQueueRow } from './helpers.mjs';
 
 describe('installed application process restart', () => {
   it('restores the backend-owned queue journal in a new process', async () => {
@@ -24,7 +24,6 @@ describe('installed application process restart', () => {
         timeoutMsg: `Persisted queue item ${expectedTitle} did not return after process restart.`
       }
     );
-    await waitForTerminalQueueStatus(restoredRow, 'interrupted', 30_000);
-    await expect(await restoredRow.$('button=Retry')).toBeDisplayed();
+    await assertInterruptedQueueRow(restoredRow);
   });
 });

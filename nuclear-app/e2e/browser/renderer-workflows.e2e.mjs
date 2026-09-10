@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { Key } from 'webdriverio';
-import { editQueuedFilename, startQueuedDownloadByTitle } from '../native/helpers.mjs';
+import {
+  assertInterruptedQueueRow,
+  editQueuedFilename,
+  startQueuedDownloadByTitle
+} from '../native/helpers.mjs';
 import {
   IDS,
   applyDelta,
@@ -198,6 +202,42 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     );
     await expect($('.diagnostics-panel')).toBeDisplayed();
     await expect($('button=Retry')).not.toBeExisting();
+  });
+
+  it('renders a restored interruption as a retryable error with backend diagnostics', async () => {
+    const interruptedItem = {
+      ...queueItem(IDS.item, video),
+      state: 'interrupted',
+      latestOperationId: IDS.download,
+      updatedAtMs: 20
+    };
+    const interruptedOperation = operation(IDS.download, 'download', 'interrupted', {
+      queueItemId: IDS.item,
+      finishedAtMs: 20,
+      error: {
+        code: 'interrupted',
+        summary: 'The application stopped before this operation finished.',
+        detail: null,
+        retryable: true,
+        correlationId: null
+      }
+    });
+    const { mocks } = await startRenderer({
+      ...structuredClone(initialSnapshot),
+      queue: [interruptedItem],
+      operations: [interruptedOperation]
+    });
+    const row = await $('tr.queue-item');
+
+    await assertInterruptedQueueRow(row);
+    await mocks.enqueue_queue_items.update();
+    assert.equal(mocks.enqueue_queue_items.mock.calls.length, 0);
+    await row.$('button=Retry').click();
+    await waitForMockCalls(mocks.enqueue_queue_items, 1);
+    assert.deepEqual(mocks.enqueue_queue_items.mock.calls[0][0], {
+      itemIds: [IDS.item],
+      priority: 'front'
+    });
   });
 
   it('cancels an in-flight inspection without displaying a failure', async () => {
