@@ -4,7 +4,7 @@ param(
     [string] $Version = '0.6.0',
 
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+$')]
-    [string] $RuntimeVersion = '2026.07.04',
+    [string] $RuntimeVersion = '2026.08.19',
 
     [string] $OutputDirectory,
     [string] $PublishedAt,

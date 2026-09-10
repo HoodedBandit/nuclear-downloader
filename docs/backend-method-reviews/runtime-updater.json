@@ -11036,17 +11036,17 @@
       "symbol": "stale_ytdlp_detection_uses_recommended_baseline",
       "qualifiedName": "runtime::tests::stale_ytdlp_detection_uses_recommended_baseline",
       "signature": "fn stale_ytdlp_detection_uses_recommended_baseline()",
-      "sourceDigest": "d436fcce46eebf82d52898da5480a8f6acde8f303df2c73c549fc27129fafca9",
+      "sourceDigest": "698878e38c6ac2fa6779f6b01667d17fa095e02305726199e6708da994878b72",
       "cfg": [
         "test"
       ],
       "ownerCall": null,
-      "purpose": "Regression-test that stale ytdlp detection uses recommended baseline; the assertions in this exact test define the reviewed behavior.",
+      "purpose": "Verify yt-dlp staleness uses the shipped recommended-version constant: July 2026 is stale, the 2026.08.19 baseline and a later version are supported.",
       "callers": [
         "Rust test harness invokes this named test directly."
       ],
       "inputs": [
-        "No explicit parameters."
+        "Literal installed-version strings for 2026.07.04, 2026.08.19, and 2026.09.01; MIN_RECOMMENDED_YTDLP_VERSION from runtime.rs."
       ],
       "output": "Returns unit; setup failures or failed assertions panic this named test.",
       "sideEffects": [
@@ -11063,23 +11063,25 @@
       ],
       "cancellation": "No cancellation input or asynchronous wait exists in this synchronous callable.",
       "invariants": [
-        "Concrete assertions require: is_ytdlp_stale(\"2026.03.17\", \"2026.06.09\")",
-        "Concrete assertions require: !is_ytdlp_stale(\"2026.06.09\", \"2026.06.09\")",
-        "Concrete assertions require: !is_ytdlp_stale(\"2026.07.01\", \"2026.06.09\")"
+        "The test references MIN_RECOMMENDED_YTDLP_VERSION directly so a future baseline update cannot leave an unrelated literal expectation behind.",
+        "Versions before 2026.08.19 are stale; the baseline and later calendar versions are not stale."
       ],
       "tests": [
-        "runtime::tests::stale_ytdlp_detection_uses_recommended_baseline"
+        "Concrete test: runtime::tests::stale_ytdlp_detection_uses_recommended_baseline; executed in target/youtube-403/rust-tests.log."
       ],
       "findingStatus": "none",
       "evidence": [
-        "Reviewed exact current inventory span src/runtime/tests.rs:91-95 and the direct source references listed in callers."
+        "Current source span src/runtime/tests.rs:91-95, digest 698878e38c6ac2fa6779f6b01667d17fa095e02305726199e6708da994878b72.",
+        "Source review: MIN_RECOMMENDED_YTDLP_VERSION is 2026.08.19 and this test binds all three comparisons to that constant.",
+        "Root-executed cargo test --locked --offline --all-features --lib: 332 passed, 0 failed, 3 ignored in 6.49s; target/youtube-403/rust-tests.log. The named test is the direct behavior evidence; the suite count is supporting evidence.",
+        "Root-executed cargo clippy --locked --offline --all-targets --all-features -- -D warnings passed; target/youtube-403/clippy.log."
       ],
       "disposition": "test_only",
       "destination": "src/runtime/tests.rs",
-      "reviewer": "runtime_test_ledger",
-      "reviewedAt": "2026-09-09T01:51:21Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-10T01:20:56Z",
       "status": "reviewed",
-      "notes": "Current-source nonproduction review; no production qualification claim is made from this row."
+      "notes": "Identity and assertions rereviewed for the narrow yt-dlp recommended-version refresh; the named test and strict Clippy were subsequently executed successfully by root. No production callable body changed."
     },
     {
       "id": "src/runtime/tests.rs::runtime::tests::start_http_fixture::owned_work_closure#1@9[cfg=test]",

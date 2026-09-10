@@ -89,9 +89,9 @@ async fn runtime_http_reader_enforces_idle_read_timeout() {
 
 #[test]
 fn stale_ytdlp_detection_uses_recommended_baseline() {
-    assert!(is_ytdlp_stale("2026.03.17", "2026.06.09"));
-    assert!(!is_ytdlp_stale("2026.06.09", "2026.06.09"));
-    assert!(!is_ytdlp_stale("2026.07.01", "2026.06.09"));
+    assert!(is_ytdlp_stale("2026.07.04", MIN_RECOMMENDED_YTDLP_VERSION));
+    assert!(!is_ytdlp_stale("2026.08.19", MIN_RECOMMENDED_YTDLP_VERSION));
+    assert!(!is_ytdlp_stale("2026.09.01", MIN_RECOMMENDED_YTDLP_VERSION));
 }
 
 #[test]

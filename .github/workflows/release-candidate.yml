@@ -11,7 +11,7 @@ on:
       runtime_version:
         description: Exact three-component managed-runtime version
         required: true
-        default: 2026.07.04
+        default: 2026.08.19
         type: string
       published_at:
         description: Optional canonical UTC timestamp (yyyy-MM-ddTHH:mm:ssZ)

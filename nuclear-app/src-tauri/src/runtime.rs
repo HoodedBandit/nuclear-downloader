@@ -67,7 +67,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(test)]
 use std::sync::Mutex;
 
-const MIN_RECOMMENDED_YTDLP_VERSION: &str = "2026.07.04";
+const MIN_RECOMMENDED_YTDLP_VERSION: &str = "2026.08.19";
 // First launch can require Windows Defender to inspect the large, freshly
 // unpacked yt-dlp and FFmpeg executables. Keep the probes bounded, but allow
 // enough time for that cold-start scan instead of reporting a false repair.
