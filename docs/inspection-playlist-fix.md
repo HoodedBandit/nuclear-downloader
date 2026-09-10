@@ -102,10 +102,15 @@ reloading Vite's generated client files; the successful final captures ran
 serially after the build. No replacement baselines were approved. These browser
 comparisons do not qualify native Windows display scaling.
 
-The manually opened native app remains on the previous executable. Native rebuild
-and relaunch are pending its normal closure; the user was asked before interrupting
-that manual test session. The frontend production build and Rust test/check
-artifacts have been regenerated, but are not a replacement for that native retest.
+After the user approved reopening the app, the previous instance was already
+closed. The native executable was rebuilt offline from source
+`8466d7be60192de1ea0539e19bbad470b658a15e` with the embedded production frontend
+and launched once at `2026-09-10T01:03:18Z`; its Nuclear Downloader window was
+verified. Executable SHA-256:
+`af73bed742af78c9f1d55ff78635907c4b666ee6581c2227c053c25039b4604f`.
+The build and launch receipts are retained under
+`target/manual-launch/inspection-fix-8466d7b-90423cd133dd452b935e9a9d79993c0d/`.
+The user's native workflow and Add-button timing retest remain pending.
 
 The two-hour soaks and native installer/portable, cookie, and signed-update
 qualification have not been rerun for these changes. This bug-fix evidence does
