@@ -13,12 +13,20 @@ on:
         default: 0.7.1
         type: string
       confirmation:
-        description: Type PUBLISH v0.7.1
+        description: Type PUBLISH v0.7.1, or PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING for pending qualification
         required: true
         type: string
-      manual_acceptance_json:
-        description: Exact JSON emitted by write-windows-manual-acceptance.ps1 after all Windows 11 manual cases pass
+      manual_qualification:
+        description: Complete requires verified manual evidence; pending records and publishes the outstanding checks
         required: true
+        default: complete
+        type: choice
+        options:
+          - complete
+          - pending
+      manual_acceptance_json:
+        description: Exact verified manual JSON for complete qualification; leave empty for pending qualification
+        required: false
         type: string
 
 permissions:
@@ -47,12 +55,32 @@ jobs:
           INPUT_RELEASE_VERSION: ${{ inputs.release_version }}
           INPUT_CONFIRMATION: ${{ inputs.confirmation }}
           INPUT_CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+          INPUT_MANUAL_QUALIFICATION: ${{ inputs.manual_qualification }}
+          INPUT_MANUAL_ACCEPTANCE_JSON: ${{ inputs.manual_acceptance_json }}
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           if ($env:INPUT_RELEASE_VERSION -cne '0.7.1') {
             throw 'This workflow is pinned to application version 0.7.1.'
           }
-          if ($env:INPUT_CONFIRMATION -cne 'PUBLISH v0.7.1') {
+          if ($env:INPUT_MANUAL_QUALIFICATION -cnotin @('complete', 'pending')) {
+            throw 'Select complete or pending manual qualification explicitly.'
+          }
+          $expectedConfirmation = if ($env:INPUT_MANUAL_QUALIFICATION -ceq 'pending') {
+            'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING'
+          } else {
+            'PUBLISH v0.7.1'
+          }
+          if ($env:INPUT_CONFIRMATION -cne $expectedConfirmation) {
             throw 'The publish confirmation text is not exact.'
+          }
+          if ($env:INPUT_MANUAL_QUALIFICATION -ceq 'pending' -and
+              -not [string]::IsNullOrEmpty($env:INPUT_MANUAL_ACCEPTANCE_JSON)) {
+            throw 'Pending qualification cannot accept or discard a manual result record.'
+          }
+          if ($env:INPUT_MANUAL_QUALIFICATION -ceq 'complete' -and
+              [string]::IsNullOrWhiteSpace($env:INPUT_MANUAL_ACCEPTANCE_JSON)) {
+            throw 'Complete qualification requires the verified manual result record.'
           }
           if ($env:INPUT_CANDIDATE_RUN_ID -cnotmatch '^[1-9][0-9]*$') {
             throw 'candidate_run_id must be a positive Actions run ID.'
@@ -104,17 +132,21 @@ jobs:
           run-id: ${{ inputs.candidate_run_id }}
 
       - name: Verify downloaded bytes and source identity
+        id: qualification
         shell: pwsh
         env:
           EXPECTED_RELEASE_VERSION: ${{ inputs.release_version }}
           EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
           INPUT_MANUAL_ACCEPTANCE_JSON: ${{ inputs.manual_acceptance_json }}
           EXPECTED_MANUAL_SUBMITTER: ${{ github.actor }}
+          INPUT_MANUAL_QUALIFICATION: ${{ inputs.manual_qualification }}
           NUCLEAR_UPDATE_KEY_ID: ${{ vars.NUCLEAR_UPDATE_KEY_ID }}
           NUCLEAR_UPDATE_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_PUBLIC_KEY }}
           NUCLEAR_UPDATE_NEXT_KEY_ID: ${{ vars.NUCLEAR_UPDATE_NEXT_KEY_ID }}
           NUCLEAR_UPDATE_NEXT_PUBLIC_KEY: ${{ vars.NUCLEAR_UPDATE_NEXT_PUBLIC_KEY }}
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           & scripts/verify-release-candidate.ps1 `
             -CandidateDirectory candidate `
             -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
@@ -126,37 +158,66 @@ jobs:
             -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
             -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}'
 
-          $manualEvidenceBytes = [System.Text.Encoding]::UTF8.GetBytes($env:INPUT_MANUAL_ACCEPTANCE_JSON)
-          if ($manualEvidenceBytes.Length -le 0 -or $manualEvidenceBytes.Length -gt 1MB) {
-            throw 'The structured manual acceptance JSON is empty or oversized.'
+          if (Test-Path -LiteralPath qualification) {
+            throw 'The qualification staging directory already exists.'
           }
-          if (Test-Path -LiteralPath manual-acceptance) {
-            throw 'The manual acceptance staging directory already exists.'
+          New-Item -ItemType Directory -Path qualification | Out-Null
+          $qualificationDirectory = Get-Item -LiteralPath qualification -Force
+          if (-not $qualificationDirectory.PSIsContainer -or
+              ($qualificationDirectory.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'The qualification staging directory is not an owned regular directory.'
           }
-          New-Item -ItemType Directory -Path manual-acceptance | Out-Null
-          $manualEvidenceDirectory = Get-Item -LiteralPath manual-acceptance -Force
-          if (-not $manualEvidenceDirectory.PSIsContainer -or
-              ($manualEvidenceDirectory.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-            throw 'The manual acceptance staging directory is not an owned regular directory.'
+          if ($env:INPUT_MANUAL_QUALIFICATION -ceq 'complete') {
+            $manualEvidenceBytes = [System.Text.Encoding]::UTF8.GetBytes($env:INPUT_MANUAL_ACCEPTANCE_JSON)
+            if ($manualEvidenceBytes.Length -le 0 -or $manualEvidenceBytes.Length -gt 1MB) {
+              throw 'The structured manual acceptance JSON is empty or oversized.'
+            }
+            $manualEvidencePath = Join-Path $qualificationDirectory.FullName 'windows-x64-manual-acceptance.json'
+            [System.IO.File]::WriteAllText(
+              $manualEvidencePath,
+              $env:INPUT_MANUAL_ACCEPTANCE_JSON,
+              [System.Text.UTF8Encoding]::new($false)
+            )
+            & scripts/verify-manual-acceptance-evidence.ps1 `
+              -EvidencePath $manualEvidencePath `
+              -CandidateDirectory candidate `
+              -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
+              -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
+              -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}' `
+              -ExpectedSubmitter $env:EXPECTED_MANUAL_SUBMITTER
+            'status=complete' >> $env:GITHUB_OUTPUT
+          } elseif ($env:INPUT_MANUAL_QUALIFICATION -ceq 'pending') {
+            if (-not [string]::IsNullOrEmpty($env:INPUT_MANUAL_ACCEPTANCE_JSON)) {
+              throw 'Pending qualification cannot accept or discard a manual result record.'
+            }
+            $inventoryPath = Join-Path (Resolve-Path candidate).Path 'release-candidate-inventory.json'
+            $acceptance = Get-Content -Raw -LiteralPath acceptance/windows-x64-acceptance.json | ConvertFrom-Json
+            $record = [ordered]@{
+              schemaVersion = 1
+              qualificationStatus = 'incomplete'
+              releaseVersion = $env:EXPECTED_RELEASE_VERSION
+              sourceCommit = $env:EXPECTED_COMMIT_SHA
+              candidateRunId = '${{ inputs.candidate_run_id }}'
+              candidateInventorySha256 = (Get-FileHash -LiteralPath $inventoryPath -Algorithm SHA256).Hash.ToLowerInvariant()
+              authorizedBy = $env:EXPECTED_MANUAL_SUBMITTER
+              recordedAt = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+              incompleteRequirements = @($acceptance.incompleteRequirements)
+            }
+            [System.IO.File]::WriteAllText(
+              (Join-Path $qualificationDirectory.FullName 'pending-manual-qualification.json'),
+              ($record | ConvertTo-Json -Depth 8),
+              [System.Text.UTF8Encoding]::new($false)
+            )
+            'status=incomplete' >> $env:GITHUB_OUTPUT
+          } else {
+            throw 'Manual qualification mode was not validated.'
           }
-          [System.IO.File]::WriteAllText(
-            (Join-Path $manualEvidenceDirectory.FullName 'windows-x64-manual-acceptance.json'),
-            $env:INPUT_MANUAL_ACCEPTANCE_JSON,
-            [System.Text.UTF8Encoding]::new($false)
-          )
-          & scripts/verify-manual-acceptance-evidence.ps1 `
-            -EvidencePath 'manual-acceptance/windows-x64-manual-acceptance.json' `
-            -CandidateDirectory candidate `
-            -ExpectedVersion $env:EXPECTED_RELEASE_VERSION `
-            -ExpectedCommitSha $env:EXPECTED_COMMIT_SHA `
-            -ExpectedCandidateRunId '${{ inputs.candidate_run_id }}' `
-            -ExpectedSubmitter $env:EXPECTED_MANUAL_SUBMITTER
 
-      - name: Retain private manual acceptance evidence
+      - name: Retain private qualification record
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: nuclear-downloader-0.7.1-manual-acceptance
-          path: manual-acceptance/windows-x64-manual-acceptance.json
+          name: nuclear-downloader-0.7.1-qualification
+          path: qualification/*.json
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
@@ -167,6 +228,7 @@ jobs:
         shell: pwsh
         env:
           EXPECTED_COMMIT_SHA: ${{ steps.candidate.outputs.head_sha }}
+          MANUAL_QUALIFICATION: ${{ steps.qualification.outputs.status }}
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
@@ -217,6 +279,12 @@ jobs:
             ''
             'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
           ) -join "`n"
+          $qualificationNote = switch -CaseSensitive ($env:MANUAL_QUALIFICATION) {
+            'complete' { 'Automated acceptance and the recorded manual qualification checks passed for these exact artifacts.' }
+            'incomplete' { 'Automated Windows acceptance passed for these exact artifacts. Manual qualification remains pending: clean Windows 11 installer and portable checks, maintainer-controlled YouTube/X fixtures, dedicated-account cookie login, signed app update, and signed runtime update/rollback. The built-in app-update test follows publication so older installations can discover this release.' }
+            default { throw 'No verified qualification status was supplied for the release notes.' }
+          }
+          $releaseNotes += "`n`n### Validation`n`n$qualificationNote"
           $releaseNotesPath = Join-Path (Get-Location).Path 'release-notes.md'
           [System.IO.File]::WriteAllText($releaseNotesPath, $releaseNotes, [System.Text.UTF8Encoding]::new($false))
 
@@ -240,7 +308,9 @@ jobs:
           if ($release.draft -ne $true -or $release.prerelease -ne $false -or
               [string]$release.id -cne [string]$draft.id -or
               [string]$release.tag_name -cne $tag -or
+              [string]$release.name -cne 'Nuclear Downloader 0.7.1' -or
               [string]$release.target_commitish -cne $env:EXPECTED_COMMIT_SHA -or
+              [string]$release.body -cne $releaseNotes -or
               @($release.assets).Count -ne $assetPaths.Count) {
             throw 'The draft release identity or asset count is not exact.'
           }
