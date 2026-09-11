@@ -18,7 +18,9 @@ fix described below. The original publication and its hashes and receipts remain
 archived historical evidence and do not qualify the replacement. All replacement
 automatic, signature, source, asset, acceptance, and protected-publication
 checks passed; the seven-case manual Windows qualification remains pending. The
-actual repaired update from 0.6 has not yet been exercised.
+maintainer reports that the local repaired 0.6 updater now works, and the
+installed 0.7.1 executable independently matches the published installer. The
+full seven-case qualification remains pending.
 
 ### Internal structure
 

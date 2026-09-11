@@ -7,8 +7,10 @@
 > version-reuse replacement was published as release ID `386743660` from candidate
 > run `34551136992`, publisher run `34554200245`, and source commit
 > `42860b77ea31912d903784901472d8a137ef7ff6`. The public latest endpoint and all
-> ten assets match the tested candidate. The seven-case manual Windows
-> qualification remains pending, and the repaired update from 0.6 has not run.
+> ten assets match the tested candidate. The maintainer reports that the local
+> repaired 0.6 updater now works, and the installed 0.7.1 executable independently
+> matches the published installer. The seven-case manual Windows qualification
+> remains pending.
 
 Nuclear Downloader 0.7.1 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
 
