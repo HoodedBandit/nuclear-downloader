@@ -30,11 +30,10 @@ Keep the portable app and its adjacent tools together. A loose `nuclear.exe`
 needs those tools or an authenticated managed runtime. The installed app can
 check for published updates and hand off to a verified installer.
 
-**Source versus release:** `main` is preparing the **0.7.1** release. Its source
-includes the ownership refactor, async-race fixes, selected-media handling, and
-the yt-dlp `2026.08.19` YouTube fix described in the changelog. Existing GitHub
-downloads remain the previously published release until the 0.7.1 installer and
-portable artifacts are published and verified.
+**Current release:** Version **0.7.1** is public with the ownership refactor,
+async-race fixes, selected-media handling, and bundled yt-dlp `2026.08.19`
+YouTube fix described in the changelog. Its automatic release checks passed;
+the separate seven-case manual Windows qualification remains pending.
 
 ## Features
 
@@ -52,7 +51,7 @@ Five downloads can run concurrently, with one inspection and one explicit WebM
 conversion at a time. Large queues use virtual rows and playlists use pages to
 keep the interface responsive.
 
-## What is preparing for 0.7.1
+## What changed in 0.7.1
 
 The refactor preserves the existing interface and workflows while making their
 ownership explicit:
@@ -68,9 +67,10 @@ ownership explicit:
 
 See the [refactor record](docs/internal-cleanup.md) and
 [current evidence guide](docs/README.md#validation-and-qualification) for executed
-checks and their limits. Browser comparisons and earlier two-hour soaks are
-recorded against specific candidates. Native Windows scaling, exact release
-artifacts, cookies, and signed-update qualification remain separate requirements.
+checks and their limits. Browser comparisons and earlier two-hour soaks remain
+bound to their recorded candidates. The exact 0.7.1 release assets are public;
+clean Windows 11, cookies, controlled-site, and signed-update manual
+qualification remains pending.
 
 ## Build from source
 

@@ -55,9 +55,11 @@ ownership, closing several async races, and refreshing the bundled downloader.
   the preceding inspection fix passed 188 frontend tests, 11 renderer workflows,
   and 60 browser-emulated visual comparisons.
 
-See the [documentation index](docs/README.md) for source-bound evidence and open
-native release gates. The maintainer's successful YouTube retry is a useful
-real-app check, not complete installer, cookie, or signed-update acceptance.
+See the [documentation index](docs/README.md) for source-bound evidence and the
+remaining manual qualification work. Version 0.7.1 is public from its verified
+exact-byte candidate; its seven-case manual Windows qualification remains
+pending. The maintainer's successful YouTube retry is useful real-app evidence,
+not complete installer, cookie, controlled-site, or signed-update acceptance.
 
 ## v0.6.0 - 2026-09-05
 

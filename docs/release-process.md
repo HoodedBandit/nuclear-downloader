@@ -3,10 +3,13 @@
 Nuclear Downloader 0.7.1 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
 
 This document describes the workflow prepared for application version 0.7.1.
-The current unpublished 0.7.1 candidate is Actions run `34452333097`, built
-from source commit beginning `34e7af7`. Publication must bind the full source
-commit and every exact candidate asset recorded by that run; these short
-references are identification context, not substitutes for full identity checks.
+The public 0.7.1 release was published by Actions run `34546523118` from exact
+candidate run `34452333097`, built from source commit
+`34e7af7f154cc57b5ce4bf558f02813847aa1741`. Independent post-publication
+verification confirmed the anonymous latest endpoint, all ten asset hashes,
+and the downloadable manifest/signature hashes. Manual qualification remains
+incomplete until the
+candidate-bound seven-case record is completed and verified.
 The published v0.6.0 assets were built from commit `493bcab` with the yt-dlp
 2026.07.04 runtime; they remain the compatibility and historical release record.
 Version 0.7.1 requires the verified exact-byte candidate and every automated
@@ -251,7 +254,7 @@ The tag must point directly to the candidate's full commit SHA. The publisher
 independently checks that exact object type and SHA; it never moves or replaces
 a tag. Annotated tags, mismatched targets, and ambiguous refs are rejected.
 
-A failed check may leave a private draft for inspection. After resolving the failure, an explicitly approved dispatch can recover an existing draft only when its identity and all ten files pass the same checks; recovery never replaces or reuploads assets. Ambiguous drafts, mismatched tags, a published release, missing hashes, or mismatched bytes fail closed. The executable publisher fixtures run with the early release-evidence contracts in CI. Never publish a failed draft manually.
+A failed check may leave a draft for inspection when draft creation succeeded. After resolving the failure, an explicitly approved dispatch can recover an existing draft only when its identity and all ten files pass the same checks; recovery never replaces or reuploads assets. If historical GitHub token permissions return HTTP 403 before draft creation, a maintainer may prepare the exact draft through reviewed workflow draft code only after the same candidate and acceptance-evidence verifiers pass. The protected publisher must then independently verify the draft identity and all ten exact assets before publishing it. Ambiguous drafts, mismatched tags, a published release, missing hashes, or mismatched bytes fail closed. The executable publisher fixtures run with the early release-evidence contracts in CI. Never publish a failed draft manually.
 
 After a pending publication, install an older released version in an isolated
 Windows environment and execute the real signed application-update path to the
