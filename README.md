@@ -30,10 +30,11 @@ Keep the portable app and its adjacent tools together. A loose `nuclear.exe`
 needs those tools or an authenticated managed runtime. The installed app can
 check for published updates and hand off to a verified installer.
 
-**Current release:** Version **0.7.1** is public with the ownership refactor,
-async-race fixes, selected-media handling, and bundled yt-dlp `2026.08.19`
-YouTube fix described in the changelog. Its automatic release checks passed;
-the separate seven-case manual Windows qualification remains pending.
+**Current release:** The corrected version **0.7.1** is public with the ownership
+refactor, async-race and queue-scroll fixes, selected-media handling, and bundled
+yt-dlp `2026.08.19` YouTube fix described in the changelog. Its replacement
+exact-byte release checks passed; the separate seven-case manual Windows
+qualification remains pending.
 
 ## Features
 
@@ -68,8 +69,8 @@ ownership explicit:
 See the [refactor record](docs/internal-cleanup.md) and
 [current evidence guide](docs/README.md#validation-and-qualification) for executed
 checks and their limits. Browser comparisons and earlier two-hour soaks remain
-bound to their recorded candidates. The exact 0.7.1 release assets are public;
-clean Windows 11, cookies, controlled-site, and signed-update manual
+bound to their recorded candidates. The corrected exact 0.7.1 release assets
+are public; clean Windows 11, cookies, controlled-site, and signed-update manual
 qualification remains pending.
 
 ## Build from source

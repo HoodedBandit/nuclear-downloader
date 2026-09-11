@@ -1,25 +1,28 @@
 # Nuclear Downloader 0.7.1 release process
 
-> **Corrected-candidate preparation:** The initially published 0.7.1 executable
-> embedded empty optional rotation-key environment values that older 0.6 clients
-> and the initial 0.7.1 client reject. Its published hashes, candidate receipts, and
-> acceptance records remain historical evidence and cannot qualify corrected
-> bytes. The maintainer has authorized a one-time 0.7.1 version-reuse exception:
-> archive the original evidence, build and verify a new exact-byte candidate,
-> then use the unchanged protected publisher only after the old release and tag
-> are removed through the authorized recovery procedure. A new candidate and
-> publication receipt are pending; this notice does not claim either has passed.
+> **Corrected 0.7.1 publication:** The initial release, public release ID
+> `386707141`, came from candidate run `34452333097`, publisher run `34546523118`,
+> and source commit `34e7af7f154cc57b5ce4bf558f02813847aa1741`; its artifacts and
+> receipts are archived historical evidence only. The authorized one-time
+> version-reuse replacement was published as release ID `386743660` from candidate
+> run `34551136992`, publisher run `34554200245`, and source commit
+> `42860b77ea31912d903784901472d8a137ef7ff6`. The public latest endpoint and all
+> ten assets match the tested candidate. The seven-case manual Windows
+> qualification remains pending, and the repaired update from 0.6 has not run.
 
 Nuclear Downloader 0.7.1 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
 
 This document describes the workflow prepared for application version 0.7.1.
-The public 0.7.1 release was published by Actions run `34546523118` from exact
-candidate run `34452333097`, built from source commit
-`34e7af7f154cc57b5ce4bf558f02813847aa1741`. Independent post-publication
-verification confirmed the anonymous latest endpoint, all ten asset hashes,
-and the downloadable manifest/signature hashes. Manual qualification remains
-incomplete until the
-candidate-bound seven-case record is completed and verified.
+The corrected public 0.7.1 release is the replacement identified above.
+Independent post-publication verification confirmed the anonymous latest
+endpoint, all ten replacement asset hashes, and downloadable manifest/signature
+hashes. The receipt at
+`target/release-0.7.1-34551136992/publication-verification.json` has SHA-256
+`68e78f445c7fe7f4ca0d21cf0a86cb16fa48e73c43850eb2c4930f79fdeb31bc`.
+The published pending qualification record is retained under
+`target/release-0.7.1-34551136992/published-qualification`.
+Manual qualification remains incomplete until a replacement-candidate-bound
+seven-case record is completed and verified.
 The published v0.6.0 assets were built from commit `493bcab` with the yt-dlp
 2026.07.04 runtime; they remain the compatibility and historical release record.
 Version 0.7.1 requires the verified exact-byte candidate and every automated
@@ -177,14 +180,14 @@ The automated exact-byte runner covers items 1-4, portable startup, diagnostics 
 
 Create the manual record from the exact downloaded candidate. First prepare a bounded JSON input containing `schemaVersion`, `clientEnvironment`, and all required `cases`. Get the case binding with `(Get-FileHash -Algorithm SHA256 C:\acceptance\candidate\release-candidate-inventory.json).Hash.ToLowerInvariant()`. Each case must already contain that digest as `candidateInventorySha256`, a bounded `operator`, a canonical UTC `completedAt`, `outcome` exactly `passed`, and these exact details:
 
-| Case ID | Required `details` fields |
-| --- | --- |
-| `clean-windows11-installer` | `artifactFileName`, `artifactSha256` |
-| `clean-windows11-portable` | `artifactFileName`, `artifactSha256` |
-| `youtube-maintainer-fixture` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
-| `x-maintainer-fixture` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
-| `dedicated-account-cookie-login` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId` |
-| `signed-app-update` | `fromVersion`, `toVersion`, `manifestSha256`, `installerSha256` |
+| Case ID                          | Required `details` fields                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------- |
+| `clean-windows11-installer`      | `artifactFileName`, `artifactSha256`                                               |
+| `clean-windows11-portable`       | `artifactFileName`, `artifactSha256`                                               |
+| `youtube-maintainer-fixture`     | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId`         |
+| `x-maintainer-fixture`           | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId`         |
+| `dedicated-account-cookie-login` | installer `artifactFileName` and `artifactSha256`, plus opaque `fixtureId`         |
+| `signed-app-update`              | `fromVersion`, `toVersion`, `manifestSha256`, `installerSha256`                    |
 | `signed-runtime-update-rollback` | `fromVersion`, `toVersion`, `rollbackVersion`, `descriptorSha256`, `archiveSha256` |
 
 Use opaque fixture IDs; never record fixture URLs, account identifiers, cookies, tokens, or free-form notes. Then run:
@@ -283,14 +286,14 @@ complete, and do not mark release qualification complete through policy alone.
 
 Published assets are immutable. Do not delete, replace, or upload a second file under the `v0.7.1` release. If 0.7.1 is faulty, preserve it and ship a newly signed follow-up version through the same reviewed pipeline.
 
-The empty-rotation-field incident above is an explicitly authorized one-time
-exception to that normal version-bump rule. Preserve archives of the original
-release, assets, hashes, workflow receipts, and qualification state before
-removing the public release and tag. Those archives document the superseded
-publication but provide no evidence for the replacement. The replacement must
-come from a newly built candidate and independently pass the same automatic,
-signature, source, asset, acceptance, and protected-approval checks. Manual
-qualification remains pending unless a new candidate-bound seven-case record is
-actually completed and verified.
+The empty-rotation-field incident above was an explicitly authorized one-time
+exception to that normal version-bump rule. Archives of the original release,
+assets, hashes, workflow receipts, and qualification state were preserved before
+the public release and tag were replaced. Those archives document the superseded
+publication but provide no evidence for the replacement. The replacement came
+from a newly built candidate and independently passed the automatic, signature,
+source, asset, acceptance, and protected-approval checks recorded above. Manual
+qualification remains pending unless a replacement-candidate-bound seven-case
+record is actually completed and verified.
 
 Do not run `gh release create`, `gh release upload`, or `git tag` from a local release workspace for this process. The protected publish workflow is the only publication path.

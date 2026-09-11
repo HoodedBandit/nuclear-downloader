@@ -2,26 +2,23 @@
 
 ## Unreleased
 
-- Preparing a corrected 0.7.1 candidate for an updater compatibility defect:
-  empty optional rotation-key environment variables were embedded in the app
-  and rejected by older 0.6 clients and the initially published 0.7.1 client.
-- Corrected queue scroll bounds to include the rendered table header and keep
-  lower-row filename and download controls stable. A mounted regression
-  reproduced the incorrect scroll jump, and the original browser workflow
-  passed after the production fix. Stale virtual windows stay within the queue
-  after rows are removed.
-- The original 0.7.1 hashes and qualification receipts remain historical
-  evidence only. They do not qualify replacement bytes; the corrected candidate
-  and any replacement publication require new exact-byte evidence.
-- The maintainer authorized a one-time 0.7.1 version-reuse exception so the
-  broken publication can be archived and replaced. Preparation is in progress;
-  this entry does not claim that a corrected candidate or replacement release
-  has passed or been published.
+No changes have been recorded after the corrected 0.7.1 publication yet.
 
 ## v0.7.1 - 2026-09-10
 
 This release keeps the existing interface and workflows while separating their
 ownership, closing several async races, and refreshing the bundled downloader.
+
+### Corrected publication
+
+Version 0.7.1 was republished from a new exact-byte candidate after fixing empty
+optional rotation-key environment values that older 0.6 clients and the initial
+0.7.1 client rejected. The corrected release also includes the queue scroll bounds
+fix described below. The original publication and its hashes and receipts remain
+archived historical evidence and do not qualify the replacement. All replacement
+automatic, signature, source, asset, acceptance, and protected-publication
+checks passed; the seven-case manual Windows qualification remains pending. The
+actual repaired update from 0.6 has not yet been exercised.
 
 ### Internal structure
 
