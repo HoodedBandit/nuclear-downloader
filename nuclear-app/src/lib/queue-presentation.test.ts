@@ -660,4 +660,21 @@ describe('QueuePresentationController', () => {
       bottomSpacerHeight: 636
     });
   });
+
+  it('keeps a stale high viewport within the remaining virtual rows after a queue shrink', () => {
+    const { controller, state } = setup();
+    controller.applySnapshot(
+      snapshot(Array.from({ length: 40 }, (_, index) => record(`item-${index}`)))
+    );
+    controller.setViewport(1_590, 530);
+    state.items = state.items.slice(0, 5);
+
+    expect(controller.window()).toMatchObject({
+      start: 4,
+      end: 5,
+      rows: [{ item: expect.objectContaining({ id: 'item-4' }), index: 4 }],
+      topSpacerHeight: 212,
+      bottomSpacerHeight: 0
+    });
+  });
 });

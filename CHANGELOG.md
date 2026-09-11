@@ -5,6 +5,11 @@
 - Preparing a corrected 0.7.1 candidate for an updater compatibility defect:
   empty optional rotation-key environment variables were embedded in the app
   and rejected by older 0.6 clients and the initially published 0.7.1 client.
+- Corrected queue scroll bounds to include the rendered table header and keep
+  lower-row filename and download controls stable. A mounted regression
+  reproduced the incorrect scroll jump, and the original browser workflow
+  passed after the production fix. Stale virtual windows stay within the queue
+  after rows are removed.
 - The original 0.7.1 hashes and qualification receipts remain historical
   evidence only. They do not qualify replacement bytes; the corrected candidate
   and any replacement publication require new exact-byte evidence.

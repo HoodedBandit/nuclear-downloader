@@ -23,7 +23,6 @@
   import { PageLifetime } from '$lib/page-lifetime';
   import {
     QueuePresentationController,
-    QUEUE_ROW_HEIGHT_PX,
     createQueuePresentationState,
     getQueueItemDisplayTitle,
     formatDuration
@@ -407,10 +406,12 @@
   );
 
   $effect(() => {
-    const maxScrollTop = Math.max(
-      0,
-      queueState.items.length * QUEUE_ROW_HEIGHT_PX - queueState.viewport.height
-    );
+    // Remeasure the rendered extent after the queue or viewport changes.
+    void queueState.items.length;
+    void queueState.viewport.height;
+    const maxScrollTop = queueViewport
+      ? Math.max(0, queueViewport.scrollHeight - queueViewport.clientHeight)
+      : 0;
     if (queueState.viewport.scrollTop > maxScrollTop) {
       queueState.viewport.scrollTop = maxScrollTop;
       if (queueViewport) queueViewport.scrollTop = maxScrollTop;

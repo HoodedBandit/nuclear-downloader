@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppSnapshot } from '$lib/bindings/AppSnapshot';
 import type { QueueItemRecord } from '$lib/bindings/QueueItemRecord';
@@ -115,7 +116,11 @@ async function scrollQueue(
   index: number
 ): Promise<HTMLElement> {
   const viewport = view.container.querySelector<HTMLElement>('section.queue')!;
-  Object.defineProperty(viewport, 'scrollTop', { configurable: true, writable: true, value: 0 });
+  Object.defineProperties(viewport, {
+    clientHeight: { configurable: true, value: 530 },
+    scrollHeight: { configurable: true, value: 53_034 },
+    scrollTop: { configurable: true, writable: true, value: 0 }
+  });
   viewport.scrollTop = index * 53;
   await fireEvent.scroll(viewport);
   await waitFor(() => expect(view.queryByLabelText(`Select Queue item ${index}`)).not.toBeNull());
@@ -144,6 +149,25 @@ afterEach(() => {
 });
 
 describe('mounted page queue component boundary', () => {
+  it('preserves the real bottom scroll range when the table header extends beyond row heights', async () => {
+    ipc.invoke.mockImplementation(async (command: string) =>
+      command === 'get_app_snapshot' ? snapshot(9) : commandResult(command)
+    );
+    const view = await mountReadyPage();
+    const viewport = view.container.querySelector<HTMLElement>('section.queue')!;
+    Object.defineProperties(viewport, {
+      clientHeight: { configurable: true, value: 302 },
+      scrollHeight: { configurable: true, value: 511 },
+      scrollTop: { configurable: true, writable: true, value: 201 }
+    });
+    resizeObservers[0].callback([{ contentRect: { height: 302 } }]);
+
+    await fireEvent.scroll(viewport);
+    await tick();
+
+    expect(viewport.scrollTop).toBe(201);
+  });
+
   it('bounds rendered rows and downloads a selected virtual row by its stable id', async () => {
     const view = await mountReadyPage();
     expect(view.container.querySelectorAll('tr.queue-item').length).toBeLessThan(40);
@@ -182,10 +206,16 @@ describe('mounted page queue component boundary', () => {
   it('observes the viewport and clamps scroll after the snapshot queue shrinks', async () => {
     const view = await mountReadyPage();
     const viewport = await scrollQueue(view, 900);
+    let scrollHeight = 53_034;
+    Object.defineProperties(viewport, {
+      clientHeight: { configurable: true, value: 424 },
+      scrollHeight: { configurable: true, get: () => scrollHeight }
+    });
     expect(resizeObservers).toHaveLength(1);
     expect(resizeObservers[0].observe).toHaveBeenCalledOnce();
     expect(resizeObservers[0].observe).toHaveBeenCalledWith(viewport);
     resizeObservers[0].callback([{ contentRect: { height: 424 } }]);
+    scrollHeight = 299;
 
     handlers.get('app-state-changed')!({
       payload: {

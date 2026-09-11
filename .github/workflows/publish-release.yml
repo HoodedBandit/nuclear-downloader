@@ -276,6 +276,7 @@ jobs:
             '- Clear ownership for page lifecycle, queue presentation, and inspection, download, update, and settings workflows.'
             '- Focused backend modules for state commands, process supervision, output handling, and safe file publication.'
             '- Fixed stale asynchronous results, filename-edit races, and cancellation during playlist admission.'
+            '- Fixed queue scroll bounds moving lower-row controls during filename editing and download clicks.'
             '- Removed a redundant link-inspection request and fixed multi-video X posts resolving to another playlist.'
             '- Updated yt-dlp to 2026.08.19, resolving the reproduced YouTube HTTP 403 for Best-quality MP4.'
             '- Fixed empty optional signing-key settings incorrectly blocking authenticated app and runtime updates.'

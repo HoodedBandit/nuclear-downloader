@@ -222,10 +222,11 @@ export class QueuePresentationController {
     this.state.viewport.scrollTop = Math.min(Math.max(0, scrollTop), max);
   }
   window() {
-    const start = Math.max(
+    const calculatedStart = Math.max(
       0,
       Math.floor(this.state.viewport.scrollTop / QUEUE_ROW_HEIGHT_PX) - ROW_OVERSCAN
     );
+    const start = Math.min(Math.max(0, this.state.items.length - 1), calculatedStart);
     const end = Math.min(
       this.state.items.length,
       Math.ceil(
