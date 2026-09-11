@@ -250,8 +250,13 @@ jobs:
 
           $existingDraft = Get-CandidateDraft
           $tagRefs = @(gh api "repos/$env:GH_REPO/git/matching-refs/tags/$tag" | ConvertFrom-Json | Where-Object { [string]$_.ref -ceq "refs/tags/$tag" })
-          if ($tagRefs.Count -ne 0) {
-            throw "Tag $tag already exists. This workflow only creates a release and tag together for the verified commit."
+          if ($tagRefs.Count -gt 1) {
+            throw "Tag $tag is ambiguous. No release will be changed."
+          }
+          if ($tagRefs.Count -eq 1 -and
+              ([string]$tagRefs[0].object.type -cne 'commit' -or
+               [string]$tagRefs[0].object.sha -cne $env:EXPECTED_COMMIT_SHA)) {
+            throw "Tag $tag must point directly to the exact verified candidate commit."
           }
 
           $inventory = Get-Content -Raw -LiteralPath candidate/release-candidate-inventory.json | ConvertFrom-Json

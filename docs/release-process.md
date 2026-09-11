@@ -243,7 +243,15 @@ The publish workflow verifies that the selected run is a successful first-party 
 
 The workflow then creates a draft `v0.7.1` release targeted at the candidate commit and uploads only the ten inventoried public files. It discovers unpublished drafts through the release listing and verifies them by numeric release ID, not the published-release tag endpoint. Every asset must be fully uploaded and have the exact inventoried name, size, and SHA-256 digest. The draft must also target the exact candidate commit. Only after those checks does the workflow publish that verified release ID and mark it latest. Qualification records remain retained Actions evidence and are never added to the immutable public asset set; they have the same repository-reader access as other Actions artifacts.
 
-A failed check leaves a private draft for inspection. After resolving the failure, an explicitly approved dispatch can recover an existing draft only when its identity and all ten files pass the same checks; recovery never replaces or reuploads assets. Ambiguous drafts, an existing tag, a published release, missing hashes, or mismatched bytes fail closed. The executable publisher fixtures run with the early release-evidence contracts in CI. Never publish a failed draft manually.
+GitHub's workflow token can reject creating a new tag at an older commit with
+`403 Resource not accessible by integration`, even with `contents: write`.
+For an approved historical candidate, a maintainer can create the lightweight
+version tag using their authenticated account before dispatching publication.
+The tag must point directly to the candidate's full commit SHA. The publisher
+independently checks that exact object type and SHA; it never moves or replaces
+a tag. Annotated tags, mismatched targets, and ambiguous refs are rejected.
+
+A failed check may leave a private draft for inspection. After resolving the failure, an explicitly approved dispatch can recover an existing draft only when its identity and all ten files pass the same checks; recovery never replaces or reuploads assets. Ambiguous drafts, mismatched tags, a published release, missing hashes, or mismatched bytes fail closed. The executable publisher fixtures run with the early release-evidence contracts in CI. Never publish a failed draft manually.
 
 After a pending publication, install an older released version in an isolated
 Windows environment and execute the real signed application-update path to the

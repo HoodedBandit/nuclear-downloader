@@ -74,8 +74,7 @@ function gh {
         return ConvertTo-Json -InputObject $pages -Depth 10 -Compress
     }
     if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/git/matching-refs/tags/v0.7.1") {
-        if ($script:tagExists) { return '[{"ref":"refs/tags/v0.7.1"}]' }
-        return '[]'
+        return ConvertTo-Json -InputObject @($script:tagRefs) -Depth 10 -Compress
     }
     if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/releases/123") {
         $release = @{} + $script:drafts[0]
@@ -123,7 +122,7 @@ function Invoke-PublishCase {
     $script:drafts = @($script:validDraft)
     $script:createCount = 0
     $script:apiFailure = $false
-    $script:tagExists = $false
+    $script:tagRefs = @()
     $script:hideCreatedDraft = $false
     $script:wrongTitle = $false
     $script:wrongBody = $false
@@ -329,6 +328,13 @@ if ($global:qualificationFailure -ceq [System.IO.Path]::GetFileName($MyInvocatio
         $env:MANUAL_QUALIFICATION = 'complete'
         Invoke-PublishCase 'new draft verified by ID, not unpublished tag' { $script:drafts = @() } -Reject $false -ExpectedCreates 1
         Invoke-PublishCase 'matching existing draft recovered without uploading' {} -Reject $false
+        Invoke-PublishCase 'new draft uses matching lightweight candidate tag' {
+            $script:drafts = @()
+            $script:tagRefs = @(@{
+                ref = 'refs/tags/v0.7.1'
+                object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
+            })
+        } -Reject $false -ExpectedCreates 1
         Invoke-PublishCase 'wrong draft title rejected' { $script:wrongTitle = $true }
         Invoke-PublishCase 'wrong prepared release notes rejected' { $script:wrongBody = $true }
         $env:MANUAL_QUALIFICATION = 'incomplete'
@@ -342,7 +348,31 @@ if ($global:qualificationFailure -ceq [System.IO.Path]::GetFileName($MyInvocatio
         $env:MANUAL_QUALIFICATION = 'complete'
         Invoke-PublishCase 'already published release remains immutable' { $script:validDraft.draft = $false }
         Invoke-PublishCase 'ambiguous drafts rejected' { $script:drafts = @($script:validDraft, $script:validDraft) }
-        Invoke-PublishCase 'existing tag rejected' { $script:tagExists = $true }
+        Invoke-PublishCase 'matching lightweight tag and existing draft accepted without asset upload' {
+            $script:tagRefs = @(@{
+                ref = 'refs/tags/v0.7.1'
+                object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
+            })
+        } -Reject $false
+        Invoke-PublishCase 'tag at wrong commit rejected' {
+            $script:tagRefs = @(@{
+                ref = 'refs/tags/v0.7.1'
+                object = @{ type = 'commit'; sha = ('c' * 40) }
+            })
+        }
+        Invoke-PublishCase 'annotated tag object rejected' {
+            $script:tagRefs = @(@{
+                ref = 'refs/tags/v0.7.1'
+                object = @{ type = 'tag'; sha = $env:EXPECTED_COMMIT_SHA }
+            })
+        }
+        Invoke-PublishCase 'duplicate exact tag refs rejected' {
+            $tag = @{
+                ref = 'refs/tags/v0.7.1'
+                object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
+            }
+            $script:tagRefs = @($tag, $tag)
+        }
         Invoke-PublishCase 'API failure rejected before mutation' { $script:apiFailure = $true }
         Invoke-PublishCase 'wrong source commit rejected' { $script:validDraft.target_commitish = ('c' * 40) }
         Invoke-PublishCase 'prerelease rejected' { $script:validDraft.prerelease = $true }
