@@ -1,5 +1,15 @@
 # Nuclear Downloader 0.7.1 release process
 
+> **Corrected-candidate preparation:** The initially published 0.7.1 executable
+> embedded empty optional rotation-key environment values that older 0.6 clients
+> and the initial 0.7.1 client reject. Its published hashes, candidate receipts, and
+> acceptance records remain historical evidence and cannot qualify corrected
+> bytes. The maintainer has authorized a one-time 0.7.1 version-reuse exception:
+> archive the original evidence, build and verify a new exact-byte candidate,
+> then use the unchanged protected publisher only after the old release and tag
+> are removed through the authorized recovery procedure. A new candidate and
+> publication receipt are pending; this notice does not claim either has passed.
+
 Nuclear Downloader 0.7.1 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
 
 This document describes the workflow prepared for application version 0.7.1.
@@ -272,5 +282,15 @@ complete, and do not mark release qualification complete through policy alone.
 ## Immutability and recovery
 
 Published assets are immutable. Do not delete, replace, or upload a second file under the `v0.7.1` release. If 0.7.1 is faulty, preserve it and ship a newly signed follow-up version through the same reviewed pipeline.
+
+The empty-rotation-field incident above is an explicitly authorized one-time
+exception to that normal version-bump rule. Preserve archives of the original
+release, assets, hashes, workflow receipts, and qualification state before
+removing the public release and tag. Those archives document the superseded
+publication but provide no evidence for the replacement. The replacement must
+come from a newly built candidate and independently pass the same automatic,
+signature, source, asset, acceptance, and protected-approval checks. Manual
+qualification remains pending unless a new candidate-bound seven-case record is
+actually completed and verified.
 
 Do not run `gh release create`, `gh release upload`, or `git tag` from a local release workspace for this process. The protected publish workflow is the only publication path.

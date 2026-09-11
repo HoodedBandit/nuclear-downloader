@@ -164,7 +164,14 @@ fn download_urls_require_https_without_credentials() {
 fn minisign_verification_covers_exact_manifest_bytes() {
     let public_key = crate::artifact_contract::TEST_MINISIGN_PUBLIC_KEY;
     let signature = b"untrusted comment: signature from minisign secret key\nRUQf6LRCGA9i559r3g7V1qNyJDApGip8MfqcadIgT9CuhV3EMhHoN1mGTkUidF/z7SrlQgXdy8ofjb7bNJJylDOocrCo8KLzZwo=\ntrusted comment: timestamp:1556193335\tfile:test\ny/rUw2y8/hOUYjZU71eHp/Wo1KZ40fGy2VJEDl34XMJM+TX48Ss/17u3IvIfbVR1FkZZSNCisQbuQY+bHwhEBg==";
-    let wrapped_key = crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY;
+    let wrapped_key = select_public_key(
+        "current",
+        Some("current"),
+        Some(crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY),
+        Some(""),
+        Some(""),
+    )
+    .unwrap();
     let wrapped_signature = base64_encode(signature);
     assert!(verify_with_public_key(wrapped_key, b"test", wrapped_signature.as_bytes()).is_ok());
     assert!(verify_with_public_key(wrapped_key, b"Test", wrapped_signature.as_bytes()).is_err());
@@ -194,6 +201,73 @@ fn key_rotation_selects_by_id_and_rejects_bad_configuration() {
     );
     assert!(select_public_key("current", Some("current"), None, None, None).is_err());
     assert!(select_public_key("unknown", Some("current"), Some("a"), None, None).is_err());
+}
+
+#[test]
+fn key_rotation_empty_environment_slots_match_build_validation() {
+    let public_key = crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY;
+    for next_id in [None, Some("")] {
+        for next_key in [None, Some("")] {
+            crate::build_config::validate_update_key_configuration(
+                "release",
+                "current",
+                public_key,
+                next_id.unwrap_or_default(),
+                next_key.unwrap_or_default(),
+            )
+            .unwrap();
+            assert_eq!(
+                select_public_key(
+                    "current",
+                    Some("current"),
+                    Some(public_key),
+                    next_id,
+                    next_key,
+                )
+                .unwrap(),
+                public_key
+            );
+            assert!(select_public_key(
+                "unknown",
+                Some("current"),
+                Some(public_key),
+                next_id,
+                next_key,
+            )
+            .is_err());
+        }
+    }
+}
+
+#[test]
+fn key_rotation_partial_or_malformed_environment_slots_fail_closed() {
+    let public_key = crate::artifact_contract::TEST_TAURI_UPDATE_PUBLIC_KEY;
+    for (next_id, next_key) in [
+        (Some("next"), None),
+        (Some("next"), Some("")),
+        (None, Some(public_key)),
+        (Some(""), Some(public_key)),
+        (Some(" "), Some(public_key)),
+        (Some(""), Some(" ")),
+        (Some("current"), Some(public_key)),
+    ] {
+        assert!(crate::build_config::validate_update_key_configuration(
+            "release",
+            "current",
+            public_key,
+            next_id.unwrap_or_default(),
+            next_key.unwrap_or_default(),
+        )
+        .is_err());
+        assert!(select_public_key(
+            "current",
+            Some("current"),
+            Some(public_key),
+            next_id,
+            next_key,
+        )
+        .is_err());
+    }
 }
 
 #[tokio::test]

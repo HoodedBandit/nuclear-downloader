@@ -173,7 +173,9 @@ pub(super) fn select_public_key<'a>(
         (Some(id), Some(key)) if is_canonical_update_key_id(id) && !key.is_empty() => {
             Some((id, key))
         }
-        (None, None) => None,
+        // Build validation treats unset and explicitly empty rotation slots alike.
+        // A populated half still fails rather than silently disabling rotation.
+        (None | Some(""), None | Some("")) => None,
         _ => return Err("The embedded next update key pair is missing or invalid.".into()),
     };
     if let (Some((current_id, _)), Some((next_id, _))) = (current, next) {

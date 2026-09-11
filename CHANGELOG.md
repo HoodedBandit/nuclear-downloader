@@ -2,7 +2,16 @@
 
 ## Unreleased
 
-No changes have been recorded after 0.7.1 yet.
+- Preparing a corrected 0.7.1 candidate for an updater compatibility defect:
+  empty optional rotation-key environment variables were embedded in the app
+  and rejected by older 0.6 clients and the initially published 0.7.1 client.
+- The original 0.7.1 hashes and qualification receipts remain historical
+  evidence only. They do not qualify replacement bytes; the corrected candidate
+  and any replacement publication require new exact-byte evidence.
+- The maintainer authorized a one-time 0.7.1 version-reuse exception so the
+  broken publication can be archived and replaced. Preparation is in progress;
+  this entry does not claim that a corrected candidate or replacement release
+  has passed or been published.
 
 ## v0.7.1 - 2026-09-10
 

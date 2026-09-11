@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "3693bfb3d2d529331d70bb46d4b0a0735a59de22",
+  "sourceCommit": "64d42d40bf49201479cbbd9e3683f6f4b14ab50b",
   "sourceRoot": "nuclear-app/src-tauri",
   "digestConvention": "sha256-lowercase(exact item span, CRLF/CR normalized to LF, no trimming)",
   "reviewSemantics": "Discovery is pending. Only complete reviewer-authored source review fields may set reviewed.",
   "summary": {
     "files": 97,
-    "entries": 1252,
+    "entries": 1254,
     "production": 727,
-    "test": 357,
+    "test": 359,
     "test_support": 168
   },
   "entries": [
@@ -66483,24 +66483,27 @@
       "classification": "production",
       "file": "src/updater/release.rs",
       "line": 158,
-      "endLine": 189,
+      "endLine": 191,
       "symbol": "select_public_key",
       "qualifiedName": "updater::release::select_public_key",
       "signature": "pub(super) fn select_public_key<'a>( key_id: &str, current_id: Option<&'a str>, current_key: Option<&'a str>, next_id: Option<&'a str>, next_key: Option<&'a str>, ) -> Result<&'a str, String>",
-      "sourceDigest": "8867c13fb66ca4c742d42f328a37bca50116646b3175f4a67e6da4e4f56f01c7",
+      "sourceDigest": "f2171d60d113ed2ecb2580c4a1e4253854d67321d836c0428c86f4c56e89e08f",
       "cfg": [],
       "callers": [
         "updater::release::trusted_public_key",
-        "updater::tests::key_rotation_selects_by_id_and_rejects_bad_configuration"
+        "updater::tests::key_rotation_selects_by_id_and_rejects_bad_configuration",
+        "updater::tests::key_rotation_empty_environment_slots_match_build_validation",
+        "updater::tests::key_rotation_partial_or_malformed_environment_slots_fail_closed",
+        "updater::tests::minisign_verification_covers_exact_manifest_bytes"
       ],
       "inputs": [
         "Borrowed requested ID plus optional borrowed current/next IDs and public-key texts."
       ],
       "sideEffects": [
-        "Performs canonical-ID, emptiness, pair completeness, distinctness, and exact-match checks; no I/O."
+        "Normalizes absence only at the optional next-slot boundary: None and an explicitly empty string are equivalent for each absent next field; validates present pairs, canonical IDs, distinctness, and exact requested-ID match; no I/O."
       ],
       "errors": [
-        "Rejects partial/invalid current or next pair, duplicate configured IDs, or an untrusted requested ID."
+        "Rejects a missing/invalid current pair, any partially populated or malformed next pair, duplicate configured IDs, and any requested ID not backed by a valid configured pair."
       ],
       "ownership": [
         "Borrows all configuration and returns one of those borrows; retains nothing else."
@@ -66509,25 +66512,35 @@
         "No lock; pure selection."
       ],
       "invariants": [
-        "Absent pairs must be absent in both fields; present IDs are canonical and distinct; returned key belongs to the exactly matching ID."
+        "The current pair may be absent as (None, None) for non-release/debug configuration; when present, both fields must be nonempty and the ID canonical.",
+        "The optional next pair is absent for all four None/empty combinations, matching build-time environment validation; any populated half still fails closed.",
+        "A returned key belongs to the exactly matching canonical ID, and current/next IDs cannot collide."
       ],
       "tests": [
-        "updater::tests::key_rotation_selects_by_id_and_rejects_bad_configuration"
+        "key_rotation_selects_by_id_and_rejects_bad_configuration",
+        "key_rotation_empty_environment_slots_match_build_validation",
+        "key_rotation_partial_or_malformed_environment_slots_fail_closed",
+        "minisign_verification_covers_exact_manifest_bytes"
       ],
       "evidence": [
-        "Direct source review: src/updater/release.rs:158-189, SHA-256 8867c13fb66ca4c742d42f328a37bca50116646b3175f4a67e6da4e4f56f01c7.",
-        "Caller and named-test references reconciled against final source for updater::release::select_public_key."
+        "Frozen current span src/updater/release.rs:158-191, digest f2171d60d113ed2ecb2580c4a1e4253854d67321d836c0428c86f4c56e89e08f.",
+        "Baseline empty-next regression reproduced the exact user-visible embedded next update key pair missing/invalid failure before this fix; retained by root.",
+        "Source review confirms only the absent optional next-pair cases broadened; current pair validation and malformed/partial/duplicate fail-closed behavior remain strict.",
+        "Root-executed focused updater suite passed all 24 tests; the named test in this row is direct behavior evidence, while the suite total is supporting evidence.",
+        "Root-executed cargo test --locked --all-features passed 337 tests, failed 0, and left 3 opt-in harnesses ignored; ignored tests are not counted as passed.",
+        "Root-executed cargo fmt --check and strict Clippy for all targets/features with warnings denied passed.",
+        "Architecture check and merged backend ledger check passed for all 1,254 current review units."
       ],
-      "purpose": "Validate optional current/next key pairs and return the public key whose canonical distinct ID exactly equals key_id.",
+      "purpose": "Validate current/optional-next key slots and return the public key whose canonical distinct ID exactly matches key_id.",
       "output": "Borrowed selected public-key text tied to configuration lifetime.",
       "cancellation": "No cancellation or await.",
-      "findingStatus": "none",
-      "disposition": "keep",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/updater/release.rs",
-      "reviewer": "runtime-production-network-review",
-      "reviewedAt": "2026-09-09T01:30:00Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-11T00:38:58Z",
       "status": "reviewed",
-      "notes": "Reviewed from the final source body and its direct call/test context; no source defect identified in this span.",
+      "notes": "Reviewed against the frozen empty-next-slot correction and confirmed by the executed focused updater, full Rust, formatting, Clippy, architecture, and ledger checks. These source/unit checks do not qualify or publish new release artifacts.",
       "ownerCall": null
     },
     {
@@ -66535,8 +66548,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 191,
-      "endLine": 193,
+      "line": 193,
+      "endLine": 195,
       "symbol": "is_canonical_update_key_id",
       "qualifiedName": "updater::release::is_canonical_update_key_id",
       "signature": "pub(crate) fn is_canonical_update_key_id(value: &str) -> bool",
@@ -66589,8 +66602,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 195,
-      "endLine": 213,
+      "line": 197,
+      "endLine": 215,
       "symbol": "verify_with_public_key",
       "qualifiedName": "updater::release::verify_with_public_key",
       "signature": "pub(super) fn verify_with_public_key( public_key_text: &str, bytes: &[u8], signature_bytes: &[u8], ) -> Result<(), String>",
@@ -66642,8 +66655,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 215,
-      "endLine": 253,
+      "line": 217,
+      "endLine": 255,
       "symbol": "select_signed_update_assets",
       "qualifiedName": "updater::release::select_signed_update_assets",
       "signature": "pub(super) fn select_signed_update_assets<'a>( release: &'a GitHubRelease, version: &Version, ) -> Result< ( &'a GitHubReleaseAsset, &'a GitHubReleaseAsset, &'a GitHubReleaseAsset, ), String, >",
@@ -66695,8 +66708,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 255,
-      "endLine": 270,
+      "line": 257,
+      "endLine": 272,
       "symbol": "select_one_exact_asset",
       "qualifiedName": "updater::release::select_one_exact_asset",
       "signature": "fn select_one_exact_asset<'a>( release: &'a GitHubRelease, expected_name: &str, ) -> Result<&'a GitHubReleaseAsset, String>",
@@ -66747,8 +66760,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 272,
-      "endLine": 282,
+      "line": 274,
+      "endLine": 284,
       "symbol": "parse_release_tag",
       "qualifiedName": "updater::release::parse_release_tag",
       "signature": "pub(super) fn parse_release_tag(raw: &str) -> Result<Version, String>",
@@ -66801,8 +66814,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 284,
-      "endLine": 288,
+      "line": 286,
+      "endLine": 290,
       "symbol": "parse_semver",
       "qualifiedName": "updater::release::parse_semver",
       "signature": "pub(super) fn parse_semver(raw: &str) -> Result<Version, String>",
@@ -66859,8 +66872,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 290,
-      "endLine": 292,
+      "line": 292,
+      "endLine": 294,
       "symbol": "expected_installer_name",
       "qualifiedName": "updater::release::expected_installer_name",
       "signature": "pub(super) fn expected_installer_name(version: &Version) -> String",
@@ -66915,8 +66928,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 294,
-      "endLine": 296,
+      "line": 296,
+      "endLine": 298,
       "symbol": "is_versioned_installer_candidate",
       "qualifiedName": "updater::release::is_versioned_installer_candidate",
       "signature": "fn is_versioned_installer_candidate(name: &str) -> bool",
@@ -66967,8 +66980,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 298,
-      "endLine": 300,
+      "line": 300,
+      "endLine": 302,
       "symbol": "is_versioned_app_manifest_candidate",
       "qualifiedName": "updater::release::is_versioned_app_manifest_candidate",
       "signature": "fn is_versioned_app_manifest_candidate(name: &str) -> bool",
@@ -67019,8 +67032,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 302,
-      "endLine": 304,
+      "line": 304,
+      "endLine": 306,
       "symbol": "is_versioned_app_signature_candidate",
       "qualifiedName": "updater::release::is_versioned_app_signature_candidate",
       "signature": "fn is_versioned_app_signature_candidate(name: &str) -> bool",
@@ -67071,8 +67084,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 306,
-      "endLine": 317,
+      "line": 308,
+      "endLine": 319,
       "symbol": "validate_security_text",
       "qualifiedName": "updater::release::validate_security_text",
       "signature": "fn validate_security_text(label: &str, value: &str) -> Result<(), String>",
@@ -67126,8 +67139,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 319,
-      "endLine": 359,
+      "line": 321,
+      "endLine": 361,
       "symbol": "validate_timestamp",
       "qualifiedName": "updater::release::validate_timestamp",
       "signature": "pub(super) fn validate_timestamp(value: &str) -> Result<(), String>",
@@ -67179,8 +67192,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 361,
-      "endLine": 366,
+      "line": 363,
+      "endLine": 368,
       "symbol": "validate_sha256",
       "qualifiedName": "updater::release::validate_sha256",
       "signature": "pub(super) fn validate_sha256(value: &str) -> Result<(), String>",
@@ -67233,8 +67246,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 368,
-      "endLine": 377,
+      "line": 370,
+      "endLine": 379,
       "symbol": "sanitize_file_name",
       "qualifiedName": "updater::release::sanitize_file_name",
       "signature": "pub(super) fn sanitize_file_name(name: &str) -> Result<String, String>",
@@ -67285,8 +67298,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/release.rs",
-      "line": 379,
-      "endLine": 384,
+      "line": 381,
+      "endLine": 386,
       "symbol": "normalize_optional_text",
       "qualifiedName": "updater::release::normalize_optional_text",
       "signature": "pub(super) fn normalize_optional_text(value: Option<String>) -> Option<String>",
@@ -67937,11 +67950,11 @@
       "classification": "test",
       "file": "src/updater/tests.rs",
       "line": 164,
-      "endLine": 177,
+      "endLine": 184,
       "symbol": "minisign_verification_covers_exact_manifest_bytes",
       "qualifiedName": "updater::tests::minisign_verification_covers_exact_manifest_bytes",
       "signature": "fn minisign_verification_covers_exact_manifest_bytes()",
-      "sourceDigest": "2f52c3a68145ea8dd52927d41ee47b5131c5d5670266c3d78643b5717c3c88bd",
+      "sourceDigest": "64e2f2c91d80dad868cb601c04b89cb2914f0c6f0042194ff3c483f4c7c1fcd9",
       "cfg": [
         "test"
       ],
@@ -67949,7 +67962,7 @@
         "Rust test harness invokes this named test directly."
       ],
       "inputs": [
-        "No explicit parameters."
+        "Pinned test public key/signature, exact test/Test payload bytes, current key slot, and explicitly empty next ID/key slots."
       ],
       "sideEffects": [
         "No external side effect; this span constructs values, validates bytes, or asserts returned state."
@@ -67964,26 +67977,30 @@
         "No lock or cache guard is acquired directly in this callable."
       ],
       "invariants": [
-        "Concrete assertions require: verify_with_public_key(wrapped_key, b\"test\", wrapped_signature.as_bytes()).is_ok()",
-        "Concrete assertions require: verify_with_public_key(wrapped_key, b\"Test\", wrapped_signature.as_bytes()).is_err()",
-        "Concrete assertions require: verify_with_public_key( std::str::from_utf8(public_key).unwrap(), b\"test\", wrapped_signature.as_bytes() ) .is_err()"
+        "select_public_key accepts the valid current pair when both optional next environment slots are empty.",
+        "The selected wrapped key verifies lowercase test bytes, rejects case-changed bytes, and raw Minisign key text remains rejected by the Tauri-wrapper verifier."
       ],
       "tests": [
         "updater::tests::minisign_verification_covers_exact_manifest_bytes"
       ],
       "evidence": [
-        "Reviewed exact current inventory span src/updater/tests.rs:164-177 and the direct source references listed in callers."
+        "Frozen current span src/updater/tests.rs:164-184, digest 64e2f2c91d80dad868cb601c04b89cb2914f0c6f0042194ff3c483f4c7c1fcd9.",
+        "Direct source review binds the selected current key to Some(\"\")/Some(\"\") optional next slots before exact-byte verification.",
+        "Root-executed focused updater suite passed all 24 tests; the named test in this row is direct behavior evidence, while the suite total is supporting evidence.",
+        "Root-executed cargo test --locked --all-features passed 337 tests, failed 0, and left 3 opt-in harnesses ignored; ignored tests are not counted as passed.",
+        "Root-executed cargo fmt --check and strict Clippy for all targets/features with warnings denied passed.",
+        "Architecture check and merged backend ledger check passed for all 1,254 current review units."
       ],
-      "purpose": "Regression-test that minisign verification covers exact manifest bytes; the assertions in this exact test define the reviewed behavior.",
+      "purpose": "Verify exact Minisign bytes using the public key selected through an explicitly empty optional-next configuration.",
       "output": "Returns unit; setup failures or failed assertions panic this named test.",
       "cancellation": "No cancellation input or asynchronous wait exists in this synchronous callable.",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/updater/tests.rs",
-      "reviewer": "runtime_test_ledger",
-      "reviewedAt": "2026-09-09T01:51:21Z",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-11T00:38:58Z",
       "status": "reviewed",
-      "notes": "Current-source nonproduction review; no production qualification claim is made from this row.",
+      "notes": "Reviewed against the frozen empty-next-slot correction and confirmed by the executed focused updater, full Rust, formatting, Clippy, architecture, and ledger checks. These source/unit checks do not qualify or publish new release artifacts.",
       "ownerCall": null
     },
     {
@@ -67991,8 +68008,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 180,
-      "endLine": 197,
+      "line": 187,
+      "endLine": 204,
       "symbol": "key_rotation_selects_by_id_and_rejects_bad_configuration",
       "qualifiedName": "updater::tests::key_rotation_selects_by_id_and_rejects_bad_configuration",
       "signature": "fn key_rotation_selects_by_id_and_rejects_bad_configuration()",
@@ -68042,12 +68059,130 @@
       "ownerCall": null
     },
     {
+      "id": "src/updater/tests.rs::updater::tests::key_rotation_empty_environment_slots_match_build_validation[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/updater/tests.rs",
+      "line": 207,
+      "endLine": 240,
+      "symbol": "key_rotation_empty_environment_slots_match_build_validation",
+      "qualifiedName": "updater::tests::key_rotation_empty_environment_slots_match_build_validation",
+      "signature": "fn key_rotation_empty_environment_slots_match_build_validation()",
+      "sourceDigest": "5151d611fed2efbd8b3ddaa507488ccd209311f7f09783b8514246867a657db6",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness invokes this named test directly."
+      ],
+      "inputs": [
+        "Valid current ID/key and the four cross-products of None or empty next ID/key."
+      ],
+      "sideEffects": [
+        "No external side effect; constructs key-slot combinations and calls pure validation/selection helpers."
+      ],
+      "errors": [
+        "Unwrap or failed assertions panic the named test."
+      ],
+      "ownership": [
+        "Borrows static test key text and owns only loop values/results."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Build validation accepts every absent representation.",
+        "Runtime selection returns the current key for current ID and rejects an unknown requested ID for every absent representation."
+      ],
+      "tests": [
+        "updater::tests::key_rotation_empty_environment_slots_match_build_validation"
+      ],
+      "evidence": [
+        "Frozen current span src/updater/tests.rs:207-240, digest 5151d611fed2efbd8b3ddaa507488ccd209311f7f09783b8514246867a657db6.",
+        "Named regression reviewed directly; no post-fix pass is claimed until root reports execution.",
+        "Root-executed focused updater suite passed all 24 tests; the named test in this row is direct behavior evidence, while the suite total is supporting evidence.",
+        "Root-executed cargo test --locked --all-features passed 337 tests, failed 0, and left 3 opt-in harnesses ignored; ignored tests are not counted as passed.",
+        "Root-executed cargo fmt --check and strict Clippy for all targets/features with warnings denied passed.",
+        "Architecture check and merged backend ledger check passed for all 1,254 current review units."
+      ],
+      "purpose": "Verify every unset/empty representation of the optional next key slots agrees between build validation and runtime selection.",
+      "output": "Unit after all assertions pass.",
+      "cancellation": "Synchronous test with no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/updater/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-11T00:38:58Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the frozen empty-next-slot correction and confirmed by the executed focused updater, full Rust, formatting, Clippy, architecture, and ledger checks. These source/unit checks do not qualify or publish new release artifacts.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/tests.rs::updater::tests::key_rotation_partial_or_malformed_environment_slots_fail_closed[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/updater/tests.rs",
+      "line": 243,
+      "endLine": 271,
+      "symbol": "key_rotation_partial_or_malformed_environment_slots_fail_closed",
+      "qualifiedName": "updater::tests::key_rotation_partial_or_malformed_environment_slots_fail_closed",
+      "signature": "fn key_rotation_partial_or_malformed_environment_slots_fail_closed()",
+      "sourceDigest": "d9b3f920b38a78903f8e0f2987b18eaf61c10bb7cdc753a48f93f08cb9aa0da5",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness invokes this named test directly."
+      ],
+      "inputs": [
+        "Valid current pair plus seven invalid next ID/key combinations."
+      ],
+      "sideEffects": [
+        "No external side effect; constructs key-slot combinations and calls pure validation/selection helpers."
+      ],
+      "errors": [
+        "Unwrap or failed assertions panic the named test."
+      ],
+      "ownership": [
+        "Borrows static test key text and owns only loop values/results."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Every listed invalid combination is rejected by both validate_update_key_configuration and select_public_key.",
+        "An empty slot paired with a populated slot is not treated as fully absent."
+      ],
+      "tests": [
+        "updater::tests::key_rotation_partial_or_malformed_environment_slots_fail_closed"
+      ],
+      "evidence": [
+        "Frozen current span src/updater/tests.rs:243-271, digest d9b3f920b38a78903f8e0f2987b18eaf61c10bb7cdc753a48f93f08cb9aa0da5.",
+        "Named regression reviewed directly; no post-fix pass is claimed until root reports execution.",
+        "Root-executed focused updater suite passed all 24 tests; the named test in this row is direct behavior evidence, while the suite total is supporting evidence.",
+        "Root-executed cargo test --locked --all-features passed 337 tests, failed 0, and left 3 opt-in harnesses ignored; ignored tests are not counted as passed.",
+        "Root-executed cargo fmt --check and strict Clippy for all targets/features with warnings denied passed.",
+        "Architecture check and merged backend ledger check passed for all 1,254 current review units."
+      ],
+      "purpose": "Verify partial, malformed, whitespace-only, and duplicate optional next-key configurations fail closed in both build and runtime validation.",
+      "output": "Unit after all assertions pass.",
+      "cancellation": "Synchronous test with no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/updater/tests.rs",
+      "reviewer": "root_ledger",
+      "reviewedAt": "2026-09-11T00:38:58Z",
+      "status": "reviewed",
+      "notes": "Reviewed against the frozen empty-next-slot correction and confirmed by the executed focused updater, full Rust, formatting, Clippy, architecture, and ledger checks. These source/unit checks do not qualify or publish new release artifacts.",
+      "ownerCall": null
+    },
+    {
       "id": "src/updater/tests.rs::updater::tests::existing_installer_must_match_signed_size_and_hash[cfg=test]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 200,
-      "endLine": 219,
+      "line": 274,
+      "endLine": 293,
       "symbol": "existing_installer_must_match_signed_size_and_hash",
       "qualifiedName": "updater::tests::existing_installer_must_match_signed_size_and_hash",
       "signature": "async fn existing_installer_must_match_signed_size_and_hash()",
@@ -68101,8 +68236,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 222,
-      "endLine": 259,
+      "line": 296,
+      "endLine": 333,
       "symbol": "invalid_cached_installer_is_quarantined_before_fresh_verification",
       "qualifiedName": "updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification",
       "signature": "async fn invalid_cached_installer_is_quarantined_before_fresh_verification()",
@@ -68157,8 +68292,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 262,
-      "endLine": 300,
+      "line": 336,
+      "endLine": 374,
       "symbol": "unowned_canonical_collision_is_preserved_while_prepared_path_is_verified",
       "qualifiedName": "updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified",
       "signature": "async fn unowned_canonical_collision_is_preserved_while_prepared_path_is_verified()",
@@ -68213,8 +68348,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 303,
-      "endLine": 337,
+      "line": 377,
+      "endLine": 411,
       "symbol": "prepared_cleanup_requires_complete_owned_non_reparse_contents",
       "qualifiedName": "updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents",
       "signature": "async fn prepared_cleanup_requires_complete_owned_non_reparse_contents()",
@@ -68268,8 +68403,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 341,
-      "endLine": 362,
+      "line": 415,
+      "endLine": 436,
       "symbol": "verified_installer_lease_denies_mutation_and_replacement",
       "qualifiedName": "updater::tests::verified_installer_lease_denies_mutation_and_replacement",
       "signature": "async fn verified_installer_lease_denies_mutation_and_replacement()",
@@ -68324,8 +68459,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 366,
-      "endLine": 399,
+      "line": 440,
+      "endLine": 473,
       "symbol": "installer_handoff_retains_verification_and_directory_leases",
       "qualifiedName": "updater::tests::installer_handoff_retains_verification_and_directory_leases",
       "signature": "async fn installer_handoff_retains_verification_and_directory_leases()",
@@ -68381,8 +68516,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 402,
-      "endLine": 421,
+      "line": 476,
+      "endLine": 495,
       "symbol": "partial_cleanup_removes_only_owned_regular_files",
       "qualifiedName": "updater::tests::partial_cleanup_removes_only_owned_regular_files",
       "signature": "async fn partial_cleanup_removes_only_owned_regular_files()",
@@ -68436,8 +68571,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 425,
-      "endLine": 457,
+      "line": 499,
+      "endLine": 531,
       "symbol": "failed_partial_removal_retains_ownership_for_startup_retry",
       "qualifiedName": "updater::tests::failed_partial_removal_retains_ownership_for_startup_retry",
       "signature": "async fn failed_partial_removal_retains_ownership_for_startup_retry()",
@@ -68490,8 +68625,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 460,
-      "endLine": 488,
+      "line": 534,
+      "endLine": 562,
       "symbol": "ownership_record_growth_is_bounded_and_unrelated_files_are_preserved",
       "qualifiedName": "updater::tests::ownership_record_growth_is_bounded_and_unrelated_files_are_preserved",
       "signature": "async fn ownership_record_growth_is_bounded_and_unrelated_files_are_preserved()",
@@ -68543,8 +68678,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 491,
-      "endLine": 515,
+      "line": 565,
+      "endLine": 589,
       "symbol": "old_installer_cleanup_keeps_current_and_unrelated_files",
       "qualifiedName": "updater::tests::old_installer_cleanup_keeps_current_and_unrelated_files",
       "signature": "async fn old_installer_cleanup_keeps_current_and_unrelated_files()",
@@ -68598,8 +68733,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 518,
-      "endLine": 528,
+      "line": 592,
+      "endLine": 602,
       "symbol": "updater_lock_is_retained_and_reused_after_release",
       "qualifiedName": "updater::tests::updater_lock_is_retained_and_reused_after_release",
       "signature": "fn updater_lock_is_retained_and_reused_after_release()",
@@ -68652,8 +68787,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/updater/tests.rs",
-      "line": 532,
-      "endLine": 555,
+      "line": 606,
+      "endLine": 629,
       "symbol": "updater_rejects_reparse_root_and_preserves_reparse_partial",
       "qualifiedName": "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial",
       "signature": "async fn updater_rejects_reparse_root_and_preserves_reparse_partial()",
@@ -68709,8 +68844,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/updater/tests.rs",
-      "line": 557,
-      "endLine": 565,
+      "line": 631,
+      "endLine": 639,
       "symbol": "unique_test_root",
       "qualifiedName": "updater::tests::unique_test_root",
       "signature": "fn unique_test_root(label: &str) -> PathBuf",
@@ -68784,8 +68919,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/updater/tests.rs",
-      "line": 567,
-      "endLine": 589,
+      "line": 641,
+      "endLine": 663,
       "symbol": "base64_encode",
       "qualifiedName": "updater::tests::base64_encode",
       "signature": "fn base64_encode(bytes: &[u8]) -> String",

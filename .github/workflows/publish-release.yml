@@ -278,9 +278,12 @@ jobs:
             '- Fixed stale asynchronous results, filename-edit races, and cancellation during playlist admission.'
             '- Removed a redundant link-inspection request and fixed multi-video X posts resolving to another playlist.'
             '- Updated yt-dlp to 2026.08.19, resolving the reproduced YouTube HTTP 403 for Best-quality MP4.'
+            '- Fixed empty optional signing-key settings incorrectly blocking authenticated app and runtime updates.'
             '- Expanded regression, lifecycle, architecture, and performance checks without changing the existing user experience.'
             ''
             'This is a normal 0.7.1 release. Work toward 1.0 continues.'
+            ''
+            'This 0.7.1 build replaces the initial 0.7.1 publication to correct updater key handling. Original 0.6 and earlier 0.7.1 installations need a one-time manual installation of this corrected setup; an unchanged version number cannot trigger an update from the earlier 0.7.1 build.'
             ''
             'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
           ) -join "`n"
