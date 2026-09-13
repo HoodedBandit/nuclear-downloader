@@ -624,12 +624,15 @@ async fn exercise_playlist_batch(
         .await
         .map_err(display_error)?;
     let (retry_work, _) = store
-        .enqueue(&[cancelled.queue_item.id.clone()], QueuePriority::Normal)
+        .enqueue(
+            std::slice::from_ref(&cancelled.queue_item.id),
+            QueuePriority::Normal,
+        )
         .await
         .map_err(display_error)?;
     let retry_id = retry_work[0].operation_id.clone();
     retry_admission
-        .publish(&[retry_id.clone()])
+        .publish(std::slice::from_ref(&retry_id))
         .await
         .map_err(display_error)?;
     let retry = store

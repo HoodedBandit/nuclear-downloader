@@ -88,6 +88,18 @@ function setup(initialItems: QueueItem[] = [item()]) {
 }
 
 describe('QueueActionsController', () => {
+  it('persists filename overrides through the queue command port', async () => {
+    const test = setup();
+    test.invokeMock.mockResolvedValue(undefined);
+
+    await test.controller.saveFilename('one', 'Renamed.mp4');
+
+    expect(test.invokeMock).toHaveBeenCalledWith('update_queue_item', {
+      itemId: 'one',
+      input: { filenameOverride: 'Renamed.mp4' }
+    });
+  });
+
   it('deduplicates enqueue payloads and preserves front/normal priority', async () => {
     const test = setup();
     test.invokeMock.mockResolvedValue([]);

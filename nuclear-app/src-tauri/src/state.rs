@@ -2,6 +2,10 @@ mod commit;
 mod data;
 mod maintenance;
 mod operation;
+mod pending;
+mod pending_finalization;
+mod playlist;
+mod preparation;
 mod queue;
 mod reducers;
 

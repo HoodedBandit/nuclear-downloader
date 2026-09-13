@@ -31,6 +31,13 @@ export class QueueActionsController {
     private readonly dependencies: QueueActionDependencies
   ) {}
 
+  async saveFilename(itemId: string, filenameOverride: string | null): Promise<void> {
+    await this.dependencies.invoke('update_queue_item', {
+      itemId,
+      input: { filenameOverride }
+    });
+  }
+
   async enqueueItems(itemIds: string[], prioritize = false): Promise<void> {
     const uniqueIds = [...new Set(itemIds)];
     if (uniqueIds.length === 0 || !this.dependencies.getCanStartDownloads()) return;

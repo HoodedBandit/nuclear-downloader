@@ -1,4 +1,5 @@
 use super::data::{SharedRecord, StateData};
+use super::preparation::{apply_prepared_video, validated_preparation_video};
 use crate::app_error::AppError;
 use crate::journal::{now_ms, retained_operation_ids, OperationRetentionMetadata};
 use crate::models::{
@@ -19,64 +20,7 @@ pub(super) fn apply_operation_transition(
     published_output: Option<PublishedOutput>,
     now: u64,
 ) -> Result<Vec<StateDelta>, AppError> {
-    let preparation_video = if let Some(inspection) = inspection_result.as_deref() {
-        let operation = state
-            .operations
-            .get(id)
-            .ok_or_else(|| AppError::not_found("operation"))?;
-        if let Some(queue_item_id) = operation.queue_item_id.as_ref() {
-            let item = state
-                .queue
-                .get(queue_item_id)
-                .ok_or_else(|| AppError::not_found("queue item"))?;
-            if item.preparation != Some(crate::models::QueuePreparation::Pending)
-                || item.latest_operation_id.as_deref() != Some(id)
-                || operation.state == OperationState::Cancelling
-            {
-                return Err(AppError::new(
-                    "stale_preparation",
-                    "This metadata preparation attempt is no longer authoritative.",
-                ));
-            }
-            match inspection {
-                UrlInspection::Video { video }
-                    if item
-                        .source_media_id
-                        .as_deref()
-                        .is_none_or(|expected| expected == video.id)
-                        && video.selection == item.selection =>
-                {
-                    if !video.has_audio
-                        && matches!(
-                            item.format.as_str(),
-                            "mp3" | "flac" | "wav" | "aac" | "opus"
-                        )
-                    {
-                        return Err(AppError::invalid(
-                            "Audio-only output is unavailable because this item has no audio stream.",
-                        ));
-                    }
-                    Some(video.clone())
-                }
-                UrlInspection::Video { .. } => {
-                    return Err(AppError::new(
-                        "preparation_identity_mismatch",
-                        "Prepared metadata did not match the queue item identity.",
-                    ))
-                }
-                UrlInspection::Playlist { .. } => {
-                    return Err(AppError::new(
-                        "inspection_result_kind",
-                        "Metadata preparation returned a playlist instead of a video.",
-                    ))
-                }
-            }
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let preparation_video = validated_preparation_video(state, id, inspection_result.as_deref())?;
     let queue_item_id = {
         let operation = state
             .operations
@@ -137,15 +81,7 @@ pub(super) fn apply_operation_transition(
     if let Some(queue_item_id) = queue_item_id {
         if let Some(item) = state.queue.get_mut(&queue_item_id) {
             if let Some(video) = preparation_video {
-                item.title = video.title;
-                item.available_qualities = video.available_qualities;
-                item.has_audio = video.has_audio;
-                item.source_media_id = Some(video.id.clone());
-                item.selection = video.selection;
-                item.preparation = None;
-                item.latest_operation_id = None;
-                item.preparation_operation_id = None;
-                item.state = QueueItemState::Inert;
+                apply_prepared_video(item, video);
             } else {
                 item.state = queue_state_for_operation(operation_state);
             }

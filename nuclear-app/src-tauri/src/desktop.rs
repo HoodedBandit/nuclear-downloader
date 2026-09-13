@@ -6,7 +6,15 @@ use crate::outbox::StatePublication;
 use crate::services::updates::InstallerActions;
 use crate::state::StateStore;
 use std::sync::Arc;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
+
+pub(crate) fn focus_primary_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
 
 fn record_event_delivery_failure(diagnostics: &Diagnostics, event: &str, error: &str) {
     diagnostics.log(

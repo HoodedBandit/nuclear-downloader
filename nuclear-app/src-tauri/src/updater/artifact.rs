@@ -1,21 +1,34 @@
-use super::release::{parse_semver, validate_sha256};
-use crate::bounded_read::{read_bounded_async, BoundedReadError};
-use semver::Version;
-use serde::{Deserialize, Serialize};
+mod ownership;
+mod path;
+
+#[cfg(test)]
+use super::release::parse_semver;
+#[cfg(test)]
+pub(super) use ownership::read_owner_record_bytes;
+pub(super) use ownership::{
+    is_exact_owned_installer_name, is_owned_partial_installer_name, owner_record_path,
+    write_owner_record,
+};
+use ownership::{read_owner_record, OWNER_RECORD_SUFFIX};
+use path::opened_file_is_reparse;
+#[cfg(test)]
+pub(super) use path::UPDATE_LOCK_FILE_NAME;
+pub(super) use path::{
+    cleanup_current_artifact, cleanup_file_if_exists, ensure_no_reparse_components,
+    is_reparse_or_symlink, updater_directory, UpdateDirectoryLock,
+};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use tokio::fs;
+#[cfg(test)]
 use tokio::io::AsyncWriteExt;
 
 #[cfg(test)]
 use crate::lifecycle::UpdateRunError;
 
-const UPDATE_DIRECTORY_NAME: &str = "updater";
-pub(super) const UPDATE_LOCK_FILE_NAME: &str = "update.lock";
-const OWNER_RECORD_SUFFIX: &str = ".nuclear-owner.json";
 pub(super) const INSTALLER_LIMIT: u64 = 1024 * 1024 * 1024;
 
 /// A cryptographically verified installer whose open file handle prevents
@@ -64,67 +77,6 @@ impl InstallerHandoff {
     pub(crate) fn installer_path(&self) -> &Path {
         self.installer.path()
     }
-}
-
-/// Holds an open, non-shareable file on Windows. A crashed process releases the
-/// OS handle, so a stale marker cannot permanently wedge the updater.
-pub(super) struct UpdateDirectoryLock {
-    file: Option<std::fs::File>,
-}
-
-impl UpdateDirectoryLock {
-    pub(super) fn acquire(directory: &Path) -> Result<Self, String> {
-        if let Some(parent) = directory.parent() {
-            ensure_no_reparse_components(parent)?;
-        }
-        std::fs::create_dir_all(directory)
-            .map_err(|error| format!("Failed to create update temp folder: {error}"))?;
-        ensure_no_reparse_components(directory)?;
-        let directory_metadata = std::fs::symlink_metadata(directory)
-            .map_err(|error| format!("Failed to inspect update temp folder: {error}"))?;
-        if !directory_metadata.is_dir() || is_reparse_or_symlink(directory)? {
-            return Err("The updater directory must be a regular non-reparse directory.".into());
-        }
-        let path = directory.join(UPDATE_LOCK_FILE_NAME);
-        if path.exists() {
-            ensure_no_reparse_components(&path)?;
-            let metadata = std::fs::symlink_metadata(&path)
-                .map_err(|error| format!("Failed to inspect updater lock: {error}"))?;
-            if !metadata.is_file() || is_reparse_or_symlink(&path)? {
-                return Err("The updater lock must be a regular non-reparse file.".into());
-            }
-        }
-        let mut options = OpenOptions::new();
-        options.create(true).write(true);
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            options.share_mode(0);
-        }
-        let file = options.open(&path).map_err(|error| {
-            format!("Another updater process owns the update directory: {error}")
-        })?;
-        ensure_no_reparse_components(&path)?;
-        if is_reparse_or_symlink(&path)? {
-            return Err("The updater lock became a reparse point.".into());
-        }
-        Ok(Self { file: Some(file) })
-    }
-}
-
-impl Drop for UpdateDirectoryLock {
-    fn drop(&mut self) {
-        drop(self.file.take());
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct OwnedArtifactRecord {
-    schema_version: u32,
-    artifact_name: String,
-    installer_size: u64,
-    installer_sha256: String,
 }
 
 pub(crate) async fn cleanup_owned_installer_stages() -> Result<(), String> {
@@ -339,17 +291,6 @@ pub(super) async fn cleanup_owned_prepared_directories(target_dir: &Path) -> Res
     Ok(())
 }
 
-pub(super) fn is_owned_partial_installer_name(name: &str) -> bool {
-    name.strip_prefix("Nuclear.Downloader_")
-        .and_then(|rest| rest.split_once("_x64-setup.exe."))
-        .and_then(|(version, suffix)| {
-            let operation_id = suffix.strip_suffix(".part")?;
-            (parse_semver(version).is_ok() && uuid::Uuid::parse_str(operation_id).is_ok())
-                .then_some(())
-        })
-        .is_some()
-}
-
 pub(super) async fn cleanup_owned_old_installers(
     target_dir: &Path,
     current_installer_name: &str,
@@ -383,121 +324,6 @@ pub(super) async fn cleanup_owned_old_installers(
         cleanup_file_if_exists(&record_path).await;
     }
     Ok(())
-}
-
-pub(super) fn is_exact_owned_installer_name(name: &str) -> bool {
-    let Some(version_text) = name
-        .strip_prefix("Nuclear.Downloader_")
-        .and_then(|rest| rest.strip_suffix("_x64-setup.exe"))
-    else {
-        return false;
-    };
-    let Ok(version) = Version::parse(version_text) else {
-        return false;
-    };
-    version.pre.is_empty() && version.build.is_empty() && version.to_string() == version_text
-}
-
-pub(super) fn owner_record_path(artifact_path: &Path) -> Result<PathBuf, String> {
-    let name = artifact_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
-    Ok(artifact_path.with_file_name(format!("{name}{OWNER_RECORD_SUFFIX}")))
-}
-
-async fn read_owner_record(
-    artifact_path: &Path,
-) -> Result<Option<(PathBuf, OwnedArtifactRecord)>, String> {
-    let record_path = owner_record_path(artifact_path)?;
-    let metadata = match fs::symlink_metadata(&record_path).await {
-        Ok(metadata) => metadata,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(format!("Failed to inspect updater ownership data: {error}")),
-    };
-    let bytes = read_owner_record_bytes(&record_path, &metadata).await?;
-    let record: OwnedArtifactRecord = serde_json::from_slice(&bytes)
-        .map_err(|error| format!("Failed to parse updater ownership data: {error}"))?;
-    let artifact_name = artifact_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
-    if record.schema_version != 1
-        || record.artifact_name != artifact_name
-        || record.installer_size == 0
-        || record.installer_size > INSTALLER_LIMIT
-        || validate_sha256(&record.installer_sha256).is_err()
-    {
-        return Err("The updater ownership data does not match its artifact.".into());
-    }
-    Ok(Some((record_path, record)))
-}
-
-pub(super) async fn read_owner_record_bytes(
-    record_path: &Path,
-    metadata: &std::fs::Metadata,
-) -> Result<Vec<u8>, String> {
-    if !metadata.is_file() || metadata.len() > 4 * 1024 || is_reparse_or_symlink(record_path)? {
-        return Err("The updater ownership data is not a regular bounded file.".into());
-    }
-    ensure_no_reparse_components(record_path)?;
-    let mut file = fs::File::open(record_path)
-        .await
-        .map_err(|error| format!("Failed to read updater ownership data: {error}"))?;
-    let opened_metadata = file
-        .metadata()
-        .await
-        .map_err(|error| format!("Failed to inspect updater ownership data: {error}"))?;
-    if !opened_metadata.is_file() || opened_metadata.len() > 4 * 1024 {
-        return Err("The updater ownership data is not a regular bounded file.".into());
-    }
-    let bytes = match read_bounded_async(&mut file, 4 * 1024).await {
-        Ok(bytes) => bytes,
-        Err(BoundedReadError::LimitExceeded | BoundedReadError::InvalidLimit) => {
-            return Err("The updater ownership data is not a regular bounded file.".into());
-        }
-        Err(BoundedReadError::Io(error)) => {
-            return Err(format!("Failed to read updater ownership data: {error}"));
-        }
-    };
-    Ok(bytes)
-}
-
-pub(super) async fn write_owner_record(
-    artifact_path: &Path,
-    installer_size: u64,
-    installer_sha256: &str,
-) -> Result<PathBuf, String> {
-    let record_path = owner_record_path(artifact_path)?;
-    let artifact_name = artifact_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| "The updater artifact name is invalid.".to_string())?;
-    let record = OwnedArtifactRecord {
-        schema_version: 1,
-        artifact_name: artifact_name.to_string(),
-        installer_size,
-        installer_sha256: installer_sha256.to_string(),
-    };
-    let bytes = serde_json::to_vec(&record)
-        .map_err(|error| format!("Failed to encode updater ownership data: {error}"))?;
-    let mut file = fs::OpenOptions::new()
-        .create_new(true)
-        .write(true)
-        .open(&record_path)
-        .await
-        .map_err(|error| format!("Failed to create updater ownership data: {error}"))?;
-    if let Err(error) = file.write_all(&bytes).await {
-        drop(file);
-        cleanup_file_if_exists(&record_path).await;
-        return Err(format!("Failed to write updater ownership data: {error}"));
-    }
-    if let Err(error) = file.sync_all().await {
-        drop(file);
-        cleanup_file_if_exists(&record_path).await;
-        return Err(format!("Failed to sync updater ownership data: {error}"));
-    }
-    Ok(record_path)
 }
 
 pub(super) async fn open_or_quarantine_cached_installer(
@@ -707,80 +533,4 @@ pub(super) fn open_verified_installer_sync(
         path: path.to_path_buf(),
         _read_lease: file,
     }))
-}
-
-fn opened_file_is_reparse(metadata: &std::fs::Metadata) -> bool {
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::MetadataExt;
-        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-        metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0
-    }
-    #[cfg(not(windows))]
-    {
-        metadata.file_type().is_symlink()
-    }
-}
-
-pub(super) fn updater_directory() -> PathBuf {
-    dirs::data_local_dir()
-        .unwrap_or_else(std::env::temp_dir)
-        .join("NuclearDownloader")
-        .join(UPDATE_DIRECTORY_NAME)
-}
-
-pub(super) fn is_reparse_or_symlink(path: &Path) -> Result<bool, String> {
-    let metadata = std::fs::symlink_metadata(path)
-        .map_err(|error| format!("Failed to inspect {}: {error}", path.display()))?;
-    if metadata.file_type().is_symlink() {
-        return Ok(true);
-    }
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::MetadataExt;
-        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
-        Ok(metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0)
-    }
-    #[cfg(not(windows))]
-    Ok(false)
-}
-
-pub(super) fn ensure_no_reparse_components(path: &Path) -> Result<(), String> {
-    let mut ancestors = path.ancestors().collect::<Vec<_>>();
-    ancestors.reverse();
-    for component_path in ancestors {
-        if component_path.exists() && is_reparse_or_symlink(component_path)? {
-            return Err(format!(
-                "Updater path traverses a symbolic link or reparse point: {}",
-                component_path.display()
-            ));
-        }
-    }
-    Ok(())
-}
-
-pub(super) async fn cleanup_file_if_exists(path: &Path) {
-    if let Ok(metadata) = fs::symlink_metadata(path).await {
-        if metadata.is_file()
-            && is_reparse_or_symlink(path).ok() == Some(false)
-            && ensure_no_reparse_components(path).is_ok()
-        {
-            let _ = fs::remove_file(path).await;
-        }
-    }
-}
-
-pub(super) async fn cleanup_current_artifact(path: &Path) {
-    cleanup_file_if_exists(path).await;
-    // Keep ownership proof while the artifact remains or cannot be inspected,
-    // so a later cleanup pass can retry without treating it as unrelated data.
-    if !matches!(
-        fs::symlink_metadata(path).await,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound
-    ) {
-        return;
-    }
-    if let Ok(record_path) = owner_record_path(path) {
-        cleanup_file_if_exists(&record_path).await;
-    }
 }

@@ -46,7 +46,7 @@ pub(crate) async fn add_inspection_result_to_queue(
             ));
         }
         let (item, _deltas) = backend.state_store.add_queue_item(input).await?;
-        Ok(AddQueueItemResult::Single(item))
+        Ok(AddQueueItemResult::Single(Box::new(item)))
     })
     .await
 }

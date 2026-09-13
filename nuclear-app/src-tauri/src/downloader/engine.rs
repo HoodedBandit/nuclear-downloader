@@ -15,7 +15,7 @@ use super::progress::{
 };
 use super::publication::{
     build_staging_dir, cleanup_staging_with_warning, publish_staged_output, reset_staging_dir,
-    resolve_staged_output,
+    resolve_request_staged_output,
 };
 use super::validation::{validate_download_request, validate_output_directory};
 use crate::lifecycle::DownloadManager;
@@ -454,11 +454,7 @@ async fn run_webm_download(
         .await
         {
             DownloadAttemptResult::Completed(_) => {
-                let intermediate_path = match resolve_staged_output(
-                    &staging_dir,
-                    request.selection.as_ref(),
-                    request.expected_media_id.as_deref(),
-                ) {
+                let intermediate_path = match resolve_request_staged_output(&staging_dir, request) {
                     Ok(path) => path,
                     Err(error) => {
                         cleanup_staging_with_warning(
@@ -605,11 +601,7 @@ pub async fn start_download(
         .await
         {
             DownloadAttemptResult::Completed(_) => {
-                let staged_path = match resolve_staged_output(
-                    &staging_dir,
-                    request.selection.as_ref(),
-                    request.expected_media_id.as_deref(),
-                ) {
+                let staged_path = match resolve_request_staged_output(&staging_dir, &request) {
                     Ok(path) => path,
                     Err(error) => {
                         cleanup_staging_with_warning(

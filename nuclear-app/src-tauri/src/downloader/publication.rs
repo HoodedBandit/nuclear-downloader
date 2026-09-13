@@ -2,10 +2,13 @@ mod destination;
 mod resolution;
 mod staging;
 
+use crate::models::DownloadRequest;
+use std::path::Path;
+
 #[cfg(test)]
 use super::process::DownloadJob;
 #[cfg(test)]
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub(super) use destination::publish_staged_output;
 pub(super) use resolution::resolve_staged_output;
@@ -16,6 +19,17 @@ use resolution::{
 };
 pub(crate) use staging::cleanup_abandoned_download_stages;
 pub(super) use staging::{build_staging_dir, cleanup_staging_with_warning, reset_staging_dir};
+
+pub(super) fn resolve_request_staged_output(
+    staging_dir: &Path,
+    request: &DownloadRequest,
+) -> Result<std::path::PathBuf, resolution::StagedOutputError> {
+    resolve_staged_output(
+        staging_dir,
+        request.selection.as_ref(),
+        request.expected_media_id.as_deref(),
+    )
+}
 #[cfg(test)]
 use staging::{
     cleanup_abandoned_download_stages_at, cleanup_staging_dir, verify_staging_marker,

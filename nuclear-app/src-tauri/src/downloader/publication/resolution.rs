@@ -213,22 +213,7 @@ pub(super) fn resolve_recorded_output(
             message: "Downloader output record did not contain a filepath.".to_string(),
         });
     }
-    if expected_media_id.is_some_and(|expected| record.id.as_deref() != Some(expected)) {
-        return Err(StagedOutputError {
-            code: "staging_output_identity_mismatch",
-            message: "Downloader output identity did not match the expected media.".to_string(),
-        });
-    }
-    if let Some(selection) = selection {
-        if record.id.as_deref() != Some(selection.entry_id.as_str())
-            || record.extractor_key.as_deref() != Some(selection.extractor_key.as_str())
-        {
-            return Err(StagedOutputError {
-                code: "staging_output_identity_mismatch",
-                message: "Downloader output identity did not match the selected media.".to_string(),
-            });
-        }
-    }
+    validate_output_identity(&record, selection, expected_media_id)?;
 
     validate_staged_file(Path::new(&record.filepath), staging_dir).map_err(|message| {
         StagedOutputError {
@@ -236,6 +221,29 @@ pub(super) fn resolve_recorded_output(
             message,
         }
     })
+}
+
+fn validate_output_identity(
+    record: &FinalOutputRecord,
+    selection: Option<&MediaSelection>,
+    expected_media_id: Option<&str>,
+) -> Result<(), StagedOutputError> {
+    if expected_media_id.is_some_and(|expected| record.id.as_deref() != Some(expected)) {
+        return Err(StagedOutputError {
+            code: "staging_output_identity_mismatch",
+            message: "Downloader output identity did not match the expected media.".to_string(),
+        });
+    }
+    if selection.is_some_and(|selection| {
+        record.id.as_deref() != Some(selection.entry_id.as_str())
+            || record.extractor_key.as_deref() != Some(selection.extractor_key.as_str())
+    }) {
+        return Err(StagedOutputError {
+            code: "staging_output_identity_mismatch",
+            message: "Downloader output identity did not match the selected media.".to_string(),
+        });
+    }
+    Ok(())
 }
 
 fn resolve_unambiguous_fallback(staging_dir: &Path) -> Result<PathBuf, StagedOutputError> {

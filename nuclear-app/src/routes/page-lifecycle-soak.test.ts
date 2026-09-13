@@ -89,7 +89,9 @@ const completedInspection = {
 
 const playlistInspection = {
   ...completedInspection,
-  id: 'soak-playlist-inspection',
+  // commandResult(begin_inspection) returns this operation ID; the page waiter
+  // intentionally ignores terminal events for unrelated operations.
+  id: 'soak-inspection',
   inspectionResult: {
     kind: 'playlist',
     playlist: {

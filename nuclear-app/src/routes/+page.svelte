@@ -95,8 +95,10 @@
     unloadedError: rendererUnloadError
   };
   const operationCommands = { ...commands, waitForOperation };
+  let queueActions!: QueueActionsController;
   const queuePresentation = new QueuePresentationController(queueState, {
-    ...commands,
+    isActive: commands.isActive,
+    saveFilename: (itemId, filenameOverride) => queueActions.saveFilename(itemId, filenameOverride),
     focusFilenameEditor: async () => {
       await tick();
       if (!pageLifetime.isActive) return;
@@ -107,7 +109,7 @@
       titleEditorInput = null;
     }
   });
-  const queueActions = new QueueActionsController(queueActionState, {
+  queueActions = new QueueActionsController(queueActionState, {
     ...commands,
     getItems: () => queuePresentation.getItems(),
     replaceItem: (id, mapper) => queuePresentation.replaceItem(id, mapper),

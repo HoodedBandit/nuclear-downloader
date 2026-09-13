@@ -540,7 +540,7 @@ async fn pending_preparation_blocks_edit_and_retries_inspection_after_failure() 
         .await
         .unwrap();
     let (retry, _) = store
-        .enqueue(&[item_id.clone()], QueuePriority::Normal)
+        .enqueue(std::slice::from_ref(item_id), QueuePriority::Normal)
         .await
         .unwrap();
     assert_eq!(retry.len(), 1);
@@ -709,7 +709,7 @@ async fn late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item
         .await
         .unwrap();
     let retry = store
-        .enqueue(&[item_id.clone()], QueuePriority::Normal)
+        .enqueue(std::slice::from_ref(&item_id), QueuePriority::Normal)
         .await
         .unwrap()
         .0[0]
@@ -748,7 +748,10 @@ async fn late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item
         .finalize_operation(&retry, OperationState::Cancelled, None)
         .await
         .unwrap();
-    store.remove_queue_items(&[item_id.clone()]).await.unwrap();
+    store
+        .remove_queue_items(std::slice::from_ref(&item_id))
+        .await
+        .unwrap();
     assert!(store
         .complete_inspection(&retry, UrlInspection::Video { video: late_video })
         .await
