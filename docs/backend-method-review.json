@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "664193a6de0e35e2147357fa1c2e7530c0cbe3ba",
+  "sourceCommit": "428cac2f0f9ab01703a537e75359979b659ee717",
   "sourceRoot": "nuclear-app/src-tauri",
   "digestConvention": "sha256-lowercase(exact item span, CRLF/CR normalized to LF, no trimming)",
   "reviewSemantics": "Discovery is pending. Only complete reviewer-authored source review fields may set reviewed.",
@@ -47871,48 +47871,52 @@
       "endLine": 143,
       "symbol": "resolve_tool_fallback",
       "qualifiedName": "runtime::verified::resolve_tool_fallback",
-      "signature": "fn resolve_tool_fallback( name: &str, allow_fallback: bool, ) -> Result<Option<RuntimeToolLease>, String>",
-      "sourceDigest": "dc02686ff178e37182686f7a570b9ab1447ee4812e3ca0cc351d356623863039",
+      "signature": "fn resolve_tool_fallback( _name: &str, allow_fallback: bool, ) -> Result<Option<RuntimeToolLease>, String>",
+      "sourceDigest": "96f591bdb55e2fe707153f77f1574b4764abda8aa12dc42b4d8c50371ba4cf20",
       "cfg": [],
       "callers": [
         "runtime::verified::resolve_tool_lease_from_cache"
       ],
       "inputs": [
-        "Borrowed tool name and fallback permission."
+        "Borrowed tool name and explicit fallback permission; the underscore-prefixed binding remains semantically live in debug builds."
       ],
       "sideEffects": [
-        "No filesystem access; cfg(test) increments successful-resolution counter for debug fallback."
+        "No filesystem access; cfg(test) increments the successful-resolution counter when the debug fallback is returned."
       ],
       "errors": [
-        "No current error branch despite Result return."
+        "No current error branch despite the Result return type."
       ],
       "ownership": [
-        "Debug Some owns PathBuf/name-derived source and no File/cache guard."
+        "A debug Some result owns a PathBuf derived from _name and contains no File or cache guard."
       ],
       "locks": [
-        "No lock."
+        "No lock is acquired."
       ],
       "invariants": [
-        "allow_fallback=false and all non-debug builds return None, preventing unverified PATH execution in production."
+        "allow_fallback=false returns None in every profile.",
+        "Only debug_assertions builds may resolve the supplied tool name through development PATH fallback; release builds always return None and cannot execute an unverified PATH tool."
       ],
       "tests": [
-        "Static-only for direct invocation; runtime::verified::resolve_tool_lease_from_cache is tested with fallback disabled, while release refusal is compile-time cfg behavior."
+        "runtime::tests::verified_runtime_cache_waits_for_leases_and_blocks_reacquisition exercises resolve_tool_lease_from_cache with fallback disabled and a verified cache lease.",
+        "runtime::tests::explicit_root_runtime_harness_reuses_leases_and_refreshes exercises the same resolver boundary with fallback disabled through the explicit-root harness.",
+        "The debug PATH-fallback and release refusal branches are compile-time cfg behavior and have no focused direct runtime test; the identifier-only correction required no new focused test."
       ],
       "evidence": [
-        "Current source span src/runtime/verified.rs:118-143, digest dc02686ff178e37182686f7a570b9ab1447ee4812e3ca0cc351d356623863039.",
-        "Body-specific callers and named tests were resolved against cb616a1 source.",
-        "No separate source defect identified in this span."
+        "Reviewed current source span src/runtime/verified.rs:118-143, digest 96f591bdb55e2fe707153f77f1574b4764abda8aa12dc42b4d8c50371ba4cf20, plus its direct caller and existing cache-resolution tests.",
+        "The name-to-_name correction changes only binding spelling: debug PathBuf construction still uses the supplied name, while release compilation no longer reports it unused.",
+        "target/engineering-post-release-warning-rust.log records 384 passed, 0 failed, and 4 ignored after the correction.",
+        "target/engineering-strict-release-clippy.log records strict release Clippy across all targets and all features with -D warnings completing successfully."
       ],
-      "purpose": "Implement the explicitly gated debug-only unresolved-tool PATH fallback.",
-      "output": "Result<Option<RuntimeToolLease>, String>; Some path-only lease only in debug with permission.",
-      "cancellation": "Synchronous and not cancellable.",
+      "purpose": "Implement the explicitly gated debug-only development PATH fallback for an unresolved runtime tool.",
+      "output": "Result<Option<RuntimeToolLease>, String>; Some path-only lease only in debug with permission, otherwise None.",
+      "cancellation": "Synchronous and non-cancellable.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/runtime/verified.rs",
-      "reviewer": "/root/lifecycle_ledger",
-      "reviewedAt": "2026-09-09T01:37:58Z",
+      "reviewer": "Codex release-warning method review",
+      "reviewedAt": "2026-09-13T22:20:00Z",
       "status": "reviewed",
-      "notes": "Substantive body review complete and identity fields reconciled to cb616a1-final.json.",
+      "notes": "Source identity and the functional debug/release boundary were re-reviewed after the release-only unused-variable correction; behavior is unchanged and this is development PATH fallback rather than logging.",
       "ownerCall": null
     },
     {
@@ -76138,6 +76142,7 @@
     "docs/backend-method-reviews/engineering-2026-09-13/playlist-services.json",
     "docs/backend-method-reviews/engineering-2026-09-13/state-core.json",
     "docs/backend-method-reviews/engineering-2026-09-13/state-tests.json",
-    "docs/backend-method-reviews/engineering-2026-09-13/updater.json"
+    "docs/backend-method-reviews/engineering-2026-09-13/updater.json",
+    "docs/backend-method-reviews/engineering-2026-09-13/runtime-verified.json"
   ]
 }

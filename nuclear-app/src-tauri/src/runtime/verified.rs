@@ -116,7 +116,7 @@ pub(super) fn resolve_tool_lease_from_cache(
 }
 
 fn resolve_tool_fallback(
-    name: &str,
+    _name: &str,
     allow_fallback: bool,
 ) -> Result<Option<RuntimeToolLease>, String> {
     if !allow_fallback {
@@ -128,7 +128,7 @@ fn resolve_tool_fallback(
         #[cfg(test)]
         TEST_RUNTIME_SUCCESSFUL_RESOLUTIONS.fetch_add(1, Ordering::SeqCst);
         Ok(Some(RuntimeToolLease {
-            path: PathBuf::from(name),
+            path: PathBuf::from(_name),
             source: "path".into(),
             runtime_version: None,
             _read_lease: None,
