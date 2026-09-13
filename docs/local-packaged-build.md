@@ -8,8 +8,15 @@ pwsh -NoProfile -File .\scripts\build-local-app.ps1
 ```
 
 The command requires the repository-pinned Node 22.23.1, npm 10.9.9, Rust
-1.94.1, and the exact sidecars in `sidecars.lock.json`. It invokes Tauri's build
-mode, which embeds the production frontend and uses the packaged custom protocol.
+1.94.1, the exact sidecars in `sidecars.lock.json`, and the public updater trust
+anchor variables `NUCLEAR_UPDATE_KEY_ID` and `NUCLEAR_UPDATE_PUBLIC_KEY`.
+During a rotation, set `NUCLEAR_UPDATE_NEXT_KEY_ID` and
+`NUCLEAR_UPDATE_NEXT_PUBLIC_KEY` together; otherwise leave both empty. Key IDs
+must be canonical and distinct, and each public key must be a valid
+Tauri-wrapped Minisign public key. These are public verification keys, not
+signing secrets. The preflight records key IDs and SHA-256 hashes of the public
+key strings without copying raw key text into the receipt. It invokes Tauri's
+build mode, which embeds the production frontend and uses the packaged custom protocol.
 It does not invoke the development server.
 
 Each invocation creates a new marker-owned directory below
@@ -49,7 +56,11 @@ To check prerequisites and safeguards without building or launching anything:
 pwsh -NoProfile -File .\scripts\build-local-app.ps1 -PreflightOnly
 ```
 
-The current documented result is preflight and contract validation only. No
-local package has been built, signed, launched, or accepted. The local command
+The first attempted local package build compiled dependencies for about nine
+minutes and then failed in the release build script because the required public
+updater-key variables were absent. That failure is preserved in
+`target/engineering-local-packaged-build.log`; it is not a successful build or
+qualification result. No local package has been successfully built, signed,
+launched, or accepted. The local command
 uses Tauri's `--no-sign` mode and cannot replace the protected signed release
 candidate workflow.

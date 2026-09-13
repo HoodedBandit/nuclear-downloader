@@ -25,6 +25,40 @@ $registeredDirectory = Join-Path $targetRoot 'install-audit-v0.5.4'
 
 . $contractScript
 
+$originalUpdateEnvironment = [ordered]@{
+    NUCLEAR_UPDATE_KEY_ID = $env:NUCLEAR_UPDATE_KEY_ID
+    NUCLEAR_UPDATE_PUBLIC_KEY = $env:NUCLEAR_UPDATE_PUBLIC_KEY
+    NUCLEAR_UPDATE_NEXT_KEY_ID = $env:NUCLEAR_UPDATE_NEXT_KEY_ID
+    NUCLEAR_UPDATE_NEXT_PUBLIC_KEY = $env:NUCLEAR_UPDATE_NEXT_PUBLIC_KEY
+}
+try {
+$validPublicKey = 'dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXkgRTc2MjBGMTg0MkI0RTgxRgpSV1FmNkxSQ0dBOWk1M21sWWVjTzRJelQ1MVRHUHB2V3VjTlNDaDFDQk0wUVRhTG43M1k3R0ZPMw=='
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration '' '' '' '' } 'Missing release updater keys were accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'bad id' $validPublicKey '' '' } 'Malformed current key ID was accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'current' 'not-base64' '' '' } 'Malformed current public key was accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'current' $validPublicKey 'next' '' } 'A partial next-key pair was accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'current' $validPublicKey 'bad next' $validPublicKey } 'Malformed next key ID was accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'current' $validPublicKey 'next' 'not-base64' } 'Malformed next public key was accepted.'
+Assert-Rejected { Get-NuclearUpdateKeyConfiguration 'current' $validPublicKey 'current' $validPublicKey } 'Duplicate current/next key IDs were accepted.'
+$validKeys = Get-NuclearUpdateKeyConfiguration 'current' $validPublicKey '' ''
+Assert-True ($validKeys.current.id -ceq 'current' -and $validKeys.next -eq $null) 'Valid current key with empty optional rotation slots was rejected.'
+Assert-True ([string]$validKeys.current.publicKeySha256 -cmatch '^[0-9a-f]{64}$') 'Public key identity hash was not recorded.'
+$env:NUCLEAR_UPDATE_KEY_ID = 'current'
+$env:NUCLEAR_UPDATE_PUBLIC_KEY = $validPublicKey
+$env:NUCLEAR_UPDATE_NEXT_KEY_ID = ''
+$env:NUCLEAR_UPDATE_NEXT_PUBLIC_KEY = ''
+$missingKeyProbe = Join-Path $targetRoot "local-packaged-missing-key-$([Guid]::NewGuid().ToString('N'))"
+$malformedKeyProbe = Join-Path $targetRoot "local-packaged-malformed-key-$([Guid]::NewGuid().ToString('N'))"
+$env:NUCLEAR_UPDATE_KEY_ID = ''
+$env:NUCLEAR_UPDATE_PUBLIC_KEY = ''
+Assert-Rejected { & $buildScript -PreflightOnly -BuildRoot $missingKeyProbe } 'Build preflight accepted missing release updater keys.'
+Assert-True (-not (Test-Path -LiteralPath $missingKeyProbe)) 'Missing-key preflight created its output directory.'
+$env:NUCLEAR_UPDATE_KEY_ID = 'current'
+$env:NUCLEAR_UPDATE_PUBLIC_KEY = 'not-base64'
+Assert-Rejected { & $buildScript -PreflightOnly -BuildRoot $malformedKeyProbe } 'Build preflight accepted a malformed updater public key.'
+Assert-True (-not (Test-Path -LiteralPath $malformedKeyProbe)) 'Malformed-key preflight created its output directory.'
+$env:NUCLEAR_UPDATE_PUBLIC_KEY = $validPublicKey
+
 $validConfig = [pscustomobject]@{
     version = '0.7.1'
     build = [pscustomobject]@{
@@ -87,6 +121,9 @@ Assert-True ([IO.Path]::GetFullPath([string]$preflight.buildRoot) -ceq [IO.Path]
     'Preflight did not return the exact canonical owned output root.'
 Assert-True ([string]$preflight.source.commit -cmatch '^[0-9a-f]{40}$') 'Preflight source commit is invalid.'
 Assert-True ([string]$preflight.source.digest -cmatch '^[0-9a-f]{64}$') 'Preflight source digest is invalid.'
+Assert-True ([string]$preflight.updateKeys.current.id -ceq 'current') 'Preflight did not report the configured current key ID.'
+Assert-True ([string]$preflight.updateKeys.current.publicKeySha256 -ceq [string]$validKeys.current.publicKeySha256) 'Preflight public-key hash differs from the validated fixture.'
+Assert-True ($null -eq $preflight.updateKeys.next) 'Preflight invented an optional next key.'
 foreach ($name in @('node','npm','tauri','rustc','cargo')) {
     $tool = $preflight.toolchains.$name
     Assert-True ([IO.Path]::IsPathFullyQualified([string]$tool.path)) "Tool path is not absolute: $name"
@@ -110,5 +147,22 @@ Assert-Rejected { & $buildScript -PreflightOnly -BuildRoot $registeredDirectory 
     'The registered active installation directory was accepted as build output.'
 Assert-Rejected { & $buildScript -PreflightOnly -BuildRoot (Join-Path $repositoryRoot 'target\outside-tauri') } `
     'A build root outside the Tauri target directory was accepted.'
+}
+finally {
+    foreach ($name in $originalUpdateEnvironment.Keys) {
+        if ($null -eq $originalUpdateEnvironment[$name]) {
+            Remove-Item -LiteralPath "env:$name" -ErrorAction SilentlyContinue
+        }
+        else {
+            Set-Item -LiteralPath "env:$name" -Value $originalUpdateEnvironment[$name]
+        }
+    }
+}
+
+foreach ($name in $originalUpdateEnvironment.Keys) {
+    $restoredItem = Get-Item -LiteralPath "env:$name" -ErrorAction SilentlyContinue
+    $restored = if ($null -eq $restoredItem) { $null } else { $restoredItem.Value }
+    Assert-True ($restored -ceq $originalUpdateEnvironment[$name]) "Test did not restore process environment variable $name."
+}
 
 Write-Output 'Local packaged-build preflight and fail-closed contract tests passed.'

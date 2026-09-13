@@ -124,6 +124,11 @@ if (Test-NuclearPathOverlap -First $buildRootFull -Second $registeredPath) {
 }
 
 Assert-VersionParity -RepositoryRoot $repositoryRoot -ExpectedVersion $Version
+$updateKeysBefore = Get-NuclearUpdateKeyConfiguration `
+    -CurrentId ([string]$env:NUCLEAR_UPDATE_KEY_ID) `
+    -CurrentPublicKey ([string]$env:NUCLEAR_UPDATE_PUBLIC_KEY) `
+    -NextId ([string]$env:NUCLEAR_UPDATE_NEXT_KEY_ID) `
+    -NextPublicKey ([string]$env:NUCLEAR_UPDATE_NEXT_PUBLIC_KEY)
 $nodeExecutable = Join-Path $targetRoot 'toolchains\node-v22.23.1-win-x64\node.exe'
 $npmExecutable = Join-Path $targetRoot 'toolchains\npm-10.9.9\npm.cmd'
 if (-not (Test-Path -LiteralPath $nodeExecutable -PathType Leaf)) {
@@ -164,7 +169,7 @@ foreach ($sidecar in $sidecarLock.sidecars) {
 
 $sourceBefore = Get-SourceIdentity $repositoryRoot
 if ($PreflightOnly) {
-    [pscustomobject]@{ version = $Version; buildRoot = $buildRootFull; source = $sourceBefore; toolchains = $toolchains }
+    [pscustomobject]@{ version = $Version; buildRoot = $buildRootFull; source = $sourceBefore; toolchains = $toolchains; updateKeys = $updateKeysBefore }
     return
 }
 
@@ -224,6 +229,14 @@ if ($sourceAfter.commit -cne $sourceBefore.commit -or $sourceAfter.digest -cne $
     throw 'Source changed during the build; no success receipt was written.'
 }
 foreach ($tool in $toolchains.Values) { Assert-ToolIdentityUnchanged $tool }
+$updateKeysAfter = Get-NuclearUpdateKeyConfiguration `
+    -CurrentId ([string]$env:NUCLEAR_UPDATE_KEY_ID) `
+    -CurrentPublicKey ([string]$env:NUCLEAR_UPDATE_PUBLIC_KEY) `
+    -NextId ([string]$env:NUCLEAR_UPDATE_NEXT_KEY_ID) `
+    -NextPublicKey ([string]$env:NUCLEAR_UPDATE_NEXT_PUBLIC_KEY)
+if (($updateKeysAfter | ConvertTo-Json -Compress -Depth 5) -cne ($updateKeysBefore | ConvertTo-Json -Compress -Depth 5)) {
+    throw 'Updater public-key configuration changed during the build; no success receipt was written.'
+}
 $receipt = [ordered]@{
     schemaVersion = 'nuclear-local-packaged-build/v1'
     runId = $runId
@@ -236,7 +249,10 @@ $receipt = [ordered]@{
     command = $command
     environment = [ordered]@{ cargoTargetDir = 'cargo-target'; buildMode = 'tauri-build'; devServerUsed = $false; frontendDist = '../build' }
     toolchains = $toolchains
-    inputs = [ordered]@{ sidecarsLock = [ordered]@{ path='nuclear-app/src-tauri/sidecars.lock.json'; sha256=(Get-LowerSha256 $lockPath) } }
+    inputs = [ordered]@{
+        sidecarsLock = [ordered]@{ path='nuclear-app/src-tauri/sidecars.lock.json'; sha256=(Get-LowerSha256 $lockPath) }
+        updateKeys = $updateKeysAfter
+    }
     artifacts = @($artifacts)
     qualification = [ordered]@{
         standaloneExecutableBuilt = $true

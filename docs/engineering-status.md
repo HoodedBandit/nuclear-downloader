@@ -24,8 +24,9 @@ from native release acceptance.
   distinguishes a standalone executable from an uninspected installer payload.
 
 Local commits: `17f252d` (playlist admission), `74e15ca` (ownership extraction),
-`237c2a2` (regression-backed replay/identity fixes), and `664193a` (quality and
-validation tooling). No push or release was performed.
+`237c2a2` (regression-backed replay/identity fixes), `664193a` (quality and
+validation tooling), and `be39965` (current review records and baseline inputs).
+No push or release was performed.
 
 ## Executed gates
 
@@ -38,9 +39,9 @@ validation tooling). No push or release was performed.
 | Reviews | 1,382 backend units across 110 files: 789 production, 406 tests, 187 test support. Frontend: 451 callables across 34 production files. |
 | Short soaks | Two-minute backend and 60-second five-workflow renderer runs passed. |
 | Playlist admission | Three frozen debug runs: 100 rows 11/12/11 ms; 1,000 rows 154/145/162 ms. One durable commit and bounded registration gates passed. Synthetic backend measurements, not network or UI latency. |
-| Matched backend | Three paired runs passed hard limits. Timing and memory review flags are retained; intermittent journal delays are under phase-level investigation. |
-| Matched renderer | First 1/100/1,000 comparison is within existing thresholds. Full three-repeat comparison is running. |
-| Long soaks/build | Fresh two-hour backend and renderer runs are active. Actual packaged build has not yet run. |
+| Matched backend | Three paired runs passed hard limits. Timing and memory review flags remain explicit. Two diagnostic pairs did not reproduce the earlier large journal delay. |
+| Matched renderer | All 18 runs passed the existing thresholds: three repeats per side at 1/100/1,000 rows. Input archives, source/tool hashes and environment matched. |
+| Long soaks/build | Fresh two-hour backend and renderer runs are active. The first package build failed because its required public updater configuration was absent; a preflight correction and rerun are in progress. |
 
 Logs use the `target/engineering-*` prefix. See the
 [finding-to-test checklist](engineering-findings.md),
@@ -53,6 +54,18 @@ Production hashes are `5ccde857d8421686128d3f2b0d0f80549ca4d8407217cefabdde33e1f
 (original) and `e14411cf6b43d0880fc776129fd0d59fba747f207cacb03a6237dc60d96ffc2f`
 (candidate). Renderer production files remain unchanged through later backend
 fixes and tooling commits.
+
+Accepted renderer performance report:
+`target/engineering-matched-frontend-performance-comparison.json`.
+At 1,000 rows the three-repeat median frame p95 was 7.005 ms on both sides;
+input-to-paint was 12.805 ms originally and 11.905 ms for the candidate. Repeat
+one preceded the long soaks; repeats two and three on both sides ran with those
+soaks active. No Cargo build ran during the browser measurements.
+
+The confirmed backend source-health invocation and exit-zero receipt are
+`target/engineering-final-source-health-confirmed.json` and
+`target/engineering-final-source-health-exit.json`. Earlier failed gate and
+unsupported-option logs remain preserved as failures.
 
 ## Evidence corrections and open measurements
 
@@ -76,6 +89,17 @@ added quadratic path in this direct save loop but cannot establish the cause
 of the variance. Diagnostic-only copies measure preparation, JSON, DPAPI,
 creation, write, flush and replacement separately; these are not replacement
 qualification artifacts.
+
+The diagnostic pairs measured 44.911/43.627 ms and 44.451/43.677 ms
+(candidate/original). Encryption and disk phases were near parity in both
+pairs. Preparation differences were small, and serialization changed direction
+between pairs. Those differently instrumented runs do not explain the earlier
+slow samples. The original comparator reports retain `review_required`; no
+Windows, antivirus, allocator or storage cause is established. Candidate working
+sets were typically 2.2–2.9 MiB larger, a separate observation from timing.
+The bounded phase investigation is recorded in
+`target/engineering-review/journal-performance-investigation.md` and
+`target/journal-phase-runs/20260913T213508Z-9b88b9e5bf134478b945f3e87df134be/`.
 
 ## Preserved boundaries and incomplete native acceptance
 
