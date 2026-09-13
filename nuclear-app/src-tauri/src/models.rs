@@ -82,6 +82,9 @@ pub struct PlaylistEntry {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional = nullable)]
     pub selection: Option<MediaSelection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub video: Option<Box<VideoInfo>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -92,6 +95,20 @@ pub struct PlaylistInfo {
     pub entry_count: usize,
     pub truncated: bool,
     pub entries: Vec<PlaylistEntry>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub inspection_settings_fingerprint: Option<String>,
+}
+
+pub fn inspection_settings_fingerprint(
+    cookie_config: Option<&CookieConfig>,
+    compat_config_path: Option<&str>,
+) -> String {
+    use sha2::{Digest, Sha256};
+
+    let canonical = serde_json::to_vec(&(cookie_config, compat_config_path))
+        .expect("inspection settings contain only infallibly serializable values");
+    format!("{:x}", Sha256::digest(canonical))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -118,6 +135,9 @@ pub struct DownloadRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional = nullable)]
     pub selection: Option<MediaSelection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub expected_media_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -338,6 +358,9 @@ pub struct QueueItemRecord {
     pub schema_version: u32,
     pub id: String,
     pub source_url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub source_media_id: Option<String>,
     pub title: String,
     pub available_qualities: Vec<String>,
     pub has_audio: bool,
@@ -350,6 +373,12 @@ pub struct QueueItemRecord {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional = nullable)]
     pub selection: Option<MediaSelection>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub preparation: Option<QueuePreparation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub preparation_operation_id: Option<String>,
     pub state: QueueItemState,
     pub latest_operation_id: Option<String>,
     #[ts(type = "number")]
@@ -369,6 +398,7 @@ impl QueueItemRecord {
             filename_override: self.filename_override.clone(),
             compat_config_path: self.compat_config_path.clone(),
             selection: self.selection.clone(),
+            expected_media_id: self.source_media_id.clone(),
         }
     }
 }
@@ -398,7 +428,27 @@ pub struct OperationSnapshot {
     pub published_output: Option<PublishedOutput>,
     #[serde(default)]
     pub intended_terminal_outcome: Option<Box<IntendedTerminalOutcome>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub playlist_admission: Option<PlaylistAdmissionReceipt>,
     pub correlation_id: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub enum QueuePreparation {
+    Pending,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct PlaylistAdmissionReceipt {
+    pub request_id: String,
+    pub fingerprint: String,
+    pub item_ids: Vec<String>,
+    pub skipped_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -465,6 +515,42 @@ pub struct AddQueueItemInput {
     pub filename_override: Option<String>,
     #[ts(optional = nullable)]
     pub compat_config_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional = nullable)]
+    pub playlist: Option<PlaylistAdmissionInput>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct PlaylistAdmissionInput {
+    pub request_id: String,
+    pub entry_indices: Vec<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub struct PlaylistAdmissionResult {
+    pub kind: PlaylistAdmissionKind,
+    pub request_id: String,
+    pub item_ids: Vec<String>,
+    pub skipped_count: usize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub enum PlaylistAdmissionKind {
+    Playlist,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(untagged)]
+#[ts(export, export_to = "../../src/lib/bindings/")]
+pub enum AddQueueItemResult {
+    Single(QueueItemRecord),
+    Playlist(PlaylistAdmissionResult),
 }
 
 #[derive(Debug, Clone, Default, Serialize, TS)]

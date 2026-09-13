@@ -181,7 +181,7 @@ export class QueueActionsController {
     await Promise.all(
       this.dependencies
         .getItems()
-        .filter((item) => isEditablePendingStatus(item.status))
+        .filter((item) => isEditablePendingStatus(item.status) && item.infoLoaded)
         .map((item) =>
           this.updateQueueItemSettings(item, {
             quality: resolveAvailableQuality(
@@ -197,7 +197,7 @@ export class QueueActionsController {
     await Promise.all(
       this.dependencies
         .getItems()
-        .filter((item) => isEditablePendingStatus(item.status))
+        .filter((item) => isEditablePendingStatus(item.status) && item.infoLoaded)
         .map((item) =>
           this.updateQueueItemSettings(item, {
             format: resolveAvailableFormat(

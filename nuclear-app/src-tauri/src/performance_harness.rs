@@ -350,6 +350,9 @@ fn required_evidence_path() -> PathBuf {
 fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord> {
     (0..queue_size)
         .map(|index| QueueItemRecord {
+            preparation: None,
+            preparation_operation_id: None,
+            source_media_id: None,
             schema_version: APP_SCHEMA_VERSION,
             id: uuid::Uuid::from_u128(index as u128 + 1).to_string(),
             source_url: format!("https://fixture.invalid/video/{index}"),

@@ -228,6 +228,12 @@ fn committed_typescript_bindings_match_every_public_contract() {
     check_binding!(StateDeltaValue, "StateDeltaValue");
     check_binding!(StateDelta, "StateDelta");
     check_binding!(AddQueueItemInput, "AddQueueItemInput");
+    check_binding!(AddQueueItemResult, "AddQueueItemResult");
+    check_binding!(PlaylistAdmissionInput, "PlaylistAdmissionInput");
+    check_binding!(PlaylistAdmissionResult, "PlaylistAdmissionResult");
+    check_binding!(PlaylistAdmissionKind, "PlaylistAdmissionKind");
+    check_binding!(PlaylistAdmissionReceipt, "PlaylistAdmissionReceipt");
+    check_binding!(QueuePreparation, "QueuePreparation");
     check_binding!(UpdateQueueItemInput, "UpdateQueueItemInput");
     check_binding!(BeginInspectionInput, "BeginInspectionInput");
     check_binding!(BeginOperationResult, "BeginOperationResult");

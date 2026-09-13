@@ -2,7 +2,6 @@ use crate::app_error::AppError;
 use crate::downloader;
 use crate::models::RuntimeReadiness;
 use crate::notifications::DownloadProgressSink;
-use crate::services::downloads::finalize_download;
 use crate::services::updates::runtime_check_error;
 use crate::services::Backend;
 use crate::{runtime, updater};
@@ -127,17 +126,25 @@ pub(crate) async fn shutdown(backend: Backend, publish_progress: DownloadProgres
                 &error.summary,
             );
         }
-        for operation_id in cleanup_store.pending_operation_ids() {
-            if cleanup_store.cancel_pending(&operation_id).await {
-                finalize_download(
-                    &cleanup_progress,
-                    &cleanup_store,
-                    &operation_id,
-                    downloader::DownloadOutcome::Cancelled,
-                )
-                .await;
-                cleanup_manager.finish(&operation_id).await;
-            }
+        let pending_ids = cleanup_store.pending_operation_ids();
+        if let Err(error) = crate::services::preparation::finalize_pending_cancellations(
+            &cleanup_store,
+            &pending_ids,
+            &cleanup_progress,
+        )
+        .await
+        {
+            cleanup_store.diagnostics().log(
+                "error",
+                "shutdown_finalization_failed",
+                &error.correlation_id,
+                &error.summary,
+            );
+            return;
+        }
+        for operation_id in pending_ids {
+            cleanup_manager.finish(&operation_id).await;
+            cleanup_store.cancel_pending(&operation_id).await;
         }
     }) {
         store.diagnostics().log(

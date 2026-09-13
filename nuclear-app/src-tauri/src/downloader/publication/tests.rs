@@ -55,7 +55,7 @@ fn machine_record_resolves_the_exact_staged_output() {
     write_record(&stage, &media);
 
     assert_eq!(
-        resolve_staged_output(&stage, None).unwrap(),
+        resolve_staged_output(&stage, None, None).unwrap(),
         media.canonicalize().unwrap()
     );
     let _ = std::fs::remove_dir_all(stage);
@@ -67,7 +67,7 @@ fn malformed_present_record_never_uses_fallback() {
     std::fs::write(stage.join("only.mp4"), b"media").unwrap();
     std::fs::write(final_output_record_path(&stage), b"not json\n").unwrap();
 
-    let error = resolve_staged_output(&stage, None).unwrap_err();
+    let error = resolve_staged_output(&stage, None, None).unwrap_err();
 
     assert_eq!(error.code, "staging_output_record_invalid");
     assert!(error.message.contains("malformed"));
@@ -84,8 +84,9 @@ fn stale_small_record_metadata_never_allows_an_unbounded_read() {
     std::fs::write(&record_path, &oversized).unwrap();
     super::TEST_FINAL_OUTPUT_RECORD_READ_BYTES.with(|bytes| bytes.set(0));
 
-    let error = super::resolve_recorded_output(&record_path, &stale_small_metadata, &stage, None)
-        .unwrap_err();
+    let error =
+        super::resolve_recorded_output(&record_path, &stale_small_metadata, &stage, None, None)
+            .unwrap_err();
     let observed = super::TEST_FINAL_OUTPUT_RECORD_READ_BYTES.with(std::cell::Cell::get);
 
     assert_eq!(error.code, "staging_output_record_invalid");
@@ -112,7 +113,7 @@ fn multiple_machine_records_are_rejected_as_ambiguous_authority() {
     )
     .unwrap();
 
-    let error = resolve_staged_output(&stage, None).unwrap_err();
+    let error = resolve_staged_output(&stage, None, None).unwrap_err();
 
     assert_eq!(error.code, "staging_output_record_invalid");
     assert!(error.message.contains("multiple entries"));
@@ -127,7 +128,7 @@ fn absent_record_accepts_exactly_one_media_candidate() {
     std::fs::write(stage.join("sidecar.info.json"), b"{}").unwrap();
 
     assert_eq!(
-        resolve_staged_output(&stage, None).unwrap(),
+        resolve_staged_output(&stage, None, None).unwrap(),
         media.canonicalize().unwrap()
     );
     let _ = std::fs::remove_dir_all(stage);
@@ -139,7 +140,7 @@ fn absent_record_rejects_multiple_media_candidates_without_mtime_selection() {
     std::fs::write(stage.join("older.mp4"), b"older").unwrap();
     std::fs::write(stage.join("newer.mkv"), b"newer").unwrap();
 
-    let error = resolve_staged_output(&stage, None).unwrap_err();
+    let error = resolve_staged_output(&stage, None, None).unwrap_err();
 
     assert_eq!(error.code, "staging_output_ambiguous");
     assert!(error.message.contains("2 staged media files"));
@@ -156,10 +157,62 @@ fn recorded_output_outside_stage_is_rejected() {
     std::fs::write(&outside, b"outside").unwrap();
     write_record(&stage, &outside);
 
-    let error = resolve_staged_output(&stage, None).unwrap_err();
+    let error = resolve_staged_output(&stage, None, None).unwrap_err();
 
     assert_eq!(error.code, "path_escape");
     let _ = std::fs::remove_file(outside);
+    let _ = std::fs::remove_dir_all(stage);
+}
+
+#[test]
+fn flat_media_expected_id_requires_matching_machine_record() {
+    let stage = temp_stage();
+    let media = stage.join("flat.mp4");
+    std::fs::write(&media, b"media").unwrap();
+    write_selected_record(&stage, &media, "flat-id", "Youtube");
+
+    assert_eq!(
+        resolve_staged_output(&stage, None, Some("flat-id")).unwrap(),
+        media.canonicalize().unwrap()
+    );
+    assert!(media.is_file());
+    let _ = std::fs::remove_dir_all(stage);
+}
+
+#[test]
+fn flat_media_expected_id_rejects_wrong_or_missing_record_id_before_publication() {
+    for id in [Some("wrong-id"), None] {
+        let stage = temp_stage();
+        let media = stage.join("flat.mp4");
+        std::fs::write(&media, b"media").unwrap();
+        let mut record = serde_json::json!({
+            "schema_version": 1,
+            "filepath": media.to_string_lossy(),
+            "extractor_key": "Youtube",
+        });
+        if let Some(id) = id {
+            record["id"] = id.into();
+        }
+        std::fs::write(final_output_record_path(&stage), format!("{record}\n")).unwrap();
+
+        let error = resolve_staged_output(&stage, None, Some("flat-id")).unwrap_err();
+        assert_eq!(error.code, "staging_output_identity_mismatch");
+        assert!(media.is_file(), "identity rejection moved the staged file");
+        let _ = std::fs::remove_dir_all(stage);
+    }
+}
+
+#[test]
+fn flat_media_expected_id_rejects_absent_record_without_legacy_fallback() {
+    let stage = temp_stage();
+    let media = stage.join("flat.mp4");
+    std::fs::write(&media, b"media").unwrap();
+
+    let error = resolve_staged_output(&stage, None, Some("flat-id")).unwrap_err();
+
+    assert_eq!(error.code, "staging_output_record_invalid");
+    assert!(error.message.contains("without an output identity record"));
+    assert!(media.is_file(), "identity rejection moved the staged file");
     let _ = std::fs::remove_dir_all(stage);
 }
 
@@ -171,7 +224,7 @@ fn selected_media_requires_matching_record_identity() {
     write_selected_record(&stage, &media, "selected-id", "Youtube");
 
     assert_eq!(
-        resolve_staged_output(&stage, Some(&selected_media())).unwrap(),
+        resolve_staged_output(&stage, Some(&selected_media()), Some("selected-id")).unwrap(),
         media.canonicalize().unwrap()
     );
     let _ = std::fs::remove_dir_all(stage);
@@ -199,7 +252,8 @@ fn selected_media_rejects_missing_or_mismatched_identity() {
         }
         std::fs::write(final_output_record_path(&stage), format!("{record}\n")).unwrap();
 
-        let error = resolve_staged_output(&stage, Some(&selected_media())).unwrap_err();
+        let error = resolve_staged_output(&stage, Some(&selected_media()), Some("selected-id"))
+            .unwrap_err();
         assert_eq!(error.code, "staging_output_identity_mismatch");
         let _ = std::fs::remove_dir_all(stage);
     }
@@ -210,7 +264,8 @@ fn selected_media_rejects_missing_record_without_fallback() {
     let stage = temp_stage();
     std::fs::write(stage.join("only.mp4"), b"media").unwrap();
 
-    let error = resolve_staged_output(&stage, Some(&selected_media())).unwrap_err();
+    let error =
+        resolve_staged_output(&stage, Some(&selected_media()), Some("selected-id")).unwrap_err();
 
     assert_eq!(error.code, "staging_output_record_invalid");
     assert!(error.message.contains("without an output identity record"));
@@ -234,7 +289,8 @@ fn selected_media_rejects_multiple_matching_records() {
     )
     .unwrap();
 
-    let error = resolve_staged_output(&stage, Some(&selected_media())).unwrap_err();
+    let error =
+        resolve_staged_output(&stage, Some(&selected_media()), Some("selected-id")).unwrap_err();
 
     assert_eq!(error.code, "staging_output_record_invalid");
     assert!(error.message.contains("multiple entries"));

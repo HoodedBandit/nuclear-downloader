@@ -49,11 +49,8 @@ fn same_url(left: &str, right: &str) -> bool {
 }
 
 impl PlaylistRecord {
-    fn into_entry(
-        self,
-        parent_url: &str,
-        has_formats: bool,
-    ) -> Result<Option<PlaylistEntry>, String> {
+    fn into_entry(self, parent_url: &str, data: &Value) -> Result<Option<PlaylistEntry>, String> {
+        let has_formats = data["formats"].is_array();
         let thumbnail = thumbnail(
             self.thumbnails
                 .as_ref()
@@ -61,6 +58,7 @@ impl PlaylistRecord {
                 .or(self.thumbnail.as_deref()),
         );
         let id = self.id.filter(|id| !id.trim().is_empty());
+        let has_media_id = id.is_some();
         let extractor = self.extractor_key.or(self.ie_key);
         let webpage = self
             .webpage_url
@@ -116,6 +114,11 @@ impl PlaylistRecord {
             };
             (url, None)
         };
+        let video = if resolved_video && has_formats && has_media_id {
+            Some(Box::new(video_info(&url, data, selection.as_ref())?))
+        } else {
+            None
+        };
         Ok(Some(PlaylistEntry {
             id: id.unwrap_or_else(|| url.clone()),
             title: self.title,
@@ -123,6 +126,7 @@ impl PlaylistRecord {
             url,
             thumbnail,
             selection,
+            video,
         }))
     }
 }
@@ -224,10 +228,9 @@ pub(super) fn parse_inspection(
         if record.is_null() {
             continue;
         }
-        let has_formats = record["formats"].is_array();
-        let record = PlaylistRecord::deserialize(record)
+        let parsed_record = PlaylistRecord::deserialize(record)
             .map_err(|error| format!("Failed to parse playlist entry: {error}"))?;
-        if let Some(entry) = record.into_entry(parent_url, has_formats)? {
+        if let Some(entry) = parsed_record.into_entry(parent_url, record)? {
             let identity = (
                 entry.url.clone(),
                 entry
@@ -253,6 +256,7 @@ pub(super) fn parse_inspection(
             entry_count: entries.len(),
             truncated: records.len() > MAX_PLAYLIST_ENTRIES,
             entries,
+            inspection_settings_fingerprint: None,
         },
     })
 }

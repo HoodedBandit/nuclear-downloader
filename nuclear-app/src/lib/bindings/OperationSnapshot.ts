@@ -3,7 +3,8 @@ import type { AppError } from "./AppError";
 import type { IntendedTerminalOutcome } from "./IntendedTerminalOutcome";
 import type { OperationKind } from "./OperationKind";
 import type { OperationState } from "./OperationState";
+import type { PlaylistAdmissionReceipt } from "./PlaylistAdmissionReceipt";
 import type { PublishedOutput } from "./PublishedOutput";
 import type { UrlInspection } from "./UrlInspection";
 
-export type OperationSnapshot = { schemaVersion: number, id: string, queueItemId: string | null, kind: OperationKind, state: OperationState, progress: number, phase: string | null, sequence: number, createdAtMs: number, updatedAtMs: number, finishedAtMs: number | null, error: AppError | null, inspectionResult: UrlInspection | null, publishedOutput: PublishedOutput | null, intendedTerminalOutcome: IntendedTerminalOutcome | null, correlationId: string, };
+export type OperationSnapshot = { schemaVersion: number, id: string, queueItemId: string | null, kind: OperationKind, state: OperationState, progress: number, phase: string | null, sequence: number, createdAtMs: number, updatedAtMs: number, finishedAtMs: number | null, error: AppError | null, inspectionResult: UrlInspection | null, publishedOutput: PublishedOutput | null, intendedTerminalOutcome: IntendedTerminalOutcome | null, playlistAdmission?: PlaylistAdmissionReceipt | null, correlationId: string, };

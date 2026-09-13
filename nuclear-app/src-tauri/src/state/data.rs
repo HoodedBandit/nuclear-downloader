@@ -87,6 +87,7 @@ pub(super) struct StateData {
     pub(super) operation_order: Vec<String>,
     pub(super) operations: HashMap<String, SharedRecord<OperationSnapshot>>,
     pub(super) pending_downloads: VecDeque<String>,
+    pub(super) pending_preparations: VecDeque<String>,
     pub(super) runtime_readiness: RuntimeReadiness,
     pub(super) maintenance_active: bool,
     pub(super) draining: bool,
@@ -105,6 +106,21 @@ impl StateData {
                 .queue_order
                 .iter()
                 .filter_map(|id| self.queue.get(id).map(SharedRecord::snapshot))
+                .map(|mut item| {
+                    if item.preparation == Some(crate::models::QueuePreparation::Pending) {
+                        if let Some(operation_id) = item.latest_operation_id.take() {
+                            if self.operations.get(&operation_id).is_some_and(|operation| {
+                                operation.kind == crate::models::OperationKind::Inspection
+                                    && operation.queue_item_id.as_deref() == Some(item.id.as_str())
+                            }) {
+                                item.preparation_operation_id = Some(operation_id);
+                            } else {
+                                item.latest_operation_id = Some(operation_id);
+                            }
+                        }
+                    }
+                    item
+                })
                 .collect(),
             operations: self
                 .operation_order
@@ -163,6 +179,11 @@ pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usiz
                             .capacity()
                             .saturating_add(selection.extractor_key.capacity())
                     }),
+                    entry.video.as_ref().map_or(0, |video| {
+                        estimate_inspection_allocation(&UrlInspection::Video {
+                            video: video.as_ref().clone(),
+                        })
+                    }),
                 ]
                 .into_iter()
                 .fold(total, usize::saturating_add)
@@ -170,6 +191,10 @@ pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usiz
             [
                 playlist.title.capacity(),
                 playlist.channel.as_ref().map_or(0, String::capacity),
+                playlist
+                    .inspection_settings_fingerprint
+                    .as_ref()
+                    .map_or(0, String::capacity),
                 playlist
                     .entries
                     .capacity()

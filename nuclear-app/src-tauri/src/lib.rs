@@ -34,8 +34,8 @@ mod windows_file;
 use app_error::AppError;
 use lifecycle::create_download_manager;
 use models::{
-    AddQueueItemInput, AppSnapshot, BeginInspectionInput, BeginOperationResult, CancelAllResult,
-    QueueItemRecord, QueuePriority, UpdateQueueItemInput,
+    AddQueueItemInput, AddQueueItemResult, AppSnapshot, BeginInspectionInput, BeginOperationResult,
+    CancelAllResult, QueuePriority, UpdateQueueItemInput,
 };
 use services::Backend as AppState;
 use state::StateStore;
@@ -98,7 +98,7 @@ async fn add_inspection_result_to_queue(
     _app: tauri::AppHandle,
     state: State<'_, AppState>,
     input: AddQueueItemInput,
-) -> Result<QueueItemRecord, AppError> {
+) -> Result<AddQueueItemResult, AppError> {
     services::queue::add_inspection_result_to_queue(state.inner().clone(), input).await
 }
 
@@ -252,6 +252,8 @@ pub fn run() {
                 &download_manager,
             )
             .map_err(Box::<dyn std::error::Error>::from)?;
+            services::preparation::spawn_preparation_worker(&store, &download_manager)
+                .map_err(Box::<dyn std::error::Error>::from)?;
             bootstrap::start(&backend, app.package_info().version.to_string())
                 .map_err(Box::<dyn std::error::Error>::from)?;
             Ok(())

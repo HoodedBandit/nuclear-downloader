@@ -51,6 +51,7 @@ impl StateStore {
             inspection_result: None,
             published_output: None,
             intended_terminal_outcome: None,
+            playlist_admission: None,
             correlation_id: uuid::Uuid::new_v4().to_string(),
         };
         state.operation_order.push(id.clone());

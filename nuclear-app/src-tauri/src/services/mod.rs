@@ -3,6 +3,7 @@ pub(crate) mod downloads;
 pub(crate) mod inspection;
 mod maintenance;
 pub(crate) mod operations;
+pub(crate) mod preparation;
 pub(crate) mod queue;
 #[cfg(test)]
 pub(crate) mod test_support;

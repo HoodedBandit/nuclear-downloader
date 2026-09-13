@@ -123,7 +123,7 @@ pub(crate) async fn finalize_inspection_result(
         .await
 }
 
-async fn bounded_inspection<F, T>(
+pub(super) async fn bounded_inspection<F, T>(
     job: &downloader::process::DownloadJob,
     future: F,
     timeout: Duration,
@@ -148,7 +148,7 @@ where
     }
 }
 
-async fn execute_inspection(
+pub(super) async fn execute_inspection(
     store: &StateStore,
     manager: &DownloadManager,
     operation_id: &str,
@@ -190,7 +190,16 @@ async fn execute_inspection(
     )
     .await
     {
-        Ok(inspection) => Ok(Some(inspection)),
+        Ok(mut inspection) => {
+            if let models::UrlInspection::Playlist { playlist } = &mut inspection {
+                playlist.inspection_settings_fingerprint =
+                    Some(models::inspection_settings_fingerprint(
+                        input.cookie_config.as_ref(),
+                        input.compat_config_path.as_deref(),
+                    ));
+            }
+            Ok(Some(inspection))
+        }
         Err(_) if job.is_cancelled() => Ok(None),
         Err(summary) => Err(AppError::new("inspection_failed", summary).retryable(true)),
     }

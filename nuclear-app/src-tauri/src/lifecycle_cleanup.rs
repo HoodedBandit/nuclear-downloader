@@ -3,6 +3,81 @@ use crate::lifecycle::DownloadManager;
 use crate::models::OperationState;
 use crate::state::StateStore;
 
+// A whole queue admission owns one cleanup continuation, even for a thousand
+// entries. Caller disconnects and unwinds must not create detached per-row tasks.
+pub(crate) struct QueueAdmissionGuard {
+    cleanup: Option<(StateStore, DownloadManager, Vec<String>)>,
+}
+
+impl QueueAdmissionGuard {
+    pub(crate) fn new(store: StateStore, manager: DownloadManager, ids: Vec<String>) -> Self {
+        Self {
+            cleanup: Some((store, manager, ids)),
+        }
+    }
+
+    pub(crate) fn disarm(mut self) {
+        self.cleanup = None;
+    }
+
+    pub(crate) async fn finalize(mut self, error: AppError) -> AppError {
+        if let Some((store, manager, ids)) = self.cleanup.take() {
+            cleanup_queue_admission(store, manager, ids, error.clone()).await;
+        }
+        error
+    }
+}
+
+impl Drop for QueueAdmissionGuard {
+    fn drop(&mut self) {
+        let Some((store, manager, ids)) = self.cleanup.take() else {
+            return;
+        };
+        let diagnostics = store.diagnostics().clone();
+        let task_manager = manager.clone();
+        if let Err(error) = manager.spawn_cleanup_continuation(async move {
+            cleanup_queue_admission(
+                store,
+                task_manager,
+                ids,
+                AppError::internal("The queue admission stopped unexpectedly."),
+            )
+            .await;
+        }) {
+            diagnostics.log(
+                "error",
+                "queue_admission_cleanup_registration_failed",
+                &error.correlation_id,
+                &error.summary,
+            );
+        }
+    }
+}
+
+async fn cleanup_queue_admission(
+    store: StateStore,
+    manager: DownloadManager,
+    ids: Vec<String>,
+    error: AppError,
+) {
+    if let Err(failure) = store
+        .finalize_pending_batch(&ids, OperationState::Failed, Some(error))
+        .await
+    {
+        store.diagnostics().log(
+            "error",
+            "queue_admission_compensation_failed",
+            &failure.correlation_id,
+            &failure.summary,
+        );
+        return;
+    }
+    for id in ids {
+        manager.finish(&id).await;
+        store.cancel_pending(&id).await;
+    }
+}
+
 struct InspectionAdmissionCleanup {
     store: StateStore,
     manager: DownloadManager,

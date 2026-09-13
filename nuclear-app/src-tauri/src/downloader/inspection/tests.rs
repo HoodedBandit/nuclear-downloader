@@ -103,14 +103,48 @@ fn youtube_entry_falls_back_to_watch_url_but_generic_missing_url_is_rejected() {
 }
 
 #[test]
+fn flat_child_without_media_id_uses_its_source_url_as_unknown_identity() {
+    let child_url = "https://example.com/watch/no-id";
+    let UrlInspection::Playlist { playlist } = parse(
+        &json!({"_type":"playlist", "entries":[{
+            "_type":"url", "url":child_url, "title":"No media ID yet"
+        }]}),
+        None,
+    )
+    .unwrap() else {
+        panic!("expected playlist");
+    };
+    let entry = &playlist.entries[0];
+    assert_eq!(entry.id, child_url);
+    assert_eq!(entry.url, child_url);
+    assert!(entry.selection.is_none());
+    assert!(entry.video.is_none());
+
+    let UrlInspection::Playlist { playlist } = parse(
+        &json!({"_type":"playlist", "entries":[{
+            "_type":"video", "webpage_url":child_url, "title":"Resolved shape without ID",
+            "formats":[{"height":1080}], "acodec":"opus"
+        }]}),
+        None,
+    )
+    .unwrap() else {
+        panic!("expected playlist");
+    };
+    assert_eq!(playlist.entries[0].id, child_url);
+    assert!(playlist.entries[0].video.is_none());
+}
+
+#[test]
 fn x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors() {
     let parent = "https://x.com/LLMenjoyer/status/2097804593132671192";
     let metadata = json!({
         "_type":"multi_video", "webpage_url":parent, "entries":[
             {"_type":"video", "id":"2049184998117588992", "extractor_key":"Twitter",
-             "webpage_url":parent, "playlist_index":1, "formats":[{"height":720}]},
+             "title":"First clip", "webpage_url":parent, "playlist_index":1,
+             "formats":[{"height":720},{"height":1080},{"height":720}], "acodec":"none"},
             {"_type":"video", "id":"2097430424205295616", "extractor_key":"Twitter",
-             "webpage_url":parent, "playlist_index":2, "formats":[{"height":1080}]}
+             "webpage_url":parent, "playlist_index":2, "formats":[{"height":1080}],
+             "acodec":"opus"}
         ]
     });
     let bytes = serde_json::to_vec(&metadata).unwrap();
@@ -152,6 +186,22 @@ fn x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors() {
             .unwrap()
             .playlist_index,
         2
+    );
+    let first_video = playlist.entries[0].video.as_ref().unwrap();
+    assert_eq!(first_video.url, parent);
+    assert_eq!(first_video.title, "First clip");
+    assert_eq!(first_video.available_qualities, ["1080p", "720p"]);
+    assert!(!first_video.has_audio);
+    assert_eq!(
+        first_video.selection.as_ref(),
+        playlist.entries[0].selection.as_ref()
+    );
+    let second_video = playlist.entries[1].video.as_ref().unwrap();
+    assert_eq!(second_video.available_qualities, ["1080p"]);
+    assert!(second_video.has_audio);
+    assert_eq!(
+        second_video.selection.as_ref(),
+        playlist.entries[1].selection.as_ref()
     );
 }
 
@@ -278,7 +328,8 @@ fn ordinary_video_and_generic_flat_playlist_are_preserved() {
     let UrlInspection::Playlist { playlist } = parse(
         &json!({"_type":"playlist", "entries":[{
             "_type":"url", "id":"flat", "extractor_key":"Generic",
-            "url":"https://example.com/watch/flat"
+            "url":"https://example.com/watch/flat",
+            "formats":[{"height":2160}], "acodec":"opus"
         }]}),
         None,
     )
@@ -287,6 +338,36 @@ fn ordinary_video_and_generic_flat_playlist_are_preserved() {
     };
     assert_eq!(playlist.entries[0].url, "https://example.com/watch/flat");
     assert!(playlist.entries[0].selection.is_none());
+    assert!(playlist.entries[0].video.is_none());
+}
+
+#[test]
+fn fully_resolved_youtube_entry_reuses_normalized_video_metadata() {
+    let UrlInspection::Playlist { playlist } = parse(
+        &json!({"_type":"playlist", "entries":[{
+            "_type":"video", "id":"resolved", "extractor_key":"Youtube",
+            "title":"Resolved", "duration":12.5, "channel":"Channel",
+            "webpage_url":"https://www.youtube.com/watch?v=resolved",
+            "thumbnail":"https://example.com/resolved.jpg",
+            "formats":[{"height":360},{"height":1080},{"height":360}],
+            "acodec":"none"
+        }]}),
+        None,
+    )
+    .unwrap() else {
+        panic!("expected playlist");
+    };
+    let entry = &playlist.entries[0];
+    let video = entry.video.as_ref().unwrap();
+    assert_eq!(video.id, entry.id);
+    assert_eq!(video.url, entry.url);
+    assert_eq!(video.title, "Resolved");
+    assert_eq!(video.duration, Some(12.5));
+    assert_eq!(video.channel.as_deref(), Some("Channel"));
+    assert_eq!(video.available_qualities, ["1080p", "360p"]);
+    assert!(!video.has_audio);
+    assert!(entry.selection.is_none());
+    assert!(video.selection.is_none());
 }
 
 #[test]

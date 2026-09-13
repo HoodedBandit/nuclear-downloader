@@ -39,6 +39,7 @@ struct StateStoreInner {
     journal: Arc<JournalStore>,
     diagnostics: Diagnostics,
     pending_notify: Notify,
+    preparation_notify: Notify,
     operation_notify: Notify,
     outbox: StateOutbox,
     inspection_budget: Mutex<InspectionRetentionBudget>,
@@ -92,11 +93,16 @@ impl StateStore {
 
     fn from_parts(
         journal: JournalStore,
-        loaded: PersistentJournal,
+        mut loaded: PersistentJournal,
         diagnostics: Diagnostics,
     ) -> Self {
         let sequence = loaded.revision;
         let pending_app_update = loaded.pending_app_update;
+        for item in &mut loaded.queue {
+            if item.preparation == Some(crate::models::QueuePreparation::Pending) {
+                item.latest_operation_id = item.preparation_operation_id.take();
+            }
+        }
         let queue_order = loaded.queue.iter().map(|item| item.id.clone()).collect();
         let queue = loaded
             .queue
@@ -122,6 +128,7 @@ impl StateStore {
                     operation_order,
                     operations,
                     pending_downloads: VecDeque::new(),
+                    pending_preparations: VecDeque::new(),
                     runtime_readiness: RuntimeReadiness::RepairRequired,
                     maintenance_active: false,
                     draining: false,
@@ -134,6 +141,7 @@ impl StateStore {
                 journal: Arc::new(journal),
                 diagnostics,
                 pending_notify: Notify::new(),
+                preparation_notify: Notify::new(),
                 operation_notify: Notify::new(),
                 outbox: StateOutbox::new(sequence),
                 inspection_budget: Mutex::new(InspectionRetentionBudget::default()),

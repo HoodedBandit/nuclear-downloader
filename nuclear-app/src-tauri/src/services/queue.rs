@@ -4,24 +4,27 @@ use crate::app_error::AppError;
 use crate::downloader;
 use crate::lifecycle::TrackedTaskKind;
 use crate::models::{
-    AddQueueItemInput, BeginOperationResult, DownloadRequest, OperationState, QueueItemRecord,
+    AddQueueItemInput, AddQueueItemResult, BeginOperationResult, DownloadRequest, OperationKind,
     QueuePriority, UpdateQueueItemInput,
 };
-use crate::state::StateStore;
 
 pub(crate) async fn add_inspection_result_to_queue(
     backend: Backend,
     mut input: AddQueueItemInput,
-) -> Result<QueueItemRecord, AppError> {
+) -> Result<AddQueueItemResult, AppError> {
     let coordinator = backend.download_manager.clone();
     run_tracked_command(&coordinator, TrackedTaskKind::Admission, async move {
         uuid::Uuid::parse_str(input.inspection_operation_id.trim())
             .map_err(|_| AppError::invalid("Invalid inspection operation ID."))?;
+        input.output_dir = downloader::validate_output_directory(&input.output_dir)?;
+        if input.playlist.is_some() {
+            return admit_playlist(&backend, input).await;
+        }
         let inspection = backend
             .state_store
             .completed_inspection_video(&input.inspection_operation_id)?;
-        input.output_dir = downloader::validate_output_directory(&input.output_dir)?;
         let request = DownloadRequest {
+            expected_media_id: Some(inspection.id.clone()),
             url: inspection.url.clone(),
             quality: input.quality.clone(),
             format: input.format.clone(),
@@ -43,9 +46,41 @@ pub(crate) async fn add_inspection_result_to_queue(
             ));
         }
         let (item, _deltas) = backend.state_store.add_queue_item(input).await?;
-        Ok(item)
+        Ok(AddQueueItemResult::Single(item))
     })
     .await
+}
+
+async fn admit_playlist(
+    backend: &Backend,
+    input: AddQueueItemInput,
+) -> Result<AddQueueItemResult, AppError> {
+    if let Some(receipt) = backend.state_store.playlist_admission_receipt(&input)? {
+        return Ok(AddQueueItemResult::Playlist(receipt));
+    }
+    let count = input
+        .playlist
+        .as_ref()
+        .ok_or_else(|| AppError::invalid("Missing playlist selection."))?
+        .entry_indices
+        .len();
+    if count == 0 || count > crate::state::MAX_QUEUE_ITEMS {
+        return Err(AppError::invalid(
+            "Select between 1 and 1,000 playlist entries.",
+        ));
+    }
+    let admission = backend.download_manager.begin_job_admission(count).await?;
+    let (receipt, ids) = backend.state_store.add_playlist_items(input).await?;
+    let cleanup = crate::lifecycle_cleanup::QueueAdmissionGuard::new(
+        backend.state_store.clone(),
+        backend.download_manager.clone(),
+        ids.clone(),
+    );
+    if let Err(error) = admission.publish_subset(&ids).await {
+        return Err(cleanup.finalize(error).await);
+    }
+    cleanup.disarm();
+    Ok(AddQueueItemResult::Playlist(receipt))
 }
 
 pub(crate) async fn update_queue_item(
@@ -98,6 +133,39 @@ pub(crate) async fn remove_queue_items(
 ) -> Result<(), AppError> {
     let coordinator = backend.download_manager.clone();
     run_tracked_command(&coordinator, TrackedTaskKind::Admission, async move {
+        // Validate the complete removal before cancelling anything. Only
+        // preparation attempts may be cancelled by removal; active downloads
+        // retain the existing explicit-cancellation requirement.
+        let mut preparations = Vec::new();
+        for id in &item_ids {
+            let item = backend.state_store.queue_item(id)?;
+            if item.preparation.is_some() {
+                if let Some(operation_id) = item.latest_operation_id.filter(|id| {
+                    backend
+                        .state_store
+                        .operation_state(id)
+                        .is_some_and(|state| !state.is_terminal())
+                }) {
+                    preparations.push(operation_id);
+                }
+            } else if !item.state.is_editable() {
+                return Err(AppError::new(
+                    "queue_item_active",
+                    "A queued or running item cannot be removed.",
+                ));
+            }
+        }
+        let no_download_progress: crate::notifications::DownloadProgressSink =
+            std::sync::Arc::new(|_| {});
+        for operation_id in preparations {
+            super::operations::cancel_known_operation(
+                &no_download_progress,
+                &backend,
+                &operation_id,
+                OperationKind::Inspection,
+            )
+            .await?;
+        }
         let _deltas = backend.state_store.remove_queue_items(&item_ids).await?;
         Ok(())
     })
@@ -117,34 +185,21 @@ pub(crate) async fn enqueue_queue_items(
             .await?;
         let (work, _deltas) = backend.state_store.enqueue(&item_ids, priority).await?;
         let ids: Vec<_> = work.iter().map(|item| item.operation_id.clone()).collect();
+        let cleanup = crate::lifecycle_cleanup::QueueAdmissionGuard::new(
+            backend.state_store.clone(),
+            backend.download_manager.clone(),
+            ids.clone(),
+        );
         if let Err(error) = admission.publish(&ids).await {
-            cancel_unregistered_operations(&backend.state_store, &ids).await;
-            return Err(error);
+            return Err(cleanup.finalize(error).await);
         }
+        cleanup.disarm();
         Ok(ids
             .into_iter()
             .map(|operation_id| BeginOperationResult { operation_id })
             .collect())
     })
     .await
-}
-
-async fn cancel_unregistered_operations(store: &StateStore, ids: &[String]) {
-    for operation_id in ids {
-        store.cancel_pending(operation_id).await;
-        match store
-            .finalize_operation(operation_id, OperationState::Cancelled, None)
-            .await
-        {
-            Ok(_deltas) => {}
-            Err(error) => store.diagnostics().log(
-                "error",
-                "admission_compensation_failed",
-                &error.correlation_id,
-                &error.summary,
-            ),
-        }
-    }
 }
 
 pub(crate) fn default_download_dir() -> Result<String, AppError> {

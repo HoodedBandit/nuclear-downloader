@@ -12,8 +12,9 @@ use crate::downloader::publication::{
 use crate::journal::{JournalStore, PersistentJournal, MAX_TERMINAL_ATTEMPTS};
 use crate::lifecycle::{create_download_manager, DrainCompletion};
 use crate::models::{
-    DownloadProgress, OperationState, QueueItemRecord, QueueItemState, QueuePriority,
-    APP_SCHEMA_VERSION,
+    AddQueueItemInput, DownloadProgress, MediaSelection, OperationKind, OperationState,
+    PlaylistAdmissionInput, PlaylistEntry, PlaylistInfo, QueueItemRecord, QueueItemState,
+    QueuePriority, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
 };
 use crate::outbox::{
     StatePublication, MAX_OUTBOX_BATCHES, MAX_OUTBOX_DELTAS, MAX_OUTBOX_ESTIMATED_BYTES,
@@ -106,6 +107,12 @@ struct WorkloadCounts {
     runtime_mutations: u64,
     resyncs_observed: u64,
     deltas_observed: u64,
+    playlist_batches: u64,
+    playlist_rows_admitted: u64,
+    playlist_preparations_completed: u64,
+    playlist_preparations_cancelled: u64,
+    playlist_preparation_retries: u64,
+    playlist_rows_removed: u64,
 }
 
 #[derive(Serialize)]
@@ -313,6 +320,16 @@ async fn run_soak(
     }
     samples.push(final_sample);
 
+    if counts.playlist_batches != counts.cycles
+        || counts.playlist_rows_admitted != counts.cycles * 2
+        || counts.playlist_preparations_completed != counts.cycles
+        || counts.playlist_preparations_cancelled != counts.cycles * 2
+        || counts.playlist_preparation_retries != counts.cycles
+        || counts.playlist_rows_removed != counts.cycles * 2
+    {
+        return Err("playlist soak workload counters did not cover every completed cycle".into());
+    }
+
     lifecycle.begin_shutdown().await;
     if lifecycle.active_count().await != 0 {
         return Err("lifecycle was not quiescent at shutdown".into());
@@ -451,6 +468,7 @@ async fn run_cycle(
         counts.collision_preservations += u64::from(result.publication);
         counts.operations += 1;
     }
+    exercise_playlist_batch(context, store, lifecycle, counts).await?;
     if lifecycle.active_count().await != 0 || !store.pending_operation_ids().is_empty() {
         return Err("cycle did not return state and lifecycle to quiescence".into());
     }
@@ -460,6 +478,204 @@ async fn run_cycle(
             .ok_or_else(|| format!("missing runtime fixture {name}"))?;
         drop(lease);
     }
+    Ok(())
+}
+
+async fn exercise_playlist_batch(
+    context: &Context,
+    store: &StateStore,
+    lifecycle: &crate::lifecycle::DownloadManager,
+    counts: &mut WorkloadCounts,
+) -> Result<(), String> {
+    const PLAYLIST_ROWS: usize = 2;
+    let cycle = counts.cycles;
+    let entries = (0..PLAYLIST_ROWS)
+        .map(|index| {
+            let id = format!("soak-playlist-{cycle}-{index}");
+            PlaylistEntry {
+                id: id.clone(),
+                title: Some(format!("Soak playlist {cycle} row {index}")),
+                duration: None,
+                url: format!("https://example.invalid/{id}"),
+                thumbnail: None,
+                selection: Some(MediaSelection {
+                    entry_id: id,
+                    extractor_key: "SyntheticSoak".into(),
+                    playlist_index: index as u32 + 1,
+                }),
+                video: None,
+            }
+        })
+        .collect::<Vec<_>>();
+    let (parent, _) = store
+        .begin_operation(OperationKind::Inspection, None)
+        .await
+        .map_err(display_error)?;
+    store
+        .complete_inspection(
+            &parent.id,
+            UrlInspection::Playlist {
+                playlist: PlaylistInfo {
+                    title: format!("Synthetic soak playlist {cycle}"),
+                    channel: Some("local deterministic fixture".into()),
+                    entry_count: PLAYLIST_ROWS,
+                    truncated: false,
+                    entries: entries.clone(),
+                    inspection_settings_fingerprint: Some(
+                        crate::models::inspection_settings_fingerprint(None, None),
+                    ),
+                },
+            },
+        )
+        .await
+        .map_err(display_error)?;
+    let admission = lifecycle
+        .begin_job_admission(PLAYLIST_ROWS)
+        .await
+        .map_err(display_error)?;
+    let (receipt, preparation_ids) = store
+        .add_playlist_items(AddQueueItemInput {
+            inspection_operation_id: parent.id,
+            format: "mp4".into(),
+            quality: "720p".into(),
+            output_dir: context.output_root.to_string_lossy().into_owned(),
+            cookie_config: None,
+            filename_override: None,
+            compat_config_path: None,
+            playlist: Some(PlaylistAdmissionInput {
+                request_id: format!("soak-playlist-request-{cycle}"),
+                entry_indices: (0..PLAYLIST_ROWS).collect(),
+            }),
+        })
+        .await
+        .map_err(display_error)?;
+    admission
+        .publish_subset(&preparation_ids)
+        .await
+        .map_err(display_error)?;
+    if receipt.item_ids.len() != PLAYLIST_ROWS || preparation_ids.len() != PLAYLIST_ROWS {
+        return Err("playlist batch admission did not register every selected row".into());
+    }
+
+    let completed = store
+        .take_next_preparation()
+        .await
+        .ok_or_else(|| "playlist completion fixture was not pending".to_string())?;
+    let completed_claim = lifecycle
+        .wait_worker_claim()
+        .await?
+        .ok_or_else(|| "playlist completion worker claim was unavailable".to_string())?;
+    let _completed_job = completed_claim
+        .registered_job(&completed.operation_id)
+        .await
+        .map_err(display_error)?;
+    drop(completed_claim);
+    let completed_entry = &entries[0];
+    store
+        .complete_inspection(
+            &completed.operation_id,
+            UrlInspection::Video {
+                video: VideoInfo {
+                    id: completed_entry.id.clone(),
+                    title: format!("Prepared {}", completed_entry.id),
+                    duration: Some(1.0),
+                    channel: Some("local deterministic fixture".into()),
+                    thumbnail: None,
+                    url: completed_entry.url.clone(),
+                    available_qualities: vec!["720p".into()],
+                    has_audio: true,
+                    selection: completed_entry.selection.clone(),
+                },
+            },
+        )
+        .await
+        .map_err(display_error)?;
+    lifecycle.finish(&completed.operation_id).await;
+
+    let cancelled = store
+        .take_next_preparation()
+        .await
+        .ok_or_else(|| "playlist cancellation fixture was not pending".to_string())?;
+    let cancelled_claim = lifecycle
+        .wait_worker_claim()
+        .await?
+        .ok_or_else(|| "playlist cancellation worker claim was unavailable".to_string())?;
+    let _cancelled_job = cancelled_claim
+        .registered_job(&cancelled.operation_id)
+        .await
+        .map_err(display_error)?;
+    drop(cancelled_claim);
+    lifecycle
+        .cancel(&cancelled.operation_id)
+        .await
+        .map_err(display_error)?;
+    store
+        .request_cancellation(&cancelled.operation_id)
+        .await
+        .map_err(display_error)?;
+    store
+        .finalize_operation(&cancelled.operation_id, OperationState::Cancelled, None)
+        .await
+        .map_err(display_error)?;
+    lifecycle.finish(&cancelled.operation_id).await;
+
+    let retry_admission = lifecycle
+        .begin_job_admission(1)
+        .await
+        .map_err(display_error)?;
+    let (retry_work, _) = store
+        .enqueue(&[cancelled.queue_item.id.clone()], QueuePriority::Normal)
+        .await
+        .map_err(display_error)?;
+    let retry_id = retry_work[0].operation_id.clone();
+    retry_admission
+        .publish(&[retry_id.clone()])
+        .await
+        .map_err(display_error)?;
+    let retry = store
+        .take_next_preparation()
+        .await
+        .ok_or_else(|| "playlist retry fixture was not pending".to_string())?;
+    if retry.operation_id != retry_id {
+        return Err("playlist retry queue and lifecycle registry diverged".into());
+    }
+    let retry_claim = lifecycle
+        .wait_worker_claim()
+        .await?
+        .ok_or_else(|| "playlist retry worker claim was unavailable".to_string())?;
+    let _retry_job = retry_claim
+        .registered_job(&retry_id)
+        .await
+        .map_err(display_error)?;
+    drop(retry_claim);
+    lifecycle.cancel(&retry_id).await.map_err(display_error)?;
+    store
+        .request_cancellation(&retry_id)
+        .await
+        .map_err(display_error)?;
+    store
+        .finalize_operation(&retry_id, OperationState::Cancelled, None)
+        .await
+        .map_err(display_error)?;
+    lifecycle.finish(&retry_id).await;
+    store
+        .remove_queue_items(&receipt.item_ids)
+        .await
+        .map_err(display_error)?;
+    if receipt
+        .item_ids
+        .iter()
+        .any(|id| store.queue_item(id).is_ok())
+    {
+        return Err("playlist disposal left an admitted row behind".into());
+    }
+
+    counts.playlist_batches += 1;
+    counts.playlist_rows_admitted += PLAYLIST_ROWS as u64;
+    counts.playlist_preparations_completed += 1;
+    counts.playlist_preparations_cancelled += 2;
+    counts.playlist_preparation_retries += 1;
+    counts.playlist_rows_removed += PLAYLIST_ROWS as u64;
     Ok(())
 }
 
@@ -981,6 +1197,9 @@ impl Context {
 fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord> {
     (0..QUEUE_SIZE)
         .map(|index| QueueItemRecord {
+            preparation: None,
+            preparation_operation_id: None,
+            source_media_id: None,
             schema_version: APP_SCHEMA_VERSION,
             id: uuid::Uuid::from_u128(index as u128 + 1).to_string(),
             source_url: format!("https://fixture.invalid/phase5/{index}"),

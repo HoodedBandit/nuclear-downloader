@@ -2,7 +2,7 @@ use crate::app_error::AppError;
 use crate::lifecycle::{DownloadManager, DrainCompletion, DrainTicket, TrackedTaskKind};
 use crate::models::CancelAllResult;
 use crate::notifications::DownloadProgressSink;
-use crate::state::{DownloadTerminalOutcome, StateStore};
+use crate::state::StateStore;
 use futures_util::FutureExt;
 use std::panic::AssertUnwindSafe;
 use std::time::Duration;
@@ -96,16 +96,14 @@ async fn complete_drain(cleanup: &DrainCleanup) -> Result<CancelAllResult, AppEr
     // Admission and worker claims are closed for this drain generation. Keep
     // each pending ID until both finalization and deregistration have completed,
     // so an unwind can repeat cleanup without losing ownership of a pending job.
-    for operation_id in store.pending_operation_ids() {
-        if store
-            .operation_state(&operation_id)
-            .is_some_and(|state| !state.is_terminal())
-        {
-            let receipt = store
-                .finalize_download(&operation_id, DownloadTerminalOutcome::Cancelled)
-                .await?;
-            publish_progress(&receipt.progress);
-        }
+    let pending_ids = store.pending_operation_ids();
+    crate::services::preparation::finalize_pending_cancellations(
+        store,
+        &pending_ids,
+        publish_progress,
+    )
+    .await?;
+    for operation_id in pending_ids {
         manager.finish(&operation_id).await;
         store.cancel_pending(&operation_id).await;
     }

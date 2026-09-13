@@ -84,6 +84,26 @@ impl PersistentJournal {
                 changed = true;
             }
         }
+        let interrupted_preparations = self
+            .operations
+            .iter()
+            .filter(|operation| {
+                operation.kind == OperationKind::Inspection
+                    && operation.state == OperationState::Interrupted
+                    && operation.queue_item_id.is_some()
+            })
+            .filter_map(|operation| operation.queue_item_id.as_deref())
+            .collect::<HashSet<_>>();
+        for item in &mut self.queue {
+            if item.preparation == Some(crate::models::QueuePreparation::Pending)
+                && interrupted_preparations.contains(item.id.as_str())
+                && item.state != QueueItemState::Interrupted
+            {
+                item.state = QueueItemState::Interrupted;
+                item.updated_at_ms = now_ms;
+                changed = true;
+            }
+        }
         let retention = self.prune_and_repair_latest_references(now_ms);
         changed || retention.changed()
     }
@@ -96,7 +116,7 @@ impl PersistentJournal {
             .pending_app_update
             .as_ref()
             .map(|pending| pending.operation_id.as_str());
-        let retained_operation_ids = retained_operation_ids(
+        let mut retained_operation_ids = retained_operation_ids(
             self.operations
                 .iter()
                 .map(|operation| OperationRetentionMetadata {
@@ -108,6 +128,28 @@ impl PersistentJournal {
             pending_app_update_id,
             now_ms,
         );
+        let queue_ids = self
+            .queue
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<HashSet<_>>();
+        retained_operation_ids.extend(
+            self.queue
+                .iter()
+                .filter_map(|item| item.preparation_operation_id.clone()),
+        );
+        retained_operation_ids.extend(self.operations.iter().filter_map(|operation| {
+            operation
+                .playlist_admission
+                .as_ref()
+                .is_some_and(|receipt| {
+                    receipt
+                        .item_ids
+                        .iter()
+                        .any(|id| queue_ids.contains(id.as_str()))
+                })
+                .then_some(operation.id.clone())
+        }));
         let mut removed_operation_ids = Vec::new();
         let mut retained_operations = Vec::new();
         for operation in std::mem::take(&mut self.operations) {
@@ -254,6 +296,8 @@ pub struct JournalStore {
     #[cfg(test)]
     fail_saves_remaining: AtomicUsize,
     #[cfg(test)]
+    save_attempts: AtomicUsize,
+    #[cfg(test)]
     save_pause: Mutex<Option<Arc<TestJournalSavePause>>>,
 }
 
@@ -277,6 +321,8 @@ impl JournalStore {
             persisted_revision: Mutex::new(0),
             #[cfg(test)]
             fail_saves_remaining: AtomicUsize::new(0),
+            #[cfg(test)]
+            save_attempts: AtomicUsize::new(0),
             #[cfg(test)]
             save_pause: Mutex::new(None),
         };
@@ -325,6 +371,8 @@ impl JournalStore {
         if journal.revision <= *persisted_revision {
             return Ok(());
         }
+        #[cfg(test)]
+        self.save_attempts.fetch_add(1, Ordering::SeqCst);
         #[cfg(test)]
         if self
             .fail_saves_remaining
@@ -529,6 +577,13 @@ fn validate_journal_structure(
     for item in &journal.queue {
         if uuid::Uuid::parse_str(&item.id).is_err()
             || !queue_ids.insert(item.id.as_str())
+            || item.source_media_id.as_ref().is_some_and(|id| {
+                id.is_empty() || id.len() > 4 * 1024 || id.chars().any(char::is_control)
+            })
+            || item
+                .preparation_operation_id
+                .as_ref()
+                .is_some_and(|id| uuid::Uuid::parse_str(id).is_err())
             || item
                 .selection
                 .as_ref()
@@ -554,6 +609,32 @@ fn validate_journal_structure(
                 "journal_corrupt",
                 "The application journal contained invalid operation references.",
             ));
+        }
+        if let Some(receipt) = &operation.playlist_admission {
+            if operation.kind != OperationKind::Inspection
+                || operation.state != OperationState::Completed
+                || operation.queue_item_id.is_some()
+                || receipt.request_id.is_empty()
+                || receipt.request_id.len() > 4 * 1024
+                || receipt.request_id.trim() != receipt.request_id
+                || receipt.request_id.chars().any(char::is_control)
+                || receipt.fingerprint.len() != 64
+                || !receipt
+                    .fingerprint
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                || receipt.item_ids.len() > 1_000
+                || receipt.skipped_count > 1_000
+                || receipt
+                    .item_ids
+                    .iter()
+                    .any(|id| uuid::Uuid::parse_str(id).is_err())
+            {
+                return Err(AppError::new(
+                    "journal_corrupt",
+                    "The application journal contained an invalid playlist admission receipt.",
+                ));
+            }
         }
     }
     if let Some(pending) = &journal.pending_app_update {
@@ -591,6 +672,28 @@ fn validate_journal_structure(
         }
     }
     for item in &journal.queue {
+        if let Some(operation_id) = item.preparation_operation_id.as_deref() {
+            let operation = journal
+                .operations
+                .iter()
+                .find(|operation| operation.id == operation_id)
+                .ok_or_else(|| {
+                    AppError::new(
+                        "journal_corrupt",
+                        "The application journal contained a missing preparation operation reference.",
+                    )
+                })?;
+            if item.preparation != Some(crate::models::QueuePreparation::Pending)
+                || item.latest_operation_id.is_some()
+                || operation.kind != OperationKind::Inspection
+                || operation.queue_item_id.as_deref() != Some(item.id.as_str())
+            {
+                return Err(AppError::new(
+                    "journal_corrupt",
+                    "The application journal contained an inconsistent preparation operation reference.",
+                ));
+            }
+        }
         if let Some(operation_id) = item.latest_operation_id.as_deref() {
             let Some(operation) = journal
                 .operations

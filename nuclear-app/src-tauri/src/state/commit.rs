@@ -11,6 +11,7 @@ use crate::models::{
     PersistenceHealth, PublishedOutput, StateDelta, StateDeltaValue, UrlInspection,
 };
 use futures_util::FutureExt;
+use std::collections::HashSet;
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use tokio::sync::OwnedMutexGuard;
@@ -31,6 +32,169 @@ struct DegradedFinalizationMetadata<'a> {
 }
 
 impl StateStore {
+    pub async fn finalize_pending_batch(
+        &self,
+        ids: &[String],
+        operation_state: OperationState,
+        error: Option<AppError>,
+    ) -> Result<Vec<StateDelta>, AppError> {
+        if !matches!(
+            operation_state,
+            OperationState::Cancelled | OperationState::Failed
+        ) {
+            return Err(AppError::invalid(
+                "Pending batch finalization accepts only cancelled or failed outcomes.",
+            ));
+        }
+        let mutation = self.inner.mutation_gate.clone().lock_owned().await;
+        let (mut candidate, mut deltas, retention_now) = self.durable_candidate()?;
+        let mut unique = HashSet::with_capacity(ids.len());
+        let mut transition_ids = Vec::with_capacity(ids.len());
+        for id in ids {
+            if !unique.insert(id.as_str()) {
+                return Err(AppError::invalid(
+                    "A pending operation was requested more than once.",
+                ));
+            }
+            let operation = candidate
+                .operations
+                .get(id)
+                .ok_or_else(|| AppError::not_found("operation"))?;
+            if operation.state.is_terminal() {
+                continue;
+            }
+            if operation.state == OperationState::Running {
+                return Err(AppError::new(
+                    "operation_active",
+                    "Only pending, unregistered operations may be finalized as a batch.",
+                ));
+            }
+            transition_ids.push(id.clone());
+        }
+        if transition_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let now = now_ms();
+        for id in &transition_ids {
+            deltas.extend(apply_operation_transition(
+                &mut candidate,
+                id,
+                operation_state,
+                error.clone(),
+                None,
+                None,
+                now,
+            )?);
+        }
+        let candidate_sequence = candidate.sequence;
+        let store = self.clone();
+        let owned_ids = transition_ids;
+        let intended_error = error.clone();
+        let finalizer = tokio::spawn(async move {
+            let _mutation = mutation;
+            let result = AssertUnwindSafe(async {
+                #[cfg(test)]
+                store.pause_commit_for_test().await;
+                match store
+                    .persist_candidate_with_retry(&candidate, retention_now)
+                    .await
+                {
+                    Ok(()) => {
+                        let latest_sequence = candidate.sequence;
+                        store.install_candidate(candidate)?;
+                        store.inner.outbox.enqueue(deltas.clone(), latest_sequence);
+                        store.inner.operation_notify.notify_waiters();
+                        Ok(deltas)
+                    }
+                    Err(save_error) => store.install_degraded_pending_batch(
+                        &owned_ids,
+                        operation_state,
+                        intended_error.clone(),
+                        candidate_sequence,
+                        &save_error,
+                    ),
+                }
+            })
+            .catch_unwind()
+            .await;
+            match result {
+                Ok(result) => result,
+                Err(_) => store.install_degraded_pending_batch(
+                    &owned_ids,
+                    operation_state,
+                    intended_error,
+                    candidate_sequence,
+                    &AppError::new(
+                        "state_finalizer_failed",
+                        "The pending batch finalizer stopped unexpectedly.",
+                    ),
+                ),
+            }
+        });
+        finalizer.await.map_err(|error| {
+            AppError::new(
+                "state_finalizer_failed",
+                "The pending batch finalizer stopped unexpectedly.",
+            )
+            .retryable(true)
+            .with_detail(error.to_string())
+        })?
+    }
+
+    fn install_degraded_pending_batch(
+        &self,
+        ids: &[String],
+        intended_state: OperationState,
+        intended_error: Option<AppError>,
+        candidate_sequence: u64,
+        cause: &AppError,
+    ) -> Result<Vec<StateDelta>, AppError> {
+        let mut fallback = self.lock()?.clone();
+        fallback.sequence = fallback.sequence.max(candidate_sequence);
+        let degraded_error = AppError::new(
+            "state_persistence_failed",
+            "The operations finished, but their final states could not be saved.",
+        )
+        .retryable(true)
+        .with_detail(cause.summary.clone());
+        let now = now_ms();
+        let mut deltas = Vec::with_capacity(ids.len() * 2 + 1);
+        for id in ids {
+            let operation = fallback
+                .operations
+                .get_mut(id)
+                .ok_or_else(|| AppError::not_found("operation"))?;
+            operation.intended_terminal_outcome = Some(Box::new(IntendedTerminalOutcome {
+                state: intended_state,
+                error: intended_error.clone(),
+            }));
+            deltas.extend(apply_operation_transition(
+                &mut fallback,
+                id,
+                OperationState::Failed,
+                Some(degraded_error.clone()),
+                None,
+                None,
+                now,
+            )?);
+        }
+        fallback.persistence_dirty = true;
+        fallback.persistence_health = PersistenceHealth {
+            degraded: true,
+            error: Some(degraded_error),
+        };
+        let health = fallback.persistence_health.clone();
+        deltas.push(next_delta(
+            &mut fallback,
+            StateDeltaValue::PersistenceHealthChanged(health),
+        ));
+        let latest_sequence = fallback.sequence;
+        self.install_candidate(fallback)?;
+        self.inner.outbox.enqueue(deltas.clone(), latest_sequence);
+        self.inner.operation_notify.notify_waiters();
+        Ok(deltas)
+    }
+
     pub async fn finalize_operation(
         &self,
         id: &str,

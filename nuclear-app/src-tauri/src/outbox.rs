@@ -231,24 +231,36 @@ fn estimate_delta_bytes(delta: &StateDelta) -> usize {
 }
 
 fn estimate_queue_item_bytes(item: &QueueItemRecord) -> usize {
-    192 + item.id.len()
-        + item.source_url.len()
-        + item.title.len()
+    192 + item.id.capacity()
+        + item.source_url.capacity()
+        + item.source_media_id.as_ref().map_or(0, String::capacity)
+        + item.title.capacity()
+        + item.available_qualities.capacity() * std::mem::size_of::<String>()
         + item
             .available_qualities
             .iter()
-            .map(String::len)
+            .map(String::capacity)
             .sum::<usize>()
-        + item.format.len()
-        + item.quality.len()
-        + item.output_dir.len()
-        + item.filename_override.as_ref().map_or(0, String::len)
-        + item.compat_config_path.as_ref().map_or(0, String::len)
-        + item.latest_operation_id.as_ref().map_or(0, String::len)
+        + item.format.capacity()
+        + item.quality.capacity()
+        + item.output_dir.capacity()
+        + item.filename_override.as_ref().map_or(0, String::capacity)
+        + item.compat_config_path.as_ref().map_or(0, String::capacity)
+        + item.selection.as_ref().map_or(0, |selection| {
+            selection.entry_id.capacity() + selection.extractor_key.capacity()
+        })
+        + item
+            .preparation_operation_id
+            .as_ref()
+            .map_or(0, String::capacity)
+        + item
+            .latest_operation_id
+            .as_ref()
+            .map_or(0, String::capacity)
         + item.cookie_config.as_ref().map_or(0, |cookie| {
-            cookie.mode.len()
-                + cookie.browser.len()
-                + cookie.cookie_file.as_ref().map_or(0, String::len)
+            cookie.mode.capacity()
+                + cookie.browser.capacity()
+                + cookie.cookie_file.as_ref().map_or(0, String::capacity)
         })
 }
 
@@ -271,6 +283,13 @@ fn estimate_operation_bytes(operation: &OperationSnapshot) -> usize {
             .published_output
             .as_ref()
             .map_or(0, |output| output.path.len() + 16)
+        + operation.playlist_admission.as_ref().map_or(0, |receipt| {
+            std::mem::size_of_val(receipt)
+                + receipt.request_id.capacity()
+                + receipt.fingerprint.capacity()
+                + receipt.item_ids.capacity() * std::mem::size_of::<String>()
+                + receipt.item_ids.iter().map(String::capacity).sum::<usize>()
+        })
 }
 
 #[cfg(test)]

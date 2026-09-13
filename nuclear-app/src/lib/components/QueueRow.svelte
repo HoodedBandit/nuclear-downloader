@@ -126,7 +126,7 @@
     {/if}
   </td>
   <td class="col-quality">
-    {#if isEditablePendingStatus(item.status)}
+    {#if isEditablePendingStatus(item.status) && item.infoLoaded}
       <select
         value={item.quality}
         onchange={(event) => changeQuality(item, event)}
@@ -139,7 +139,7 @@
     {:else}<span class="muted">{item.quality}</span>{/if}
   </td>
   <td class="col-format">
-    {#if isEditablePendingStatus(item.status)}
+    {#if isEditablePendingStatus(item.status) && item.infoLoaded}
       <select
         value={item.format}
         onchange={(event) => changeFormat(item, event)}
@@ -208,7 +208,7 @@
         disabled={!canStartDownloads}
         aria-label={`Download ${getQueueItemDisplayTitle(item)}`}>DL</button
       >
-    {:else if item.status === 'downloading' || item.status === 'postprocessing' || item.status === 'cancelling'}
+    {:else if item.status === 'fetching' || item.status === 'downloading' || item.status === 'postprocessing' || item.status === 'cancelling'}
       <button
         class="small danger"
         onclick={() => cancelItem(item)}

@@ -19,6 +19,64 @@ pub(super) fn apply_operation_transition(
     published_output: Option<PublishedOutput>,
     now: u64,
 ) -> Result<Vec<StateDelta>, AppError> {
+    let preparation_video = if let Some(inspection) = inspection_result.as_deref() {
+        let operation = state
+            .operations
+            .get(id)
+            .ok_or_else(|| AppError::not_found("operation"))?;
+        if let Some(queue_item_id) = operation.queue_item_id.as_ref() {
+            let item = state
+                .queue
+                .get(queue_item_id)
+                .ok_or_else(|| AppError::not_found("queue item"))?;
+            if item.preparation != Some(crate::models::QueuePreparation::Pending)
+                || item.latest_operation_id.as_deref() != Some(id)
+                || operation.state == OperationState::Cancelling
+            {
+                return Err(AppError::new(
+                    "stale_preparation",
+                    "This metadata preparation attempt is no longer authoritative.",
+                ));
+            }
+            match inspection {
+                UrlInspection::Video { video }
+                    if item
+                        .source_media_id
+                        .as_deref()
+                        .is_none_or(|expected| expected == video.id)
+                        && video.selection == item.selection =>
+                {
+                    if !video.has_audio
+                        && matches!(
+                            item.format.as_str(),
+                            "mp3" | "flac" | "wav" | "aac" | "opus"
+                        )
+                    {
+                        return Err(AppError::invalid(
+                            "Audio-only output is unavailable because this item has no audio stream.",
+                        ));
+                    }
+                    Some(video.clone())
+                }
+                UrlInspection::Video { .. } => {
+                    return Err(AppError::new(
+                        "preparation_identity_mismatch",
+                        "Prepared metadata did not match the queue item identity.",
+                    ))
+                }
+                UrlInspection::Playlist { .. } => {
+                    return Err(AppError::new(
+                        "inspection_result_kind",
+                        "Metadata preparation returned a playlist instead of a video.",
+                    ))
+                }
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let queue_item_id = {
         let operation = state
             .operations
@@ -78,7 +136,19 @@ pub(super) fn apply_operation_transition(
     let mut deltas = vec![next_operation_delta(state, operation)];
     if let Some(queue_item_id) = queue_item_id {
         if let Some(item) = state.queue.get_mut(&queue_item_id) {
-            item.state = queue_state_for_operation(operation_state);
+            if let Some(video) = preparation_video {
+                item.title = video.title;
+                item.available_qualities = video.available_qualities;
+                item.has_audio = video.has_audio;
+                item.source_media_id = Some(video.id.clone());
+                item.selection = video.selection;
+                item.preparation = None;
+                item.latest_operation_id = None;
+                item.preparation_operation_id = None;
+                item.state = QueueItemState::Inert;
+            } else {
+                item.state = queue_state_for_operation(operation_state);
+            }
             item.updated_at_ms = now;
             let item = item.snapshot();
             deltas.push(next_delta(state, StateDeltaValue::QueueItemUpserted(item)));
@@ -134,6 +204,14 @@ pub(super) fn normalize_inspection(
     match &mut inspection {
         UrlInspection::Video { video } => {
             validate_actionable_field("video ID", &video.id)?;
+            if video.id.is_empty()
+                || video.id.trim() != video.id
+                || video.id.chars().any(char::is_control)
+            {
+                return Err(AppError::invalid(
+                    "Video ID must be non-empty and canonical.",
+                ));
+            }
             validate_actionable_field("video URL", &video.url)?;
             shrink_string(&mut video.id);
             shrink_string(&mut video.url);
@@ -155,12 +233,34 @@ pub(super) fn normalize_inspection(
             }
         }
         UrlInspection::Playlist { playlist } => {
+            if playlist
+                .inspection_settings_fingerprint
+                .as_ref()
+                .is_some_and(|fingerprint| {
+                    fingerprint.len() != 64
+                        || !fingerprint
+                            .bytes()
+                            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                })
+            {
+                return Err(AppError::invalid(
+                    "The playlist inspection settings fingerprint is invalid.",
+                ));
+            }
             truncate_display_field(&mut playlist.title);
             if let Some(channel) = &mut playlist.channel {
                 truncate_display_field(channel);
             }
             for entry in &mut playlist.entries {
                 validate_actionable_field("playlist entry ID", &entry.id)?;
+                if entry.id.is_empty()
+                    || entry.id.trim() != entry.id
+                    || entry.id.chars().any(char::is_control)
+                {
+                    return Err(AppError::invalid(
+                        "Playlist entry ID must be non-empty and canonical.",
+                    ));
+                }
                 validate_actionable_field("playlist entry URL", &entry.url)?;
                 shrink_string(&mut entry.id);
                 shrink_string(&mut entry.url);
@@ -173,6 +273,20 @@ pub(super) fn normalize_inspection(
                 }
                 if let Some(title) = &mut entry.title {
                     truncate_display_field(title);
+                }
+                if let Some(video) = entry.video.take() {
+                    let normalized = normalize_inspection(UrlInspection::Video { video: *video })?;
+                    let UrlInspection::Video { video } = normalized else {
+                        unreachable!("video normalization preserves the inspection kind");
+                    };
+                    if (video.id != entry.id && entry.id != entry.url)
+                        || video.selection != entry.selection
+                    {
+                        return Err(AppError::invalid(
+                            "Playlist entry metadata did not match its entry identity.",
+                        ));
+                    }
+                    entry.video = Some(Box::new(video));
                 }
             }
             compact_vec(&mut playlist.entries);
@@ -300,7 +414,7 @@ pub(super) fn prune_live_operations(state: &mut StateData, now: u64) -> Vec<Stat
         .pending_app_update
         .as_ref()
         .map(|pending| pending.operation_id.as_str());
-    let retained = retained_operation_ids(
+    let mut retained = retained_operation_ids(
         state
             .operations
             .values()
@@ -313,6 +427,23 @@ pub(super) fn prune_live_operations(state: &mut StateData, now: u64) -> Vec<Stat
         pending_app_update_id,
         now,
     );
+    retained.extend(state.queue.values().filter_map(|item| {
+        (item.preparation == Some(crate::models::QueuePreparation::Pending))
+            .then(|| item.latest_operation_id.clone())
+            .flatten()
+    }));
+    retained.extend(state.operations.values().filter_map(|operation| {
+        operation
+            .playlist_admission
+            .as_ref()
+            .is_some_and(|receipt| {
+                receipt
+                    .item_ids
+                    .iter()
+                    .any(|id| state.queue.contains_key(id))
+            })
+            .then_some(operation.id.clone())
+    }));
     let removed = state
         .operations
         .keys()

@@ -218,6 +218,7 @@ mod tests {
             filename_override: None,
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert_eq!(
@@ -237,6 +238,7 @@ mod tests {
             filename_override: Some("My custom clip".into()),
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert_eq!(
@@ -256,6 +258,7 @@ mod tests {
             filename_override: Some("CON: 100%?".into()),
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert_eq!(
@@ -288,6 +291,7 @@ mod tests {
             filename_override: Some("Clip: 100%?".into()),
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert_eq!(

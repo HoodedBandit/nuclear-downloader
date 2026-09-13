@@ -126,6 +126,14 @@ const OWNERSHIP = new Map([
     },
   ],
   [
+    "src/lib/playlist-metadata-owner.ts",
+    {
+      responsibility:
+        "Own bounded request-scoped playlist display metadata until confirmed queue rows arrive.",
+      workflows: ["inspection", "queue", "state-sync"],
+    },
+  ],
+  [
     "src/lib/media-identity.ts",
     {
       responsibility:

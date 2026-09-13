@@ -328,6 +328,7 @@ pub(crate) async fn fixture(store: &StateStore, root: &std::path::Path) -> Queue
         .unwrap();
     store
         .add_queue_item(AddQueueItemInput {
+            playlist: None,
             inspection_operation_id: inspection.id,
             quality: "720p".into(),
             format: "mp4".into(),

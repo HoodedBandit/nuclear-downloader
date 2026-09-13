@@ -1,12 +1,11 @@
 use super::commands::run_tracked_command;
-use super::downloads::finalize_download;
 use super::Backend;
 use crate::app_error::AppError;
 use crate::cancellation::CANCELLATION_WAIT_TIMEOUT;
 use crate::lifecycle::TrackedTaskKind;
 use crate::models::{CancelAllResult, OperationKind};
 use crate::notifications::DownloadProgressSink;
-use crate::{cancellation, downloader, lifecycle};
+use crate::{cancellation, lifecycle};
 
 pub(crate) async fn cancel_all_downloads(
     backend: Backend,
@@ -45,7 +44,7 @@ pub(crate) async fn cancel_operation(
     .await
 }
 
-async fn cancel_known_operation(
+pub(super) async fn cancel_known_operation(
     publish_progress: &DownloadProgressSink,
     backend: &Backend,
     operation_id: &str,
@@ -75,14 +74,15 @@ async fn cancel_known_operation(
             Err(error) => return Err(error),
         }
     }
-    if kind == OperationKind::Download && backend.state_store.cancel_pending(operation_id).await {
-        finalize_download(
-            publish_progress,
+    if matches!(kind, OperationKind::Download | OperationKind::Inspection)
+        && backend.state_store.cancel_pending(operation_id).await
+    {
+        super::preparation::finalize_pending_cancellation(
             &backend.state_store,
             operation_id,
-            downloader::DownloadOutcome::Cancelled,
+            publish_progress,
         )
-        .await;
+        .await?;
         backend.download_manager.finish(operation_id).await;
         return Ok(());
     }

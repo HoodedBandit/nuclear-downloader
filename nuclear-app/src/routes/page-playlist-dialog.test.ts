@@ -154,7 +154,7 @@ afterEach(() => {
 });
 
 describe('mounted page playlist dialog baseline', () => {
-  it('renders and admits two selected siblings that share a parent URL', async () => {
+  it('admits selected siblings with one backend-authoritative batch', async () => {
     const parentUrl = 'https://social.example/parent';
     const entries = [
       {
@@ -187,80 +187,48 @@ describe('mounted page playlist dialog baseline', () => {
         }
       }
     } satisfies OperationSnapshot;
-    let beginCount = 0;
-    ipc.invoke.mockImplementation(async (command: string) => {
-      if (command === 'begin_inspection') {
-        const operationId =
-          beginCount === 0 ? inspectionId : `00000000-0000-4000-8000-00000000000${beginCount + 1}`;
-        beginCount += 1;
-        return { operationId };
+    ipc.invoke.mockImplementation(async (command: string, args?: unknown) => {
+      if (command === 'add_inspection_result_to_queue') {
+        const requestId = (args as { input: { playlist: { requestId: string } } }).input.playlist
+          .requestId;
+        return {
+          kind: 'playlist',
+          requestId,
+          itemIds: ['queue-one', 'queue-two'],
+          skippedCount: 0
+        };
       }
-      if (command === 'add_inspection_result_to_queue') return { id: `queue-${beginCount}` };
       return commandResult(command);
     });
     const { view } = await openPlaylist(parentOperation);
     const dialog = view.getByRole('dialog', { name: 'Shared-parent playlist' });
-    expect(within(dialog).getByText('First sibling').isConnected).toBe(true);
-    expect(within(dialog).getByText('Second sibling').isConnected).toBe(true);
 
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Add 2 Videos to Queue' }));
-    for (let index = 0; index < entries.length; index += 1) {
-      await waitFor(() =>
-        expect(
-          ipc.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
-        ).toHaveLength(index + 2)
-      );
-      const operationId = `00000000-0000-4000-8000-00000000000${index + 2}`;
-      handlers.get('app-state-changed')?.({
-        payload: {
-          schemaVersion: 1,
-          sequence: index + 2,
-          emittedAtMs: index + 3,
-          kind: 'operation_upserted',
-          value: {
-            ...completedInspection,
-            id: operationId,
-            inspectionResult: {
-              kind: 'video',
-              video: {
-                id: entries[index].selection.entryId,
-                title: entries[index].title ?? entries[index].id,
-                duration: entries[index].duration,
-                channel: 'Test channel',
-                thumbnail: null,
-                url: parentUrl,
-                available_qualities: ['1080p'],
-                has_audio: true,
-                selection: entries[index].selection
-              }
-            }
-          }
-        }
-      });
-    }
+    await waitFor(() => expect(view.queryByRole('dialog')).toBeNull());
 
-    await waitFor(() =>
-      expect(
-        ipc.invoke.mock.calls.filter(([command]) => command === 'add_inspection_result_to_queue')
-      ).toHaveLength(2)
+    const calls = ipc.invoke.mock.calls.filter(
+      ([command]) => command === 'add_inspection_result_to_queue'
     );
+    expect(calls).toHaveLength(1);
+    expect(calls[0][1]).toEqual({
+      input: {
+        inspectionOperationId: inspectionId,
+        format: 'mp4',
+        quality: 'best',
+        outputDir: 'C:\\Downloads',
+        cookieConfig: null,
+        filenameOverride: null,
+        compatConfigPath: null,
+        playlist: {
+          requestId: expect.any(String),
+          entryIndices: [0, 1]
+        }
+      }
+    });
     expect(
-      ipc.invoke.mock.calls
-        .filter(([command]) => command === 'begin_inspection')
-        .slice(1)
-        .map(([, arguments_]) => arguments_)
-    ).toEqual(
-      entries.map((entry) => ({
-        input: {
-          url: parentUrl,
-          cookieConfig: null,
-          compatConfigPath: null,
-          selection: entry.selection
-        }
-      }))
-    );
+      ipc.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
+    ).toHaveLength(1);
   });
-
   it('pages 205 entries in 100-row windows and preserves global-index selection', async () => {
     const { view } = await openPlaylist();
     const dialog = view.getByRole('dialog', { name: 'Large mounted playlist' });
@@ -301,5 +269,32 @@ describe('mounted page playlist dialog baseline', () => {
     await waitFor(() => expect(view.queryByRole('dialog')).toBeNull());
     expect(document.activeElement).toBe(input);
     expect(ipc.invoke).toHaveBeenCalledWith('dismiss_operation', { operationId: inspectionId });
+  });
+
+  it('blocks Escape only while playlist admission is awaiting its response', async () => {
+    let resolveAdmission!: (value: unknown) => void;
+    ipc.invoke.mockImplementation((command: string, args?: unknown) => {
+      if (command === 'add_inspection_result_to_queue') {
+        return new Promise((resolve) => {
+          resolveAdmission = () => {
+            const requestId = (args as { input: { playlist: { requestId: string } } }).input
+              .playlist.requestId;
+            resolve({ kind: 'playlist', requestId, itemIds: [], skippedCount: 205 });
+          };
+        });
+      }
+      return Promise.resolve(commandResult(command));
+    });
+    const { view } = await openPlaylist();
+    const dialog = view.getByRole('dialog', { name: 'Large mounted playlist' });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Add 205 Videos to Queue' }));
+    await waitFor(() => expect(resolveAdmission).toBeTypeOf('function'));
+
+    await fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(view.getByRole('dialog', { name: 'Large mounted playlist' }).isConnected).toBe(true);
+    expect(ipc.invoke).not.toHaveBeenCalledWith('dismiss_operation', expect.anything());
+
+    resolveAdmission(undefined);
+    await waitFor(() => expect(view.queryByRole('dialog')).toBeNull());
   });
 });

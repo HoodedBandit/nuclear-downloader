@@ -2,9 +2,10 @@
 import type { CookieConfig } from "./CookieConfig";
 import type { MediaSelection } from "./MediaSelection";
 import type { QueueItemState } from "./QueueItemState";
+import type { QueuePreparation } from "./QueuePreparation";
 
 /**
  * Persisted queue configuration. `cookie_config` is an immutable per-item
  * authentication selection containing metadata only; cookie contents are never stored.
  */
-export type QueueItemRecord = { schemaVersion: number, id: string, sourceUrl: string, title: string, availableQualities: Array<string>, hasAudio: boolean, cookieConfig: CookieConfig | null, format: string, quality: string, outputDir: string, filenameOverride: string | null, compatConfigPath: string | null, selection?: MediaSelection | null, state: QueueItemState, latestOperationId: string | null, createdAtMs: number, updatedAtMs: number, };
+export type QueueItemRecord = { schemaVersion: number, id: string, sourceUrl: string, sourceMediaId?: string | null, title: string, availableQualities: Array<string>, hasAudio: boolean, cookieConfig: CookieConfig | null, format: string, quality: string, outputDir: string, filenameOverride: string | null, compatConfigPath: string | null, selection?: MediaSelection | null, preparation?: QueuePreparation | null, preparationOperationId?: string | null, state: QueueItemState, latestOperationId: string | null, createdAtMs: number, updatedAtMs: number, };

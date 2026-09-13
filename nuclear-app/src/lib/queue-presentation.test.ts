@@ -51,6 +51,19 @@ function operation(state: OperationSnapshot['state'], progress = 0): OperationSn
   };
 }
 
+function videoInfo(url: string) {
+  return {
+    id: 'inspection-video',
+    title: 'Inspection title',
+    duration: 90,
+    channel: 'Inspection channel',
+    thumbnail: 'inspection-thumb',
+    url,
+    available_qualities: ['1080p'],
+    has_audio: true
+  };
+}
+
 function snapshot(queue = [record()], operations: OperationSnapshot[] = []): AppSnapshot {
   return {
     schemaVersion: 1,
@@ -100,6 +113,130 @@ function progress(
 }
 
 describe('QueuePresentationController', () => {
+  it('projects pending playlist preparation from inspection operations without download completion', () => {
+    const { controller, state } = setup();
+    const pending = { ...record(), preparation: 'pending' as const };
+    const inspection = {
+      ...operation('running', 25),
+      kind: 'inspection' as const,
+      phase: 'inspection'
+    };
+    pending.latestOperationId = inspection.id;
+    controller.applySnapshot(snapshot([pending], [inspection]));
+    expect(state.items[0]).toMatchObject({
+      status: 'fetching',
+      infoLoaded: false,
+      downloadId: inspection.id,
+      duration: null,
+      channel: null
+    });
+
+    const completed = {
+      ...inspection,
+      state: 'completed' as const,
+      progress: 100,
+      inspectionResult: {
+        kind: 'video' as const,
+        video: videoInfo('https://fixture.test/item-1')
+      }
+    };
+    controller.applySnapshot(snapshot([pending], [completed]));
+    expect(state.items[0]).toMatchObject({
+      status: 'ready',
+      duration: 90,
+      channel: 'Inspection channel'
+    });
+    expect(state.items[0].status).not.toBe('completed');
+  });
+
+  it.each(['failed', 'cancelled', 'interrupted'] as const)(
+    'projects %s playlist preparation as a retryable terminal row',
+    (terminalState) => {
+      const { controller, state } = setup();
+      const pending = { ...record(), preparation: 'pending' as const };
+      const inspection = { ...operation(terminalState), kind: 'inspection' as const };
+      pending.latestOperationId = inspection.id;
+      controller.applySnapshot(snapshot([pending], [inspection]));
+      expect(state.items[0].status).toBe(terminalState === 'cancelled' ? 'cancelled' : 'error');
+    }
+  );
+
+  it('reconstructs preparation state on reload and follows authoritative resync transitions', () => {
+    const { controller, state } = setup();
+    const pending = { ...record(), preparation: 'pending' as const };
+    const running = { ...operation('running', 12), kind: 'inspection' as const };
+    pending.latestOperationId = running.id;
+
+    controller.applySnapshot(snapshot([pending], [running]));
+    expect(state.items[0]).toMatchObject({ status: 'fetching', downloadId: running.id });
+
+    const ready = { ...pending, preparation: null, updatedAtMs: 2 };
+    const completed = { ...running, state: 'completed' as const, progress: 100 };
+    controller.applySnapshot(snapshot([ready], [completed]));
+    expect(state.items[0]).toMatchObject({ status: 'ready', infoLoaded: true, downloadId: null });
+  });
+
+  it('applies a just-completed queue-linked inspection result after latest id is cleared', () => {
+    const { controller, state } = setup();
+    const ready = record();
+    controller.applySnapshot(snapshot([ready]));
+    expect(state.items[0].duration).toBeNull();
+    const completed = {
+      ...operation('completed', 100),
+      kind: 'inspection' as const,
+      inspectionResult: { kind: 'video' as const, video: videoInfo(ready.sourceUrl) }
+    };
+    controller.applySnapshot(snapshot([ready], [completed]), {
+      schemaVersion: 1,
+      sequence: 2,
+      emittedAtMs: 2,
+      kind: 'operation_upserted',
+      value: completed
+    });
+    expect(state.items[0]).toMatchObject({
+      status: 'ready',
+      duration: 90,
+      channel: 'Inspection channel',
+      thumbnail: 'inspection-thumb'
+    });
+  });
+
+  it('rejects stale inspection metadata when a newer preparation attempt owns the row', () => {
+    const { controller, state } = setup();
+    const pending = {
+      ...record(),
+      preparation: 'pending' as const,
+      latestOperationId: 'new-attempt'
+    };
+    const stale = {
+      ...operation('completed', 100),
+      id: 'old-attempt',
+      kind: 'inspection' as const,
+      inspectionResult: { kind: 'video' as const, video: videoInfo(pending.sourceUrl) }
+    };
+    const current = {
+      ...operation('running', 5),
+      id: 'new-attempt',
+      kind: 'inspection' as const,
+      inspectionResult: null
+    };
+    controller.applySnapshot(snapshot([pending], [stale, current]));
+    expect(state.items[0]).toMatchObject({ status: 'fetching', duration: null, channel: null });
+  });
+
+  it('does not apply metadata from a late cancelled inspection', () => {
+    const { controller, state } = setup();
+    const pending = { ...record(), preparation: 'pending' as const };
+    const cancelled = {
+      ...operation('cancelled', 25),
+      kind: 'inspection' as const,
+      inspectionResult: { kind: 'video' as const, video: videoInfo(pending.sourceUrl) }
+    };
+    pending.latestOperationId = cancelled.id;
+    controller.applySnapshot(snapshot([pending], [cancelled]));
+    expect(state.items[0]).toMatchObject({ status: 'cancelled', duration: null, channel: null });
+  });
+
   it('consumes retained metadata only after a matching snapshot projection', () => {
     const { controller, state } = setup();
     controller.retainMetadata('https://fixture.test/item-1', {
@@ -146,6 +283,65 @@ describe('QueuePresentationController', () => {
       channel: 'second'
     });
     discardNew();
+  });
+
+  it('applies retry-retained metadata only to item ids confirmed by an admission receipt', () => {
+    const { controller, state } = setup();
+    const existing = record('existing');
+    controller.applySnapshot(snapshot([existing]));
+    const lease = controller.retainPlaylistMetadata([
+      {
+        identity: `["${existing.sourceUrl}"]`,
+        metadata: {
+          duration: 75,
+          channel: 'Recovered display metadata',
+          thumbnail: 'recovered-thumb'
+        }
+      }
+    ]);
+    controller.applySnapshot(snapshot([existing]));
+    expect(state.items[0].duration).toBeNull();
+
+    lease.confirm(['unrelated']);
+    expect(state.items[0].duration).toBeNull();
+    controller.applySnapshot(snapshot([existing, { ...existing, id: 'unrelated' }]));
+    expect(state.items[0].duration).toBeNull();
+    const retryLease = controller.retainPlaylistMetadata([
+      {
+        identity: `["${existing.sourceUrl}"]`,
+        metadata: {
+          duration: 75,
+          channel: 'Recovered display metadata',
+          thumbnail: 'recovered-thumb'
+        }
+      }
+    ]);
+    retryLease.confirm([existing.id]);
+    expect(state.items[0]).toMatchObject({
+      duration: 75,
+      channel: 'Recovered display metadata',
+      thumbnail: 'recovered-thumb'
+    });
+  });
+
+  it('applies confirmed playlist metadata when the receipt precedes the queue event', () => {
+    const { controller, state } = setup();
+    const admitted = record('admitted');
+    const lease = controller.retainPlaylistMetadata([
+      {
+        identity: `["${admitted.sourceUrl}"]`,
+        metadata: { duration: 66, channel: 'Later row', thumbnail: 'later-thumb' }
+      }
+    ]);
+    lease.confirm([admitted.id]);
+    expect(state.items).toHaveLength(0);
+
+    controller.applySnapshot(snapshot([admitted]));
+    expect(state.items[0]).toMatchObject({
+      duration: 66,
+      channel: 'Later row',
+      thumbnail: 'later-thumb'
+    });
   });
 
   it('assigns duplicate-URL admissions to distinct newly projected rows', () => {

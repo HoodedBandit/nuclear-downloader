@@ -116,6 +116,20 @@ describe('QueueActionsController', () => {
     ]);
   });
 
+  it('never includes fetching preparation rows in all or selected downloads', async () => {
+    const test = setup([
+      item({ id: 'ready', selected: true }),
+      item({ id: 'preparing', status: 'fetching', selected: true })
+    ]);
+    test.invokeMock.mockResolvedValue([]);
+    await test.controller.downloadAll();
+    await test.controller.downloadSelected();
+    expect(test.invokeMock.mock.calls).toEqual([
+      ['enqueue_queue_items', { itemIds: ['ready'], priority: 'normal' }],
+      ['enqueue_queue_items', { itemIds: ['ready'], priority: 'normal' }]
+    ]);
+  });
+
   it('optimistically cancels and rolls back the exact status on failure', async () => {
     const original = item({
       status: 'postprocessing',
@@ -138,6 +152,16 @@ describe('QueueActionsController', () => {
       error: 'Cancellation failed: backend refused (busy)',
       errorCode: 'cancel_failed',
       diagnosticsOpen: true
+    });
+  });
+
+  it('cancels a preparing row through its latest inspection operation', async () => {
+    const preparing = item({ status: 'fetching', downloadId: 'inspection-operation' });
+    const test = setup([preparing]);
+    test.invokeMock.mockResolvedValue(undefined);
+    await test.controller.cancelItem(preparing);
+    expect(test.invokeMock).toHaveBeenCalledWith('cancel_operation', {
+      operationId: 'inspection-operation'
     });
   });
 
@@ -201,6 +225,15 @@ describe('QueueActionsController', () => {
     await test.controller.removeSelected();
     expect(test.invokeMock).toHaveBeenCalledWith('remove_queue_items', { itemIds: ['ready'] });
     expect(test.cancelFilenameEdit).toHaveBeenCalledOnce();
+  });
+
+  it('routes selected preparing rows through backend removal', async () => {
+    const test = setup([item({ id: 'preparing', status: 'fetching', selected: true })]);
+    test.invokeMock.mockResolvedValue(undefined);
+    await test.controller.removeSelected();
+    expect(test.invokeMock).toHaveBeenCalledWith('remove_queue_items', {
+      itemIds: ['preparing']
+    });
   });
 
   it('clears completed and cancelled rows with the original payload ordering', async () => {

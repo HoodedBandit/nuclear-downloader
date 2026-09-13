@@ -1,6 +1,7 @@
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import { listen as tauriListen, type Event, type UnlistenFn } from '@tauri-apps/api/event';
 import type { AddQueueItemInput } from './bindings/AddQueueItemInput';
+import type { AddQueueItemResult } from './bindings/AddQueueItemResult';
 import type { AppSnapshot } from './bindings/AppSnapshot';
 import type { AppStateResyncRequired } from './bindings/AppStateResyncRequired';
 import type { BeginInspectionInput } from './bindings/BeginInspectionInput';
@@ -11,6 +12,8 @@ import type { DownloaderRuntimeUpdateCheck } from './bindings/DownloaderRuntimeU
 import type { DownloaderRuntimeUpdateProgress } from './bindings/DownloaderRuntimeUpdateProgress';
 import type { DownloadProgress } from './bindings/DownloadProgress';
 import type { QueueItemRecord } from './bindings/QueueItemRecord';
+import type { PlaylistAdmissionInput } from './bindings/PlaylistAdmissionInput';
+import type { PlaylistAdmissionResult } from './bindings/PlaylistAdmissionResult';
 import type { QueuePriority } from './bindings/QueuePriority';
 import type { StateDelta } from './bindings/StateDelta';
 import type { UpdateCheckResult } from './bindings/UpdateCheckResult';
@@ -49,7 +52,7 @@ interface CommandContract<Args, Result> {
 export interface CommandMap {
   get_app_snapshot: CommandContract<undefined, AppSnapshot>;
   begin_inspection: CommandContract<{ input: BeginInspectionInput }, BeginOperationResult>;
-  add_inspection_result_to_queue: CommandContract<{ input: AddQueueItemInput }, QueueItemRecord>;
+  add_inspection_result_to_queue: CommandContract<{ input: AddQueueItemInput }, AddQueueItemResult>;
   update_queue_item: CommandContract<{ itemId: string; input: UpdateQueueItemInput }, undefined>;
   remove_queue_items: CommandContract<{ itemIds: string[] }, undefined>;
   enqueue_queue_items: CommandContract<
@@ -101,6 +104,18 @@ type CommandArguments<K extends NuclearCommand> = CommandMap[K]['args'] extends 
   : [args: CommandMap[K]['args']];
 
 /** Centralizes the Tauri boundary so command/event names cannot drift freely. */
+export function invokeCommand(
+  command: 'add_inspection_result_to_queue',
+  args: { input: AddQueueItemInput & { playlist: PlaylistAdmissionInput } }
+): Promise<PlaylistAdmissionResult>;
+export function invokeCommand(
+  command: 'add_inspection_result_to_queue',
+  args: { input: AddQueueItemInput & { playlist?: null | undefined } }
+): Promise<QueueItemRecord>;
+export function invokeCommand<K extends NuclearCommand>(
+  command: K,
+  ...args: CommandArguments<K>
+): Promise<CommandMap[K]['result']>;
 export async function invokeCommand<K extends NuclearCommand>(
   command: K,
   ...args: CommandArguments<K>

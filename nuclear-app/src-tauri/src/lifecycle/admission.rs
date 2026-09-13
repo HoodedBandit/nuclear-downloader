@@ -241,6 +241,21 @@ impl LifecycleCoordinator {
 }
 
 impl JobAdmission {
+    // Playlist validation can reuse metadata or skip duplicate entries. Keep the
+    // admission/worker barrier held while publishing only the required jobs.
+    pub(crate) async fn publish_subset(
+        mut self,
+        ids: &[String],
+    ) -> Result<Vec<DownloadJob>, AppError> {
+        if ids.len() > self.jobs.len() {
+            return Err(AppError::internal(
+                "The durable operation batch exceeded its job reservation.",
+            ));
+        }
+        self.jobs.truncate(ids.len());
+        self.publish(ids).await
+    }
+
     pub(crate) async fn publish(mut self, ids: &[String]) -> Result<Vec<DownloadJob>, AppError> {
         if ids.len() != self.jobs.len() {
             return Err(AppError::internal(

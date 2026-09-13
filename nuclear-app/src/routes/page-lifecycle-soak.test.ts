@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OperationSnapshot } from '$lib/bindings/OperationSnapshot';
 import type { QueueItemRecord } from '$lib/bindings/QueueItemRecord';
@@ -86,6 +86,49 @@ const completedInspection = {
   intendedTerminalOutcome: null,
   correlationId: 'soak-correlation'
 } satisfies OperationSnapshot;
+
+const playlistInspection = {
+  ...completedInspection,
+  id: 'soak-playlist-inspection',
+  inspectionResult: {
+    kind: 'playlist',
+    playlist: {
+      title: 'Lifecycle soak playlist',
+      channel: 'Local fixture',
+      entry_count: 2,
+      truncated: false,
+      entries: [0, 1].map((index) => ({
+        id: `soak-playlist-${index}`,
+        title: `Soak playlist row ${index}`,
+        duration: null,
+        url: `https://example.test/soak-playlist/${index}`,
+        thumbnail: null,
+        selection: {
+          entryId: `soak-playlist-${index}`,
+          extractorKey: 'Synthetic',
+          playlistIndex: index + 1
+        }
+      }))
+    }
+  }
+} satisfies OperationSnapshot;
+
+const playlistRecords = [0, 1].map((index) => ({
+  ...admittedRecord,
+  id: `soak-playlist-row-${index}`,
+  sourceUrl: `https://example.test/soak-playlist/${index}`,
+  title: `Soak playlist row ${index}`,
+  availableQualities: [],
+  hasAudio: false,
+  selection: {
+    entryId: `soak-playlist-${index}`,
+    extractorKey: 'Synthetic',
+    playlistIndex: index + 1
+  },
+  preparation: 'pending',
+  preparationOperationId: `soak-preparation-${index}`,
+  latestOperationId: `soak-preparation-${index}`
+})) satisfies QueueItemRecord[];
 
 function commandResult(command: string): unknown {
   switch (command) {
@@ -187,6 +230,8 @@ describe('opt-in mounted page lifecycle soak', () => {
       let lateListenerCycles = 0;
       let delayedStartupCycles = 0;
       let completedWorkflowCycles = 0;
+      let playlistWorkflowCycles = 0;
+      let playlistResyncCycles = 0;
       let currentOwnedTimerIds = new Set<unknown>();
       let currentClearedTimerIds = new Set<unknown>();
       const nativeSetTimeout = globalThis.setTimeout;
@@ -208,11 +253,12 @@ describe('opt-in mounted page lifecycle soak', () => {
       });
 
       while (performance.now() < deadline || mounts < 4) {
-        const mode = mounts % 4;
+        const mode = mounts % 5;
         resizeObservers.length = 0;
         const unlistenCounts = new Map(eventNames.map((name) => [name, 0]));
         let resolveLateListener: ((unlisten: () => void) => void) | undefined;
         let resolveSnapshot: ((value: typeof snapshot) => void) | undefined;
+        let currentSnapshot = snapshot;
         const eventHandlers = new Map<keyof EventMap, (event: { payload: unknown }) => void>();
         const emit = <K extends keyof EventMap>(name: K, payload: EventMap[K]): void => {
           eventHandlers.get(name)?.({ payload });
@@ -234,10 +280,23 @@ describe('opt-in mounted page lifecycle soak', () => {
             return Promise.resolve(unlisten);
           }
         );
-        ipc.invoke.mockImplementation((command: string) => {
+        ipc.invoke.mockImplementation((command: string, args?: unknown) => {
           if (mode === 2 && command === 'get_app_snapshot') {
             return new Promise((resolve) => {
               resolveSnapshot = resolve;
+            });
+          }
+          if (command === 'get_app_snapshot') return Promise.resolve(currentSnapshot);
+          if (
+            command === 'add_inspection_result_to_queue' &&
+            (args as { input?: { playlist?: unknown } } | undefined)?.input?.playlist
+          ) {
+            return Promise.resolve({
+              kind: 'playlist',
+              requestId: (args as { input: { playlist: { requestId: string } } }).input.playlist
+                .requestId,
+              itemIds: playlistRecords.map((record) => record.id),
+              skippedCount: 0
             });
           }
           return Promise.resolve(commandResult(command));
@@ -262,7 +321,7 @@ describe('opt-in mounted page lifecycle soak', () => {
         } else if (mode === 2) {
           await until(() => resolveSnapshot !== undefined, 'delayed startup snapshot');
           delayedStartupCycles += 1;
-        } else {
+        } else if (mode === 3) {
           await until(
             () => ipc.invoke.mock.calls.some(([command]) => command === 'check_app_update'),
             'startup completion'
@@ -313,6 +372,72 @@ describe('opt-in mounted page lifecycle soak', () => {
             'admitted queue row rendering'
           );
           completedWorkflowCycles += 1;
+        } else {
+          await until(
+            () => ipc.invoke.mock.calls.some(([command]) => command === 'check_app_update'),
+            'playlist startup completion'
+          );
+          const input = view.getByLabelText('Video or playlist URL');
+          const addButton = view.getByRole('button', { name: 'Add' });
+          await until(
+            () => !(addButton as HTMLButtonElement).disabled,
+            'enabled playlist Add button'
+          );
+          await fireEvent.input(input, { target: { value: 'https://example.test/soak-playlist' } });
+          await fireEvent.submit(input.closest('form')!);
+          await until(() => currentOwnedTimerIds.size === 2, 'playlist workflow waiter timers');
+          emit('app-state-changed', {
+            schemaVersion: 1,
+            sequence: 1,
+            emittedAtMs: 1,
+            kind: 'operation_upserted',
+            value: playlistInspection
+          });
+          await until(
+            () => view.queryByRole('dialog', { name: 'Lifecycle soak playlist' }) !== null,
+            'playlist dialog rendering'
+          );
+          const dialog = view.getByRole('dialog', { name: 'Lifecycle soak playlist' });
+          await fireEvent.click(
+            within(dialog).getByRole('button', { name: 'Add 2 Videos to Queue' })
+          );
+          await until(
+            () =>
+              ipc.invoke.mock.calls.some(
+                ([command]) => command === 'add_inspection_result_to_queue'
+              ),
+            'playlist batch admission'
+          );
+          for (const [index, record] of playlistRecords.entries()) {
+            emit('app-state-changed', {
+              schemaVersion: 1,
+              sequence: index + 2,
+              emittedAtMs: index + 2,
+              kind: 'queue_item_upserted',
+              value: record
+            });
+          }
+          await until(
+            () => playlistRecords.every((record) => view.queryByText(record.title) !== null),
+            'pending playlist rows rendering'
+          );
+          const snapshotsBeforeResync = ipc.invoke.mock.calls.filter(
+            ([command]) => command === 'get_app_snapshot'
+          ).length;
+          currentSnapshot = { ...snapshot, latestSequence: 4 };
+          emit('app-state-resync-required', { latestSequence: 4 });
+          await until(
+            () =>
+              ipc.invoke.mock.calls.filter(([command]) => command === 'get_app_snapshot').length >
+              snapshotsBeforeResync,
+            'playlist resync snapshot'
+          );
+          await until(
+            () => playlistRecords.every((record) => view.queryByText(record.title) === null),
+            'playlist row disposal after resync'
+          );
+          playlistWorkflowCycles += 1;
+          playlistResyncCycles += 1;
         }
 
         const commandsAtUnmount = ipc.invoke.mock.calls.length;
@@ -356,6 +481,8 @@ describe('opt-in mounted page lifecycle soak', () => {
       expect(lateListenerCycles).toBeGreaterThan(0);
       expect(delayedStartupCycles).toBeGreaterThan(0);
       expect(completedWorkflowCycles).toBeGreaterThan(0);
+      expect(playlistWorkflowCycles).toBeGreaterThan(0);
+      expect(playlistResyncCycles).toBe(playlistWorkflowCycles);
       setTimeoutSpy.mockRestore();
       clearTimeoutSpy.mockRestore();
       const exposedGc = (globalThis as typeof globalThis & { gc?: () => void }).gc;
@@ -373,6 +500,8 @@ describe('opt-in mounted page lifecycle soak', () => {
           lateListenerCycles,
           delayedStartupCycles,
           completedWorkflowCycles,
+          playlistWorkflowCycles,
+          playlistResyncCycles,
           heapUsedBytes: {
             baseline: baselineHeap,
             maximum: maximumHeap,

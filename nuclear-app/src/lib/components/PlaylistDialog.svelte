@@ -15,6 +15,7 @@
     pageCount: number;
     visibleEntries: VisiblePlaylistEntry[];
     selectionState: SelectionState;
+    loading: boolean;
     formatDuration: (seconds: number | null | undefined) => string;
     onClose: () => void;
     onToggleAll: (checked: boolean) => void;
@@ -29,6 +30,7 @@
     pageCount,
     visibleEntries,
     selectionState,
+    loading,
     formatDuration,
     onClose,
     onToggleAll,
@@ -54,7 +56,7 @@
     aria-modal="true"
     aria-labelledby="playlist-modal-title"
     tabindex="-1"
-    use:accessibleDialog={{ onClose }}
+    use:accessibleDialog={{ onClose, locked: loading }}
   >
     <div class="modal-header">
       <div>
@@ -79,6 +81,7 @@
           type="checkbox"
           checked={selectionState === 'all'}
           onchange={(event) => onToggleAll(event.currentTarget.checked)}
+          disabled={loading}
         />
         Select All
       </label>
@@ -92,6 +95,7 @@
             type="checkbox"
             checked={entry.selected}
             onchange={(event) => onToggleEntry(row.index, event.currentTarget.checked)}
+            disabled={loading}
           />
           {#if entry.thumbnail}
             <img
@@ -124,10 +128,10 @@
       </div>
     {/if}
     <div class="modal-footer">
-      <button class="primary" onclick={onAddSelection} disabled={selectedCount === 0}>
+      <button class="primary" onclick={onAddSelection} disabled={selectedCount === 0 || loading}>
         Add {selectedCount} Videos to Queue
       </button>
-      <button onclick={onClose}>Cancel</button>
+      <button onclick={onClose} disabled={loading}>Cancel</button>
     </div>
   </div>
 </div>

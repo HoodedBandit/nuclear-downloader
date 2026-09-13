@@ -48,6 +48,15 @@ pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String
     if let Some(selection) = &request.selection {
         selection.validate()?;
     }
+    if let Some(expected_media_id) = request.expected_media_id.as_deref() {
+        validate_actionable_input("expected media ID", expected_media_id)?;
+        if expected_media_id.is_empty()
+            || expected_media_id.trim() != expected_media_id
+            || expected_media_id.chars().any(char::is_control)
+        {
+            return Err("Expected media ID is malformed.".into());
+        }
+    }
 
     validate_actionable_input("output format", &request.format)?;
     validate_actionable_input("quality", &request.quality)?;
@@ -318,6 +327,7 @@ mod tests {
             filename_override: None,
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         }
     }
     #[test]
@@ -331,6 +341,7 @@ mod tests {
             filename_override: None,
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert!(validate_download_request(&request).is_err());
@@ -347,6 +358,7 @@ mod tests {
             filename_override: None,
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         };
 
         assert!(validate_download_request(&request).is_err());
@@ -398,10 +410,28 @@ mod tests {
             .contains("cookie mode exceeds the 4 KiB"));
 
         request.cookie_config = None;
-        request.compat_config_path = Some(oversized);
+        request.compat_config_path = Some(oversized.clone());
         assert!(validate_download_request(&request)
             .unwrap_err()
             .contains("compatibility config path exceeds the 4 KiB"));
+
+        request.compat_config_path = None;
+        request.expected_media_id = Some(oversized);
+        assert!(validate_download_request(&request)
+            .unwrap_err()
+            .contains("expected media ID exceeds the 4 KiB"));
+    }
+
+    #[test]
+    fn rejects_empty_or_control_bearing_expected_media_id() {
+        for id in ["", " media-id", "media\nid"] {
+            let mut request = download_request("mp4", "best");
+            request.expected_media_id = Some(id.into());
+            assert!(
+                validate_download_request(&request).is_err(),
+                "accepted {id:?}"
+            );
+        }
     }
 
     #[test]

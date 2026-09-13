@@ -216,6 +216,7 @@ mod tests {
             filename_override: None,
             compat_config_path: None,
             selection: None,
+            expected_media_id: None,
         }
     }
 
@@ -225,6 +226,17 @@ mod tests {
             deno_path: Some(PathBuf::from("C:\\NuclearRuntime\\deno.exe")),
             plugin_dir: Some(PathBuf::from("C:\\NuclearRuntime\\plugins")),
         }
+    }
+
+    #[test]
+    fn expected_media_id_does_not_change_flat_url_selection_arguments() {
+        let mut request = download_request("mp4", "best");
+        request.expected_media_id = Some("expected-id".into());
+
+        let args = build_download_args(&request, false);
+
+        assert!(args.contains(&"--no-playlist".into()));
+        assert!(!args.contains(&"--playlist-items".into()));
     }
 
     #[test]

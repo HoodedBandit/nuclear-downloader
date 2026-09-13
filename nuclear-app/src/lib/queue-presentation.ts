@@ -15,6 +15,11 @@ import { mediaIdentityKey, sameMediaIdentity } from './media-identity';
 import { audioFormats, supportedBrowsers, videoFormats } from './frontend-types';
 import type { WorkflowCommands } from './frontend-workflow-ports';
 import { reduceOperationProgress, shouldIgnoreOperationProgress } from './operation-reducer';
+import {
+  PlaylistMetadataOwner,
+  type PlaylistMetadataEntry,
+  type PlaylistMetadataLease
+} from './playlist-metadata-owner';
 import { deriveSelectionState } from './queue-logic';
 
 const DISPLAY_INTERVAL_MS = 500;
@@ -33,6 +38,10 @@ const RESERVED_FILENAME_STEMS = new Set([
 const OPERATION_FIELDS = [
   'downloadId',
   'status',
+  'duration',
+  'channel',
+  'thumbnail',
+  'infoLoaded',
   'progress',
   'downloadProgress',
   'conversionProgress',
@@ -69,13 +78,27 @@ export function createQueuePresentationState(): QueuePresentationState {
 
 export class QueuePresentationController {
   private readonly metadataByIdentity = new Map<string, RetainedMetadata[]>();
+  private readonly playlistMetadataOwner: PlaylistMetadataOwner<QueueItemRecord>;
   private readonly displayUpdatedAt = new Map<string, { operationId: string; updatedAt: number }>();
   private filenameEditGeneration = 0;
 
   constructor(
     readonly state: QueuePresentationState,
     private readonly options: QueuePresentationOptions
-  ) {}
+  ) {
+    this.playlistMetadataOwner = new PlaylistMetadataOwner(
+      (itemId) => this.state.backendSnapshot?.queue.find((record) => record.id === itemId),
+      (record) => mediaIdentityKey({ url: record.sourceUrl, selection: record.selection }),
+      (itemId, metadata) => {
+        const item = this.state.items.find((candidate) => candidate.id === itemId);
+        if (!item) return false;
+        item.duration ??= metadata.duration ?? null;
+        item.channel ??= metadata.channel ?? null;
+        item.thumbnail ??= metadata.thumbnail ?? null;
+        return true;
+      }
+    );
+  }
 
   getItems(): readonly QueueItem[] {
     return this.state.items;
@@ -113,6 +136,10 @@ export class QueuePresentationController {
     };
   }
 
+  retainPlaylistMetadata(entries: readonly PlaylistMetadataEntry[]): PlaylistMetadataLease {
+    return this.playlistMetadataOwner.retain(entries);
+  }
+
   applySnapshot(snapshot: AppSnapshot, delta?: StateDelta): void {
     const previous = this.state.backendSnapshot;
     this.state.backendSnapshot = snapshot;
@@ -134,6 +161,7 @@ export class QueuePresentationController {
         case 'queue_items_removed': {
           const removed = new Set(delta.value);
           this.state.items = this.state.items.filter((item) => !removed.has(item.id));
+          this.playlistMetadataOwner.remove(delta.value);
           return;
         }
         case 'operation_upserted':
@@ -148,6 +176,7 @@ export class QueuePresentationController {
           return;
       }
     } finally {
+      this.playlistMetadataOwner.reconcile(delta === undefined);
       this.pruneDisplayOwnership();
     }
   }
@@ -193,6 +222,7 @@ export class QueuePresentationController {
   }
   dispose(): void {
     this.metadataByIdentity.clear();
+    this.playlistMetadataOwner.dispose();
     this.displayUpdatedAt.clear();
   }
   replaceItem(id: string, mapper: (item: QueueItem) => QueueItem): void {
@@ -245,7 +275,7 @@ export class QueuePresentationController {
   }
 
   async beginFilenameEdit(item: QueueItem): Promise<void> {
-    if (!isEditablePendingStatus(item.status)) return;
+    if (!isEditablePendingStatus(item.status) || !item.infoLoaded) return;
     if (this.state.editing.itemId && this.state.editing.itemId !== item.id) {
       await this.commitFilenameEdit(this.state.editing.itemId);
       if (!this.options.isActive() || this.state.editing.itemId) return;
@@ -347,8 +377,9 @@ export class QueuePresentationController {
       );
   }
   private project(snapshot: AppSnapshot, record: QueueItemRecord, existing?: QueueItem): QueueItem {
-    const metadata = this.claimMetadata(record);
     const operation = latestOperationForItem(snapshot, record.id, record.latestOperationId);
+    const retainedMetadata = this.claimMetadata(record);
+    const metadata = inspectionDisplayMetadata(record, operation) ?? retainedMetadata;
     const status = queueStatus(record, operation);
     const terminal = isTerminalStatus(status);
     const operationProgress = clamp(operation?.progress ?? 0);
@@ -394,7 +425,7 @@ export class QueuePresentationController {
       duration: existing?.duration ?? metadata?.duration ?? null,
       channel: existing?.channel ?? metadata?.channel ?? null,
       thumbnail: existing?.thumbnail ?? metadata?.thumbnail ?? null,
-      infoLoaded: true,
+      infoLoaded: recordPreparation(record) !== 'pending',
       hasAudio: record.hasAudio,
       status,
       quality: record.quality,
@@ -466,7 +497,7 @@ export function isEditablePendingStatus(status: DownloadStatus): boolean {
   return status === 'ready';
 }
 export function canEditFilename(item: QueueItem): boolean {
-  return isEditablePendingStatus(item.status);
+  return isEditablePendingStatus(item.status) && item.infoLoaded;
 }
 export function getQueueItemDisplayTitle(item: QueueItem): string {
   return item.customFilename ?? item.title;
@@ -530,6 +561,18 @@ export function sanitizeFilenameDraft(value: string): string {
 }
 
 function queueStatus(record: QueueItemRecord, operation: OperationSnapshot | null): DownloadStatus {
+  if (operation?.kind === 'inspection') {
+    if (operation.state === 'completed') return 'ready';
+    if (operation.state === 'failed' || operation.state === 'interrupted') return 'error';
+    if (operation.state === 'cancelled') return 'cancelled';
+    if (operation.state === 'cancelling') return 'cancelling';
+    return 'fetching';
+  }
+  if (recordPreparation(record) === 'pending') {
+    if (record.state === 'failed' || record.state === 'interrupted') return 'error';
+    if (record.state === 'cancelled') return 'cancelled';
+    return 'fetching';
+  }
   if (operation) {
     if (operation.state === 'completed') return 'completed';
     if (operation.state === 'failed' || operation.state === 'interrupted') return 'error';
@@ -552,6 +595,33 @@ function queueStatus(record: QueueItemRecord, operation: OperationSnapshot | nul
       interrupted: 'error'
     } as const
   )[record.state];
+}
+function recordPreparation(record: QueueItemRecord): 'pending' | null | undefined {
+  return record.preparation;
+}
+function inspectionDisplayMetadata(
+  record: QueueItemRecord,
+  operation: OperationSnapshot | null
+): Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'> | undefined {
+  if (
+    operation?.kind !== 'inspection' ||
+    operation.state !== 'completed' ||
+    operation.queueItemId !== record.id ||
+    operation.inspectionResult?.kind !== 'video'
+  ) {
+    return undefined;
+  }
+  const video = operation.inspectionResult.video;
+  const currentAttempt = record.latestOperationId === operation.id;
+  const justCompletedCurrentAttempt =
+    record.latestOperationId === null &&
+    recordPreparation(record) !== 'pending' &&
+    sameMediaIdentity(
+      { url: record.sourceUrl, selection: record.selection },
+      { url: video.url, selection: video.selection }
+    );
+  if (!currentAttempt && !justCompletedCurrentAttempt) return undefined;
+  return { duration: video.duration, channel: video.channel, thumbnail: video.thumbnail };
 }
 function operationPhase(operation: OperationSnapshot | null): DownloadPhase | null {
   const phase = operation?.phase;
@@ -600,6 +670,7 @@ function projectionRecordChanged(
     previous.compatConfigPath !== next.compatConfigPath ||
     previous.state !== next.state ||
     previous.latestOperationId !== next.latestOperationId ||
+    recordPreparation(previous) !== recordPreparation(next) ||
     previous.availableQualities.length !== next.availableQualities.length ||
     previous.availableQualities.some(
       (quality, index) => quality !== next.availableQualities[index]

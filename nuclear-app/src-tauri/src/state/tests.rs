@@ -11,6 +11,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Notify;
 
+mod playlist_tests;
+
 pub(crate) struct TestCommitPause {
     entered: Notify,
     release: Notify,
@@ -65,6 +67,14 @@ impl StateStore {
 
     pub(crate) fn fail_persistence_for_test(&self, count: usize) {
         self.inner.journal.fail_saves_for_test(count);
+    }
+
+    pub(crate) fn reset_save_attempts_for_test(&self) {
+        self.inner.journal.reset_save_attempts_for_test();
+    }
+
+    pub(crate) fn save_attempts_for_test(&self) -> usize {
+        self.inner.journal.save_attempts_for_test()
     }
 
     fn fail_next_finalizer_task_for_test(&self) {
@@ -138,8 +148,10 @@ fn large_inspection() -> UrlInspection {
                     url: large_url.clone(),
                     thumbnail: None,
                     selection: None,
+                    video: None,
                 })
                 .collect(),
+            inspection_settings_fingerprint: None,
         },
     }
 }
@@ -153,6 +165,7 @@ fn input(inspection_operation_id: String) -> AddQueueItemInput {
         cookie_config: None,
         filename_override: None,
         compat_config_path: None,
+        playlist: None,
     }
 }
 
@@ -252,6 +265,7 @@ async fn queue_add_consumes_only_authoritative_completed_video_inspections() {
                     entry_count: 0,
                     truncated: false,
                     entries: Vec::new(),
+                    inspection_settings_fingerprint: None,
                 },
             },
         )
@@ -1417,6 +1431,7 @@ async fn failure_after_save_advances_compensation_past_the_persisted_candidate_r
                 inspection_result: None,
                 published_output: None,
                 intended_terminal_outcome: None,
+                playlist_admission: None,
                 correlation_id: uuid::Uuid::new_v4().to_string(),
             };
             state.operation_order.push(id.clone());

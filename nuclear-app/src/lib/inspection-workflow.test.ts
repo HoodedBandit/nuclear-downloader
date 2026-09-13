@@ -39,7 +39,11 @@ const operation = (inspectionResult: UrlInspection, id = 'operation-1'): Operati
   correlationId: 'correlation'
 });
 
-function setup(overrides: Partial<InspectionWorkflowDependencies> = {}) {
+type SetupOverrides = Omit<Partial<InspectionWorkflowDependencies>, 'queue'> & {
+  queue?: Partial<InspectionWorkflowDependencies['queue']>;
+};
+
+function setup(overrides: SetupOverrides = {}) {
   const state = createInspectionState();
   const settings: InspectionSettings = {
     canStartDownloads: true,
@@ -60,17 +64,23 @@ function setup(overrides: Partial<InspectionWorkflowDependencies> = {}) {
     async (_operationId: string, _timeoutMs?: number): Promise<OperationSnapshot> =>
       operation({ kind: 'video', video: video() })
   );
+  const { queue: queueOverrides, ...dependencyOverrides } = overrides;
   const dependencies: InspectionWorkflowDependencies = {
     getSettings: () => settings,
     readCookie: () => null,
     readCompat: () => null,
-    queue: { getItems: () => [], retainMetadata: vi.fn(() => () => undefined) },
+    queue: {
+      getItems: () => [],
+      retainMetadata: vi.fn(() => () => undefined),
+      retainPlaylistMetadata: vi.fn(() => ({ confirm: vi.fn(), discard: vi.fn() })),
+      ...queueOverrides
+    },
     setQueueActionError: vi.fn(),
     invoke: invoke as unknown as WorkflowCommands['invoke'],
     waitForOperation,
     isActive: () => active,
     unloadedError: new Error('Renderer was unloaded before the operation completed.'),
-    ...overrides
+    ...dependencyOverrides
   };
   return {
     workflow: new InspectionWorkflow(state, dependencies),
@@ -289,323 +299,158 @@ describe('InspectionWorkflow', () => {
     );
   });
 
-  it('queues playlist entries sequentially, skips duplicates, and summarizes three failures', async () => {
+  it('admits original selected indices in one batch and leaves duplicate handling to backend', async () => {
     const context = setup();
-    const entries = Array.from({ length: 5 }, (_, index) => ({
+    const entries = Array.from({ length: 3 }, (_, index) => ({
       id: String(index),
       title: `Entry ${index}`,
       duration: null,
-      url: `https://example.com/${index}`,
+      url: index === 2 ? 'https://example.com/0' : `https://example.com/${index}`,
       thumbnail: null,
-      selected: true
+      ...(index === 2
+        ? { video: { ...video('https://example.com/0'), duration: 84, channel: 'Full entry' } }
+        : {}),
+      selected: index !== 1
     }));
     context.state.playlistModal = {
-      info: { title: 'List', channel: null, entry_count: 5, truncated: false, entries },
+      info: { title: 'List', channel: null, entry_count: 3, truncated: false, entries },
       inspectionOperationId: 'playlist-operation',
       url: 'https://example.com/list',
       cookieConfig: null,
       entries
     };
-    context.waitForOperation.mockImplementation(async (id: string, _timeoutMs?: number) => {
-      const index = Number(id.split('-').at(-1));
-      if (index < 4) throw new Error(`failure ${index}`);
-      return operation({ kind: 'video', video: video(`https://example.com/${index}`) }, id);
-    });
-    let next = 0;
-    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
-      if (command === 'begin_inspection') return { operationId: `operation-${next++}` };
-      if (command === 'add_inspection_result_to_queue') return { id: 'queue' };
-      return undefined;
-    });
-
-    await context.workflow.addPlaylistSelection();
-    expect(context.state.urlError).toBe(
-      'Some playlist entries could not be added. Entry 0: failure 0 Entry 1: failure 1 Entry 2: failure 2'
+    let resolveAdmission!: (value: unknown) => void;
+    context.invoke.mockImplementation((command: string) =>
+      command === 'add_inspection_result_to_queue'
+        ? new Promise((resolve) => (resolveAdmission = resolve))
+        : Promise.resolve(undefined)
     );
-    expect(
-      context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
-    ).toHaveLength(5);
-  });
 
-  it('dismisses a nested playlist result, reports it, and continues with later selections', async () => {
-    const context = setup();
-    const entries = [
-      {
-        id: 'nested',
-        title: 'Nested entry',
-        duration: null,
-        url: 'https://example.com/nested',
-        thumbnail: null,
-        selected: true
-      },
-      {
-        id: 'video',
-        title: 'Video entry',
-        duration: null,
-        url: 'https://example.com/video-child',
-        thumbnail: null,
-        selected: true
-      }
-    ];
-    context.state.playlistModal = {
-      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+    const adding = context.workflow.addPlaylistSelection();
+    await vi.waitFor(() => expect(resolveAdmission).toBeTypeOf('function'));
+    expect(context.state.playlistModal).not.toBeNull();
+    context.workflow.closePlaylist();
+    expect(context.state.playlistModal).not.toBeNull();
+    const input = (context.invoke.mock.calls[0][1] as { input: { playlist: unknown } }).input;
+    expect(input).toMatchObject({
       inspectionOperationId: 'playlist-operation',
-      url: 'https://example.com/list',
-      cookieConfig: null,
-      entries
-    };
-    let next = 0;
-    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
-      if (command === 'begin_inspection') return { operationId: `child-operation-${next++}` };
-      if (command === 'add_inspection_result_to_queue') return { id: 'queue-video' };
-      return undefined;
+      playlist: { entryIndices: [0, 2] }
     });
-    context.waitForOperation
-      .mockResolvedValueOnce(
-        operation(
-          {
-            kind: 'playlist',
-            playlist: {
-              title: 'Nested',
-              channel: null,
-              entry_count: 0,
-              truncated: false,
-              entries: []
-            }
-          },
-          'child-operation-0'
-        )
-      )
-      .mockResolvedValueOnce(
-        operation(
-          { kind: 'video', video: video('https://example.com/video-child') },
-          'child-operation-1'
-        )
-      );
-
-    await context.workflow.addPlaylistSelection();
-
-    expect(context.invoke).toHaveBeenCalledWith('dismiss_operation', {
-      operationId: 'child-operation-0'
+    expect((input.playlist as { requestId: string }).requestId).toMatch(/^[0-9a-f-]{36}$/i);
+    resolveAdmission({
+      kind: 'playlist',
+      requestId: (input.playlist as { requestId: string }).requestId,
+      itemIds: ['one', 'three'],
+      skippedCount: 1
     });
-    expect(context.invoke).toHaveBeenCalledWith('add_inspection_result_to_queue', {
-      input: expect.objectContaining({ inspectionOperationId: 'child-operation-1' })
-    });
-    expect(context.state.urlError).toBe(
-      'Some playlist entries could not be added. Nested entry: A selected playlist entry unexpectedly resolved to another playlist.'
-    );
-  });
-
-  it('dismisses a completed playlist child when cancellation wins before admission', async () => {
-    const context = setup();
-    const entries = [
+    await adding;
+    expect(context.state.playlistModal).toBeNull();
+    expect(context.invoke).toHaveBeenCalledTimes(1);
+    expect(context.dependencies.queue.retainPlaylistMetadata).toHaveBeenCalledWith([
       {
-        id: 'first',
-        title: 'First entry',
-        duration: null,
-        url: 'https://example.com/first',
-        thumbnail: null,
-        selected: true
+        identity: '["https://example.com/0"]',
+        metadata: { duration: null, channel: null, thumbnail: null }
       },
       {
-        id: 'second',
-        title: 'Second entry',
-        duration: null,
-        url: 'https://example.com/second',
-        thumbnail: null,
-        selected: true
-      }
-    ];
-    context.state.playlistModal = {
-      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
-      inspectionOperationId: 'playlist-operation',
-      url: 'https://example.com/list',
-      cookieConfig: null,
-      entries
-    };
-    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
-      if (command === 'begin_inspection') return { operationId: 'child-operation' };
-      if (command === 'add_inspection_result_to_queue') return { id: 'unexpected-queue-item' };
-      return undefined;
-    });
-    context.waitForOperation.mockImplementationOnce(async () => {
-      await context.workflow.cancelInspection();
-      return operation(
-        { kind: 'video', video: video('https://example.com/first') },
-        'child-operation'
-      );
-    });
-
-    await context.workflow.addPlaylistSelection();
-
-    expect(context.invoke).toHaveBeenCalledWith('cancel_operation', {
-      operationId: 'child-operation'
-    });
-    expect(context.invoke).toHaveBeenCalledWith('dismiss_operation', {
-      operationId: 'child-operation'
-    });
-    expect(
-      context.invoke.mock.calls.filter(([command]) => command === 'add_inspection_result_to_queue')
-    ).toHaveLength(0);
-    expect(
-      context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')
-    ).toHaveLength(1);
-  });
-
-  it('inspects and admits two selected media identities that share a parent URL', async () => {
-    const context = setup();
-    const parentUrl = 'https://social.example/parent';
-    const entries = [
-      {
-        id: 'first',
-        title: 'First entry',
-        duration: null,
-        url: parentUrl,
-        thumbnail: null,
-        selection: { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 },
-        selected: true
-      },
-      {
-        id: 'second',
-        title: 'Second entry',
-        duration: null,
-        url: parentUrl,
-        thumbnail: null,
-        selection: { entryId: 'media-two', extractorKey: 'twitter', playlistIndex: 2 },
-        selected: true
-      }
-    ];
-    context.state.playlistModal = {
-      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
-      inspectionOperationId: 'playlist-operation',
-      url: 'https://example.com/list',
-      cookieConfig: null,
-      entries
-    };
-    let next = 0;
-    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
-      if (command === 'begin_inspection') return { operationId: `child-operation-${next++}` };
-      if (command === 'add_inspection_result_to_queue') return { id: `queue-${next}` };
-      return undefined;
-    });
-    context.waitForOperation
-      .mockResolvedValueOnce(
-        operation(
-          { kind: 'video', video: { ...video(parentUrl), selection: entries[0].selection } },
-          'child-operation-0'
-        )
-      )
-      .mockResolvedValueOnce(
-        operation(
-          { kind: 'video', video: { ...video(parentUrl), selection: entries[1].selection } },
-          'child-operation-1'
-        )
-      );
-
-    await context.workflow.addPlaylistSelection();
-
-    expect(
-      context.invoke.mock.calls
-        .filter(([command]) => command === 'begin_inspection')
-        .map(([, arguments_]) => arguments_)
-    ).toEqual([
-      {
-        input: {
-          url: parentUrl,
-          cookieConfig: null,
-          compatConfigPath: null,
-          selection: entries[0].selection
-        }
-      },
-      {
-        input: {
-          url: parentUrl,
-          cookieConfig: null,
-          compatConfigPath: null,
-          selection: entries[1].selection
-        }
+        identity: '["https://example.com/0"]',
+        metadata: { duration: 84, channel: 'Full entry', thumbnail: 'thumb' }
       }
     ]);
-    expect(
-      context.invoke.mock.calls
-        .filter(([command]) => command === 'add_inspection_result_to_queue')
-        .map(
-          ([, arguments_]) =>
-            (arguments_ as { input: { inspectionOperationId: string } }).input.inspectionOperationId
-        )
-    ).toEqual(['child-operation-0', 'child-operation-1']);
-    expect(context.state.urlError).toBe('');
+    const lease = vi.mocked(context.dependencies.queue.retainPlaylistMetadata).mock.results[0]
+      .value;
+    expect(lease.confirm).toHaveBeenCalledWith(['one', 'three']);
+    expect(context.waitForOperation).not.toHaveBeenCalled();
   });
 
-  it('skips an already queued selected identity but still admits its sibling', async () => {
-    const parentUrl = 'https://social.example/parent';
-    const firstSelection = { entryId: 'media-one', extractorKey: 'twitter', playlistIndex: 1 };
-    const secondSelection = { entryId: 'media-two', extractorKey: 'twitter', playlistIndex: 2 };
+  it('retries a failed playlist admission with the same request id and captured settings', async () => {
+    const firstLease = { confirm: vi.fn(), discard: vi.fn() };
+    const secondLease = { confirm: vi.fn(), discard: vi.fn() };
+    const retainPlaylistMetadata = vi
+      .fn()
+      .mockReturnValueOnce(firstLease)
+      .mockReturnValueOnce(secondLease);
     const context = setup({
-      queue: {
-        getItems: () => [{ url: parentUrl, selection: firstSelection }] as never,
-        retainMetadata: vi.fn(() => () => undefined)
-      }
+      queue: { retainPlaylistMetadata }
     });
     const entries = [
       {
-        id: 'first',
-        title: 'First entry',
+        id: '0',
+        title: 'Entry',
         duration: null,
-        url: parentUrl,
+        url: 'https://example.com/0',
         thumbnail: null,
-        selection: firstSelection,
-        selected: true
-      },
-      {
-        id: 'second',
-        title: 'Second entry',
-        duration: null,
-        url: parentUrl,
-        thumbnail: null,
-        selection: secondSelection,
         selected: true
       }
     ];
     context.state.playlistModal = {
-      info: { title: 'List', channel: null, entry_count: 2, truncated: false, entries },
+      info: { title: 'List', channel: null, entry_count: 1, truncated: false, entries },
       inspectionOperationId: 'playlist-operation',
-      url: parentUrl,
+      url: 'https://example.com/list',
       cookieConfig: null,
       entries
     };
-    context.invoke.mockImplementation(async (command: string, _arguments?: unknown) => {
-      if (command === 'begin_inspection') return { operationId: 'child-operation' };
-      if (command === 'add_inspection_result_to_queue') return { id: 'queue-two' };
-      return undefined;
-    });
-    context.waitForOperation.mockResolvedValueOnce(
-      operation(
-        { kind: 'video', video: { ...video(parentUrl), selection: secondSelection } },
-        'child-operation'
-      )
-    );
+    context.invoke
+      .mockRejectedValueOnce(new Error('response lost'))
+      .mockImplementationOnce(async (_command, args) => {
+        const requestId = (args as { input: { playlist: { requestId: string } } }).input.playlist
+          .requestId;
+        return { kind: 'playlist', requestId, itemIds: ['one'], skippedCount: 0 };
+      });
 
     await context.workflow.addPlaylistSelection();
+    expect(context.state.playlistModal).not.toBeNull();
+    expect(context.state.urlError).toBe('Some playlist entries could not be added. response lost');
+    expect(firstLease.discard).toHaveBeenCalledOnce();
+    context.settings.globalFormat = 'mp3';
+    context.settings.outputDir = 'D:\\changed';
+    await context.workflow.addPlaylistSelection();
 
-    expect(context.invoke.mock.calls.filter(([command]) => command === 'begin_inspection')).toEqual(
-      [
-        [
-          'begin_inspection',
-          {
-            input: {
-              url: parentUrl,
-              cookieConfig: null,
-              compatConfigPath: null,
-              selection: secondSelection
-            }
-          }
-        ]
-      ]
+    const inputs = context.invoke.mock.calls.map(
+      ([, args]) => (args as { input: Record<string, unknown> }).input
     );
-    expect(context.invoke).toHaveBeenCalledWith('add_inspection_result_to_queue', {
-      input: expect.objectContaining({ inspectionOperationId: 'child-operation' })
-    });
+    expect(inputs[1]).toEqual(inputs[0]);
+    expect(inputs[0]).toMatchObject({ format: 'mp4', outputDir: 'C:\\Downloads' });
+    expect(context.state.urlError).toBe('');
+    expect(retainPlaylistMetadata).toHaveBeenCalledTimes(2);
+    expect(secondLease.discard).not.toHaveBeenCalled();
+    expect(secondLease.confirm).toHaveBeenCalledWith(['one']);
+  });
+
+  it('does not publish a late playlist admission completion after renderer disposal', async () => {
+    const lease = { confirm: vi.fn(), discard: vi.fn() };
+    const context = setup({ queue: { retainPlaylistMetadata: vi.fn(() => lease) } });
+    const entries = [
+      {
+        id: '0',
+        title: 'Entry',
+        duration: null,
+        url: 'https://example.com/0',
+        thumbnail: null,
+        selected: true
+      }
+    ];
+    context.state.playlistModal = {
+      info: { title: 'List', channel: null, entry_count: 1, truncated: false, entries },
+      inspectionOperationId: 'playlist-operation',
+      url: 'https://example.com/list',
+      cookieConfig: null,
+      entries
+    };
+    let resolveAdmission!: (value: unknown) => void;
+    context.invoke.mockImplementation(() => new Promise((resolve) => (resolveAdmission = resolve)));
+    const adding = context.workflow.addPlaylistSelection();
+    await vi.waitFor(() => expect(resolveAdmission).toBeTypeOf('function'));
+    const requestId = (
+      context.invoke.mock.calls[0][1] as { input: { playlist: { requestId: string } } }
+    ).input.playlist.requestId;
+    context.dispose();
+    resolveAdmission({ kind: 'playlist', requestId, itemIds: ['one'], skippedCount: 0 });
+    await adding;
+    expect(context.state.playlistModal).not.toBeNull();
+    expect(context.state.playlistLoading).toBe(true);
+    expect(context.state.urlError).toBe('');
+    expect(lease.confirm).not.toHaveBeenCalled();
+    expect(lease.discard).toHaveBeenCalledOnce();
   });
 
   it('suppresses continuations and backend cleanup after disposal', async () => {

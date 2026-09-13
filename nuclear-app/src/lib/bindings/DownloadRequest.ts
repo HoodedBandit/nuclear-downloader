@@ -2,4 +2,4 @@
 import type { CookieConfig } from "./CookieConfig";
 import type { MediaSelection } from "./MediaSelection";
 
-export type DownloadRequest = { url: string, quality: string, format: string, output_dir: string, cookie_config?: CookieConfig | null, filename_override?: string | null, compat_config_path?: string | null, selection?: MediaSelection | null, };
+export type DownloadRequest = { url: string, quality: string, format: string, output_dir: string, cookie_config?: CookieConfig | null, filename_override?: string | null, compat_config_path?: string | null, selection?: MediaSelection | null, expected_media_id?: string | null, };

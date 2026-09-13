@@ -33,10 +33,23 @@ async function startRenderer(seed = initialSnapshot) {
       value
     };
     state.snapshot = applyDelta(state.snapshot, delta);
-    await browser.execute((next) => {
-      window.__NUCLEAR_E2E_SNAPSHOT__ = next;
-    }, state.snapshot);
-    await browser.tauri.emitEvent('app-state-changed', delta);
+    const encoded = JSON.stringify({ snapshot: state.snapshot, delta });
+    await browser.execute((serialized) => {
+      const next = JSON.parse(serialized);
+      window.__NUCLEAR_E2E_SNAPSHOT__ = next.snapshot;
+      window.__wdio_emit_tauri_event__('app-state-changed', next.delta);
+    }, encoded);
+  };
+  state.resync = async (next) => {
+    state.snapshot = structuredClone(next);
+    const encoded = JSON.stringify(state.snapshot);
+    await browser.execute((serialized) => {
+      const snapshot = JSON.parse(serialized);
+      window.__NUCLEAR_E2E_SNAPSHOT__ = snapshot;
+      window.__wdio_emit_tauri_event__('app-state-resync-required', {
+        latestSequence: snapshot.latestSequence
+      });
+    }, encoded);
   };
   return state;
 }
@@ -259,14 +272,16 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await expect($('#url-error')).not.toBeExisting();
   });
 
-  it('covers playlist selection and child inspection', async () => {
+  it('covers backend-authoritative playlist batch admission', async () => {
     const fixture = await startRenderer();
     const { mocks } = fixture;
     await mocks.begin_inspection.mockResolvedValueOnce({ operationId: IDS.playlistInspection });
-    await mocks.begin_inspection.mockResolvedValue({ operationId: IDS.childInspection });
-    await mocks.add_inspection_result_to_queue.mockResolvedValue(
-      queueItem(IDS.playlistItem, childVideo)
-    );
+    await mocks.add_inspection_result_to_queue.mockImplementation(({ input }) => ({
+      kind: 'playlist',
+      requestId: input.playlist.requestId,
+      itemIds: ['20000000-0000-4000-8000-000000000002'],
+      skippedCount: 0
+    }));
     await $('#video-url').setValue('https://fixture.test/playlist');
     await $('button=Add').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
@@ -286,7 +301,8 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
                 title: 'Playlist Child One',
                 duration: 15,
                 url: childVideo.url,
-                thumbnail: null
+                thumbnail: null,
+                video: childVideo
               },
               {
                 id: 'child-2',
@@ -306,26 +322,215 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await checkboxes[0].click();
     await checkboxes[1].click();
     await dialog.$('button=Add 1 Videos to Queue').click();
-    await waitForMockCalls(mocks.dismiss_operation, 1);
-    assert.deepEqual(mocks.dismiss_operation.mock.calls[0][0], {
-      operationId: IDS.playlistInspection
-    });
-    await waitForMockCalls(mocks.begin_inspection, 2);
-    await fixture.emit(
-      'operation_upserted',
-      operation(IDS.childInspection, 'inspection', 'completed', {
-        inspectionResult: { kind: 'video', video: childVideo }
-      })
-    );
     await waitForMockCalls(mocks.add_inspection_result_to_queue, 1);
-    assert.equal(
-      mocks.add_inspection_result_to_queue.mock.calls[0][0].input.inspectionOperationId,
-      IDS.childInspection
-    );
+    const input = mocks.add_inspection_result_to_queue.mock.calls[0][0].input;
+    assert.equal(input.inspectionOperationId, IDS.playlistInspection);
+    assert.deepEqual(input.playlist.entryIndices, [0]);
+    assert.match(input.playlist.requestId, /^[0-9a-f-]{36}$/i);
+    assert.equal(mocks.begin_inspection.mock.calls.length, 1);
+    assert.equal(mocks.dismiss_operation.mock.calls.length, 0);
+    await dialog.waitForExist({ reverse: true });
+    await expect($('#url-error')).not.toBeExisting();
+
     await fixture.emit('queue_item_upserted', queueItem(IDS.playlistItem, childVideo, 40));
     await expect($('.queue')).toHaveText(expect.stringContaining('Playlist Child One'));
+    await expect($('.queue')).toHaveText(expect.stringContaining('0:15'));
   });
 
+  for (const { count, deadlineMs } of [
+    { count: 100, deadlineMs: 1_000 },
+    { count: 1_000, deadlineMs: 2_000 }
+  ]) {
+    it(`confirms and renders ${count} pending playlist rows within ${deadlineMs}ms`, async () => {
+      // This measures the real renderer against a deterministic IPC snapshot/resync fixture.
+      // It does not exercise or qualify the Rust journal durability path.
+      const traceStartedAt = performance.now();
+      const trace = (milestone) =>
+        console.log(
+          `[playlist-${count}] ${milestone} ${(performance.now() - traceStartedAt).toFixed(1)}ms`
+        );
+      const fixture = await startRenderer();
+      trace('startRenderer done');
+      const { mocks } = fixture;
+      const entries = Array.from({ length: count }, (_, index) => ({
+        id: `entry-${index}`,
+        title: `Batch entry ${index}`,
+        duration: index + 1,
+        url: `https://fixture.test/batch/${index}`,
+        thumbnail: null
+      }));
+      await mocks.begin_inspection.mockResolvedValueOnce({ operationId: IDS.playlistInspection });
+      trace('inspection mock installed');
+      await $('#video-url').setValue('https://fixture.test/large-playlist');
+      trace('URL set');
+      await $('button=Add').click();
+      trace('Add clicked');
+      await waitForMockCalls(mocks.begin_inspection, 1);
+      trace('inspection call observed');
+      trace('before playlist fixture emit');
+      await fixture.emit(
+        'operation_upserted',
+        operation(IDS.playlistInspection, 'inspection', 'completed', {
+          inspectionResult: {
+            kind: 'playlist',
+            playlist: {
+              title: `${count} entry fixture`,
+              channel: 'Fixture Channel',
+              entry_count: count,
+              truncated: false,
+              entries
+            }
+          }
+        })
+      );
+      trace('after playlist fixture emit');
+      const dialog = await $('[role="dialog"][aria-labelledby="playlist-modal-title"]');
+      await dialog.waitForDisplayed();
+      trace('dialog displayed');
+      const queue = entries.map((entry, index) => {
+        const id = `20000000-0000-4000-8001-${String(index).padStart(12, '0')}`;
+        return {
+          ...queueItem(id, {
+            ...video,
+            id: entry.id,
+            title: entry.title,
+            duration: entry.duration,
+            url: entry.url
+          }),
+          preparation: 'pending',
+          preparationOperationId: `10000000-0000-4000-8001-${String(index).padStart(12, '0')}`,
+          latestOperationId: `10000000-0000-4000-8001-${String(index).padStart(12, '0')}`
+        };
+      });
+      const operations = queue.map((item, index) =>
+        operation(item.latestOperationId, 'inspection', 'queued', {
+          queueItemId: item.id,
+          createdAtMs: index,
+          updatedAtMs: index
+        })
+      );
+      const admittedSnapshot = {
+        ...structuredClone(initialSnapshot),
+        queue,
+        operations,
+        latestSequence: fixture.snapshot.latestSequence + 1
+      };
+      const encodedAdmittedSnapshot = JSON.stringify(admittedSnapshot);
+      await browser.execute((serialized) => {
+        window.__NUCLEAR_E2E_BATCH_SNAPSHOT__ = JSON.parse(serialized);
+      }, encodedAdmittedSnapshot);
+      trace('admitted snapshot uploaded');
+      await mocks.add_inspection_result_to_queue.mockImplementation(({ input }) => {
+        window.__NUCLEAR_E2E_RENDER_MILESTONES__?.push({
+          name: 'mock entered',
+          at: performance.now()
+        });
+        const snapshot = window.__NUCLEAR_E2E_BATCH_SNAPSHOT__;
+        window.__NUCLEAR_E2E_SNAPSHOT__ = snapshot;
+        window.__wdio_emit_tauri_event__('app-state-resync-required', {
+          latestSequence: snapshot.latestSequence
+        });
+        window.__NUCLEAR_E2E_RENDER_MILESTONES__?.push({
+          name: 'resync dispatched',
+          at: performance.now()
+        });
+        return {
+          kind: 'playlist',
+          requestId: input.playlist.requestId,
+          itemIds: input.playlist.entryIndices.map(
+            (index) => `20000000-0000-4000-8001-${String(index).padStart(12, '0')}`
+          ),
+          skippedCount: 0
+        };
+      });
+      trace('batch mock installed');
+      trace('before timed execute');
+      await browser.execute(() => {
+        const button = document.querySelector('[role="dialog"] .modal-footer .primary');
+        if (!(button instanceof HTMLButtonElement))
+          throw new Error('Playlist confirmation missing.');
+        window.__NUCLEAR_E2E_RENDER_TIMING__ = new Promise((resolve) => {
+          const startedAt = performance.now();
+          window.__NUCLEAR_E2E_RENDER_MILESTONES__ = [{ name: 'confirm click', at: startedAt }];
+          let settled = false;
+          const finish = (result) => {
+            if (settled) return;
+            settled = true;
+            observer.disconnect();
+            clearTimeout(timeout);
+            resolve(result);
+          };
+          const observer = new MutationObserver(() => {
+            if (!document.querySelector('.queue-item')) return;
+            window.__NUCLEAR_E2E_RENDER_MILESTONES__.push({
+              name: 'first row mutation',
+              at: performance.now()
+            });
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                window.__NUCLEAR_E2E_RENDER_MILESTONES__.push({
+                  name: 'paint settled',
+                  at: performance.now()
+                });
+                finish({
+                  elapsedMs: performance.now() - startedAt,
+                  milestones: window.__NUCLEAR_E2E_RENDER_MILESTONES__.map((entry) => ({
+                    name: entry.name,
+                    elapsedMs: entry.at - startedAt
+                  }))
+                });
+              })
+            );
+          });
+          const timeout = setTimeout(
+            () =>
+              finish({
+                error: 'render timeout',
+                milestones: window.__NUCLEAR_E2E_RENDER_MILESTONES__.map((entry) => ({
+                  name: entry.name,
+                  elapsedMs: entry.at - startedAt
+                }))
+              }),
+            2_000
+          );
+          observer.observe(document.body, { childList: true, subtree: true });
+          button.click();
+        });
+      });
+      trace('after timed execute');
+      const timing = await browser.executeAsync((done) => {
+        window.__NUCLEAR_E2E_RENDER_TIMING__.then(done);
+      });
+      trace(`timing result ${JSON.stringify(timing)}`);
+      try {
+        assert.equal(
+          timing.error,
+          undefined,
+          `${count} pending rows exceeded the 2s harness timeout.`
+        );
+        assert.ok(
+          timing.elapsedMs <= deadlineMs,
+          `${count} rows took ${timing.elapsedMs}ms (limit ${deadlineMs}ms).`
+        );
+      } finally {
+        await browser.execute(() => {
+          delete window.__NUCLEAR_E2E_BATCH_SNAPSHOT__;
+          delete window.__NUCLEAR_E2E_RENDER_TIMING__;
+          delete window.__NUCLEAR_E2E_RENDER_MILESTONES__;
+        });
+      }
+      assert.equal(
+        await browser.execute(() => window.__NUCLEAR_E2E_SNAPSHOT__.queue.length),
+        count
+      );
+      assert.ok(
+        (await $$('.queue-item')).length < 50,
+        'Virtualized queue mounted too many DOM rows.'
+      );
+      assert.equal((await $$('select[aria-label^="Quality for"]')).length, 0);
+      assert.equal((await $$('.title-button')).length, 0);
+    });
+  }
   it('covers filename sanitizing plus Enter, Escape, and blur editing', async () => {
     const seed = { ...structuredClone(initialSnapshot), queue: [queueItem(IDS.item, video)] };
     const fixture = await startRenderer(seed);

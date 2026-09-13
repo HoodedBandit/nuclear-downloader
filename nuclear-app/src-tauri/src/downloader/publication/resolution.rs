@@ -75,16 +75,22 @@ fn validate_staged_file(path: &Path, staging_dir: &Path) -> Result<PathBuf, Stri
 pub(in crate::downloader) fn resolve_staged_output(
     staging_dir: &Path,
     selection: Option<&MediaSelection>,
+    expected_media_id: Option<&str>,
 ) -> Result<PathBuf, StagedOutputError> {
     let record_path = final_output_record_path(staging_dir);
     match std::fs::symlink_metadata(&record_path) {
-        Ok(metadata) => resolve_recorded_output(&record_path, &metadata, staging_dir, selection),
+        Ok(metadata) => resolve_recorded_output(
+            &record_path,
+            &metadata,
+            staging_dir,
+            selection,
+            expected_media_id,
+        ),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            if selection.is_some() {
+            if selection.is_some() || expected_media_id.is_some() {
                 Err(StagedOutputError {
                     code: "staging_output_record_invalid",
-                    message: "Selected media completed without an output identity record."
-                        .to_string(),
+                    message: "Media completed without an output identity record.".to_string(),
                 })
             } else {
                 resolve_unambiguous_fallback(staging_dir)
@@ -102,6 +108,7 @@ pub(super) fn resolve_recorded_output(
     metadata: &std::fs::Metadata,
     staging_dir: &Path,
     selection: Option<&MediaSelection>,
+    expected_media_id: Option<&str>,
 ) -> Result<PathBuf, StagedOutputError> {
     if !metadata.file_type().is_file()
         || metadata.file_type().is_symlink()
@@ -204,6 +211,12 @@ pub(super) fn resolve_recorded_output(
         return Err(StagedOutputError {
             code: "staging_output_record_invalid",
             message: "Downloader output record did not contain a filepath.".to_string(),
+        });
+    }
+    if expected_media_id.is_some_and(|expected| record.id.as_deref() != Some(expected)) {
+        return Err(StagedOutputError {
+            code: "staging_output_identity_mismatch",
+            message: "Downloader output identity did not match the expected media.".to_string(),
         });
     }
     if let Some(selection) = selection {

@@ -46,6 +46,14 @@ impl TestJournalSavePause {
 }
 
 impl JournalStore {
+    pub(crate) fn reset_save_attempts_for_test(&self) {
+        self.save_attempts.store(0, Ordering::SeqCst);
+    }
+
+    pub(crate) fn save_attempts_for_test(&self) -> usize {
+        self.save_attempts.load(Ordering::SeqCst)
+    }
+
     pub(crate) fn fail_next_save_for_test(&self) {
         self.fail_saves_for_test(1);
     }
@@ -93,6 +101,7 @@ fn operation(index: usize, state: OperationState, updated_at_ms: u64) -> Operati
         inspection_result: None,
         published_output: None,
         intended_terminal_outcome: None,
+        playlist_admission: None,
         correlation_id: uuid::Uuid::from_u128(index as u128 + 10_000).to_string(),
     }
 }
@@ -102,6 +111,7 @@ fn queue_item(index: usize, latest_operation_id: Option<String>) -> QueueItemRec
         schema_version: APP_SCHEMA_VERSION,
         id: uuid::Uuid::from_u128(index as u128 + 100_000).to_string(),
         source_url: format!("https://example.com/{index}"),
+        source_media_id: None,
         title: format!("item-{index}"),
         available_qualities: vec!["720p".to_string()],
         has_audio: true,
@@ -112,6 +122,8 @@ fn queue_item(index: usize, latest_operation_id: Option<String>) -> QueueItemRec
         filename_override: None,
         compat_config_path: None,
         selection: None,
+        preparation: None,
+        preparation_operation_id: None,
         state: QueueItemState::Completed,
         latest_operation_id,
         created_at_ms: 1,

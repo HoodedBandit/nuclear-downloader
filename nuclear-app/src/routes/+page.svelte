@@ -170,7 +170,8 @@
     queue: {
       getItems: () => queuePresentation.getItems(),
       retainMetadata: (url, metadata, selection) =>
-        queuePresentation.retainMetadata(url, metadata, selection)
+        queuePresentation.retainMetadata(url, metadata, selection),
+      retainPlaylistMetadata: (entries) => queuePresentation.retainPlaylistMetadata(entries)
     },
     setQueueActionError: (message) => {
       queueActionState.queueActionError = message;
@@ -591,6 +592,7 @@
     pageCount={getPlaylistPageCount()}
     visibleEntries={getVisiblePlaylistEntries()}
     selectionState={playlistSelectionState}
+    loading={inspectionState.playlistLoading}
     {formatDuration}
     onClose={closePlaylistModal}
     onToggleAll={(checked) => inspectionWorkflow.toggleAll(checked)}

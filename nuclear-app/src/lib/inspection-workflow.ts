@@ -13,6 +13,9 @@ import type { OperationWorkflow } from './frontend-workflow-ports';
 import { resolveAvailableFormat, resolveAvailableQuality } from './queue-logic';
 import type { MediaSelection } from './bindings/MediaSelection';
 import { mediaIdentityKey } from './media-identity';
+import type { PlaylistAdmissionResult } from './bindings/PlaylistAdmissionResult';
+import type { PlaylistEntry } from './bindings/PlaylistEntry';
+import type { PlaylistMetadataLease } from './playlist-metadata-owner';
 
 const PLAYLIST_PAGE_SIZE = 100;
 const INSPECTION_TIMEOUT_MS = 5 * 60 * 1000;
@@ -56,6 +59,12 @@ export interface InspectionQueuePort {
     metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>,
     selection?: MediaSelection | null
   ) => () => void;
+  retainPlaylistMetadata: (
+    entries: readonly {
+      identity: string;
+      metadata: Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'>;
+    }[]
+  ) => PlaylistMetadataLease;
 }
 
 export interface InspectionWorkflowDependencies extends OperationWorkflow {
@@ -72,6 +81,14 @@ interface CompletedInspection {
 }
 
 export class InspectionWorkflow {
+  private playlistAdmission: {
+    inspectionOperationId: string;
+    selectionKey: string;
+    requestId: string;
+    settings: Pick<InspectionSettings, 'globalFormat' | 'globalQuality' | 'outputDir'>;
+    compatConfigPath: string | null;
+  } | null = null;
+
   constructor(
     readonly state: InspectionState,
     private readonly dependencies: InspectionWorkflowDependencies
@@ -235,9 +252,11 @@ export class InspectionWorkflow {
   }
 
   closePlaylist(): void {
+    if (this.state.playlistLoading) return;
     const operationId = this.state.playlistModal?.inspectionOperationId;
     this.state.playlistModal = null;
     this.state.playlistPage = 0;
+    this.playlistAdmission = null;
     if (operationId) {
       void this.dependencies.invoke('dismiss_operation', { operationId }).catch((error) => {
         if (!this.active()) return;
@@ -280,48 +299,73 @@ export class InspectionWorkflow {
   }
 
   async addPlaylistSelection(): Promise<void> {
+    if (this.state.playlistLoading) return;
     const modal = this.state.playlistModal;
     if (!modal) return;
-    const selectedEntries = modal.entries.filter((entry) => entry.selected);
-    const queuedIdentities = this.queueIdentities();
+    const entryIndices = modal.entries.flatMap((entry, index) => (entry.selected ? [index] : []));
+    if (entryIndices.length === 0) return;
+    this.state.urlError = '';
     const cookieConfig = modal.cookieConfig ? { ...modal.cookieConfig } : null;
+    const selectionKey = entryIndices.join(',');
+    let admission = this.playlistAdmission;
+    if (
+      !admission ||
+      admission.inspectionOperationId !== modal.inspectionOperationId ||
+      admission.selectionKey !== selectionKey
+    ) {
+      const settings = this.dependencies.getSettings();
+      admission = {
+        inspectionOperationId: modal.inspectionOperationId,
+        selectionKey,
+        requestId: crypto.randomUUID(),
+        settings: {
+          globalFormat: settings.globalFormat,
+          globalQuality: settings.globalQuality,
+          outputDir: settings.outputDir
+        },
+        compatConfigPath: this.dependencies.readCompat()
+      };
+      this.playlistAdmission = admission;
+    }
     this.state.urlInput = '';
-    this.closePlaylist();
     this.state.playlistLoading = true;
     this.state.cancelRequested = false;
-    const failures: string[] = [];
+    let metadataLease: PlaylistMetadataLease | null = null;
 
     try {
-      for (const entry of selectedEntries) {
-        if (this.state.cancelRequested) break;
-        const identity = mediaIdentityKey(entry);
-        if (queuedIdentities.has(identity)) continue;
-        try {
-          const completed = await this.inspect(entry.url, cookieConfig, entry.selection);
-          if (!this.active()) return;
-          if (this.state.cancelRequested) {
-            await this.dependencies.invoke('dismiss_operation', {
-              operationId: completed.operationId
-            });
-            if (!this.active()) return;
-            break;
+      metadataLease = this.retainPlaylistMetadataLease(
+        entryIndices.map((index) => modal.entries[index])
+      );
+      const result: PlaylistAdmissionResult = await this.dependencies.invoke(
+        'add_inspection_result_to_queue',
+        {
+          input: {
+            inspectionOperationId: modal.inspectionOperationId,
+            format: admission.settings.globalFormat,
+            quality: admission.settings.globalQuality,
+            outputDir: admission.settings.outputDir,
+            cookieConfig,
+            filenameOverride: null,
+            compatConfigPath: admission.compatConfigPath,
+            playlist: { requestId: admission.requestId, entryIndices }
           }
-          if (completed.inspection.kind !== 'video') {
-            await this.dependencies.invoke('dismiss_operation', {
-              operationId: completed.operationId
-            });
-            if (!this.active()) return;
-            throw new Error('A selected playlist entry unexpectedly resolved to another playlist.');
-          }
-          await this.admit(completed.inspection.video, completed.operationId, cookieConfig);
-          if (!this.active()) return;
-          queuedIdentities.add(identity);
-        } catch (error) {
-          if (!this.active()) return;
-          if (this.state.cancelRequested) break;
-          failures.push(`${entry.title ?? entry.id}: ${normalizeAppError(error)}`);
         }
+      );
+      if (!this.active()) {
+        metadataLease.discard();
+        return;
       }
+      if (result.kind !== 'playlist' || result.requestId !== admission.requestId) {
+        throw new Error('Playlist admission returned an unexpected response.');
+      }
+      metadataLease.confirm(result.itemIds);
+      this.state.playlistModal = null;
+      this.state.playlistPage = 0;
+      this.playlistAdmission = null;
+    } catch (error) {
+      metadataLease?.discard();
+      if (!this.active()) return;
+      this.state.urlError = 'Some playlist entries could not be added. ' + normalizeAppError(error);
     } finally {
       if (this.active()) {
         this.state.activeInspectionId = null;
@@ -329,8 +373,24 @@ export class InspectionWorkflow {
         this.state.cancelRequested = false;
       }
     }
-    if (failures.length > 0) {
-      this.state.urlError = `Some playlist entries could not be added. ${failures.slice(0, 3).join(' ')}`;
-    }
   }
+
+  private retainPlaylistMetadataLease(entries: readonly PlaylistEntry[]): PlaylistMetadataLease {
+    const retained = entries.map((entry) => ({
+      identity: mediaIdentityKey(entry),
+      metadata: playlistEntryDisplayMetadata(entry)
+    }));
+    return this.dependencies.queue.retainPlaylistMetadata(retained);
+  }
+}
+
+function playlistEntryDisplayMetadata(
+  entry: PlaylistEntry
+): Pick<QueueItem, 'duration' | 'channel' | 'thumbnail'> {
+  const video = entry.video;
+  return {
+    duration: video?.duration ?? entry.duration,
+    channel: video?.channel ?? null,
+    thumbnail: video?.thumbnail ?? entry.thumbnail
+  };
 }
