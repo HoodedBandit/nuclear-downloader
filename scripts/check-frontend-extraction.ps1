@@ -3,27 +3,54 @@ param(
     [Parameter(Mandatory)] [ValidatePattern('^[a-z][a-z0-9-]{0,60}$')] [string] $Stage,
     [Parameter(Mandatory)] [string] $ChromeBinary,
     [Parameter(Mandatory)] [string] $ChromeDriverBinary,
-    [Parameter(Mandatory)] [ValidatePattern('^\d+\.\d+\.\d+\.\d+$')] [string] $ExpectedBrowserVersion
+    [Parameter(Mandatory)] [ValidatePattern('^\d+\.\d+\.\d+\.\d+$')] [string] $ExpectedBrowserVersion,
+    [string[]] $BaselineArtifact
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+
+function Resolve-BaselineArtifacts(
+    [string] $RepositoryRoot,
+    [string[]] $RequestedArtifacts
+) {
+    $defaults = @(
+        'target/renderer-checks/visual-20260909T060041Z-885155a599d74d619e7da52667d0c328/visual-100.json',
+        'target/renderer-checks/visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d/visual-150.json'
+    )
+    $requested = if ($null -eq $RequestedArtifacts -or $RequestedArtifacts.Count -eq 0) {
+        $defaults
+    } else {
+        @($RequestedArtifacts)
+    }
+    if ($requested.Count -ne 2) {
+        throw 'BaselineArtifact requires exactly two JSON artifact paths.'
+    }
+    $resolved = @($requested | ForEach-Object {
+        if ([string]::IsNullOrWhiteSpace($_)) {
+            throw 'BaselineArtifact paths must be non-empty.'
+        }
+        $path = if ([IO.Path]::IsPathRooted($_)) { $_ } else { Join-Path $RepositoryRoot $_ }
+        $path = [IO.Path]::GetFullPath($path)
+        if ([IO.Path]::GetExtension($path) -cne '.json' -or
+            -not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "BaselineArtifact must name an existing JSON file: $path"
+        }
+        $path
+    })
+    if ($resolved[0].Equals($resolved[1], [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'BaselineArtifact requires two distinct JSON artifact paths.'
+    }
+    return $resolved
+}
+
+$baseline = @(Resolve-BaselineArtifacts $repositoryRoot $BaselineArtifact)
 $appRoot = Join-Path $repositoryRoot 'nuclear-app'
 $node = Join-Path $appRoot 'src-tauri/target/toolchains/node-v22.23.1-win-x64/node.exe'
 $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssZ') + '-' + [Guid]::NewGuid().ToString('N')
 $logRoot = Join-Path $repositoryRoot "target/frontend-extractions/$Stage-$runId"
 [IO.Directory]::CreateDirectory($logRoot) | Out-Null
-$baseline = @(
-    (Join-Path $repositoryRoot 'target/renderer-checks/visual-20260909T060041Z-885155a599d74d619e7da52667d0c328/visual-100.json'),
-    (Join-Path $repositoryRoot 'target/renderer-checks/visual-20260909T055802Z-eacf8baed77645b5b8e066b3d261ab8d/visual-150.json')
-)
-foreach ($path in $baseline) {
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw 'The fixed visual baseline is unavailable. This runner never replaces baselines.'
-    }
-}
-
 function Check-Node([string] $Name, [string[]] $Arguments) {
     $log = Join-Path $logRoot "$Name.log"
     & $node @Arguments *> $log

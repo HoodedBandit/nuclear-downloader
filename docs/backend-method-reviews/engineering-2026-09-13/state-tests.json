@@ -1,0 +1,2478 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/state/tests.rs",
+    "src/state/tests/playlist_tests.rs"
+  ],
+  "reviewer": "state_tests_review",
+  "entries": [
+    {
+      "id": "src/state/tests.rs::state::tests::impl StateStore::reset_save_attempts_for_test[cfg=test]",
+      "kind": "method",
+      "classification": "test_support",
+      "file": "src/state/tests.rs",
+      "line": 72,
+      "endLine": 74,
+      "symbol": "reset_save_attempts_for_test",
+      "qualifiedName": "state::tests::impl StateStore::reset_save_attempts_for_test",
+      "signature": "pub(crate) fn reset_save_attempts_for_test(&self)",
+      "sourceDigest": "e611ac039a1cbbb78e883872087a30b9fa61c25c5b0d777b1702f92beed5a6e1",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Resets the journal save-attempt counter so batch tests can measure only the operation under test.",
+      "callers": [
+        "playlist batch durability tests"
+      ],
+      "inputs": [
+        "pub(crate) fn reset_save_attempts_for_test(&self)"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "mutates only the test journal save-attempt counter"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Resets the journal save-attempt counter so batch tests can measure only the operation under test.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "reset_save_attempts_for_test"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest e611ac039a1cbbb78e883872087a30b9fa61c25c5b0d777b1702f92beed5a6e1",
+        "source assertions reviewed at src/state/tests.rs:72-74",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::impl StateStore::save_attempts_for_test[cfg=test]",
+      "kind": "method",
+      "classification": "test_support",
+      "file": "src/state/tests.rs",
+      "line": 76,
+      "endLine": 78,
+      "symbol": "save_attempts_for_test",
+      "qualifiedName": "state::tests::impl StateStore::save_attempts_for_test",
+      "signature": "pub(crate) fn save_attempts_for_test(&self) -> usize",
+      "sourceDigest": "87df149d487a3c8c6cd0529e6067326acc422b7921c0a697e329bc86eadfbd16",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Reads the journal save-attempt counter used to assert single-commit batch behavior.",
+      "callers": [
+        "playlist batch durability tests"
+      ],
+      "inputs": [
+        "pub(crate) fn save_attempts_for_test(&self) -> usize"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "reads only the test journal counter"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Reads the journal save-attempt counter used to assert single-commit batch behavior.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "save_attempts_for_test"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 87df149d487a3c8c6cd0529e6067326acc422b7921c0a697e329bc86eadfbd16",
+        "source assertions reviewed at src/state/tests.rs:76-78",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::large_inspection[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests.rs",
+      "line": 133,
+      "endLine": 157,
+      "symbol": "large_inspection",
+      "qualifiedName": "state::tests::large_inspection",
+      "signature": "fn large_inspection() -> UrlInspection",
+      "sourceDigest": "6d53a1a431022eccca5498237ac4963ace274831b6d157ea0a34543d19a478d9",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Builds a 1,000-entry inspection with large retained strings for memory-budget boundary tests.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "fn large_inspection() -> UrlInspection"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "allocates deterministic in-memory fixture data"
+      ],
+      "errors": [
+        "infallible fixture construction"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Builds a 1,000-entry inspection with large retained strings for memory-budget boundary tests.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "large_inspection"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 6d53a1a431022eccca5498237ac4963ace274831b6d157ea0a34543d19a478d9",
+        "source assertions reviewed at src/state/tests.rs:133-157",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::input[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests.rs",
+      "line": 159,
+      "endLine": 170,
+      "symbol": "input",
+      "qualifiedName": "state::tests::input",
+      "signature": "fn input(inspection_operation_id: String) -> AddQueueItemInput",
+      "sourceDigest": "b1666e75067e1edb21488c5701456bcdcc2054ef9d8274bcbdf2b1b1df6f4376",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Builds the canonical single-video AddQueueItemInput fixture tied to a supplied inspection operation.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "fn input(inspection_operation_id: String) -> AddQueueItemInput"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "allocates deterministic in-memory fixture data"
+      ],
+      "errors": [
+        "infallible fixture construction"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Builds the canonical single-video AddQueueItemInput fixture tied to a supplied inspection operation.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "input"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest b1666e75067e1edb21488c5701456bcdcc2054ef9d8274bcbdf2b1b1df6f4376",
+        "source assertions reviewed at src/state/tests.rs:159-170",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::queue_add_consumes_only_authoritative_completed_video_inspections[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 209,
+      "endLine": 307,
+      "symbol": "queue_add_consumes_only_authoritative_completed_video_inspections",
+      "qualifiedName": "state::tests::queue_add_consumes_only_authoritative_completed_video_inspections",
+      "signature": "async fn queue_add_consumes_only_authoritative_completed_video_inspections()",
+      "sourceDigest": "75ac5a195e00d2e6d9e0b224159e6a774d577f5ad864e5a76c667929a7c73248",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts missing, pending, wrong-kind, and playlist inspections are rejected with exact codes, while a completed video is consumed, removed, and represented by an OperationRemoved delta.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn queue_add_consumes_only_authoritative_completed_video_inspections()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts missing, pending, wrong-kind, and playlist inspections are rejected with exact codes, while a completed video is consumed, removed, and represented by an OperationRemoved delta.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "queue_add_consumes_only_authoritative_completed_video_inspections"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 75ac5a195e00d2e6d9e0b224159e6a774d577f5ad864e5a76c667929a7c73248",
+        "source assertions reviewed at src/state/tests.rs:209-307",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work::owned_async_closure#1@595[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 595,
+      "endLine": 597,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "7a9ad3f78c0a26fcdd84faa1b98adc7ecb02aa434ee1efd590994766057ed795",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Runs the spawned pending waiter; it must remain blocked for cancelled work and complete after a later enqueue notification.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Runs the spawned pending waiter; it must remain blocked for cancelled work and complete after a later enqueue notification.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "pending_wait_does_not_dequeue_and_ignores_cancelled_pending_work"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 7a9ad3f78c0a26fcdd84faa1b98adc7ecb02aa434ee1efd590994766057ed795",
+        "source assertions reviewed at src/state/tests.rs:595-597",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::cancellation_waiter_resolves_only_after_terminal_transition::owned_async_closure#1@1001[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1001,
+      "endLine": 1007,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::cancellation_waiter_resolves_only_after_terminal_transition::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "52c7ebe932e2eead14a7ab38e1270b0ca7ec186181a966550765cfafd407884c",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Sleeps briefly then publishes Cancelled, proving wait_for_terminal does not resolve at the intermediate Cancelling state.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Sleeps briefly then publishes Cancelled, proving wait_for_terminal does not resolve at the intermediate Cancelling state.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "cancellation_waiter_resolves_only_after_terminal_transition"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 52c7ebe932e2eead14a7ab38e1270b0ca7ec186181a966550765cfafd407884c",
+        "source assertions reviewed at src/state/tests.rs:1001-1007",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::concurrent_operation_admission_never_exceeds_the_limit::owned_async_closure#1@1081[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1081,
+      "endLine": 1086,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::concurrent_operation_admission_never_exceeds_the_limit::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "e122d619b9d6dad688074a36a65f98e36ab9de511b6e8966cc2f2a174ab16e21",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Synchronizes at the 33-party barrier then races one limit-16 inspection admission.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Synchronizes at the 33-party barrier then races one limit-16 inspection admission.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "concurrent_operation_admission_never_exceeds_the_limit"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest e122d619b9d6dad688074a36a65f98e36ab9de511b6e8966cc2f2a174ab16e21",
+        "source assertions reviewed at src/state/tests.rs:1081-1086",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer::owned_async_closure#1@1340[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1340,
+      "endLine": 1349,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::abandoned_caller_cannot_abandon_a_panicked_owned_finalizer::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "d9e147b74b19784ffe5c3d57250097b9a7cff605a728adb1d39f225e58bfcc5f",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Owns the finalize_download caller future that is aborted while its detached finalizer is paused, exercising cancellation independence.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Owns the finalize_download caller future that is aborted while its detached finalizer is paused, exercising cancellation independence.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "abandoned_caller_cannot_abandon_a_panicked_owned_finalizer"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d9e147b74b19784ffe5c3d57250097b9a7cff605a728adb1d39f225e58bfcc5f",
+        "source assertions reviewed at src/state/tests.rs:1340-1349",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::failure_after_save_advances_compensation_past_the_persisted_candidate_revision[cfg=test,windows]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1398,
+      "endLine": 1488,
+      "symbol": "failure_after_save_advances_compensation_past_the_persisted_candidate_revision",
+      "qualifiedName": "state::tests::failure_after_save_advances_compensation_past_the_persisted_candidate_revision",
+      "signature": "async fn failure_after_save_advances_compensation_past_the_persisted_candidate_revision()",
+      "sourceDigest": "e3ed691e049fdb173bf5c9fcdcde941331db7ac6ea97b0b23cb4914c13da0bc2",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts post-save finalizer panic installs a degraded compensation above all pruned delta sequences, then persists a later edit and preserves failed state plus intended completion across two reopens.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn failure_after_save_advances_compensation_past_the_persisted_candidate_revision()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts post-save finalizer panic installs a degraded compensation above all pruned delta sequences, then persists a later edit and preserves failed state plus intended completion across two reopens.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "failure_after_save_advances_compensation_past_the_persisted_candidate_revision"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest e3ed691e049fdb173bf5c9fcdcde941331db7ac6ea97b0b23cb4914c13da0bc2",
+        "source assertions reviewed at src/state/tests.rs:1398-1488",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#1@1502[cfg=test,windows]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1502,
+      "endLine": 1512,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "c7e84889162a1997be8566782895ac0c6525dd0e2838431ceca7c4a96eae2ac7",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Starts the paused 1080p durable update whose caller is aborted, proving the detached commit retains serialization ownership.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Starts the paused 1080p durable update whose caller is aborted, proving the detached commit retains serialization ownership.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "detached_commit_keeps_the_gate_until_save_and_swap_finish"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest c7e84889162a1997be8566782895ac0c6525dd0e2838431ceca7c4a96eae2ac7",
+        "source assertions reviewed at src/state/tests.rs:1502-1512",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#2@1517[cfg=test,windows]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1517,
+      "endLine": 1521,
+      "symbol": "owned_async_closure#2",
+      "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#2",
+      "signature": "async move",
+      "sourceDigest": "03a3cb0edfb5399cdcd4e7b25b8bcf6d88b44ab44642d9a4b0dddcb084e8edb9",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Attempts a runtime-readiness mutation while the detached first commit owns the gate; the parent asserts it remains unfinished.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Attempts a runtime-readiness mutation while the detached first commit owns the gate; the parent asserts it remains unfinished.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "detached_commit_keeps_the_gate_until_save_and_swap_finish"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 03a3cb0edfb5399cdcd4e7b25b8bcf6d88b44ab44642d9a4b0dddcb084e8edb9",
+        "source assertions reviewed at src/state/tests.rs:1517-1521",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests.rs::state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#3@1524[cfg=test,windows]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests.rs",
+      "line": 1524,
+      "endLine": 1534,
+      "symbol": "owned_async_closure#3",
+      "qualifiedName": "state::tests::detached_commit_keeps_the_gate_until_save_and_swap_finish::owned_async_closure#3",
+      "signature": "async move",
+      "sourceDigest": "bf084a3bc6596d91e8ff1098e05c2779eeacb3c8a7050edd75d29a096d1b9ab1",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Attempts a 1440p queue update behind the detached first commit; the parent asserts serialization and final ordering.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Attempts a 1440p queue update behind the detached first commit; the parent asserts serialization and final ordering.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "detached_commit_keeps_the_gate_until_save_and_swap_finish"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest bf084a3bc6596d91e8ff1098e05c2779eeacb3c8a7050edd75d29a096d1b9ab1",
+        "source assertions reviewed at src/state/tests.rs:1524-1534",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::playlist_input[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 4,
+      "endLine": 18,
+      "symbol": "playlist_input",
+      "qualifiedName": "state::tests::playlist_tests::playlist_input",
+      "signature": "fn playlist_input(parent: &str, request_id: &str, indices: Vec<usize>) -> AddQueueItemInput",
+      "sourceDigest": "51d0263f5c365f852e64e48a361e8ffa62c821b7225666e27648c0ddf4d4a879",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Builds a playlist admission input with fixed output settings and caller-controlled parent, request ID, and retained-entry indices.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "fn playlist_input(parent: &str, request_id: &str, indices: Vec<usize>) -> AddQueueItemInput"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "allocates deterministic in-memory fixture data"
+      ],
+      "errors": [
+        "infallible fixture construction"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Builds a playlist admission input with fixed output settings and caller-controlled parent, request ID, and retained-entry indices.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "playlist_input"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 51d0263f5c365f852e64e48a361e8ffa62c821b7225666e27648c0ddf4d4a879",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:4-18",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::entry[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 20,
+      "endLine": 49,
+      "symbol": "entry",
+      "qualifiedName": "state::tests::playlist_tests::entry",
+      "signature": "fn entry(id: &str, playlist_index: Option<u32>, full: bool) -> PlaylistEntry",
+      "sourceDigest": "60b0214ca3e8f82d7473c093f77bdba4f4832b2f65725c328a0792099950e6d3",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Builds playlist entries with optional selection identity and optional full embedded VideoInfo.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "fn entry(id: &str, playlist_index: Option<u32>, full: bool) -> PlaylistEntry"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "allocates deterministic in-memory fixture data"
+      ],
+      "errors": [
+        "infallible fixture construction"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "Synchronous helper has no cancellation point.",
+      "invariants": [
+        "Builds playlist entries with optional selection identity and optional full embedded VideoInfo.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "entry"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 60b0214ca3e8f82d7473c093f77bdba4f4832b2f65725c328a0792099950e6d3",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:20-49",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::completed_playlist[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 51,
+      "endLine": 58,
+      "symbol": "completed_playlist",
+      "qualifiedName": "state::tests::playlist_tests::completed_playlist",
+      "signature": "async fn completed_playlist(store: &StateStore, entries: Vec<PlaylistEntry>) -> String",
+      "sourceDigest": "0129854de26d2eeceb34683ec6aa1ec4a5be28ff11f6b6cc38491762915f9157",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Completes a playlist inspection using the default settings fingerprint and returns its parent operation ID.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "async fn completed_playlist(store: &StateStore, entries: Vec<PlaylistEntry>) -> String"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "borrows the isolated store across await and owns generated fixture collections"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Completes a playlist inspection using the default settings fingerprint and returns its parent operation ID.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "completed_playlist"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 0129854de26d2eeceb34683ec6aa1ec4a5be28ff11f6b6cc38491762915f9157",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:51-58",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::completed_playlist_with_fingerprint[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 60,
+      "endLine": 86,
+      "symbol": "completed_playlist_with_fingerprint",
+      "qualifiedName": "state::tests::playlist_tests::completed_playlist_with_fingerprint",
+      "signature": "async fn completed_playlist_with_fingerprint( store: &StateStore, entries: Vec<PlaylistEntry>, inspection_settings_fingerprint: Option<String>, ) -> String",
+      "sourceDigest": "e3cb7414673ca25b239cf3998f84e1147197bf589ed6d16ec5b92a7c451281cb",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Creates and completes a playlist inspection with caller-selected entries and settings fingerprint.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "async fn completed_playlist_with_fingerprint( store: &StateStore, entries: Vec<PlaylistEntry>, inspection_settings_fingerprint: Option<String>, ) -> String"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "borrows the isolated store across await and owns generated fixture collections"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Creates and completes a playlist inspection with caller-selected entries and settings fingerprint.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "completed_playlist_with_fingerprint"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest e3cb7414673ca25b239cf3998f84e1147197bf589ed6d16ec5b92a7c451281cb",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:60-86",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::admitted_pending_batch[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 88,
+      "endLine": 104,
+      "symbol": "admitted_pending_batch",
+      "qualifiedName": "state::tests::playlist_tests::admitted_pending_batch",
+      "signature": "async fn admitted_pending_batch(store: &StateStore, count: usize, request: &str) -> Vec<String>",
+      "sourceDigest": "82a897045f9b9b907dc01586ea42b8520a1abc33a85a34cab136a124c27dddfe",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Admits a requested number of metadata-pending playlist rows and returns their preparation operation IDs.",
+      "callers": [
+        "named tests in the same module"
+      ],
+      "inputs": [
+        "async fn admitted_pending_batch(store: &StateStore, count: usize, request: &str) -> Vec<String>"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "borrows the isolated store across await and owns generated fixture collections"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Admits a requested number of metadata-pending playlist rows and returns their preparation operation IDs.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "admitted_pending_batch"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 82a897045f9b9b907dc01586ea42b8520a1abc33a85a34cab136a124c27dddfe",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:88-104",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::playlist_indices_address_retained_entries_and_allow_plain_child_urls[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 107,
+      "endLine": 139,
+      "symbol": "playlist_indices_address_retained_entries_and_allow_plain_child_urls",
+      "qualifiedName": "state::tests::playlist_tests::playlist_indices_address_retained_entries_and_allow_plain_child_urls",
+      "signature": "async fn playlist_indices_address_retained_entries_and_allow_plain_child_urls()",
+      "sourceDigest": "91ba5d3b2c07fb3afd11f555613476cc2a10c587eb4527a0388e80aa0195fd3c",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts requested indices address retained vector positions despite playlist-index gaps and that plain child URLs remain selection-free.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn playlist_indices_address_retained_entries_and_allow_plain_child_urls()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts requested indices address retained vector positions despite playlist-index gaps and that plain child URLs remain selection-free.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "playlist_indices_address_retained_entries_and_allow_plain_child_urls"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 91ba5d3b2c07fb3afd11f555613476cc2a10c587eb4527a0388e80aa0195fd3c",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:107-139",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::full_metadata_is_ready_without_creating_preparation_operations[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 142,
+      "endLine": 155,
+      "symbol": "full_metadata_is_ready_without_creating_preparation_operations",
+      "qualifiedName": "state::tests::playlist_tests::full_metadata_is_ready_without_creating_preparation_operations",
+      "signature": "async fn full_metadata_is_ready_without_creating_preparation_operations()",
+      "sourceDigest": "a108884049d9a48ce182354ae1b1a11c119ac214c4f10a6bdff1d290ef8b05e2",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts compatible embedded metadata produces a ready item with its full title and no new preparation operation.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn full_metadata_is_ready_without_creating_preparation_operations()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts compatible embedded metadata produces a ready item with its full title and no new preparation operation.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "full_metadata_is_ready_without_creating_preparation_operations"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest a108884049d9a48ce182354ae1b1a11c119ac214c4f10a6bdff1d290ef8b05e2",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:142-155",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::absent_or_changed_inspection_settings_disable_full_metadata_reuse[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 158,
+      "endLine": 191,
+      "symbol": "absent_or_changed_inspection_settings_disable_full_metadata_reuse",
+      "qualifiedName": "state::tests::playlist_tests::absent_or_changed_inspection_settings_disable_full_metadata_reuse",
+      "signature": "async fn absent_or_changed_inspection_settings_disable_full_metadata_reuse()",
+      "sourceDigest": "d1c7b8c05b84bff383b2a17cdb0054475056f8e9e4042dd327d4262353a74140",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts absent and mismatched settings fingerprints each force a preparation operation despite embedded metadata.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn absent_or_changed_inspection_settings_disable_full_metadata_reuse()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts absent and mismatched settings fingerprints each force a preparation operation despite embedded metadata.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "absent_or_changed_inspection_settings_disable_full_metadata_reuse"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d1c7b8c05b84bff383b2a17cdb0054475056f8e9e4042dd327d4262353a74140",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:158-191",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::full_metadata_with_changed_media_id_is_rejected_before_retention[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 194,
+      "endLine": 224,
+      "symbol": "full_metadata_with_changed_media_id_is_rejected_before_retention",
+      "qualifiedName": "state::tests::playlist_tests::full_metadata_with_changed_media_id_is_rejected_before_retention",
+      "signature": "async fn full_metadata_with_changed_media_id_is_rejected_before_retention()",
+      "sourceDigest": "d364cf845082b15907cfa5d41fc93d129322bef3ebc3d361899b24fbba046f21",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts embedded video ID mismatch rejects inspection completion and leaves the parent operation queued.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn full_metadata_with_changed_media_id_is_rejected_before_retention()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts embedded video ID mismatch rejects inspection completion and leaves the parent operation queued.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "full_metadata_with_changed_media_id_is_rejected_before_retention"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d364cf845082b15907cfa5d41fc93d129322bef3ebc3d361899b24fbba046f21",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:194-224",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::malformed_duplicate_and_out_of_range_indices_are_atomic[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 227,
+      "endLine": 242,
+      "symbol": "malformed_duplicate_and_out_of_range_indices_are_atomic",
+      "qualifiedName": "state::tests::playlist_tests::malformed_duplicate_and_out_of_range_indices_are_atomic",
+      "signature": "async fn malformed_duplicate_and_out_of_range_indices_are_atomic()",
+      "sourceDigest": "a4818c36bc294d958a0069663dd465fa57b671a5ba837b539ed9467d3d9d2834",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts duplicate, out-of-range, and empty index requests all fail without changing queue length.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn malformed_duplicate_and_out_of_range_indices_are_atomic()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts duplicate, out-of-range, and empty index requests all fail without changing queue length.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "malformed_duplicate_and_out_of_range_indices_are_atomic"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest a4818c36bc294d958a0069663dd465fa57b671a5ba837b539ed9467d3d9d2834",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:227-242",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::playlist_commit_failure_publishes_no_rows_or_preparation_work[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 245,
+      "endLine": 256,
+      "symbol": "playlist_commit_failure_publishes_no_rows_or_preparation_work",
+      "qualifiedName": "state::tests::playlist_tests::playlist_commit_failure_publishes_no_rows_or_preparation_work",
+      "signature": "async fn playlist_commit_failure_publishes_no_rows_or_preparation_work()",
+      "sourceDigest": "d83ca5f43d1452a9c6c35c8c1b093606503f732277f0b4e2cda5b4bb6cb9e0b8",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Injects durable-save failure and asserts neither queue rows nor pending preparation IDs become visible.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn playlist_commit_failure_publishes_no_rows_or_preparation_work()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Injects durable-save failure and asserts neither queue rows nor pending preparation IDs become visible.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "playlist_commit_failure_publishes_no_rows_or_preparation_work"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d83ca5f43d1452a9c6c35c8c1b093606503f732277f0b4e2cda5b4bb6cb9e0b8",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:245-256",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 259,
+      "endLine": 277,
+      "symbol": "hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt",
+      "qualifiedName": "state::tests::playlist_tests::hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt",
+      "signature": "async fn hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt()",
+      "sourceDigest": "d13997f0c4c6142bf9f8ea2625f4acd74368046ab68f0b808e029081d134005a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts 100 admitted rows and preparations are persisted with exactly one journal save.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts 100 admitted rows and preparations are persisted with exactly one journal save.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d13997f0c4c6142bf9f8ea2625f4acd74368046ab68f0b808e029081d134005a",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:259-277",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::thousand_pending_finalizations_use_one_durable_save[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 280,
+      "endLine": 299,
+      "symbol": "thousand_pending_finalizations_use_one_durable_save",
+      "qualifiedName": "state::tests::playlist_tests::thousand_pending_finalizations_use_one_durable_save",
+      "signature": "async fn thousand_pending_finalizations_use_one_durable_save()",
+      "sourceDigest": "871098d14ee52d8946015cba1a3d191973181913ff5853bedd5014063183f557",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts 1,000 cancellations use one save, are idempotent, retain pending IDs for stale draining, and yield no claimable preparation.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn thousand_pending_finalizations_use_one_durable_save()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts 1,000 cancellations use one save, are idempotent, retain pending IDs for stale draining, and yield no claimable preparation.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "thousand_pending_finalizations_use_one_durable_save"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 871098d14ee52d8946015cba1a3d191973181913ff5853bedd5014063183f557",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:280-299",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::pending_batch_persistence_failure_leaves_no_jobless_active_operations[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 302,
+      "endLine": 320,
+      "symbol": "pending_batch_persistence_failure_leaves_no_jobless_active_operations",
+      "qualifiedName": "state::tests::playlist_tests::pending_batch_persistence_failure_leaves_no_jobless_active_operations",
+      "signature": "async fn pending_batch_persistence_failure_leaves_no_jobless_active_operations()",
+      "sourceDigest": "d02ea9aa96af369e418d3638de49d001e05ceea12ae00e1151b2b4ddebd6932d",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts failed persistence degrades all 40 operations to Failed, marks persistence health degraded, and prevents stale pending work from being claimed.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn pending_batch_persistence_failure_leaves_no_jobless_active_operations()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts failed persistence degrades all 40 operations to Failed, marks persistence health degraded, and prevents stale pending work from being claimed.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "pending_batch_persistence_failure_leaves_no_jobless_active_operations"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest d02ea9aa96af369e418d3638de49d001e05ceea12ae00e1151b2b4ddebd6932d",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:302-320",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 323,
+      "endLine": 343,
+      "symbol": "pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes",
+      "qualifiedName": "state::tests::playlist_tests::pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes",
+      "signature": "async fn pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes()",
+      "sourceDigest": "9129fcf77e4dfab93ce82d2ce7d8348f7fb6fc848030508ab7ba245165a41ef9",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Pauses journal save and asserts live snapshots stay Queued until release, then all become Cancelled.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Pauses journal save and asserts live snapshots stay Queued until release, then all become Cancelled.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 9129fcf77e4dfab93ce82d2ce7d8348f7fb6fc848030508ab7ba245165a41ef9",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:323-343",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes::owned_async_closure#1@329[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 329,
+      "endLine": 333,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::playlist_tests::pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "e676661ab9357c4f21f91dd142197d203e12500fb45ca9e82df86aea5c2efcb9",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Runs batch cancellation behind a paused journal save so the parent can assert preterminal visibility before publication.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Runs batch cancellation behind a paused journal save so the parent can assert preterminal visibility before publication.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "pending_batch_snapshot_remains_preterminal_until_blocked_save_publishes"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest e676661ab9357c4f21f91dd142197d203e12500fb45ca9e82df86aea5c2efcb9",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:329-333",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::known_no_audio_full_metadata_rejects_audio_only_batch[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 346,
+      "endLine": 359,
+      "symbol": "known_no_audio_full_metadata_rejects_audio_only_batch",
+      "qualifiedName": "state::tests::playlist_tests::known_no_audio_full_metadata_rejects_audio_only_batch",
+      "signature": "async fn known_no_audio_full_metadata_rejects_audio_only_batch()",
+      "sourceDigest": "2101619b3aa9a64ac66fd193e2701f5c9ac1ad779dbf851a5630b9fe50663006",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts known silent embedded metadata rejects MP3 admission with the exact summary and publishes no queue rows.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn known_no_audio_full_metadata_rejects_audio_only_batch()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts known silent embedded metadata rejects MP3 admission with the exact summary and publishes no queue rows.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "known_no_audio_full_metadata_rejects_audio_only_batch"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 2101619b3aa9a64ac66fd193e2701f5c9ac1ad779dbf851a5630b9fe50663006",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:346-359",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::resolved_no_audio_metadata_stays_pending_for_audio_only_item[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 362,
+      "endLine": 391,
+      "symbol": "resolved_no_audio_metadata_stays_pending_for_audio_only_item",
+      "qualifiedName": "state::tests::playlist_tests::resolved_no_audio_metadata_stays_pending_for_audio_only_item",
+      "signature": "async fn resolved_no_audio_metadata_stays_pending_for_audio_only_item()",
+      "sourceDigest": "6e8cfe058b0a687bada94d2db3b87727f15d846ad413de97975caec1fa548517",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts silent metadata discovered during FLAC preparation is rejected and cannot replace title or clear pending preparation.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn resolved_no_audio_metadata_stays_pending_for_audio_only_item()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts silent metadata discovered during FLAC preparation is rejected and cannot replace title or clear pending preparation.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "resolved_no_audio_metadata_stays_pending_for_audio_only_item"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 6e8cfe058b0a687bada94d2db3b87727f15d846ad413de97975caec1fa548517",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:362-391",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::receipt_replays_after_restart_and_rejects_changed_payload[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 394,
+      "endLine": 412,
+      "symbol": "receipt_replays_after_restart_and_rejects_changed_payload",
+      "qualifiedName": "state::tests::playlist_tests::receipt_replays_after_restart_and_rejects_changed_payload",
+      "signature": "async fn receipt_replays_after_restart_and_rejects_changed_payload()",
+      "sourceDigest": "29015f03dcf7436871ff8581f6ee2cd917fe3d6af0276e44decfc10b1a10b938",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts a persisted admission receipt replays identical item IDs after restart and rejects a changed quality payload.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn receipt_replays_after_restart_and_rejects_changed_payload()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts a persisted admission receipt replays identical item IDs after restart and rejects a changed quality payload.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "receipt_replays_after_restart_and_rejects_changed_payload"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 29015f03dcf7436871ff8581f6ee2cd917fe3d6af0276e44decfc10b1a10b938",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:394-412",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::linked_preparation_completion_installs_metadata_without_download_completion[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 415,
+      "endLine": 448,
+      "symbol": "linked_preparation_completion_installs_metadata_without_download_completion",
+      "qualifiedName": "state::tests::playlist_tests::linked_preparation_completion_installs_metadata_without_download_completion",
+      "signature": "async fn linked_preparation_completion_installs_metadata_without_download_completion()",
+      "sourceDigest": "8ff0c881cad808fadb9085834e7e37f1749c9ea5c42864092841e9a713d1797a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts completed linked inspection installs metadata, leaves source URL stable, clears preparation, makes item inert, and completes only the preparation operation.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn linked_preparation_completion_installs_metadata_without_download_completion()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts completed linked inspection installs metadata, leaves source URL stable, clears preparation, makes item inert, and completes only the preparation operation.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "linked_preparation_completion_installs_metadata_without_download_completion"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 8ff0c881cad808fadb9085834e7e37f1749c9ea5c42864092841e9a713d1797a",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:415-448",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::linked_preparation_rejects_changed_media_id_without_mutating_item[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 451,
+      "endLine": 478,
+      "symbol": "linked_preparation_rejects_changed_media_id_without_mutating_item",
+      "qualifiedName": "state::tests::playlist_tests::linked_preparation_rejects_changed_media_id_without_mutating_item",
+      "signature": "async fn linked_preparation_rejects_changed_media_id_without_mutating_item()",
+      "sourceDigest": "ce74bc8cfde9d1300e127722154d8da28060921d04e4f8984edbd0ed00bc79c3",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts mismatched preparation media ID fails while preserving the prior title and Pending preparation marker.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn linked_preparation_rejects_changed_media_id_without_mutating_item()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts mismatched preparation media ID fails while preserving the prior title and Pending preparation marker.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "linked_preparation_rejects_changed_media_id_without_mutating_item"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest ce74bc8cfde9d1300e127722154d8da28060921d04e4f8984edbd0ed00bc79c3",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:451-478",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::synthetic_url_id_binds_real_media_id_on_first_preparation[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 481,
+      "endLine": 513,
+      "symbol": "synthetic_url_id_binds_real_media_id_on_first_preparation",
+      "qualifiedName": "state::tests::playlist_tests::synthetic_url_id_binds_real_media_id_on_first_preparation",
+      "signature": "async fn synthetic_url_id_binds_real_media_id_on_first_preparation()",
+      "sourceDigest": "b936fdb914d909917a54a7ac89db123cc1e8e21cb6e7bdf4cd2492fc01a28e8c",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts URL-derived synthetic identity starts without source_media_id, then binds the resolved real ID while retaining source URL.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn synthetic_url_id_binds_real_media_id_on_first_preparation()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts URL-derived synthetic identity starts without source_media_id, then binds the resolved real ID while retaining source URL.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "synthetic_url_id_binds_real_media_id_on_first_preparation"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest b936fdb914d909917a54a7ac89db123cc1e8e21cb6e7bdf4cd2492fc01a28e8c",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:481-513",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::pending_preparation_blocks_edit_and_retries_inspection_after_failure[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 516,
+      "endLine": 555,
+      "symbol": "pending_preparation_blocks_edit_and_retries_inspection_after_failure",
+      "qualifiedName": "state::tests::playlist_tests::pending_preparation_blocks_edit_and_retries_inspection_after_failure",
+      "signature": "async fn pending_preparation_blocks_edit_and_retries_inspection_after_failure()",
+      "sourceDigest": "751c8fbce9f2ed2464f5e4ceaf3ec84a0f4491b48090f4280387705ec0dbcb18",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts pending preparation blocks edits and a failed preparation retry creates another Inspection operation while remaining explicitly Pending.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn pending_preparation_blocks_edit_and_retries_inspection_after_failure()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts pending preparation blocks edits and a failed preparation retry creates another Inspection operation while remaining explicitly Pending.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "pending_preparation_blocks_edit_and_retries_inspection_after_failure"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 751c8fbce9f2ed2464f5e4ceaf3ec84a0f4491b48090f4280387705ec0dbcb18",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:516-555",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::interrupted_preparation_stays_explicit_across_two_restarts[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 558,
+      "endLine": 604,
+      "symbol": "interrupted_preparation_stays_explicit_across_two_restarts",
+      "qualifiedName": "state::tests::playlist_tests::interrupted_preparation_stays_explicit_across_two_restarts",
+      "signature": "async fn interrupted_preparation_stays_explicit_across_two_restarts()",
+      "sourceDigest": "91a87948b7c5aaada87beac1390aa9e37e1224f3fe5ee33506acfce8e2ee4212",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts interrupted preparation remains explicit and reconstructs preparation linkage consistently through two journal reopens.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn interrupted_preparation_stays_explicit_across_two_restarts()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts interrupted preparation remains explicit and reconstructs preparation linkage consistently through two journal reopens.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "interrupted_preparation_stays_explicit_across_two_restarts"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 91a87948b7c5aaada87beac1390aa9e37e1224f3fe5ee33506acfce8e2ee4212",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:558-604",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::plain_child_media_identity_survives_restart_and_retry[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 607,
+      "endLine": 646,
+      "symbol": "plain_child_media_identity_survives_restart_and_retry",
+      "qualifiedName": "state::tests::playlist_tests::plain_child_media_identity_survives_restart_and_retry",
+      "signature": "async fn plain_child_media_identity_survives_restart_and_retry()",
+      "sourceDigest": "4e5cb732d7874db3e9b9f78ab29f26e45739fd35e029a2432664c00d0d40c03a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts plain child URL identity and absent selection survive restart and preparation retry without becoming a playlist selection.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn plain_child_media_identity_survives_restart_and_retry()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts plain child URL identity and absent selection survive restart and preparation retry without becoming a playlist selection.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "plain_child_media_identity_survives_restart_and_retry"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 4e5cb732d7874db3e9b9f78ab29f26e45739fd35e029a2432664c00d0d40c03a",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:607-646",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::playlist_capacity_failure_adds_nothing[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 649,
+      "endLine": 693,
+      "symbol": "playlist_capacity_failure_adds_nothing",
+      "qualifiedName": "state::tests::playlist_tests::playlist_capacity_failure_adds_nothing",
+      "signature": "async fn playlist_capacity_failure_adds_nothing()",
+      "sourceDigest": "21a177d1f3eb2cc8ef42e8d18df245b4a30191407061aaf939920d84e06ea522",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Fills queue capacity, then asserts playlist admission fails atomically without rows, operations, pending work, or receipt.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn playlist_capacity_failure_adds_nothing()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Fills queue capacity, then asserts playlist admission fails atomically without rows, operations, pending work, or receipt.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "playlist_capacity_failure_adds_nothing"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 21a177d1f3eb2cc8ef42e8d18df245b4a30191407061aaf939920d84e06ea522",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:649-693",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 696,
+      "endLine": 760,
+      "symbol": "late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item",
+      "qualifiedName": "state::tests::playlist_tests::late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item",
+      "signature": "async fn late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item()",
+      "sourceDigest": "86cb041d239f6c1369679ae3de9263336de83f7ca5d8bb80df367d867fa77327",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Asserts late cancellation cannot overwrite a newer retry and cannot recreate a queue item removed after terminalization.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Asserts late cancellation cannot overwrite a newer retry and cannot recreate a queue item removed after terminalization.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "late_cancelled_attempt_cannot_overwrite_retry_or_resurrect_removed_item"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 86cb041d239f6c1369679ae3de9263336de83f7ca5d8bb80df367d867fa77327",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:696-760",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::preparation_completion_save_failure_keeps_metadata_unready[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 763,
+      "endLine": 791,
+      "symbol": "preparation_completion_save_failure_keeps_metadata_unready",
+      "qualifiedName": "state::tests::playlist_tests::preparation_completion_save_failure_keeps_metadata_unready",
+      "signature": "async fn preparation_completion_save_failure_keeps_metadata_unready()",
+      "sourceDigest": "7f9839896e35d400eb1919183963a54a6cf21b559ff3f62f96fc73737a122d79",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Injects save failure during preparation completion and asserts metadata remains unready/pending with degraded persistence state.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn preparation_completion_save_failure_keeps_metadata_unready()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Injects save failure during preparation completion and asserts metadata remains unready/pending with degraded persistence state.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "preparation_completion_save_failure_keeps_metadata_unready"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 7f9839896e35d400eb1919183963a54a6cf21b559ff3f62f96fc73737a122d79",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:763-791",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 794,
+      "endLine": 829,
+      "symbol": "simultaneous_identical_playlist_requests_create_one_durable_batch",
+      "qualifiedName": "state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch",
+      "signature": "async fn simultaneous_identical_playlist_requests_create_one_durable_batch()",
+      "sourceDigest": "4fe94f33131f2caef01db19c95b897aac09efd38599a37137d5ce8aa62955969",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "purpose": "Races identical admissions and asserts both receipts share item IDs, only one caller owns preparations, queue has two rows, and exactly one save occurs.",
+      "callers": [
+        "Rust test harness"
+      ],
+      "inputs": [
+        "async fn simultaneous_identical_playlist_requests_create_one_durable_batch()"
+      ],
+      "output": "Test passes only if every explicit assertion and unwrap expectation holds.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "unexpected Result errors panic through unwrap; expected failures are asserted by code/summary or is_err"
+      ],
+      "ownership": [
+        "test/helper owns constructed inputs; production snapshots returned from the store are owned values"
+      ],
+      "locks": [
+        "no direct production lock is held across await; direct test-only state locks are scoped before later awaits"
+      ],
+      "cancellation": "The test awaits each state transition; timeout/barrier/pause points make the relevant cancellation or publication boundary observable.",
+      "invariants": [
+        "Races identical admissions and asserts both receipts share item IDs, only one caller owns preparations, queue has two rows, and exactly one save occurs.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "simultaneous_identical_playlist_requests_create_one_durable_batch"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 4fe94f33131f2caef01db19c95b897aac09efd38599a37137d5ce8aa62955969",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:794-829",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch::owned_async_closure#1@810[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 810,
+      "endLine": 813,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "f9f7b88d2e0ddd0c0739344de1b5f5fbe0b5da5c34707d2fc4b7fd17de1b70eb",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Races the first clone of an identical playlist admission request from a shared barrier.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Races the first clone of an identical playlist admission request from a shared barrier.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "simultaneous_identical_playlist_requests_create_one_durable_batch"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest f9f7b88d2e0ddd0c0739344de1b5f5fbe0b5da5c34707d2fc4b7fd17de1b70eb",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:810-813",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    },
+    {
+      "id": "src/state/tests/playlist_tests.rs::state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch::owned_async_closure#2@816[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests/playlist_tests.rs",
+      "line": 816,
+      "endLine": 819,
+      "symbol": "owned_async_closure#2",
+      "qualifiedName": "state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch::owned_async_closure#2",
+      "signature": "async move",
+      "sourceDigest": "4134120f56c1b2653534636d33f063a11c65146be2ec8753402ab5d6bad8a20d",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "purpose": "Races the second clone of an identical playlist admission request from a shared barrier.",
+      "callers": [
+        "the enclosing named tokio test via tokio::spawn"
+      ],
+      "inputs": [
+        "test-owned StateStore and fixtures created in the body"
+      ],
+      "output": "Fixture/helper result declared by the source signature.",
+      "sideEffects": [
+        "uses a UUID-isolated temporary StateStore and may create/remove its test journal and diagnostics files"
+      ],
+      "errors": [
+        "panic/JoinError propagates to the enclosing test when awaited unless cancellation is the asserted outcome"
+      ],
+      "ownership": [
+        "moves cloned StateStore and owned IDs/request values into the spawned task; parent retains independent clones"
+      ],
+      "locks": [
+        "production StateStore methods acquire their documented gates; the test closure holds no raw state Mutex guard across await"
+      ],
+      "cancellation": "Spawned task cancellation/abort behavior is part of the enclosing test claim; owned inputs remain valid independently of the parent future.",
+      "invariants": [
+        "Races the second clone of an identical playlist admission request from a shared barrier.",
+        "fixtures use unique temporary roots or an isolated test_store, preventing cross-test state sharing"
+      ],
+      "tests": [
+        "simultaneous_identical_playlist_requests_create_one_durable_batch"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable final scan digest 4134120f56c1b2653534636d33f063a11c65146be2ec8753402ab5d6bad8a20d",
+        "source assertions reviewed at src/state/tests/playlist_tests.rs:816-819",
+        "root full Rust run active separately; no execution claimed by this reviewer"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/tests/playlist_tests.rs",
+      "reviewer": "state_tests_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed fixture ownership, exact assertions or helper contract, await/cancellation behavior, and failure expectations against the immutable final source. No concrete defect found."
+    }
+  ]
+}

@@ -1,0 +1,2177 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "src/services/inspection.rs::services::inspection::bounded_inspection[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/inspection.rs",
+      "line": 126,
+      "endLine": 149,
+      "symbol": "bounded_inspection",
+      "qualifiedName": "services::inspection::bounded_inspection",
+      "signature": "pub(super) async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,",
+      "sourceDigest": "d0f000e4573852c646bd7c43ee72f00962b9e04b0f15677204106b70bd6601aa",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::inspection::execute_inspection and services::preparation::prepare wrap downloader inspection with this timeout."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(super) async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows DownloadJob and owns the supplied future until completion or timeout."
+      ],
+      "locks": [
+        "No application lock; tokio timeout drives the inner future."
+      ],
+      "invariants": [
+        "Timeout always terminates associated child processes before returning inspection_timeout."
+      ],
+      "tests": [
+        "services::inspection tests cover timeout and cancellation process termination; preparation tests exercise the same wrapper."
+      ],
+      "evidence": [
+        "Source span src/services/inspection.rs:126-149, digest d0f000e4573852c646bd7c43ee72f00962b9e04b0f15677204106b70bd6601aa.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Bound one inspection future by the inspection timeout and terminate its process job on timeout.",
+      "output": "Result from the inner future or timeout AppError.",
+      "cancellation": "Timeout terminates job processes; ordinary caller/job cancellation is handled by the inner inspection future.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/inspection.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/inspection.rs::services::inspection::execute_inspection[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/inspection.rs",
+      "line": 151,
+      "endLine": 206,
+      "symbol": "execute_inspection",
+      "qualifiedName": "services::inspection::execute_inspection",
+      "signature": "pub(super) async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>",
+      "sourceDigest": "af1a7e1edc043cecabee802323a7c62ae0ee58024cd2a169e0bd04527c88cc6b",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "begin_inspection worker and services::preparation::prepare call execute_inspection."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(super) async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows store/manager/job and owns BeginInspectionInput plus the acquired inspection permit."
+      ],
+      "locks": [
+        "Holds one inspection semaphore permit only around downloader inspection; no StateStore mutation lock."
+      ],
+      "invariants": [
+        "No process starts after observed job cancellation; playlist results carry the cookie/compat fingerprint of this exact input."
+      ],
+      "tests": [
+        "downloader inspection tests cover parser/normalization; services inspection tests cover cancellation and timeout; playlist settings tests cover fingerprint reuse."
+      ],
+      "evidence": [
+        "Source span src/services/inspection.rs:151-206, digest af1a7e1edc043cecabee802323a7c62ae0ee58024cd2a169e0bd04527c88cc6b.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Acquire the shared inspection permit, run downloader inspection, normalize metadata, and stamp playlist context fingerprint.",
+      "output": "Optional UrlInspection; None represents cancellation.",
+      "cancellation": "Checks the job before and after permit acquisition and maps cancellation-like process errors to None.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/inspection.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_operation::async_block#1@29[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 29,
+      "endLine": 43,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::operations::cancel_operation::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "896c3475670961f0337576d8ea4fc5e3c8774d5f8ca4394fee217b76b4915ecc",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "cancel_operation tracked body and services::queue::remove_queue_items call cancel_known_operation."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows Backend/progress sink; operation ID and kind remain caller-owned."
+      ],
+      "locks": [
+        "Lifecycle cancel and StateStore cancellation acquire independent short locks; no lock spans progress callback."
+      ],
+      "invariants": [
+        "Pending operation finalization happens only after it is removed from the pending queue; terminal races normalize to success."
+      ],
+      "tests": [
+        "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory and preparation immediate-removal tests cover cancel races."
+      ],
+      "evidence": [
+        "Source span src/services/operations.rs:29-43, digest 896c3475670961f0337576d8ea4fc5e3c8774d5f8ca4394fee217b76b4915ecc.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Cancel one known operation across lifecycle state, durable state, pending queues, and progress publication.",
+      "output": "Unit or AppError after cancellation ownership is established.",
+      "cancellation": "Cancellation is the purpose: pending work is terminalized immediately; active work is signaled and finishes through its worker.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/operations.rs::services::operations::cancel_known_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/operations.rs",
+      "line": 47,
+      "endLine": 94,
+      "symbol": "cancel_known_operation",
+      "qualifiedName": "services::operations::cancel_known_operation",
+      "signature": "pub(super) async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>",
+      "sourceDigest": "f213f01129def41d6b7ab9905e6ae76fc663a64da0a9ba1571a132e77bb3cdd1",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "cancel_operation tracked body and services::queue::remove_queue_items call cancel_known_operation."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(super) async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows Backend/progress sink; operation ID and kind remain caller-owned."
+      ],
+      "locks": [
+        "Lifecycle cancel and StateStore cancellation acquire independent short locks; no lock spans progress callback."
+      ],
+      "invariants": [
+        "Pending operation finalization happens only after it is removed from the pending queue; terminal races normalize to success."
+      ],
+      "tests": [
+        "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory and preparation immediate-removal tests cover cancel races."
+      ],
+      "evidence": [
+        "Source span src/services/operations.rs:47-94, digest f213f01129def41d6b7ab9905e6ae76fc663a64da0a9ba1571a132e77bb3cdd1.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Cancel one known operation across lifecycle state, durable state, pending queues, and progress publication.",
+      "output": "Unit or AppError after cancellation ownership is established.",
+      "cancellation": "Cancellation is the purpose: pending work is terminalized immediately; active work is signaled and finishes through its worker.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::spawn_preparation_worker[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 14,
+      "endLine": 71,
+      "symbol": "spawn_preparation_worker",
+      "qualifiedName": "services::preparation::spawn_preparation_worker",
+      "signature": "pub(crate) fn spawn_preparation_worker( store: &StateStore, manager: &DownloadManager, ) -> Result<(), AppError>",
+      "sourceDigest": "4d776fbb080e8e340a0a0a2e64ac0134dc79877b5db8113eb65184f70616b863",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "lib::run registers exactly one preparation worker during setup."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) fn spawn_preparation_worker( store: &StateStore, manager: &DownloadManager, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "The tracked closure owns cloned store/manager and one claimed job/work item per loop iteration."
+      ],
+      "locks": [
+        "WorkerClaim transition barrier is dropped after registered_job lookup; inspection permit is acquired later by execute_inspection."
+      ],
+      "invariants": [
+        "Work is taken only after a worker claim; missing registration is finalized as error and every claimed ID is finished once."
+      ],
+      "tests": [
+        "services::preparation::tests::playlist_admission_registers_every_row_before_metadata_preparation, immediate_removal_cancels_registered_preparation_before_a_worker_claim, and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
+      ],
+      "evidence": [
+        "Source span src/services/preparation.rs:14-71, digest 4d776fbb080e8e340a0a0a2e64ac0134dc79877b5db8113eb65184f70616b863.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Register the single lifecycle-owned worker that drains durable playlist metadata preparations under the shared inspection permit.",
+      "output": "Unit registration result or tracked-task AppError.",
+      "cancellation": "Selects shutdown before availability, and registered jobs carry cancellation through permit wait and inspection.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::spawn_preparation_worker::owned_async_closure#1@20[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 20,
+      "endLine": 70,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "services::preparation::spawn_preparation_worker::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "1e363076f38ea6f69e7c87b6c6a2bf2bc4e8ed2be3d7b2d35d1e094a6702886e",
+      "cfg": [],
+      "ownerCall": "spawn_tracked",
+      "callers": [
+        "lib::run registers exactly one preparation worker during setup."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "The tracked closure owns cloned store/manager and one claimed job/work item per loop iteration."
+      ],
+      "locks": [
+        "WorkerClaim transition barrier is dropped after registered_job lookup; inspection permit is acquired later by execute_inspection."
+      ],
+      "invariants": [
+        "Work is taken only after a worker claim; missing registration is finalized as error and every claimed ID is finished once."
+      ],
+      "tests": [
+        "services::preparation::tests::playlist_admission_registers_every_row_before_metadata_preparation, immediate_removal_cancels_registered_preparation_before_a_worker_claim, and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
+      ],
+      "evidence": [
+        "Source span src/services/preparation.rs:20-70, digest 1e363076f38ea6f69e7c87b6c6a2bf2bc4e8ed2be3d7b2d35d1e094a6702886e.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Register the single lifecycle-owned worker that drains durable playlist metadata preparations under the shared inspection permit.",
+      "output": "Unit registration result or tracked-task AppError.",
+      "cancellation": "Selects shutdown before availability, and registered jobs carry cancellation through permit wait and inspection.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::prepare[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 73,
+      "endLine": 96,
+      "symbol": "prepare",
+      "qualifiedName": "services::preparation::prepare",
+      "signature": "async fn prepare( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &DownloadJob, ) -> Result<Option<UrlInspection>, AppError>",
+      "sourceDigest": "d484f92e4cdbf3098dc158e82a71e3cc5cf9dfcc4dc661f39eb960e381cfa9cb",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "spawn_preparation_worker calls prepare for each successfully registered preparation job."
+      ],
+      "inputs": [
+        "Parameters in signature: async fn prepare( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &DownloadJob, ) -> Result<Option<UrlInspection>, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows store/manager/job and operation ID; owns BeginInspectionInput for the attempt."
+      ],
+      "locks": [
+        "No state/lifecycle lock held across bounded inspection; execute_inspection owns the semaphore permit."
+      ],
+      "invariants": [
+        "A panic terminates job processes and becomes an internal error."
+      ],
+      "tests": [
+        "preparation cancellation/permit tests and inspection timeout tests cover delegated behavior."
+      ],
+      "evidence": [
+        "Source span src/services/preparation.rs:73-96, digest d484f92e4cdbf3098dc158e82a71e3cc5cf9dfcc4dc661f39eb960e381cfa9cb.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Run one playlist preparation inspection with timeout and panic containment.",
+      "output": "Optional UrlInspection or AppError.",
+      "cancellation": "Job cancellation is observed by execute_inspection; timeout/panic terminates child processes.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::finalize_pending_cancellation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 100,
+      "endLine": 119,
+      "symbol": "finalize_pending_cancellation",
+      "qualifiedName": "services::preparation::finalize_pending_cancellation",
+      "signature": "pub(crate) async fn finalize_pending_cancellation( store: &StateStore, operation_id: &str, publish_progress: &crate::notifications::DownloadProgressSink, ) -> Result<(), AppError>",
+      "sourceDigest": "45fc3e9f4b1e9f77d17237fa982669c2588969894ffb29d6a3d2482de73445ef",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "operations cancellation, cancel-all drain, and bootstrap shutdown call pending finalization helpers."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) async fn finalize_pending_cancellation( store: &StateStore, operation_id: &str, publish_progress: &crate::notifications::DownloadProgressSink, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows store/progress sink and IDs; batch helper owns returned deltas while publishing legacy progress."
+      ],
+      "locks": [
+        "StateStore finalization uses one mutation gate acquisition; progress callbacks run after the durable call."
+      ],
+      "invariants": [
+        "Inspection cancellation never emits download progress; batch emits only terminal download progress records."
+      ],
+      "tests": [
+        "services::preparation::tests::cancel_all_releases_a_thousand_preparations_and_reopens_admission and immediate-removal cancellation cover these helpers."
+      ],
+      "evidence": [
+        "Source span src/services/preparation.rs:100-119, digest 45fc3e9f4b1e9f77d17237fa982669c2588969894ffb29d6a3d2482de73445ef.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Terminalize one pending inspection or download cancellation using the operation-kind-specific durable path.",
+      "output": "Unit or AppError.",
+      "cancellation": "Called only after pending ownership is removed/claimed; inspection emits no legacy download progress.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::finalize_pending_cancellations[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 121,
+      "endLine": 157,
+      "symbol": "finalize_pending_cancellations",
+      "qualifiedName": "services::preparation::finalize_pending_cancellations",
+      "signature": "pub(crate) async fn finalize_pending_cancellations( store: &StateStore, ids: &[String], publish_progress: &crate::notifications::DownloadProgressSink, ) -> Result<(), AppError>",
+      "sourceDigest": "96fcbba5e4406d3c6c567835353e83c3d6be1a081715eaf9bc6753a11d63dc13",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "operations cancellation, cancel-all drain, and bootstrap shutdown call pending finalization helpers."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) async fn finalize_pending_cancellations( store: &StateStore, ids: &[String], publish_progress: &crate::notifications::DownloadProgressSink, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows store/progress sink and IDs; batch helper owns returned deltas while publishing legacy progress."
+      ],
+      "locks": [
+        "StateStore finalization uses one mutation gate acquisition; progress callbacks run after the durable call."
+      ],
+      "invariants": [
+        "Inspection cancellation never emits download progress; batch emits only terminal download progress records."
+      ],
+      "tests": [
+        "services::preparation::tests::cancel_all_releases_a_thousand_preparations_and_reopens_admission and immediate-removal cancellation cover these helpers."
+      ],
+      "evidence": [
+        "Source span src/services/preparation.rs:121-157, digest 96fcbba5e4406d3c6c567835353e83c3d6be1a081715eaf9bc6753a11d63dc13.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Batch-terminalize pending cancellations and emit legacy progress only for terminal downloads.",
+      "output": "Unit or AppError.",
+      "cancellation": "Performs one durable batch transition; no cooperative cancellation inside the completed batch mutation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 14,
+      "endLine": 55,
+      "symbol": "add_inspection_result_to_queue",
+      "qualifiedName": "services::queue::add_inspection_result_to_queue",
+      "signature": "pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>",
+      "sourceDigest": "3c6e6821969be749e6dc56728bdce6a684f71667068cbe73306f95d52034728f",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri command add_inspection_result_to_queue calls this service."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "run_tracked_command owns the inner async admission future independently of renderer response lifetime."
+      ],
+      "locks": [
+        "No service lock; delegated state/lifecycle methods own ordering."
+      ],
+      "invariants": [
+        "Playlist input remains raw until admit_playlist; single-item output is canonicalized before durable construction."
+      ],
+      "tests": [
+        "service raw-fingerprint tests cover playlist dispatch; backend lifecycle dropped-response test covers tracked admission ownership."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:14-55, digest 3c6e6821969be749e6dc56728bdce6a684f71667068cbe73306f95d52034728f.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Run typed single or playlist admission in lifecycle-tracked command ownership.",
+      "output": "Single queue row or playlist admission result.",
+      "cancellation": "Renderer caller loss does not own the tracked admission task; cleanup guards cover committed publication gaps.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue::async_block#1@19[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 19,
+      "endLine": 53,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::queue::add_inspection_result_to_queue::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "198df7bd01cf113bf6902ce552a995280b76b907a788a5c01ee22a1136834017",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri command add_inspection_result_to_queue calls this service."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "run_tracked_command owns the inner async admission future independently of renderer response lifetime."
+      ],
+      "locks": [
+        "No service lock; delegated state/lifecycle methods own ordering."
+      ],
+      "invariants": [
+        "Playlist input remains raw until admit_playlist; single-item output is canonicalized before durable construction."
+      ],
+      "tests": [
+        "service raw-fingerprint tests cover playlist dispatch; backend lifecycle dropped-response test covers tracked admission ownership."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:19-53, digest 198df7bd01cf113bf6902ce552a995280b76b907a788a5c01ee22a1136834017.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Run typed single or playlist admission in lifecycle-tracked command ownership.",
+      "output": "Single queue row or playlist admission result.",
+      "cancellation": "Renderer caller loss does not own the tracked admission task; cleanup guards cover committed publication gaps.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::admit_playlist[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 57,
+      "endLine": 91,
+      "symbol": "admit_playlist",
+      "qualifiedName": "services::queue::admit_playlist",
+      "signature": "async fn admit_playlist( backend: &Backend, input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>",
+      "sourceDigest": "0b645165b66c5b11661a39a6e2b44395d1a3159778ca3731bcfd3f80e45ed811",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "add_inspection_result_to_queue dispatches playlist inputs to admit_playlist."
+      ],
+      "inputs": [
+        "Parameters in signature: async fn admit_playlist( backend: &Backend, input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows Backend and owns the unchanged raw AddQueueItemInput; JobAdmission and QueueAdmissionGuard own registration/rollback across awaits."
+      ],
+      "locks": [
+        "Receipt prelookup uses a state read lock; add_playlist_items_at_output later takes mutation lock and repeats receipt validation before planning."
+      ],
+      "invariants": [
+        "Exact raw replay returns before filesystem access; new rows store canonical output; locked recheck prevents concurrent duplicate request IDs."
+      ],
+      "tests": [
+        "services::queue::tests::playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output and playlist_reused_request_id_checks_raw_payload_before_output_filesystem; state concurrent replay tests cover locked recheck."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:57-91, digest 0b645165b66c5b11661a39a6e2b44395d1a3159778ca3731bcfd3f80e45ed811.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Replay a durable raw-input receipt before filesystem access, or validate/canonicalize output and atomically admit/register a playlist batch.",
+      "output": "Playlist result or AppError.",
+      "cancellation": "Tracked caller plus QueueAdmissionGuard prevents cancellation from abandoning committed preparation jobs.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::update_queue_item::async_block#1@99[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 99,
+      "endLine": 133,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::queue::update_queue_item::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "decd0534a49a927c45873bc3cfeaab71650cfba3805a09173334629e74d80964",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri update_queue_item command calls this tracked service."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Tracked closure owns Backend, item ID, and mutable update input."
+      ],
+      "locks": [
+        "Reads current snapshot, performs filesystem validation, then StateStore update serializes revalidation/commit."
+      ],
+      "invariants": [
+        "Prospective request validates before mutation and persisted output path is canonical."
+      ],
+      "tests": [
+        "queue/state update tests cover pending-preparation edit rejection and canonical output validation."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:99-133, digest decd0534a49a927c45873bc3cfeaab71650cfba3805a09173334629e74d80964.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate an edited queue row using its complete prospective download request and persist canonical output settings.",
+      "output": "Unit or AppError.",
+      "cancellation": "Tracked admission task owns the mutation; no explicit user cancellation path.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::remove_queue_items[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 137,
+      "endLine": 180,
+      "symbol": "remove_queue_items",
+      "qualifiedName": "services::queue::remove_queue_items",
+      "signature": "pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>",
+      "sourceDigest": "1d86eb9484465618747601c3d10aee2c265e803df38ef3698bb5ffacc7594917",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri remove_queue_items command calls this tracked service."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Tracked closure owns Backend and item ID vector through cancellation and durable removal."
+      ],
+      "locks": [
+        "Per-item reads precede operation cancellation; StateStore remove performs the atomic final validation/mutation under its gate."
+      ],
+      "invariants": [
+        "All rows are prevalidated before cancelling any preparation; active non-preparation downloads reject removal."
+      ],
+      "tests": [
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:137-180, digest 1d86eb9484465618747601c3d10aee2c265e803df38ef3698bb5ffacc7594917.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate a whole removal, cancel active preparation attempts, then durably remove all requested rows.",
+      "output": "Unit or AppError.",
+      "cancellation": "Explicitly cancels preparation operations before row removal; active downloads reject removal.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@142[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 142,
+      "endLine": 178,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::queue::remove_queue_items::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "1645e2417f12a6373b79c1963f9f4ee023afdf47d1a4518a212bc6e38257a661",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri remove_queue_items command calls this tracked service."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Tracked closure owns Backend and item ID vector through cancellation and durable removal."
+      ],
+      "locks": [
+        "Per-item reads precede operation cancellation; StateStore remove performs the atomic final validation/mutation under its gate."
+      ],
+      "invariants": [
+        "All rows are prevalidated before cancelling any preparation; active non-preparation downloads reject removal."
+      ],
+      "tests": [
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:142-178, digest 1645e2417f12a6373b79c1963f9f4ee023afdf47d1a4518a212bc6e38257a661.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate a whole removal, cancel active preparation attempts, then durably remove all requested rows.",
+      "output": "Unit or AppError.",
+      "cancellation": "Explicitly cancels preparation operations before row removal; active downloads reject removal.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::enqueue_queue_items[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 182,
+      "endLine": 210,
+      "symbol": "enqueue_queue_items",
+      "qualifiedName": "services::queue::enqueue_queue_items",
+      "signature": "pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
+      "sourceDigest": "37a6c9a49a0b4e1b4906571438148a8dc5417708aff4f868e5518ca6dd1bb162",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri enqueue_queue_items command calls this tracked service."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Tracked closure owns Backend/IDs; JobAdmission reserves jobs and QueueAdmissionGuard owns compensation until publish succeeds."
+      ],
+      "locks": [
+        "Lifecycle transition barrier covers reservation through publication; StateStore enqueue commits between those phases."
+      ],
+      "invariants": [
+        "Returned IDs equal durably created and registered operation IDs; publication failure compensates the full batch."
+      ],
+      "tests": [
+        "backend lifecycle dropped-admission test and preparation shutdown-between-admission test cover registration/cleanup."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:182-210, digest 37a6c9a49a0b4e1b4906571438148a8dc5417708aff4f868e5518ca6dd1bb162.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Reserve jobs, durably enqueue selected rows, publish exact operation registrations, and return operation IDs.",
+      "output": "BeginOperationResult vector or AppError.",
+      "cancellation": "Tracked task and admission guard compensate a dropped/publish-failed command.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@188[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/services/queue.rs",
+      "line": 188,
+      "endLine": 208,
+      "symbol": "async_block#1",
+      "qualifiedName": "services::queue::enqueue_queue_items::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "8c34626311e156a864685ef09e4b3dc6d1dbd28f16d6eeeb4b1c3b04a66626a1",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri enqueue_queue_items command calls this tracked service."
+      ],
+      "inputs": [
+        "Parameters in signature: async move."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Tracked closure owns Backend/IDs; JobAdmission reserves jobs and QueueAdmissionGuard owns compensation until publish succeeds."
+      ],
+      "locks": [
+        "Lifecycle transition barrier covers reservation through publication; StateStore enqueue commits between those phases."
+      ],
+      "invariants": [
+        "Returned IDs equal durably created and registered operation IDs; publication failure compensates the full batch."
+      ],
+      "tests": [
+        "backend lifecycle dropped-admission test and preparation shutdown-between-admission test cover registration/cleanup."
+      ],
+      "evidence": [
+        "Source span src/services/queue.rs:188-208, digest 8c34626311e156a864685ef09e4b3dc6d1dbd28f16d6eeeb4b1c3b04a66626a1.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Reserve jobs, durably enqueue selected rows, publish exact operation registrations, and return operation IDs.",
+      "output": "BeginOperationResult vector or AppError.",
+      "cancellation": "Tracked task and admission guard compensate a dropped/publish-failed command.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/queue.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::completed_playlist_input[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/services/queue/tests.rs",
+      "line": 8,
+      "endLine": 74,
+      "symbol": "completed_playlist_input",
+      "qualifiedName": "services::queue::tests::completed_playlist_input",
+      "signature": "async fn completed_playlist_input( backend: &Backend, output_dir: &Path, request_id: &str, ) -> AddQueueItemInput",
+      "sourceDigest": "cd0b5c17bfc30471f0ef46fefa9fdcae3a45d2bde79e40fdf652ad0fce99e7d9",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "The services::queue::completed_playlist_input regression test uses this span."
+      ],
+      "inputs": [
+        "Temporary backend/output fixtures and deterministic request data."
+      ],
+      "sideEffects": [
+        "Creates isolated journal/output fixtures and invokes playlist admission; test removes or replaces the output directory to expose ordering."
+      ],
+      "errors": [
+        "Test unwrap/assertions panic on regression."
+      ],
+      "ownership": [
+        "Owns only isolated test fixtures and values; no production task ownership."
+      ],
+      "locks": [
+        "Exercises production StateStore/lifecycle locks; introduces no shared test lock."
+      ],
+      "invariants": [
+        "The exact raw payload identifies a replay independently of later output-directory state."
+      ],
+      "tests": [
+        "This helper supports the two raw-fingerprint tests."
+      ],
+      "evidence": [
+        "Source span src/services/queue/tests.rs:8-74, digest cd0b5c17bfc30471f0ef46fefa9fdcae3a45d2bde79e40fdf652ad0fce99e7d9.",
+        "target/engineering-receipt-before-fix-corrected-fixture.log records this two-test fixture failing before the repair; it is reproduction evidence, not final-pass evidence.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Create a completed full-metadata playlist input with a raw output path.",
+      "output": "AddQueueItemInput fixture.",
+      "cancellation": "Test helper has no cancellation protocol beyond ordinary async future drop.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::playlist_receipt[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/services/queue/tests.rs",
+      "line": 76,
+      "endLine": 81,
+      "symbol": "playlist_receipt",
+      "qualifiedName": "services::queue::tests::playlist_receipt",
+      "signature": "fn playlist_receipt(result: AddQueueItemResult) -> crate::models::PlaylistAdmissionResult",
+      "sourceDigest": "ea1539c09360d828d94d63178b55cc05b82d25b7e89a386c92f69434bb32327b",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "The services::queue::playlist_receipt regression test uses this span."
+      ],
+      "inputs": [
+        "Temporary backend/output fixtures and deterministic request data."
+      ],
+      "sideEffects": [
+        "Creates isolated journal/output fixtures and invokes playlist admission; test removes or replaces the output directory to expose ordering."
+      ],
+      "errors": [
+        "Test unwrap/assertions panic on regression."
+      ],
+      "ownership": [
+        "Owns only isolated test fixtures and values; no production task ownership."
+      ],
+      "locks": [
+        "Exercises production StateStore/lifecycle locks; introduces no shared test lock."
+      ],
+      "invariants": [
+        "The exact raw payload identifies a replay independently of later output-directory state."
+      ],
+      "tests": [
+        "This helper supports the two raw-fingerprint tests."
+      ],
+      "evidence": [
+        "Source span src/services/queue/tests.rs:76-81, digest ea1539c09360d828d94d63178b55cc05b82d25b7e89a386c92f69434bb32327b.",
+        "target/engineering-receipt-before-fix-corrected-fixture.log records this two-test fixture failing before the repair; it is reproduction evidence, not final-pass evidence.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Extract the playlist variant from an admission result.",
+      "output": "PlaylistAdmissionResult or assertion panic.",
+      "cancellation": "Pure synchronous test helper.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::noncanonical_output[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/services/queue/tests.rs",
+      "line": 83,
+      "endLine": 90,
+      "symbol": "noncanonical_output",
+      "qualifiedName": "services::queue::tests::noncanonical_output",
+      "signature": "fn noncanonical_output(root: &Path) -> (PathBuf, PathBuf)",
+      "sourceDigest": "ca5fcd6fac06c9eb37b9dd1f819f88f32e9573bf19a80e1a761ef7fcdad7025c",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "The services::queue::noncanonical_output regression test uses this span."
+      ],
+      "inputs": [
+        "Temporary backend/output fixtures and deterministic request data."
+      ],
+      "sideEffects": [
+        "Creates isolated journal/output fixtures and invokes playlist admission; test removes or replaces the output directory to expose ordering."
+      ],
+      "errors": [
+        "Test unwrap/assertions panic on regression."
+      ],
+      "ownership": [
+        "Owns only isolated test fixtures and values; no production task ownership."
+      ],
+      "locks": [
+        "Exercises production StateStore/lifecycle locks; introduces no shared test lock."
+      ],
+      "invariants": [
+        "The exact raw payload identifies a replay independently of later output-directory state."
+      ],
+      "tests": [
+        "This helper supports the two raw-fingerprint tests."
+      ],
+      "evidence": [
+        "Source span src/services/queue/tests.rs:83-90, digest ca5fcd6fac06c9eb37b9dd1f819f88f32e9573bf19a80e1a761ef7fcdad7025c.",
+        "target/engineering-receipt-before-fix-corrected-fixture.log records this two-test fixture failing before the repair; it is reproduction evidence, not final-pass evidence.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Create raw and canonical spellings of the same test output directory.",
+      "output": "Raw and canonical PathBuf pair.",
+      "cancellation": "Pure synchronous test helper.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/queue/tests.rs",
+      "line": 93,
+      "endLine": 132,
+      "symbol": "playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output",
+      "qualifiedName": "services::queue::tests::playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output",
+      "signature": "async fn playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output()",
+      "sourceDigest": "edda509421f8686a72edd39ae2423065a4d8252666e901eeaac42b3c29a6fc02",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness invokes this named regression test."
+      ],
+      "inputs": [
+        "Temporary backend/output fixtures and deterministic request data."
+      ],
+      "sideEffects": [
+        "Creates isolated journal/output fixtures and invokes playlist admission; test removes or replaces the output directory to expose ordering."
+      ],
+      "errors": [
+        "Test unwrap/assertions panic on regression."
+      ],
+      "ownership": [
+        "Owns only isolated test fixtures and values; no production task ownership."
+      ],
+      "locks": [
+        "Exercises production StateStore/lifecycle locks; introduces no shared test lock."
+      ],
+      "invariants": [
+        "The exact raw payload identifies a replay independently of later output-directory state."
+      ],
+      "tests": [
+        "This is direct regression coverage for the repaired ordering."
+      ],
+      "evidence": [
+        "Source span src/services/queue/tests.rs:93-132, digest edda509421f8686a72edd39ae2423065a4d8252666e901eeaac42b3c29a6fc02.",
+        "target/engineering-receipt-before-fix-corrected-fixture.log records this two-test fixture failing before the repair; it is reproduction evidence, not final-pass evidence.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Prove exact raw receipt replay occurs before deleted-output validation.",
+      "output": "Unit after regression assertions.",
+      "cancellation": "Async test cleanup only; it does not exercise caller cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::playlist_reused_request_id_checks_raw_payload_before_output_filesystem[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/queue/tests.rs",
+      "line": 135,
+      "endLine": 157,
+      "symbol": "playlist_reused_request_id_checks_raw_payload_before_output_filesystem",
+      "qualifiedName": "services::queue::tests::playlist_reused_request_id_checks_raw_payload_before_output_filesystem",
+      "signature": "async fn playlist_reused_request_id_checks_raw_payload_before_output_filesystem()",
+      "sourceDigest": "cd3fdf611816ef991c4f9207ba238402e1196f2669376281d32be77bbb0e1059",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness invokes this named regression test."
+      ],
+      "inputs": [
+        "Temporary backend/output fixtures and deterministic request data."
+      ],
+      "sideEffects": [
+        "Creates isolated journal/output fixtures and invokes playlist admission; test removes or replaces the output directory to expose ordering."
+      ],
+      "errors": [
+        "Test unwrap/assertions panic on regression."
+      ],
+      "ownership": [
+        "Owns only isolated test fixtures and values; no production task ownership."
+      ],
+      "locks": [
+        "Exercises production StateStore/lifecycle locks; introduces no shared test lock."
+      ],
+      "invariants": [
+        "The exact raw payload identifies a replay independently of later output-directory state."
+      ],
+      "tests": [
+        "This is direct regression coverage for the repaired ordering."
+      ],
+      "evidence": [
+        "Source span src/services/queue/tests.rs:135-157, digest cd3fdf611816ef991c4f9207ba238402e1196f2669376281d32be77bbb0e1059.",
+        "target/engineering-receipt-before-fix-corrected-fixture.log records this two-test fixture failing before the repair; it is reproduction evidence, not final-pass evidence.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Prove reuse of a request ID with changed raw payload returns conflict before filesystem validation.",
+      "output": "Unit after regression assertions.",
+      "cancellation": "Async test cleanup only; it does not exercise caller cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::impl StateStore::playlist_admission_receipt[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 39,
+      "endLine": 65,
+      "symbol": "playlist_admission_receipt",
+      "qualifiedName": "state::playlist::impl StateStore::playlist_admission_receipt",
+      "signature": "pub fn playlist_admission_receipt( &self, input: &AddQueueItemInput, ) -> Result<Option<PlaylistAdmissionResult>, AppError>",
+      "sourceDigest": "e06e62511d003c49241f66dab0927e070804374d38552970ac0bc6feeaa96247",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist performs this fast replay/conflict check before output validation."
+      ],
+      "inputs": [
+        "Parameters in signature: pub fn playlist_admission_receipt( &self, input: &AddQueueItemInput, ) -> Result<Option<PlaylistAdmissionResult>, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows raw input and state; clones only the returned receipt projection."
+      ],
+      "locks": [
+        "Takes the StateStore read lock for parent lookup and receipt comparison."
+      ],
+      "invariants": [
+        "Fingerprint uses exact raw input; any request-ID or payload mismatch is a conflict."
+      ],
+      "tests": [
+        "Both services::queue raw-fingerprint regression tests directly exercise this method."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:39-65, digest e06e62511d003c49241f66dab0927e070804374d38552970ac0bc6feeaa96247.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Look up a completed parent receipt using the exact raw request fingerprint before output filesystem validation.",
+      "output": "Optional PlaylistAdmissionResult or conflict/not-found AppError.",
+      "cancellation": "Synchronous read; no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::validate_playlist_input[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 68,
+      "endLine": 91,
+      "symbol": "validate_playlist_input",
+      "qualifiedName": "state::playlist::validate_playlist_input",
+      "signature": "fn validate_playlist_input(input: &AddQueueItemInput) -> Result<(), AppError>",
+      "sourceDigest": "bf6efcdfa3aa3fd9c3b853df2c26c176abca8cca1953abb5ae2a130054df5b02",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls validate_playlist_input from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn validate_playlist_input(input: &AddQueueItemInput) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:68-91, digest bf6efcdfa3aa3fd9c3b853df2c26c176abca8cca1953abb5ae2a130054df5b02.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate bounded playlist request fields, cookie/compat context, and nonempty request indices.",
+      "output": "Unit or validation AppError.",
+      "cancellation": "Pure synchronous validation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::request_fingerprint[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 93,
+      "endLine": 97,
+      "symbol": "request_fingerprint",
+      "qualifiedName": "state::playlist::request_fingerprint",
+      "signature": "fn request_fingerprint(input: &AddQueueItemInput) -> Result<String, AppError>",
+      "sourceDigest": "4fe340c44db51a6ec972eaf4e1e1388e31eee11d74117e09db11feae56ab13b7",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls request_fingerprint from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn request_fingerprint(input: &AddQueueItemInput) -> Result<String, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:93-97, digest 4fe340c44db51a6ec972eaf4e1e1388e31eee11d74117e09db11feae56ab13b7.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Hash the exact serialized raw AddQueueItemInput for replay/conflict identity.",
+      "output": "Lowercase SHA-256 string or internal serialization AppError.",
+      "cancellation": "Pure synchronous computation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::authoritative_playlist[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 99,
+      "endLine": 139,
+      "symbol": "authoritative_playlist",
+      "qualifiedName": "state::playlist::authoritative_playlist",
+      "signature": "fn authoritative_playlist( state: &StateData, input: &AddQueueItemInput, fingerprint: &str, ) -> Result<ParentPlaylist, AppError>",
+      "sourceDigest": "710ffd2ec0f3b6658262806fb295c2f5ff970d7617dfb47d1eb4fd15c7812be4",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls authoritative_playlist from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn authoritative_playlist( state: &StateData, input: &AddQueueItemInput, fingerprint: &str, ) -> Result<ParentPlaylist, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:99-139, digest 710ffd2ec0f3b6658262806fb295c2f5ff970d7617dfb47d1eb4fd15c7812be4.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Under the mutation lock, recheck parent completion and exact receipt identity or clone the retained playlist.",
+      "output": "Replay result or available PlaylistInfo.",
+      "cancellation": "Synchronous locked-state decision.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::plan_rows[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 141,
+      "endLine": 183,
+      "symbol": "plan_rows",
+      "qualifiedName": "state::playlist::plan_rows",
+      "signature": "fn plan_rows( state: &StateData, input: &AddQueueItemInput, playlist: PlaylistInfo, ) -> Result<AdmissionPlan, AppError>",
+      "sourceDigest": "a432e1f3c336d975b247c086ffa9beb36f044eda83f90e9c65733ed66d8b21ff",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls plan_rows from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn plan_rows( state: &StateData, input: &AddQueueItemInput, playlist: PlaylistInfo, ) -> Result<AdmissionPlan, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:141-183, digest a432e1f3c336d975b247c086ffa9beb36f044eda83f90e9c65733ed66d8b21ff.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate indices/settings reuse, deduplicate identities, enforce queue/operation capacity, and build accepted rows.",
+      "output": "AdmissionPlan or AppError without state mutation.",
+      "cancellation": "Pure planning before commit.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::validate_indices[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 185,
+      "endLine": 195,
+      "symbol": "validate_indices",
+      "qualifiedName": "state::playlist::validate_indices",
+      "signature": "fn validate_indices(indices: &[usize], retained: usize) -> Result<(), AppError>",
+      "sourceDigest": "3bf54330c6f590c7e0965ea569a0d112b131a3d73e1d33d15790e8b0b6ff1a6d",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls validate_indices from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn validate_indices(indices: &[usize], retained: usize) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:185-195, digest 3bf54330c6f590c7e0965ea569a0d112b131a3d73e1d33d15790e8b0b6ff1a6d.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Reject duplicate or out-of-range retained playlist indices.",
+      "output": "Unit or validation AppError.",
+      "cancellation": "Pure synchronous validation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::prepare_row[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 197,
+      "endLine": 224,
+      "symbol": "prepare_row",
+      "qualifiedName": "state::playlist::prepare_row",
+      "signature": "fn prepare_row( retained: &PlaylistEntry, input: &AddQueueItemInput, reuse: bool, ) -> Result<PlannedRow, AppError>",
+      "sourceDigest": "077a75a97bad0fdfc9c5edb180087ca695fcb07ebfb973a173826bbe564f1dc3",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls prepare_row from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn prepare_row( retained: &PlaylistEntry, input: &AddQueueItemInput, reuse: bool, ) -> Result<PlannedRow, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:197-224, digest 077a75a97bad0fdfc9c5edb180087ca695fcb07ebfb973a173826bbe564f1dc3.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Clone one retained entry, invalidate stale full metadata when context changed, validate identity/request, and form a planned row.",
+      "output": "PlannedRow or AppError.",
+      "cancellation": "Pure synchronous planning.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::validate_embedded_video[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 226,
+      "endLine": 251,
+      "symbol": "validate_embedded_video",
+      "qualifiedName": "state::playlist::validate_embedded_video",
+      "signature": "fn validate_embedded_video( entry: &mut PlaylistEntry, selection: Option<&MediaSelection>, format: &str, ) -> Result<(), AppError>",
+      "sourceDigest": "9ecd8ba04363e9e877740e3088f0c9c367b28fd52d4b425aedcc79040c82a838",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls validate_embedded_video from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: fn validate_embedded_video( entry: &mut PlaylistEntry, selection: Option<&MediaSelection>, format: &str, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:226-251, digest 9ecd8ba04363e9e877740e3088f0c9c367b28fd52d4b425aedcc79040c82a838.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Accept only embedded full metadata matching entry/selection identity and requested audio format; downgrade synthetic-ID mismatch to preparation.",
+      "output": "Unit or AppError, possibly clearing entry.video.",
+      "cancellation": "Pure synchronous validation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::row_identity[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 255,
+      "endLine": 263,
+      "symbol": "row_identity",
+      "qualifiedName": "state::playlist::row_identity",
+      "signature": "fn row_identity(row: &PlannedRow) -> RowIdentity",
+      "sourceDigest": "82a0e200f8b0c4fbbed9fc2fa25f9b6c57de03c0ec935c8563640c3621ceb7d2",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "plan_rows calls row_identity for each planned row and existing_identity against the current queue."
+      ],
+      "inputs": [
+        "Parameters in signature: fn row_identity(row: &PlannedRow) -> RowIdentity."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows planned/current values; row_identity clones bounded identity strings."
+      ],
+      "locks": [
+        "Pure helper under caller-held candidate snapshot; no lock."
+      ],
+      "invariants": [
+        "Identity is URL alone for flat media or URL plus entry ID/extractor for selected media; playlist index is intentionally not identity."
+      ],
+      "tests": [
+        "state playlist duplicate and sibling-selection tests cover identity behavior."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:255-263, digest 82a0e200f8b0c4fbbed9fc2fa25f9b6c57de03c0ec935c8563640c3621ceb7d2.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Build the deduplication identity from URL plus selected media ID/extractor.",
+      "output": "Owned RowIdentity tuple.",
+      "cancellation": "Pure synchronous projection.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::existing_identity[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 265,
+      "endLine": 279,
+      "symbol": "existing_identity",
+      "qualifiedName": "state::playlist::existing_identity",
+      "signature": "fn existing_identity( existing: &[(String, Option<MediaSelection>)], identity: &RowIdentity, ) -> bool",
+      "sourceDigest": "c5173c17d8c72bb00eb3992d946bc09ab0fdcd9d1741580738c8d9ac7e42ddc5",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "plan_rows calls row_identity for each planned row and existing_identity against the current queue."
+      ],
+      "inputs": [
+        "Parameters in signature: fn existing_identity( existing: &[(String, Option<MediaSelection>)], identity: &RowIdentity, ) -> bool."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows planned/current values; row_identity clones bounded identity strings."
+      ],
+      "locks": [
+        "Pure helper under caller-held candidate snapshot; no lock."
+      ],
+      "invariants": [
+        "Identity is URL alone for flat media or URL plus entry ID/extractor for selected media; playlist index is intentionally not identity."
+      ],
+      "tests": [
+        "state playlist duplicate and sibling-selection tests cover identity behavior."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:265-279, digest c5173c17d8c72bb00eb3992d946bc09ab0fdcd9d1741580738c8d9ac7e42ddc5.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Compare a planned identity with current queue URL and exact selected media identity.",
+      "output": "Boolean duplicate decision.",
+      "cancellation": "Pure synchronous scan.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::apply_plan[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 281,
+      "endLine": 318,
+      "symbol": "apply_plan",
+      "qualifiedName": "state::playlist::apply_plan",
+      "signature": "fn apply_plan( state: &mut StateData, deltas: &mut Vec<StateDelta>, input: &AddQueueItemInput, plan: AdmissionPlan, request_id: String, fingerprint: String, now: u64, ) -> Result<AppliedPlan, AppError>",
+      "sourceDigest": "1dbef7a6f5638fa92e502c2309bf7cf353d27b41852adda95af1a124293c55ff",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "add_playlist_items_at_output calls apply_plan; apply_plan calls append_row once per accepted row."
+      ],
+      "inputs": [
+        "Parameters in signature: fn apply_plan( state: &mut StateData, deltas: &mut Vec<StateDelta>, input: &AddQueueItemInput, plan: AdmissionPlan, request_id: String, fingerprint: String, now: u64, ) -> Result<AppliedPlan, AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Mutably borrows candidate StateData/deltas and consumes AdmissionPlan or PlannedRow."
+      ],
+      "locks": [
+        "Requires caller-held mutation ownership; acquires no lock itself."
+      ],
+      "invariants": [
+        "Queue row, optional preparation operation, parent receipt, and deltas are created in one candidate before commit."
+      ],
+      "tests": [
+        "state playlist one-save, persistence failure, ready/pending, and receipt tests cover candidate atomicity."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:281-318, digest 1dbef7a6f5638fa92e502c2309bf7cf353d27b41852adda95af1a124293c55ff.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Append every planned row and preparation operation, then consume parent metadata into one durable receipt delta set.",
+      "output": "AppliedPlan or AppError in candidate state.",
+      "cancellation": "Synchronous candidate mutation; caller commits atomically.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::append_row[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 320,
+      "endLine": 345,
+      "symbol": "append_row",
+      "qualifiedName": "state::playlist::append_row",
+      "signature": "fn append_row( state: &mut StateData, deltas: &mut Vec<StateDelta>, input: &AddQueueItemInput, row: PlannedRow, now: u64, ) -> Result<(String, Option<String>), AppError>",
+      "sourceDigest": "d38a5c8d483f23020fe27a6d4de6ee363278ac9892bc14cf62365baa9c5c6392",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "add_playlist_items_at_output calls apply_plan; apply_plan calls append_row once per accepted row."
+      ],
+      "inputs": [
+        "Parameters in signature: fn append_row( state: &mut StateData, deltas: &mut Vec<StateDelta>, input: &AddQueueItemInput, row: PlannedRow, now: u64, ) -> Result<(String, Option<String>), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Mutably borrows candidate StateData/deltas and consumes AdmissionPlan or PlannedRow."
+      ],
+      "locks": [
+        "Requires caller-held mutation ownership; acquires no lock itself."
+      ],
+      "invariants": [
+        "Queue row, optional preparation operation, parent receipt, and deltas are created in one candidate before commit."
+      ],
+      "tests": [
+        "state playlist one-save, persistence failure, ready/pending, and receipt tests cover candidate atomicity."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:320-345, digest d38a5c8d483f23020fe27a6d4de6ee363278ac9892bc14cf62365baa9c5c6392.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Append one queue row and its optional preparation operation/deltas to candidate state.",
+      "output": "Queue item ID and optional preparation operation ID.",
+      "cancellation": "Synchronous candidate mutation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::new_queue_item[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 347,
+      "endLine": 389,
+      "symbol": "new_queue_item",
+      "qualifiedName": "state::playlist::new_queue_item",
+      "signature": "fn new_queue_item( id: String, input: &AddQueueItemInput, row: PlannedRow, operation_id: Option<String>, now: u64, ) -> QueueItemRecord",
+      "sourceDigest": "cc7453dafad3fc885eefbfbf526d5454ff032137eb852b9387aea471ce73f91b",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "append_row calls this constructor for each accepted row."
+      ],
+      "inputs": [
+        "Parameters in signature: fn new_queue_item( id: String, input: &AddQueueItemInput, row: PlannedRow, operation_id: Option<String>, now: u64, ) -> QueueItemRecord."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Consumes constructor values and clones only captured immutable queue configuration where shown."
+      ],
+      "locks": [
+        "Pure constructor; no lock."
+      ],
+      "invariants": [
+        "Pending rows link latest_operation_id to queued inspection; ready rows are inert with no preparation; queue output/context come from canonical queue input."
+      ],
+      "tests": [
+        "state playlist ready/pending and restart tests assert constructed fields and links."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:347-389, digest cc7453dafad3fc885eefbfbf526d5454ff032137eb852b9387aea471ce73f91b.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Construct a queue record using canonical output and captured cookie/compat/selection context.",
+      "output": "QueueItemRecord.",
+      "cancellation": "Pure constructor.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::new_preparation_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 391,
+      "endLine": 411,
+      "symbol": "new_preparation_operation",
+      "qualifiedName": "state::playlist::new_preparation_operation",
+      "signature": "fn new_preparation_operation(id: String, queue_item_id: String, now: u64) -> OperationSnapshot",
+      "sourceDigest": "930410ade94076246665d46bf0952bdb051c7149df52f5cc69722d3da2c6a4f5",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "append_row calls this constructor for each accepted row."
+      ],
+      "inputs": [
+        "Parameters in signature: fn new_preparation_operation(id: String, queue_item_id: String, now: u64) -> OperationSnapshot."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Consumes constructor values and clones only captured immutable queue configuration where shown."
+      ],
+      "locks": [
+        "Pure constructor; no lock."
+      ],
+      "invariants": [
+        "Pending rows link latest_operation_id to queued inspection; ready rows are inert with no preparation; queue output/context come from canonical queue input."
+      ],
+      "tests": [
+        "state playlist ready/pending and restart tests assert constructed fields and links."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:391-411, digest 930410ade94076246665d46bf0952bdb051c7149df52f5cc69722d3da2c6a4f5.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Construct the queued inspection operation linked to one pending queue row.",
+      "output": "OperationSnapshot.",
+      "cancellation": "Pure constructor.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::impl StateStore::add_playlist_items[cfg=test]",
+      "kind": "method",
+      "classification": "test_support",
+      "file": "src/state/playlist.rs",
+      "line": 415,
+      "endLine": 421,
+      "symbol": "add_playlist_items",
+      "qualifiedName": "state::playlist::impl StateStore::add_playlist_items",
+      "signature": "pub async fn add_playlist_items( &self, input: AddQueueItemInput, ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError>",
+      "sourceDigest": "d01f68085dbbb9c06b0023fe356d376a6103eb574cf0a4007d8d83c84df77f89",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "State-level playlist tests use this convenience wrapper; production service uses add_playlist_items_at_output."
+      ],
+      "inputs": [
+        "Parameters in signature: pub async fn add_playlist_items( &self, input: AddQueueItemInput, ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Owns input, clones only its output_dir, then delegates both values."
+      ],
+      "locks": [
+        "No lock before delegation; add_playlist_items_at_output owns mutation ordering."
+      ],
+      "invariants": [
+        "Wrapper preserves pre-fix state-test semantics where raw and stored output spellings are identical."
+      ],
+      "tests": [
+        "state::tests::playlist_tests call this wrapper throughout atomic admission coverage."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:414-420, digest d01f68085dbbb9c06b0023fe356d376a6103eb574cf0a4007d8d83c84df77f89.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "State-test convenience wrapper that uses the input output path as both raw and queue output.",
+      "output": "Playlist result plus preparation IDs.",
+      "cancellation": "Awaits the same locked atomic admission implementation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::impl StateStore::add_playlist_items_at_output[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 423,
+      "endLine": 462,
+      "symbol": "add_playlist_items_at_output",
+      "qualifiedName": "state::playlist::impl StateStore::add_playlist_items_at_output",
+      "signature": "pub async fn add_playlist_items_at_output( &self, raw_input: AddQueueItemInput, canonical_output: String, ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError>",
+      "sourceDigest": "252f79a4da09231d0203f9ca6ca83f46e6d10ea4d58dc8f6d56d2e8315d24c07",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist calls with raw input plus separately validated canonical output; add_playlist_items wrapper delegates here."
+      ],
+      "inputs": [
+        "Parameters in signature: pub async fn add_playlist_items_at_output( &self, raw_input: AddQueueItemInput, canonical_output: String, ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Owns raw input and canonical output; clones raw input once into queue_input and owns candidate state/deltas until commit."
+      ],
+      "locks": [
+        "Owned mutation gate spans durable candidate, authoritative replay recheck, planning, and commit."
+      ],
+      "invariants": [
+        "Receipt fingerprint/request ID derive from raw_input while every appended row receives canonical_output; replay is rechecked under the same lock."
+      ],
+      "tests": [
+        "services raw-fingerprint tests plus state receipt restart/conflict, atomic malformed indices, partial dedup, capacity, and persistence-failure tests cover this method."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:422-461, digest 252f79a4da09231d0203f9ca6ca83f46e6d10ea4d58dc8f6d56d2e8315d24c07.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Validate raw request, fingerprint it unchanged, store canonical output in rows, recheck receipt under lock, and commit plan atomically.",
+      "output": "Playlist result plus preparation IDs or AppError.",
+      "cancellation": "Mutation gate owns replay/plan/commit; cancellation before commit publishes nothing.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::playlist_result[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 465,
+      "endLine": 472,
+      "symbol": "playlist_result",
+      "qualifiedName": "state::playlist::playlist_result",
+      "signature": "pub(super) fn playlist_result(receipt: &PlaylistAdmissionReceipt) -> PlaylistAdmissionResult",
+      "sourceDigest": "ec3d81e4cca410d2d47467825e4405b751a2d4f5406949d2b51686718c38c5b5",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls playlist_result from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(super) fn playlist_result(receipt: &PlaylistAdmissionReceipt) -> PlaylistAdmissionResult."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:464-471, digest ec3d81e4cca410d2d47467825e4405b751a2d4f5406949d2b51686718c38c5b5.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Project a persisted receipt into the command result wire type.",
+      "output": "PlaylistAdmissionResult clone.",
+      "cancellation": "Pure synchronous projection.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    },
+    {
+      "id": "src/state/playlist.rs::state::playlist::reject_audio_only_without_stream[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/playlist.rs",
+      "line": 474,
+      "endLine": 485,
+      "symbol": "reject_audio_only_without_stream",
+      "qualifiedName": "state::playlist::reject_audio_only_without_stream",
+      "signature": "pub(super) fn reject_audio_only_without_stream( format: &str, has_audio: bool, ) -> Result<(), AppError>",
+      "sourceDigest": "d02d2015cd44fa6305db4f0aa7eed17d25ab8ed71cdec074e19bd9705ea45b9b",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Final state playlist pipeline calls reject_audio_only_without_stream from authoritative_playlist, plan_rows, prepare_row, or apply_plan as visible in src/state/playlist.rs."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(super) fn reject_audio_only_without_stream( format: &str, has_audio: bool, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "Borrows or consumes only bounded input/candidate values shown in its signature; no detached task."
+      ],
+      "locks": [
+        "Pure helper with no lock; caller add_playlist_items_at_output holds mutation ownership where state is borrowed."
+      ],
+      "invariants": [
+        "Validation/planning fails before candidate commit; no live state or notification is published by this helper."
+      ],
+      "tests": [
+        "state::tests::playlist_tests cover malformed indices, partial dedup, capacity, settings fingerprint reuse, embedded identity, audio rejection, and receipt replay."
+      ],
+      "evidence": [
+        "Source span src/state/playlist.rs:473-484, digest d02d2015cd44fa6305db4f0aa7eed17d25ab8ed71cdec074e19bd9705ea45b9b.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
+      ],
+      "purpose": "Reject audio-only formats for metadata known to have no audio stream.",
+      "output": "Unit or validation AppError.",
+      "cancellation": "Pure synchronous validation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/state/playlist.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
+    }
+  ]
+}

@@ -1,5 +1,11 @@
 # Backend maintainability refactor
 
+Current follow-up status is in [engineering quality and playlist performance](engineering-status.md).
+Its ledger covers 1,382 current review units across 110 files (789 production,
+406 tests, 187 test support). The stage receipts and counts below describe the
+earlier refactor and its inspection correction; their performance and soak
+results are not transferred to the September 13 candidate.
+
 Implementation baseline: `34d0769` (backend reliability overhaul), Windows 11 x64.
 The application remains one Rust/Tauri crate. Existing features and public
 contracts are retained in source and covered by the automated checks below;

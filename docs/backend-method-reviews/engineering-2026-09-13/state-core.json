@@ -1,0 +1,2060 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/state.rs",
+    "src/state/commit.rs",
+    "src/state/data.rs",
+    "src/state/maintenance.rs",
+    "src/state/operation.rs",
+    "src/state/pending.rs",
+    "src/state/pending_finalization.rs",
+    "src/state/preparation.rs",
+    "src/state/queue.rs",
+    "src/state/reducers.rs"
+  ],
+  "reviewer": "state_core_review",
+  "entries": [
+    {
+      "id": "src/state.rs::state::impl StateStore::from_parts[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state.rs",
+      "line": 98,
+      "endLine": 160,
+      "symbol": "from_parts",
+      "qualifiedName": "state::impl StateStore::from_parts",
+      "signature": "fn from_parts( journal: JournalStore, mut loaded: PersistentJournal, diagnostics: Diagnostics, ) -> Self",
+      "sourceDigest": "e46be1e578e2df504c4d922b0202dee75eca4533f3117451d3aceedb844d8f7e",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Rehydrates ordered state maps from the durable journal and initializes shared synchronization, notification, diagnostics, outbox, and retention-budget state.",
+      "callers": [
+        "StateStore::open_default",
+        "state test store constructors"
+      ],
+      "inputs": [
+        "fn from_parts( journal: JournalStore, mut loaded: PersistentJournal, diagnostics: Diagnostics, ) -> Self"
+      ],
+      "output": "Self",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "constructs fresh Mutex/AsyncMutex/Notify values; acquires no existing lock"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state.rs:98-160",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "journal reload and recovery tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest e46be1e578e2df504c4d922b0202dee75eca4533f3117451d3aceedb844d8f7e",
+        "source review src/state.rs:98-160",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::impl StateStore::from_parts. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/commit.rs::state::commit::impl StateStore::install_candidate[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/commit.rs",
+      "line": 335,
+      "endLine": 338,
+      "symbol": "install_candidate",
+      "qualifiedName": "state::commit::impl StateStore::install_candidate",
+      "signature": "pub(super) fn install_candidate(&self, candidate: StateData) -> Result<(), AppError>",
+      "sourceDigest": "8a725367c9f6f62fe356bf747098ad7ec29bc52ac57e25a7dec2caf942563d81",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Atomically replaces the in-memory StateData snapshot after a candidate has passed durable commit handling.",
+      "callers": [
+        "commit_candidate finalizer",
+        "pending_finalization::publish_candidate",
+        "degraded finalization recovery"
+      ],
+      "inputs": [
+        "pub(super) fn install_candidate(&self, candidate: StateData) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "locks StateStoreInner.state only; caller holds mutation_gate"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/commit.rs:335-338",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "commit failure and panic recovery tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 8a725367c9f6f62fe356bf747098ad7ec29bc52ac57e25a7dec2caf942563d81",
+        "source review src/state/commit.rs:335-338",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/commit.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::commit::impl StateStore::install_candidate. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/commit.rs::state::commit::impl StateStore::persist_candidate_with_retry[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/commit.rs",
+      "line": 381,
+      "endLine": 402,
+      "symbol": "persist_candidate_with_retry",
+      "qualifiedName": "state::commit::impl StateStore::persist_candidate_with_retry",
+      "signature": "pub(super) async fn persist_candidate_with_retry( &self, candidate: &StateData, retention_now: u64, ) -> Result<(), AppError>",
+      "sourceDigest": "619d1b22bc6938b7df750715e6ee2dfc43fe17eeac0c57c584d5a308b2e7cdc7",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Persists a candidate journal, retrying once after pruning expired operations at the supplied retention timestamp.",
+      "callers": [
+        "commit finalizer",
+        "pending_finalization spawned finalizer"
+      ],
+      "inputs": [
+        "pub(super) async fn persist_candidate_with_retry( &self, candidate: &StateData, retention_now: u64, ) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "does not acquire state or mutation locks; caller-owned mutation guard serializes commit"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/commit.rs:381-402",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "journal persistence recovery tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 619d1b22bc6938b7df750715e6ee2dfc43fe17eeac0c57c584d5a308b2e7cdc7",
+        "source review src/state/commit.rs:381-402",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/commit.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::commit::impl StateStore::persist_candidate_with_retry. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/data.rs::state::data::impl StateData::persistence_journal[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/data.rs",
+      "line": 101,
+      "endLine": 138,
+      "symbol": "persistence_journal",
+      "qualifiedName": "state::data::impl StateData::persistence_journal",
+      "signature": "pub(super) fn persistence_journal(&self) -> PersistentJournal",
+      "sourceDigest": "cb9cf3ff23358cebf59da1f744c19c984843342202798d319d296ff8169dc636",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Projects live state into the durable journal shape, preserving pending preparation linkage while omitting retained inspection payloads.",
+      "callers": [
+        "StateStore::durable_candidate"
+      ],
+      "inputs": [
+        "pub(super) fn persistence_journal(&self) -> PersistentJournal"
+      ],
+      "output": "PersistentJournal",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/data.rs:101-138",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "pending preparation survives durable journal round trip in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest cb9cf3ff23358cebf59da1f744c19c984843342202798d319d296ff8169dc636",
+        "source review src/state/data.rs:101-138",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/data.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::data::impl StateData::persistence_journal. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/data.rs::state::data::estimate_inspection_allocation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/data.rs",
+      "line": 141,
+      "endLine": 208,
+      "symbol": "estimate_inspection_allocation",
+      "qualifiedName": "state::data::estimate_inspection_allocation",
+      "signature": "pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usize",
+      "sourceDigest": "789df01769cf0e408cc49dc13f85554c70c9bd3d4a76af737adb53ea27d9759a",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Saturating estimate of heap capacity retained by a video or playlist inspection, including nested video metadata.",
+      "callers": [
+        "InspectionRetentionBudget::retain",
+        "StateOutbox retained-byte accounting",
+        "recursive playlist video accounting"
+      ],
+      "inputs": [
+        "pub(crate) fn estimate_inspection_allocation(inspection: &UrlInspection) -> usize"
+      ],
+      "output": "usize",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "all additions and multiplications saturate",
+        "nested playlist video allocations are included recursively"
+      ],
+      "tests": [
+        "inspection retention budget tests in state/tests.rs",
+        "outbox retained-byte tests"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 789df01769cf0e408cc49dc13f85554c70c9bd3d4a76af737adb53ea27d9759a",
+        "source review src/state/data.rs:141-208",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/data.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::data::estimate_inspection_allocation. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/maintenance.rs::state::maintenance::impl StateStore::begin_maintenance_operation_with_id[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/maintenance.rs",
+      "line": 11,
+      "endLine": 84,
+      "symbol": "begin_maintenance_operation_with_id",
+      "qualifiedName": "state::maintenance::impl StateStore::begin_maintenance_operation_with_id",
+      "signature": "pub(crate) async fn begin_maintenance_operation_with_id( &self, kind: OperationKind, operation_id: String, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "52f0ff1f648de241e19e47360f1281f345cda16a1369ed4c61a84866744a0a3f",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates and atomically creates an update operation while acquiring persisted maintenance ownership.",
+      "callers": [
+        "services::maintenance::begin_maintenance_operation",
+        "state tests"
+      ],
+      "inputs": [
+        "pub(crate) async fn begin_maintenance_operation_with_id( &self, kind: OperationKind, operation_id: String, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>"
+      ],
+      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "owns mutation_gate across duplicate check, candidate mutation, and persistence; state locks are brief"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/maintenance.rs:11-84",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "maintenance exclusion, duplicate ID, and update-kind tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 52f0ff1f648de241e19e47360f1281f345cda16a1369ed4c61a84866744a0a3f",
+        "source review src/state/maintenance.rs:11-84",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/maintenance.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::maintenance::impl StateStore::begin_maintenance_operation_with_id. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/operation.rs::state::operation::impl StateStore::begin_operation_with_limit[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/operation.rs",
+      "line": 24,
+      "endLine": 64,
+      "symbol": "begin_operation_with_limit",
+      "qualifiedName": "state::operation::impl StateStore::begin_operation_with_limit",
+      "signature": "pub(super) async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sourceDigest": "f559a494b72891ff907efaddeb083bce0d2977c7838371782f6ba87eb52359c1",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Creates and durably publishes a bounded non-maintenance operation with an optional queue-item association.",
+      "callers": [
+        "StateStore::begin_operation",
+        "capacity-bound state tests"
+      ],
+      "inputs": [
+        "pub(super) async fn begin_operation_with_limit( &self, kind: OperationKind, queue_item_id: Option<String>, limit: usize, ) -> Result<(OperationSnapshot, Vec<StateDelta>), AppError>"
+      ],
+      "output": "Result<(OperationSnapshot, Vec<StateDelta>), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "owns mutation_gate across candidate mutation and persistence"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/operation.rs:24-64",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "operation capacity concurrency test in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest f559a494b72891ff907efaddeb083bce0d2977c7838371782f6ba87eb52359c1",
+        "source review src/state/operation.rs:24-64",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/operation.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::operation::impl StateStore::begin_operation_with_limit. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::enqueue[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 15,
+      "endLine": 31,
+      "symbol": "enqueue",
+      "qualifiedName": "state::pending::impl StateStore::enqueue",
+      "signature": "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
+      "sourceDigest": "e7fd0677166284250d2b047edb91b4f1d75c29e85ddbf71e2adb9a5a1e879640",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates a queue admission batch, creates attempt operations, durably commits them, then wakes download and preparation workers.",
+      "callers": [
+        "queue service admission",
+        "lifecycle and state tests"
+      ],
+      "inputs": [
+        "pub async fn enqueue( &self, ids: &[String], priority: QueuePriority, ) -> Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>"
+      ],
+      "output": "Result<(Vec<QueuedDownload>, Vec<StateDelta>), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "owns mutation_gate across candidate mutation and persistence"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:15-31",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "enqueue validation, priority, persistence, and preparation tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest e7fd0677166284250d2b047edb91b4f1d75c29e85ddbf71e2adb9a5a1e879640",
+        "source review src/state/pending.rs:15-31",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::enqueue. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::pending_operation_ids[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 33,
+      "endLine": 44,
+      "symbol": "pending_operation_ids",
+      "qualifiedName": "state::pending::impl StateStore::pending_operation_ids",
+      "signature": "pub fn pending_operation_ids(&self) -> Vec<String>",
+      "sourceDigest": "16b35969d5c6911fb32f367a83cf6bdf97fa2cf0c3c84e56ac8d57b4a66e763f",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Returns a snapshot of queued download and preparation operation IDs in their queue order.",
+      "callers": [
+        "lifecycle cleanup",
+        "pending work tests"
+      ],
+      "inputs": [
+        "pub fn pending_operation_ids(&self) -> Vec<String>"
+      ],
+      "output": "Vec<String>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "briefly locks StateStoreInner.state and clones IDs"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:33-44",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "lifecycle cleanup pending-ID coverage"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 16b35969d5c6911fb32f367a83cf6bdf97fa2cf0c3c84e56ac8d57b4a66e763f",
+        "source review src/state/pending.rs:33-44",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::pending_operation_ids. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::wait_pending_available[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 46,
+      "endLine": 59,
+      "symbol": "wait_pending_available",
+      "qualifiedName": "state::pending::impl StateStore::wait_pending_available",
+      "signature": "pub async fn wait_pending_available(&self)",
+      "sourceDigest": "508b7effe3417553f5a9af04979f6fd9390518ddc288c5107ff7474d9737b882",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Waits without a lost wakeup until a valid queued download references an existing queue item.",
+      "callers": [
+        "download worker loop"
+      ],
+      "inputs": [
+        "pub async fn wait_pending_available(&self)"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "brief state lock per predicate check; Notify future enabled before check avoids lost wakeups"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "Notify is registered and enabled before checking the predicate, preventing a check-to-wait lost wakeup",
+        "returns only when the corresponding valid-work predicate is true"
+      ],
+      "tests": [
+        "pending notification and stale-entry tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 508b7effe3417553f5a9af04979f6fd9390518ddc288c5107ff7474d9737b882",
+        "source review src/state/pending.rs:46-59",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::wait_pending_available. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::take_next_pending[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 61,
+      "endLine": 65,
+      "symbol": "take_next_pending",
+      "qualifiedName": "state::pending::impl StateStore::take_next_pending",
+      "signature": "pub async fn take_next_pending(&self) -> Option<QueuedDownload>",
+      "sourceDigest": "85ad87b612a4c2ab0e3b30d85a5395313e50a0b73b5e0860a29e3ec16962c0df",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Serializes pending-queue access and removes the next valid download work item.",
+      "callers": [
+        "download worker loop"
+      ],
+      "inputs": [
+        "pub async fn take_next_pending(&self) -> Option<QueuedDownload>"
+      ],
+      "output": "Option<QueuedDownload>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "holds mutation_gate then state mutex; no await while state mutex is held"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:61-65",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "pending queue ordering and stale-entry tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 85ad87b612a4c2ab0e3b30d85a5395313e50a0b73b5e0860a29e3ec16962c0df",
+        "source review src/state/pending.rs:61-65",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::take_next_pending. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::wait_preparation_available[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 67,
+      "endLine": 77,
+      "symbol": "wait_preparation_available",
+      "qualifiedName": "state::pending::impl StateStore::wait_preparation_available",
+      "signature": "pub async fn wait_preparation_available(&self)",
+      "sourceDigest": "1e7c4cc2e7fb77a11fb175d6db62c7a19430e40ae6eeb16cd48d40e3b44bf524",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Waits without a lost wakeup until a valid queued preparation inspection references an existing queue item.",
+      "callers": [
+        "preparation worker loop"
+      ],
+      "inputs": [
+        "pub async fn wait_preparation_available(&self)"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "brief state lock per predicate check; Notify future enabled before check avoids lost wakeups"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "Notify is registered and enabled before checking the predicate, preventing a check-to-wait lost wakeup",
+        "returns only when the corresponding valid-work predicate is true"
+      ],
+      "tests": [
+        "preparation notification tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 1e7c4cc2e7fb77a11fb175d6db62c7a19430e40ae6eeb16cd48d40e3b44bf524",
+        "source review src/state/pending.rs:67-77",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::wait_preparation_available. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::take_next_preparation[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 79,
+      "endLine": 83,
+      "symbol": "take_next_preparation",
+      "qualifiedName": "state::pending::impl StateStore::take_next_preparation",
+      "signature": "pub async fn take_next_preparation(&self) -> Option<QueuedDownload>",
+      "sourceDigest": "eced69b18aac8fd9220b482debb70872331fe4faec13b85268fc63ad30f9bde2",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Serializes preparation-queue access and removes the next valid preparation work item.",
+      "callers": [
+        "preparation worker loop"
+      ],
+      "inputs": [
+        "pub async fn take_next_preparation(&self) -> Option<QueuedDownload>"
+      ],
+      "output": "Option<QueuedDownload>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "holds mutation_gate then state mutex; no await while state mutex is held"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:79-83",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "preparation queue ordering tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest eced69b18aac8fd9220b482debb70872331fe4faec13b85268fc63ad30f9bde2",
+        "source review src/state/pending.rs:79-83",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::take_next_preparation. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::impl StateStore::cancel_pending[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 85,
+      "endLine": 92,
+      "symbol": "cancel_pending",
+      "qualifiedName": "state::pending::impl StateStore::cancel_pending",
+      "signature": "pub async fn cancel_pending(&self, operation_id: &str) -> bool",
+      "sourceDigest": "58052212677088fa27df62687cf2197ef3e8c1632d6723bc818e54fa1ff9c98c",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Removes an operation ID from both in-memory pending work queues.",
+      "callers": [
+        "operation cancellation service"
+      ],
+      "inputs": [
+        "pub async fn cancel_pending(&self, operation_id: &str) -> bool"
+      ],
+      "output": "bool",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "holds mutation_gate then state mutex; no await while state mutex is held"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:85-92",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "pending cancellation tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 58052212677088fa27df62687cf2197ef3e8c1632d6723bc818e54fa1ff9c98c",
+        "source review src/state/pending.rs:85-92",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::impl StateStore::cancel_pending. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::validate_priority[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 95,
+      "endLine": 103,
+      "symbol": "validate_priority",
+      "qualifiedName": "state::pending::validate_priority",
+      "signature": "fn validate_priority(priority: QueuePriority, count: usize) -> Result<(), AppError>",
+      "sourceDigest": "e938bbdc3f71641a25b33c244f6f60cb89978e397f9ddea31ce83e63c43f712b",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Rejects front-priority admission unless the request contains exactly one item.",
+      "callers": [
+        "StateStore::enqueue"
+      ],
+      "inputs": [
+        "fn validate_priority(priority: QueuePriority, count: usize) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:95-103",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "front-priority batch rejection test in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest e938bbdc3f71641a25b33c244f6f60cb89978e397f9ddea31ce83e63c43f712b",
+        "source review src/state/pending.rs:95-103",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::validate_priority. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::validate_enqueue[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 105,
+      "endLine": 141,
+      "symbol": "validate_enqueue",
+      "qualifiedName": "state::pending::validate_enqueue",
+      "signature": "fn validate_enqueue(state: &StateData, ids: &[String]) -> Result<(), AppError>",
+      "sourceDigest": "b25a354911a41550a77ccd10861e71fc61dbdb9086b42c47a67237e9fc58e8cd",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Rejects admission during maintenance, above active-operation capacity, for duplicate/missing items, or for items with active attempts.",
+      "callers": [
+        "StateStore::enqueue"
+      ],
+      "inputs": [
+        "fn validate_enqueue(state: &StateData, ids: &[String]) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:105-141",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "duplicate, missing, active, maintenance, and capacity tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest b25a354911a41550a77ccd10861e71fc61dbdb9086b42c47a67237e9fc58e8cd",
+        "source review src/state/pending.rs:105-141",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::validate_enqueue. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::append_attempts[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 143,
+      "endLine": 180,
+      "symbol": "append_attempts",
+      "qualifiedName": "state::pending::append_attempts",
+      "signature": "fn append_attempts( state: &mut StateData, deltas: &mut Vec<StateDelta>, ids: &[String], priority: QueuePriority, now: u64, ) -> Result<Vec<QueuedDownload>, AppError>",
+      "sourceDigest": "293315a4b1112cde4d077875213baeb8a26a1386817cdafc45b6e31d6b38f779",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Mutates candidate queue and operation records for each admitted item, emits paired deltas, and queues work by priority.",
+      "callers": [
+        "StateStore::enqueue"
+      ],
+      "inputs": [
+        "fn append_attempts( state: &mut StateData, deltas: &mut Vec<StateDelta>, ids: &[String], priority: QueuePriority, now: u64, ) -> Result<Vec<QueuedDownload>, AppError>"
+      ],
+      "output": "Result<Vec<QueuedDownload>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:143-180",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "enqueue delta and operation linkage tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 293315a4b1112cde4d077875213baeb8a26a1386817cdafc45b6e31d6b38f779",
+        "source review src/state/pending.rs:143-180",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::append_attempts. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::new_operation[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 182,
+      "endLine": 211,
+      "symbol": "new_operation",
+      "qualifiedName": "state::pending::new_operation",
+      "signature": "fn new_operation( id: String, queue_item_id: String, preparation: bool, now: u64, ) -> OperationSnapshot",
+      "sourceDigest": "3243fe4f7c6ab7fe99f4bf7dca225f2578cbe81004fe70e9d5b6dbf0c12a71b5",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Constructs the initial queued inspection or download operation record for one queue attempt.",
+      "callers": [
+        "append_attempts"
+      ],
+      "inputs": [
+        "fn new_operation( id: String, queue_item_id: String, preparation: bool, now: u64, ) -> OperationSnapshot"
+      ],
+      "output": "OperationSnapshot",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:182-211",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "enqueue operation-kind and initial-state assertions in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 3243fe4f7c6ab7fe99f4bf7dca225f2578cbe81004fe70e9d5b6dbf0c12a71b5",
+        "source review src/state/pending.rs:182-211",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::new_operation. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::push_pending[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 213,
+      "endLine": 224,
+      "symbol": "push_pending",
+      "qualifiedName": "state::pending::push_pending",
+      "signature": "fn push_pending(state: &mut StateData, id: String, preparation: bool, priority: QueuePriority)",
+      "sourceDigest": "1a4aed8bc0e57c88edbfa7bc444c219301124d594c8592411d2bb2cf5e56831f",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Places an operation ID at the front or back of the correct preparation/download deque.",
+      "callers": [
+        "append_attempts"
+      ],
+      "inputs": [
+        "fn push_pending(state: &mut StateData, id: String, preparation: bool, priority: QueuePriority)"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:213-224",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "front/back priority ordering tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 1a4aed8bc0e57c88edbfa7bc444c219301124d594c8592411d2bb2cf5e56831f",
+        "source review src/state/pending.rs:213-224",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::push_pending. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::preparation_available[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 226,
+      "endLine": 236,
+      "symbol": "preparation_available",
+      "qualifiedName": "state::pending::preparation_available",
+      "signature": "fn preparation_available(state: &StateData) -> bool",
+      "sourceDigest": "c53c2d5625c4c931ed6b7f054a5235365a15701db347df55e653ce59fb2b5d4b",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Checks whether any preparation deque entry still names a queued inspection with an existing queue item.",
+      "callers": [
+        "StateStore::wait_preparation_available"
+      ],
+      "inputs": [
+        "fn preparation_available(state: &StateData) -> bool"
+      ],
+      "output": "bool",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:226-236",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "preparation availability tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest c53c2d5625c4c931ed6b7f054a5235365a15701db347df55e653ce59fb2b5d4b",
+        "source review src/state/pending.rs:226-236",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::preparation_available. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::take_next[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 238,
+      "endLine": 264,
+      "symbol": "take_next",
+      "qualifiedName": "state::pending::take_next",
+      "signature": "fn take_next(state: &mut StateData, preparation: bool) -> Option<QueuedDownload>",
+      "sourceDigest": "cc1f755925e2ef32c0b815d0322a5d3dc631e801e633f0d3672ecab587f7eba3",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Drains stale pending references until it can return a valid preparation or download work item.",
+      "callers": [
+        "StateStore::take_next_pending",
+        "StateStore::take_next_preparation"
+      ],
+      "inputs": [
+        "fn take_next(state: &mut StateData, preparation: bool) -> Option<QueuedDownload>"
+      ],
+      "output": "Option<QueuedDownload>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "stale, missing, non-queued, and wrong-kind entries are discarded",
+        "returned work always has both an operation and queue-item snapshot"
+      ],
+      "tests": [
+        "stale and mismatched pending-entry tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest cc1f755925e2ef32c0b815d0322a5d3dc631e801e633f0d3672ecab587f7eba3",
+        "source review src/state/pending.rs:238-264",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::take_next. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending.rs::state::pending::remove_pending[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending.rs",
+      "line": 266,
+      "endLine": 270,
+      "symbol": "remove_pending",
+      "qualifiedName": "state::pending::remove_pending",
+      "signature": "fn remove_pending(pending: &mut VecDeque<String>, operation_id: &str) -> bool",
+      "sourceDigest": "cf4d04f5a597238e96a43dc44ad670f22303860fb66f0529a51a264a6158c21e",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Removes every occurrence of one operation ID from a pending deque and reports whether anything changed.",
+      "callers": [
+        "StateStore::cancel_pending"
+      ],
+      "inputs": [
+        "fn remove_pending(pending: &mut VecDeque<String>, operation_id: &str) -> bool"
+      ],
+      "output": "bool",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending.rs:266-270",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "pending cancellation removal tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest cf4d04f5a597238e96a43dc44ad670f22303860fb66f0529a51a264a6158c21e",
+        "source review src/state/pending.rs:266-270",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending::remove_pending. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::impl StateStore::finalize_pending_batch[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 13,
+      "endLine": 77,
+      "symbol": "finalize_pending_batch",
+      "qualifiedName": "state::pending_finalization::impl StateStore::finalize_pending_batch",
+      "signature": "pub async fn finalize_pending_batch( &self, ids: &[String], operation_state: OperationState, error: Option<AppError>, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "db913491f6e8e34f6bfe5c521e4aa2a907acc2d17302f24f195444c70afcc07a",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates and applies cancelled/failed outcomes to a pending batch, then runs durable publication with panic and persistence degradation recovery.",
+      "callers": [
+        "lifecycle_cleanup",
+        "preparation service cancellation",
+        "playlist/state tests"
+      ],
+      "inputs": [
+        "pub async fn finalize_pending_batch( &self, ids: &[String], operation_state: OperationState, error: Option<AppError>, ) -> Result<Vec<StateDelta>, AppError>"
+      ],
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "acquires owned mutation_gate; transfers it into spawned finalizer; candidate creation briefly locks state"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "only Cancelled or Failed outcomes enter mutation",
+        "mutation serialization remains owned until persisted or degraded publication completes"
+      ],
+      "tests": [
+        "batch terminalization, save failure, panic, and concurrency tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest db913491f6e8e34f6bfe5c521e4aa2a907acc2d17302f24f195444c70afcc07a",
+        "source review src/state/pending_finalization.rs:13-77",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::impl StateStore::finalize_pending_batch. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::impl StateStore::finalize_pending_batch::owned_async_closure#1@35[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 35,
+      "endLine": 68,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::pending_finalization::impl StateStore::finalize_pending_batch::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "56a1b25ecc0751f614d852d2cc34738b4833e630bc7ff4fd5502c2a42f033275",
+      "cfg": [],
+      "ownerCall": "spawn",
+      "purpose": "Owns the mutation guard and candidate inside the spawned pending-batch finalizer, converting save failure or panic into degraded state publication.",
+      "callers": [
+        "StateStore::finalize_pending_batch via tokio::spawn"
+      ],
+      "inputs": [
+        "async move"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "moves store clone, candidate, deltas, transition IDs, error, and owned mutation guard into spawned task"
+      ],
+      "locks": [
+        "owns mutation_gate guard across persistence and publication to serialize the complete mutation"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:35-68",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch finalizer panic and save-failure tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 56a1b25ecc0751f614d852d2cc34738b4833e630bc7ff4fd5502c2a42f033275",
+        "source review src/state/pending_finalization.rs:35-68",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::impl StateStore::finalize_pending_batch::owned_async_closure#1. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::impl StateStore::finalize_pending_batch::async_block#1@37[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 37,
+      "endLine": 53,
+      "symbol": "async_block#1",
+      "qualifiedName": "state::pending_finalization::impl StateStore::finalize_pending_batch::async_block#1",
+      "signature": "async",
+      "sourceDigest": "6a88fd72a8d1fa7076673ed3395c0876332e4fd89e34fc4842713870ac902f55",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Defines the unwind-caught save-and-publish body inside the pending-batch finalizer task.",
+      "callers": [
+        "owned_async_closure#1 via AssertUnwindSafe and catch_unwind"
+      ],
+      "inputs": [
+        "async"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrows/moves values captured by the enclosing owned async closure; it is not independently spawned"
+      ],
+      "locks": [
+        "runs while enclosing spawned closure owns mutation_gate; acquires no state mutex until publication/recovery"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:37-53",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch finalizer persisted and degraded branches in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 6a88fd72a8d1fa7076673ed3395c0876332e4fd89e34fc4842713870ac902f55",
+        "source review src/state/pending_finalization.rs:37-53",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::impl StateStore::finalize_pending_batch::async_block#1. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::impl StateStore::install_degraded_pending_batch[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 79,
+      "endLine": 124,
+      "symbol": "install_degraded_pending_batch",
+      "qualifiedName": "state::pending_finalization::impl StateStore::install_degraded_pending_batch",
+      "signature": "fn install_degraded_pending_batch( &self, ids: &[String], intended_state: OperationState, intended_error: Option<AppError>, candidate_sequence: u64, cause: &AppError, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "b62d2109711348fd010509180438eb7cdd2525b3339c705351889631a5a4b039",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Rebuilds a fallback state after finalizer failure, records intended outcomes, marks persistence degraded and dirty, and publishes recovery deltas.",
+      "callers": [
+        "pending batch save-error branch",
+        "pending batch panic-recovery branch"
+      ],
+      "inputs": [
+        "fn install_degraded_pending_batch( &self, ids: &[String], intended_state: OperationState, intended_error: Option<AppError>, candidate_sequence: u64, cause: &AppError, ) -> Result<Vec<StateDelta>, AppError>"
+      ],
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "locks state to clone fallback; called while finalizer owns mutation_gate"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:79-124",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch save-failure and panic recovery tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest b62d2109711348fd010509180438eb7cdd2525b3339c705351889631a5a4b039",
+        "source review src/state/pending_finalization.rs:79-124",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::impl StateStore::install_degraded_pending_batch. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::validate_terminal_state[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 127,
+      "endLine": 135,
+      "symbol": "validate_terminal_state",
+      "qualifiedName": "state::pending_finalization::validate_terminal_state",
+      "signature": "fn validate_terminal_state(state: OperationState) -> Result<(), AppError>",
+      "sourceDigest": "0e03917de47493f5bd3203150afba12ab59f57815773b94a378da6b7c7337dd7",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Restricts pending batch finalization to cancelled or failed outcomes.",
+      "callers": [
+        "StateStore::finalize_pending_batch"
+      ],
+      "inputs": [
+        "fn validate_terminal_state(state: OperationState) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:127-135",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch invalid-outcome test in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 0e03917de47493f5bd3203150afba12ab59f57815773b94a378da6b7c7337dd7",
+        "source review src/state/pending_finalization.rs:127-135",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::validate_terminal_state. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::collect_transition_ids[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 137,
+      "endLine": 165,
+      "symbol": "collect_transition_ids",
+      "qualifiedName": "state::pending_finalization::collect_transition_ids",
+      "signature": "fn collect_transition_ids( state: &super::data::StateData, ids: &[String], ) -> Result<Vec<String>, AppError>",
+      "sourceDigest": "65a5a55ecbadbadb201cad5f35e8aee482da36454517ef46386dfe2ca4e5abfd",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Deduplicates requested IDs, skips already terminal operations, and rejects missing or running operations before batch mutation.",
+      "callers": [
+        "StateStore::finalize_pending_batch"
+      ],
+      "inputs": [
+        "fn collect_transition_ids( state: &super::data::StateData, ids: &[String], ) -> Result<Vec<String>, AppError>"
+      ],
+      "output": "Result<Vec<String>, AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:137-165",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch duplicate, missing, running, and terminal-ID tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 65a5a55ecbadbadb201cad5f35e8aee482da36454517ef46386dfe2ca4e5abfd",
+        "source review src/state/pending_finalization.rs:137-165",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::collect_transition_ids. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::apply_batch_outcome[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 167,
+      "endLine": 187,
+      "symbol": "apply_batch_outcome",
+      "qualifiedName": "state::pending_finalization::apply_batch_outcome",
+      "signature": "fn apply_batch_outcome( state: &mut super::data::StateData, deltas: &mut Vec<StateDelta>, ids: &[String], outcome: OperationState, error: Option<AppError>, ) -> Result<(), AppError>",
+      "sourceDigest": "31d3b4f8d78ea4f8939d90c7921aed39bbec811d8dfe68de9e96d753efb0c932",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Applies the same terminal transition and error to each selected operation and accumulates operation/queue deltas.",
+      "callers": [
+        "StateStore::finalize_pending_batch",
+        "StateStore::install_degraded_pending_batch"
+      ],
+      "inputs": [
+        "fn apply_batch_outcome( state: &mut super::data::StateData, deltas: &mut Vec<StateDelta>, ids: &[String], outcome: OperationState, error: Option<AppError>, ) -> Result<(), AppError>"
+      ],
+      "output": "Result<(), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:167-187",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch cancelled and failed transition tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 31d3b4f8d78ea4f8939d90c7921aed39bbec811d8dfe68de9e96d753efb0c932",
+        "source review src/state/pending_finalization.rs:167-187",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::apply_batch_outcome. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/pending_finalization.rs::state::pending_finalization::publish_candidate[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/pending_finalization.rs",
+      "line": 189,
+      "endLine": 199,
+      "symbol": "publish_candidate",
+      "qualifiedName": "state::pending_finalization::publish_candidate",
+      "signature": "fn publish_candidate( store: &StateStore, candidate: super::data::StateData, deltas: Vec<StateDelta>, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "a3b0dc87325b5ae025621d2cadf67964eb8f8f947f74fa8a6b0b0a212be600c0",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Installs a finalized candidate, publishes its deltas through the outbox, and wakes operation observers.",
+      "callers": [
+        "pending batch persisted branch",
+        "StateStore::install_degraded_pending_batch"
+      ],
+      "inputs": [
+        "fn publish_candidate( store: &StateStore, candidate: super::data::StateData, deltas: Vec<StateDelta>, ) -> Result<Vec<StateDelta>, AppError>"
+      ],
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "install_candidate briefly locks state; caller finalizer owns mutation_gate"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/pending_finalization.rs:189-199",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "batch durable publication and observer tests in state/tests/playlist_tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest a3b0dc87325b5ae025621d2cadf67964eb8f8f947f74fa8a6b0b0a212be600c0",
+        "source review src/state/pending_finalization.rs:189-199",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/pending_finalization.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::pending_finalization::publish_candidate. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/preparation.rs::state::preparation::validated_preparation_video[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/preparation.rs",
+      "line": 7,
+      "endLine": 66,
+      "symbol": "validated_preparation_video",
+      "qualifiedName": "state::preparation::validated_preparation_video",
+      "signature": "pub(super) fn validated_preparation_video( state: &StateData, operation_id: &str, inspection: Option<&UrlInspection>, ) -> Result<Option<VideoInfo>, AppError>",
+      "sourceDigest": "b8d0ecb3107b72c0bdc67b89807378f72332d032a6880a04f6969f99f416d8ee",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates that completed inspection metadata belongs to the pending preparation operation and remains compatible with the queue item.",
+      "callers": [
+        "reducers::apply_operation_transition"
+      ],
+      "inputs": [
+        "pub(super) fn validated_preparation_video( state: &StateData, operation_id: &str, inspection: Option<&UrlInspection>, ) -> Result<Option<VideoInfo>, AppError>"
+      ],
+      "output": "Result<Option<VideoInfo>, AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/preparation.rs:7-66",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "preparation identity, kind, state, and audio compatibility tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest b8d0ecb3107b72c0bdc67b89807378f72332d032a6880a04f6969f99f416d8ee",
+        "source review src/state/preparation.rs:7-66",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/preparation.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::preparation::validated_preparation_video. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/preparation.rs::state::preparation::apply_prepared_video[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/preparation.rs",
+      "line": 68,
+      "endLine": 78,
+      "symbol": "apply_prepared_video",
+      "qualifiedName": "state::preparation::apply_prepared_video",
+      "signature": "pub(super) fn apply_prepared_video(item: &mut QueueItemRecord, video: VideoInfo)",
+      "sourceDigest": "b859d8e6d3740905ea065ffdd163c97f9620fe95337896021614433e831bade5",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Copies authoritative prepared metadata into a queue item and clears all preparation/attempt linkage.",
+      "callers": [
+        "reducers::apply_operation_transition"
+      ],
+      "inputs": [
+        "pub(super) fn apply_prepared_video(item: &mut QueueItemRecord, video: VideoInfo)"
+      ],
+      "output": "Unit result or effect described by signature.",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/preparation.rs:68-78",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "prepared metadata application tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest b859d8e6d3740905ea065ffdd163c97f9620fe95337896021614433e831bade5",
+        "source review src/state/preparation.rs:68-78",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/preparation.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::preparation::apply_prepared_video. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::add_queue_item[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 15,
+      "endLine": 81,
+      "symbol": "add_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::add_queue_item",
+      "signature": "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
+      "sourceDigest": "bb395853b5161e324cd72e0cc53c0fcc90c82f95e42024f3b93c0d7f7ffe3c50",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Consumes a completed video inspection into a new inert queue item, removes the inspection operation, and durably publishes both deltas.",
+      "callers": [
+        "services::queue::add_queue_item",
+        "state and lifecycle tests"
+      ],
+      "inputs": [
+        "pub async fn add_queue_item( &self, input: AddQueueItemInput, ) -> Result<(QueueItemRecord, Vec<StateDelta>), AppError>"
+      ],
+      "output": "Result<(QueueItemRecord, Vec<StateDelta>), AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "owns mutation_gate across candidate persistence; durable_candidate briefly locks state"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/queue.rs:15-81",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "inspection consumption, validation, rollback, and limit tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest bb395853b5161e324cd72e0cc53c0fcc90c82f95e42024f3b93c0d7f7ffe3c50",
+        "source review src/state/queue.rs:15-81",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/queue.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::queue::impl StateStore::add_queue_item. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::impl StateStore::update_queue_item[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 88,
+      "endLine": 140,
+      "symbol": "update_queue_item",
+      "qualifiedName": "state::queue::impl StateStore::update_queue_item",
+      "signature": "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "f724b87f0a1bb88ea44e01f83013bd7c77f90b64c800933481fbbc710f7ce5c6",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates and durably applies editable queue fields while excluding active or preparation-pending items.",
+      "callers": [
+        "services::queue::update_queue_item",
+        "performance harness",
+        "state tests"
+      ],
+      "inputs": [
+        "pub async fn update_queue_item( &self, id: &str, input: UpdateQueueItemInput, ) -> Result<Vec<StateDelta>, AppError>"
+      ],
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "owns mutation_gate across candidate persistence; durable_candidate briefly locks state"
+      ],
+      "cancellation": "Cancellation before durable commit drops the future and owned guard; spawned finalizer paths continue independently once spawned, as described in ownership.",
+      "invariants": [
+        "source-matched implementation at src/state/queue.rs:88-140",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "active/preparing exclusion, validation, persistence, and recovery tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest f724b87f0a1bb88ea44e01f83013bd7c77f90b64c800933481fbbc710f7ce5c6",
+        "source review src/state/queue.rs:88-140",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/queue.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::queue::impl StateStore::update_queue_item. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/reducers.rs::state::reducers::apply_operation_transition[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/reducers.rs",
+      "line": 14,
+      "endLine": 94,
+      "symbol": "apply_operation_transition",
+      "qualifiedName": "state::reducers::apply_operation_transition",
+      "signature": "pub(super) fn apply_operation_transition( state: &mut StateData, id: &str, operation_state: OperationState, error: Option<AppError>, inspection_result: Option<Arc<UrlInspection>>, published_output: Option<PublishedOutput>, now: u64, ) -> Result<Vec<StateDelta>, AppError>",
+      "sourceDigest": "64302e487b18905e7fc024f579379c8e2c3df19cba105f1ce4f5f14c1d86ed43",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates and applies an operation state transition, terminal metadata, optional inspection/output, and corresponding queue state delta.",
+      "callers": [
+        "single-operation commit finalization",
+        "pending batch outcome application"
+      ],
+      "inputs": [
+        "pub(super) fn apply_operation_transition( state: &mut StateData, id: &str, operation_state: OperationState, error: Option<AppError>, inspection_result: Option<Arc<UrlInspection>>, published_output: Option<PublishedOutput>, now: u64, ) -> Result<Vec<StateDelta>, AppError>"
+      ],
+      "output": "Result<Vec<StateDelta>, AppError>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/reducers.rs:14-94",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "terminal/cancelling transition, inspection, preparation, and output tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest 64302e487b18905e7fc024f579379c8e2c3df19cba105f1ce4f5f14c1d86ed43",
+        "source review src/state/reducers.rs:14-94",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/reducers.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::reducers::apply_operation_transition. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/reducers.rs::state::reducers::normalize_inspection[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/reducers.rs",
+      "line": 137,
+      "endLine": 232,
+      "symbol": "normalize_inspection",
+      "qualifiedName": "state::reducers::normalize_inspection",
+      "signature": "pub(super) fn normalize_inspection( mut inspection: UrlInspection, ) -> Result<UrlInspection, AppError>",
+      "sourceDigest": "c073fd0ea7174e51ae19f81a0b3fcd8e42ebefdc03f99542a871a4a197b92048",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Validates actionable inspection identity fields and selections, bounds display fields, compacts allocations, and recursively normalizes playlist videos.",
+      "callers": [
+        "StateStore::complete_inspection",
+        "recursive playlist-entry normalization"
+      ],
+      "inputs": [
+        "pub(super) fn normalize_inspection( mut inspection: UrlInspection, ) -> Result<UrlInspection, AppError>"
+      ],
+      "output": "Result<UrlInspection, AppError>",
+      "sideEffects": [
+        "no externally visible mutation; may allocate the returned projection or estimate"
+      ],
+      "errors": [
+        "returns AppError for validation, poisoned state, missing records, invalid transitions, or persistence failures applicable to this path"
+      ],
+      "ownership": [
+        "borrows source state/input and returns owned snapshots or scalar results as declared"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "actionable identity and URL fields remain canonical and at most 4 KiB",
+        "display fields are truncated on UTF-8 boundaries and vectors/strings are compacted"
+      ],
+      "tests": [
+        "inspection size, identity, selection, UTF-8, and playlist consistency tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest c073fd0ea7174e51ae19f81a0b3fcd8e42ebefdc03f99542a871a4a197b92048",
+        "source review src/state/reducers.rs:137-232",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/reducers.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::reducers::normalize_inspection. No concrete defect found in this callable."
+    },
+    {
+      "id": "src/state/reducers.rs::state::reducers::prune_live_operations[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/reducers.rs",
+      "line": 348,
+      "endLine": 423,
+      "symbol": "prune_live_operations",
+      "qualifiedName": "state::reducers::prune_live_operations",
+      "signature": "pub(super) fn prune_live_operations(state: &mut StateData, now: u64) -> Vec<StateDelta>",
+      "sourceDigest": "f008d619c08f08b343e4599ce09df6fd8d5f5e018fd76e416921ba9b060c3ac0",
+      "cfg": [],
+      "ownerCall": null,
+      "purpose": "Applies retention policy while preserving queue preparation and live playlist admission references, removes expired operations, and clears dangling queue links.",
+      "callers": [
+        "single-operation finalization",
+        "durable candidate retry preparation"
+      ],
+      "inputs": [
+        "pub(super) fn prune_live_operations(state: &mut StateData, now: u64) -> Vec<StateDelta>"
+      ],
+      "output": "Vec<StateDelta>",
+      "sideEffects": [
+        "mutates only the candidate or guarded live state described by the signature",
+        "may allocate records/deltas and publish or persist where stated in purpose"
+      ],
+      "errors": [
+        "no explicit error result; lock-failure wrappers return the documented fallback where applicable"
+      ],
+      "ownership": [
+        "borrowed IDs/inputs are cloned only when retained; candidate owns all committed records"
+      ],
+      "locks": [
+        "none in helper; synchronization is provided by the calling StateStore method"
+      ],
+      "cancellation": "Synchronous callable with no cancellation point.",
+      "invariants": [
+        "source-matched implementation at src/state/reducers.rs:348-423",
+        "state sequence changes only through delta constructors on mutation paths"
+      ],
+      "tests": [
+        "retention, preparation linkage, playlist receipt, and dangling-reference tests in state/tests.rs"
+      ],
+      "findingStatus": "none",
+      "evidence": [
+        "immutable pre-fix scan digest f008d619c08f08b343e4599ce09df6fd8d5f5e018fd76e416921ba9b060c3ac0",
+        "source review src/state/reducers.rs:348-423",
+        "root-supplied receipt: 379 tests passed; strict Clippy passed (not rerun by reviewer)"
+      ],
+      "disposition": "keep",
+      "destination": "src/state/reducers.rs",
+      "reviewer": "state_core_review",
+      "reviewedAt": "2026-09-13T00:00:00Z",
+      "status": "reviewed",
+      "notes": "Reviewed source, direct callers, lock lifetime, cancellation boundary, error mapping, and named tests for state::reducers::prune_live_operations. No concrete defect found in this callable."
+    }
+  ]
+}

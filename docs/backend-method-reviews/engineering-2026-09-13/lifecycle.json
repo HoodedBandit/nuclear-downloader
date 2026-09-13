@@ -1,0 +1,1607 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::fixture[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/backend_lifecycle_tests.rs",
+      "line": 305,
+      "endLine": 343,
+      "symbol": "fixture",
+      "qualifiedName": "backend_lifecycle_tests::fixture",
+      "signature": "pub(crate) async fn fixture(store: &StateStore, root: &std::path::Path) -> QueueItemRecord",
+      "sourceDigest": "8c4818999f963e927a2610465134e92d2f326bdd8a57ba9db3fe248da4b1c5f7",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory and dropping_an_admission_response_does_not_abandon_committed_work_registration call fixture."
+      ],
+      "inputs": [
+        "Test StateStore and temporary root."
+      ],
+      "sideEffects": [
+        "Creates/completes inspection and commits a queue item."
+      ],
+      "errors": [
+        "Test unwraps panic on unexpected application error, timeout, or assertion failure."
+      ],
+      "ownership": [
+        "Borrows the test StateStore and root path; owns the completed inspection result and returned QueueItemRecord; no spawned task or channel."
+      ],
+      "locks": [
+        "Exercises coordinator transition/state locks and StateStore mutation ordering without introducing a separate test lock."
+      ],
+      "invariants": [
+        "Fixture is inert and ready."
+      ],
+      "tests": [
+        "Test-support helper directly exercised by the two named backend lifecycle tests."
+      ],
+      "evidence": [
+        "Source span src/backend_lifecycle_tests.rs:305-343 was read with both direct callers at lines 346 and 404.",
+        "The helper only begins/completes inspection and adds one queue item; it does not spawn or cancel work.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Create and durably admit a ready queue item for lifecycle tests.",
+      "output": "A ready QueueItemRecord fixture.",
+      "cancellation": "The helper awaits three short StateStore mutations and has no explicit cancellation handling; dropping it may stop before returning, with StateStore durability governing completed awaits.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/backend_lifecycle_tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1@377[cfg=test]",
+      "kind": "async_block",
+      "classification": "test",
+      "file": "src/backend_lifecycle_tests.rs",
+      "line": 377,
+      "endLine": 380,
+      "symbol": "async_block#1",
+      "qualifiedName": "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1",
+      "signature": "async",
+      "sourceDigest": "705aa37b698f6c701476791925f2a433895bf1f137063af2a051824d2cc5899a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Passed once to run_registered_download inside cancellation_after_dequeue_before_lookup_never_calls_the_process_factory."
+      ],
+      "inputs": [
+        "Captured AtomicUsize start counter; the closure argument is intentionally unused."
+      ],
+      "sideEffects": [
+        "Would increment the start counter and return a synthetic completed DownloadOutcome if polled."
+      ],
+      "errors": [
+        "Infallible test future; enclosing assertions fail if it is invoked."
+      ],
+      "ownership": [
+        "Borrows the enclosing AtomicUsize counter for the duration of run_registered_download; owns no task, channel, store, or manager."
+      ],
+      "locks": [
+        "Uses one SeqCst atomic increment if invoked; no mutex or lifecycle lock."
+      ],
+      "invariants": [
+        "Correct cancellation behavior means this future is never polled and the counter remains zero."
+      ],
+      "tests": [
+        "Directly belongs to cancellation_after_dequeue_before_lookup_never_calls_the_process_factory, which asserts starts == 0."
+      ],
+      "evidence": [
+        "Source span src/backend_lifecycle_tests.rs:377-380 is the factory closure passed to run_registered_download.",
+        "The enclosing test cancels the registered job before this closure and asserts its AtomicUsize remains zero.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Provide the process-factory future that would increment the start counter if cancellation failed to win.",
+      "output": "Test-only task result or unit after synchronization.",
+      "cancellation": "Contains no await or cancellation check; the enclosing run_registered_download must avoid invoking it after observing the cancelled job.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/backend_lifecycle_tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1@415[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/backend_lifecycle_tests.rs",
+      "line": 415,
+      "endLine": 432,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "ed9c13d2e1412d51559a4ffe72da64bd487e6ad2395f0b0ee6ee9def2adde8e1",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "callers": [
+        "tokio::spawn in dropping_an_admission_response_does_not_abandon_committed_work_registration owns this outer caller task."
+      ],
+      "inputs": [
+        "Owned command_manager, command_store, queue item, and entered/released/completed oneshot endpoints."
+      ],
+      "sideEffects": [
+        "Calls run_tracked_command, signals the durable-enqueue boundary, waits for release, and reports the published operation ID."
+      ],
+      "errors": [
+        "Returns the tracked command Result; test unwraps the completion channel and lifecycle assertions."
+      ],
+      "ownership": [
+        "The spawned caller task owns its manager/store clones and channels; aborting this outer JoinHandle drops only its waiter because run_tracked_command transfers the inner future to lifecycle tracking."
+      ],
+      "locks": [
+        "The inner admission holds the transition barrier across durable enqueue and publish; this outer closure holds no separate lock."
+      ],
+      "invariants": [
+        "Aborting the caller after durable enqueue cannot cancel the lifecycle-owned inner admission future."
+      ],
+      "tests": [
+        "The enclosing dropping_an_admission_response_does_not_abandon_committed_work_registration test directly aborts this JoinHandle and verifies registration completes."
+      ],
+      "evidence": [
+        "Source span src/backend_lifecycle_tests.rs:415-432 is the tokio::spawn body in the named dropped-response test.",
+        "The completed oneshot and active_ids assertion prove inner publication survived caller abort.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Own the detached command task used to prove caller abort does not abandon tracked admission registration.",
+      "output": "Test-only task result or unit after synchronization.",
+      "cancellation": "The test deliberately aborts this outer task; tracked command ownership allows its inner work to continue.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/backend_lifecycle_tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1@417[cfg=test]",
+      "kind": "async_block",
+      "classification": "test",
+      "file": "src/backend_lifecycle_tests.rs",
+      "line": 417,
+      "endLine": 430,
+      "symbol": "async_block#1",
+      "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1",
+      "signature": "async move",
+      "sourceDigest": "414897c51687582a520e4be755215fc03cbaa9f88c5ae2838ae1b590ae817e70",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "run_tracked_command inside dropping_an_admission_response_does_not_abandon_committed_work_registration receives this async block."
+      ],
+      "inputs": [
+        "Owned task_manager, command_store, item ID, and three oneshot endpoints captured from the outer spawn body."
+      ],
+      "sideEffects": [
+        "Reserves one job, durably enqueues the item, signals entry, waits for release, publishes registration, and sends the operation ID."
+      ],
+      "errors": [
+        "Propagates admission, enqueue, and publish AppErrors to run_tracked_command."
+      ],
+      "ownership": [
+        "run_tracked_command transfers this future into a lifecycle-tracked task; it owns its store/manager clones and channels until publication finishes."
+      ],
+      "locks": [
+        "JobAdmission owns the lifecycle transition lock across the released wait and state publication; StateStore mutation lock is released after enqueue."
+      ],
+      "invariants": [
+        "The operation is durably created before entered is sent and registered before completed is sent."
+      ],
+      "tests": [
+        "Direct body of dropping_an_admission_response_does_not_abandon_committed_work_registration."
+      ],
+      "evidence": [
+        "Source span src/backend_lifecycle_tests.rs:417-430 was reviewed inside the outer tokio::spawn body.",
+        "The test aborts the outer caller while this block waits on released, then observes completed and active registration.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Perform the lifecycle-owned admission body after run_tracked_command detaches it from the caller response future.",
+      "output": "Test-only task result or unit after synchronization.",
+      "cancellation": "Caller abort does not drop this block after run_tracked_command has spawned it; lifecycle shutdown remains its cancellation boundary.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/backend_lifecycle_tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/bootstrap.rs::bootstrap::start::owned_async_closure#1@15[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/bootstrap.rs",
+      "line": 15,
+      "endLine": 96,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "bootstrap::start::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "62608b43c2b4de4ccaad6823fdc33bf41f269b75b612da3b3650555aff4b2a87",
+      "cfg": [],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
+      ],
+      "inputs": [
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
+      ],
+      "sideEffects": [
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
+      ],
+      "errors": [
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
+      ],
+      "ownership": [
+        "spawn_startup owns the async startup future; it owns store/current-version/shutdown-token values and moves output roots into the blocking cleanup closure."
+      ],
+      "locks": [
+        "Each StateStore mutation acquires its mutation gate independently; no lock is held across runtime or filesystem cleanup awaits."
+      ],
+      "invariants": [
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
+      ],
+      "tests": [
+        "lifecycle::tests::startup_gate_blocks_admission_and_worker_claim_until_open, startup_waiter_blocks_during_cleanup_and_receives_failure, and shutdown_during_startup_never_reopens_admission cover the owned startup contract."
+      ],
+      "evidence": [
+        "Source span src/bootstrap.rs:15-96, digest 62608b43c2b4de4ccaad6823fdc33bf41f269b75b612da3b3650555aff4b2a87.",
+        "Direct caller review: lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Perform startup recovery, bounded cleanup, runtime initialization, and reopen admission only after durable readiness succeeds.",
+      "output": "Result<(), AppError> reported through the lifecycle startup completion callback.",
+      "cancellation": "Runtime cache initialization receives the startup shutdown token; earlier recovery and cleanup awaits complete normally, and lifecycle startup ownership reports the final result.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bootstrap.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#2@45[cfg=all]",
+      "kind": "owned_work_closure",
+      "classification": "production",
+      "file": "src/bootstrap.rs",
+      "line": 45,
+      "endLine": 47,
+      "symbol": "owned_work_closure#2",
+      "qualifiedName": "bootstrap::start::owned_work_closure#2",
+      "signature": "move ||",
+      "sourceDigest": "3bfe08b9f63e92e91e064bc4cd95b80b610502d9284defe112165d8a95fdfa92",
+      "cfg": [],
+      "ownerCall": "spawn_blocking",
+      "callers": [
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
+      ],
+      "inputs": [
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
+      ],
+      "sideEffects": [
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
+      ],
+      "errors": [
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
+      ],
+      "ownership": [
+        "Owns only the moved journaled output-root vector during spawn_blocking; returns the cleanup failure vector to startup."
+      ],
+      "locks": [
+        "State mutations use StateStore serialization; lifecycle startup and shutdown modes close admissions before cleanup."
+      ],
+      "invariants": [
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
+      ],
+      "tests": [
+        "downloader::publication cleanup unit tests cover owned-stage filtering; bootstrap startup consumes the returned failure list."
+      ],
+      "evidence": [
+        "Source span src/bootstrap.rs:45-47 is exactly the spawn_blocking closure around cleanup_abandoned_download_stages.",
+        "Direct caller is the startup async closure at src/bootstrap.rs:15-96.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Run abandoned download-stage filesystem cleanup off the async runtime during startup.",
+      "output": "A vector of per-stage cleanup failure messages through the JoinHandle.",
+      "cancellation": "Blocking filesystem cleanup has no cooperative cancellation after dispatch; startup awaits its JoinHandle.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bootstrap.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#1@97[cfg=all]",
+      "kind": "owned_work_closure",
+      "classification": "production",
+      "file": "src/bootstrap.rs",
+      "line": 97,
+      "endLine": 106,
+      "symbol": "owned_work_closure#1",
+      "qualifiedName": "bootstrap::start::owned_work_closure#1",
+      "signature": "move |result|",
+      "sourceDigest": "ffcd41ff06def8e6770387efb66762968559893f9a512f75b2ff061c6dff3ecd",
+      "cfg": [],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "LifecycleCoordinator::spawn_startup invokes this completion callback with the startup Result."
+      ],
+      "inputs": [
+        "Captured startup_report_store and Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Writes startup_admission_closed diagnostics only when startup failed."
+      ],
+      "errors": [
+        "Does not return errors; Diagnostics::log is best effort."
+      ],
+      "ownership": [
+        "Owns one cloned StateStore for the callback lifetime; borrows the supplied result/error."
+      ],
+      "locks": [
+        "No lifecycle lock; diagnostics serializes its own append."
+      ],
+      "invariants": [
+        "Successful startup produces no failure diagnostic; a failed startup records the same correlation ID and summary."
+      ],
+      "tests": [
+        "lifecycle::tests::startup_waiter_blocks_during_cleanup_and_receives_failure and tracked_startup_task_opens_admission_before_it_unregisters cover startup completion semantics."
+      ],
+      "evidence": [
+        "Source span src/bootstrap.rs:97-106 is the spawn_startup completion callback.",
+        "Lifecycle startup tests cover success and failure completion paths.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Log a terminal startup failure after the lifecycle-owned startup task completes.",
+      "output": "Unit after optional diagnostic write.",
+      "cancellation": "Synchronous completion callback has no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bootstrap.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/bootstrap.rs::bootstrap::shutdown[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/bootstrap.rs",
+      "line": 112,
+      "endLine": 172,
+      "symbol": "shutdown",
+      "qualifiedName": "bootstrap::shutdown",
+      "signature": "pub(crate) async fn shutdown(backend: Backend, publish_progress: DownloadProgressSink)",
+      "sourceDigest": "72fbaa7d6b780affb267f5c8bad0d77c6d97a709601d149f51db42dc5d3b1f35",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
+      ],
+      "inputs": [
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
+      ],
+      "sideEffects": [
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
+      ],
+      "errors": [
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
+      ],
+      "ownership": [
+        "Moves DownloadManager and StateStore out of Backend; clones cleanup inputs into the registered continuation while retaining manager/store to initiate and await shutdown."
+      ],
+      "locks": [
+        "State mutations use StateStore serialization; lifecycle startup and shutdown modes close admissions before cleanup."
+      ],
+      "invariants": [
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
+      ],
+      "tests": [
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and shutdown_between_durable_admission_and_registration_compensates_as_one_batch cover pending cleanup primitives; lifecycle::tests::shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks covers cleanup task accounting."
+      ],
+      "evidence": [
+        "Source span src/bootstrap.rs:112-172, digest 72fbaa7d6b780affb267f5c8bad0d77c6d97a709601d149f51db42dc5d3b1f35.",
+        "Direct caller review: lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Drive coordinated shutdown, finalize pending work, wait up to the ordinary grace period, and log recoverable cleanup failures.",
+      "output": "Unit after coordinator shutdown and bounded cleanup wait.",
+      "cancellation": "This function is itself the shutdown driver: it registers cleanup first, signals coordinator shutdown, and bounds the wait to 15 seconds.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bootstrap.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/bootstrap.rs::bootstrap::shutdown::owned_async_closure#1@119[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/bootstrap.rs",
+      "line": 119,
+      "endLine": 149,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "bootstrap::shutdown::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "4ecdd0140bfa214beabd08f9f5a9fbf93e1b9e829a07d7dfb236a37d35433874",
+      "cfg": [],
+      "ownerCall": "spawn_cleanup_continuation",
+      "callers": [
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
+      ],
+      "inputs": [
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
+      ],
+      "sideEffects": [
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
+      ],
+      "errors": [
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
+      ],
+      "ownership": [
+        "The cleanup registry owns cloned store, manager, progress sink, and shutdown token until the pending batch is finalized or logged failed."
+      ],
+      "locks": [
+        "Waits without a lock for the shutdown token; pending batch finalization uses one StateStore mutation and per-ID deregistration uses short manager/store locks."
+      ],
+      "invariants": [
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
+      ],
+      "tests": [
+        "services::preparation::tests::cancel_all_releases_a_thousand_preparations_and_reopens_admission covers batched pending finalization; lifecycle::tests::shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks covers cleanup-continuation accounting."
+      ],
+      "evidence": [
+        "Source span src/bootstrap.rs:119-149, digest 4ecdd0140bfa214beabd08f9f5a9fbf93e1b9e829a07d7dfb236a37d35433874.",
+        "Direct caller review: lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "After shutdown begins, durably cancel pending operations and remove their lifecycle registrations.",
+      "output": "Unit when pending shutdown cleanup finishes or logs a finalization failure.",
+      "cancellation": "Waits for the coordinator shutdown token, then runs as an accounted cleanup continuation during the 15-second grace period.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/bootstrap.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/cancellation.rs::cancellation::complete_drain[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/cancellation.rs",
+      "line": 66,
+      "endLine": 124,
+      "symbol": "complete_drain",
+      "qualifiedName": "cancellation::complete_drain",
+      "signature": "async fn complete_drain(cleanup: &DrainCleanup) -> Result<CancelAllResult, AppError>",
+      "sourceDigest": "0147dfd77dbe79ea48cc2a07c0f5f1864941c1a96d4118a38b9f79e6f3d1fdbd",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::operations::cancel_all_downloads calls cancel_all; DrainGuard::finish and Drop call complete_drain."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, progress sink, and the generation-specific DrainTicket."
+      ],
+      "sideEffects": [
+        "Sets maintenance, requests durable cancellations, batch-finalizes pending work, deregisters jobs, waits for drain, resumes admission, publishes legacy progress, and logs failures."
+      ],
+      "errors": [
+        "Persistence and lifecycle errors propagate through the result; panics become internal errors; a 10-second response timeout returns a non-idle snapshot while cleanup continues."
+      ],
+      "ownership": [
+        "DrainGuard owns DrainCleanup until successful completion; Drop transfers it to one cleanup continuation."
+      ],
+      "locks": [
+        "Lifecycle transition establishes draining before StateStore mutations; complete_drain does not hold coordinator locks across store awaits."
+      ],
+      "invariants": [
+        "A stale drain generation cannot pause or resume newer work; pending IDs remain owned until both finalization and deregistration complete."
+      ],
+      "tests": [
+        "cancellation::tests::abandoned_empty_drain_reopens_admission, abandoned_drain_finalizes_pending_work_before_reopening, and abandoned_drain_releases_already_finalized_pending_registration exercise DrainGuard recovery; lifecycle tests cover generation/shutdown ownership."
+      ],
+      "evidence": [
+        "Source span src/cancellation.rs:66-124, digest 0147dfd77dbe79ea48cc2a07c0f5f1864941c1a96d4118a38b9f79e6f3d1fdbd.",
+        "Direct callers are DrainGuard::finish/Drop for complete_drain and services::operations::cancel_all_downloads for cancel_all.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Finish one owned cancel-all generation by persisting cancellation, finalizing pending jobs, waiting for active jobs, and conditionally resuming admission.",
+      "output": "CancelAllResult reporting whether this generation resumed and any remaining operation IDs.",
+      "cancellation": "Caller timeout/drop does not cancel cleanup; the tracked task or DrainGuard continuation retains the generation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/cancellation.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/cancellation.rs::cancellation::cancel_all::owned_async_closure#1@133[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/cancellation.rs",
+      "line": 133,
+      "endLine": 162,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "cancellation::cancel_all::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "928ecd1d675bda1ff743c4858800aca584867314534eddac3308add54adce60e",
+      "cfg": [],
+      "ownerCall": "spawn_tracked",
+      "callers": [
+        "services::operations::cancel_all_downloads calls cancel_all; DrainGuard::finish and Drop call complete_drain."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, progress sink, and the generation-specific DrainTicket."
+      ],
+      "sideEffects": [
+        "Sets maintenance, requests durable cancellations, batch-finalizes pending work, deregisters jobs, waits for drain, resumes admission, publishes legacy progress, and logs failures."
+      ],
+      "errors": [
+        "Persistence and lifecycle errors propagate through the result; panics become internal errors; a 10-second response timeout returns a non-idle snapshot while cleanup continues."
+      ],
+      "ownership": [
+        "DrainGuard owns DrainCleanup until successful completion; Drop transfers it to one cleanup continuation."
+      ],
+      "locks": [
+        "Lifecycle transition establishes draining before StateStore mutations; complete_drain does not hold coordinator locks across store awaits."
+      ],
+      "invariants": [
+        "A stale drain generation cannot pause or resume newer work; pending IDs remain owned until both finalization and deregistration complete."
+      ],
+      "tests": [
+        "cancellation::tests::abandoned_empty_drain_reopens_admission, abandoned_drain_finalizes_pending_work_before_reopening, and abandoned_drain_releases_already_finalized_pending_registration exercise DrainGuard recovery; lifecycle tests cover generation/shutdown ownership."
+      ],
+      "evidence": [
+        "Source span src/cancellation.rs:133-162, digest 928ecd1d675bda1ff743c4858800aca584867314534eddac3308add54adce60e.",
+        "Direct callers are DrainGuard::finish/Drop for complete_drain and services::operations::cancel_all_downloads for cancel_all.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Run cancel-all inside a tracked drain task and preserve cleanup ownership if the request future drops or panics.",
+      "output": "The tracked task sends Result<CancelAllResult, AppError> through the command response channel.",
+      "cancellation": "Caller timeout/drop does not cancel cleanup; the tracked task or DrainGuard continuation retains the generation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/cancellation.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/cancellation.rs::cancellation::cancel_all::async_block#1@134[cfg=all]",
+      "kind": "async_block",
+      "classification": "production",
+      "file": "src/cancellation.rs",
+      "line": 134,
+      "endLine": 145,
+      "symbol": "async_block#1",
+      "qualifiedName": "cancellation::cancel_all::async_block#1",
+      "signature": "async",
+      "sourceDigest": "7a4d2f9e3d6f2e0173fe1114a623a8756ade387ed637e4aa380e3010cec901a3",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::operations::cancel_all_downloads calls cancel_all; DrainGuard::finish and Drop call complete_drain."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, progress sink, and the generation-specific DrainTicket."
+      ],
+      "sideEffects": [
+        "Sets maintenance, requests durable cancellations, batch-finalizes pending work, deregisters jobs, waits for drain, resumes admission, publishes legacy progress, and logs failures."
+      ],
+      "errors": [
+        "Persistence and lifecycle errors propagate through the result; panics become internal errors; a 10-second response timeout returns a non-idle snapshot while cleanup continues."
+      ],
+      "ownership": [
+        "DrainGuard owns DrainCleanup until successful completion; Drop transfers it to one cleanup continuation."
+      ],
+      "locks": [
+        "Lifecycle transition establishes draining before StateStore mutations; complete_drain does not hold coordinator locks across store awaits."
+      ],
+      "invariants": [
+        "A stale drain generation cannot pause or resume newer work; pending IDs remain owned until both finalization and deregistration complete."
+      ],
+      "tests": [
+        "cancellation::tests::abandoned_empty_drain_reopens_admission, abandoned_drain_finalizes_pending_work_before_reopening, and abandoned_drain_releases_already_finalized_pending_registration exercise DrainGuard recovery; lifecycle tests cover generation/shutdown ownership."
+      ],
+      "evidence": [
+        "Source span src/cancellation.rs:134-145, digest 7a4d2f9e3d6f2e0173fe1114a623a8756ade387ed637e4aa380e3010cec901a3.",
+        "Direct callers are DrainGuard::finish/Drop for complete_drain and services::operations::cancel_all_downloads for cancel_all.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Run cancel-all inside a tracked drain task and preserve cleanup ownership if the request future drops or panics.",
+      "output": "The tracked task sends Result<CancelAllResult, AppError> through the command response channel.",
+      "cancellation": "Caller timeout/drop does not cancel cleanup; the tracked task or DrainGuard continuation retains the generation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/cancellation.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/desktop.rs::desktop::focus_primary_window[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/desktop.rs",
+      "line": 11,
+      "endLine": 17,
+      "symbol": "focus_primary_window",
+      "qualifiedName": "desktop::focus_primary_window",
+      "signature": "pub(crate) fn focus_primary_window(app: &AppHandle)",
+      "sourceDigest": "5fffda03b5f2b5a74ebce03b32949950bdb3dc4ae906434191cd83c4583a9824",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "The single-instance plugin callback in lib::run calls this function."
+      ],
+      "inputs": [
+        "Tauri AppHandle and the fixed main-window label."
+      ],
+      "sideEffects": [
+        "Invokes unminimize, show, and set_focus on the main webview window when present."
+      ],
+      "errors": [
+        "Window lookup absence and platform window-operation errors are intentionally ignored."
+      ],
+      "ownership": [
+        "Borrows AppHandle; window handle is local."
+      ],
+      "locks": [
+        "No application lock is acquired."
+      ],
+      "invariants": [
+        "Only the window named main is targeted."
+      ],
+      "tests": [
+        "No named unit test directly invokes focus_primary_window; behavior depends on Tauri desktop integration."
+      ],
+      "evidence": [
+        "Source span src/desktop.rs:11-17, digest 5fffda03b5f2b5a74ebce03b32949950bdb3dc4ae906434191cd83c4583a9824.",
+        "Direct caller review: The single-instance plugin callback in lib::run calls this function.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Restore, show, and focus the primary desktop window for a secondary-instance activation.",
+      "output": "Unit after best-effort window actions.",
+      "cancellation": "Synchronous best-effort UI operations have no cancellation protocol.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/desktop.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/desktop.rs::desktop::spawn_state_events::owned_async_closure#1@95[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/desktop.rs",
+      "line": 95,
+      "endLine": 111,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "desktop::spawn_state_events::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "598921e520c3677b4698d52692705220917ffc03e0700557de1181a3bd1ce950",
+      "cfg": [],
+      "ownerCall": "spawn_tracked",
+      "callers": [
+        "lib::run setup calls spawn_state_events once after StateStore creation."
+      ],
+      "inputs": [
+        "AppHandle, StateStore, DownloadManager, and the exclusively claimed StateOutboxReader."
+      ],
+      "sideEffects": [
+        "Emits app-state-changed or app-state-resync-required events and lets state_events handle delivery failures/resync."
+      ],
+      "errors": [
+        "Reader claim or tracked-task registration returns AppError; emission errors are strings handled by publish_state_events."
+      ],
+      "ownership": [
+        "The closure owns cloned app/store/coordinator and the sole reader; reader Drop releases the claim."
+      ],
+      "locks": [
+        "Outbox pop uses its short Mutex; lifecycle tracking owns task lifetime; no lock spans app.emit."
+      ],
+      "invariants": [
+        "At most one outbox reader publishes state and batch delta order is preserved."
+      ],
+      "tests": [
+        "lifecycle::tests::event_pump_waits_for_producers_without_waiting_for_itself plus outbox::tests::reader_preserves_batch_and_delta_order and overflow_coalesces_to_one_latest_sequence_resync cover the delegated pump contract."
+      ],
+      "evidence": [
+        "Source span src/desktop.rs:95-111, digest 598921e520c3677b4698d52692705220917ffc03e0700557de1181a3bd1ce950.",
+        "Direct caller review: lib::run setup calls spawn_state_events once after StateStore creation.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Consume the single state-outbox reader in a tracked event task and emit ordered deltas or resync requirements to the renderer.",
+      "output": "Unit when publish_state_events returns and the tracked task exits.",
+      "cancellation": "Coordinator shutdown cancels tracked event work through publish_state_events lifecycle handling.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/desktop.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lib.rs::add_inspection_result_to_queue[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 97,
+      "endLine": 103,
+      "symbol": "add_inspection_result_to_queue",
+      "qualifiedName": "add_inspection_result_to_queue",
+      "signature": "async fn add_inspection_result_to_queue( _app: tauri::AppHandle, state: State<'_, AppState>, input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>",
+      "sourceDigest": "f1892d29a79c1a9ba36f7a77ae55ea830894d0c75ea9f28107aae13149777786",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Tauri invoke handler dispatches renderer add_inspection_result_to_queue requests."
+      ],
+      "inputs": [
+        "Tauri AppHandle, managed Backend state, and deserialized AddQueueItemInput."
+      ],
+      "sideEffects": [
+        "Delegates durable queue admission and lifecycle registration to services::queue."
+      ],
+      "errors": [
+        "Propagates validation, persistence, lifecycle, and idempotency errors unchanged."
+      ],
+      "ownership": [
+        "Borrows managed state for the command and moves the input into the service future."
+      ],
+      "locks": [
+        "Acquires no boundary lock; delegated service owns admission and mutation ordering."
+      ],
+      "invariants": [
+        "The command adds no alternate admission path or response transformation."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::receipt_replays_after_restart_and_rejects_changed_payload and backend lifecycle dropped-admission tests cover the delegated service; no Tauri command-shell test directly invokes this wrapper."
+      ],
+      "evidence": [
+        "Source span src/lib.rs:97-103, digest f1892d29a79c1a9ba36f7a77ae55ea830894d0c75ea9f28107aae13149777786.",
+        "Direct caller review: Tauri invoke handler dispatches renderer add_inspection_result_to_queue requests.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Expose typed single-item or playlist queue admission through the Tauri command boundary.",
+      "output": "AddQueueItemResult or AppError from the queue service.",
+      "cancellation": "The service uses tracked admission ownership and cleanup guards so renderer cancellation cannot abandon committed work.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lib.rs::run[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 214,
+      "endLine": 317,
+      "symbol": "run",
+      "qualifiedName": "run",
+      "signature": "pub fn run()",
+      "sourceDigest": "f0911c942591cc4bcc12a3b8c8da685cd77d42487a360d5c503a4ccf38bae65f",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Desktop binary main invokes nuclear_app_lib::run."
+      ],
+      "inputs": [
+        "Generated Tauri context, process events, and platform application state."
+      ],
+      "sideEffects": [
+        "Initializes plugins/state/workers/startup, runs event loop, prevents first exit, spawns shutdown, and exits after cleanup."
+      ],
+      "errors": [
+        "Setup/build failures are reported once through report_startup_failure; runtime shutdown issues are logged by bootstrap."
+      ],
+      "ownership": [
+        "App owns managed Backend and workers; atomic flags coordinate event-loop callbacks; shutdown closure owns backend/app handle."
+      ],
+      "locks": [
+        "Atomic SeqCst flags serialize shutdown initiation/completion; lifecycle coordinator serializes backend work."
+      ],
+      "invariants": [
+        "Persistent state opens only after single-instance rejection; only one shutdown task starts; final exit occurs after bootstrap shutdown."
+      ],
+      "tests": [
+        "No unit test drives the Tauri event loop; lifecycle::tests::event_pump_waits_for_producers_without_waiting_for_itself and shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks cover the delegated coordinator mechanics."
+      ],
+      "evidence": [
+        "Source span src/lib.rs:214-317, digest f0911c942591cc4bcc12a3b8c8da685cd77d42487a360d5c503a4ccf38bae65f.",
+        "Direct caller review: Desktop binary main invokes nuclear_app_lib::run.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Build the Tauri application, register state/workers/commands, and coordinate one graceful shutdown task per process.",
+      "output": "Unit when the desktop application exits or initialization fails.",
+      "cancellation": "Exit is prevented until the untracked shutdown driver completes; repeated ExitRequested events are ignored while it runs.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lib.rs::run::owned_async_closure#1@310[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 310,
+      "endLine": 314,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "run::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "f5820d09ec96427e26bfc3d1d712e7db7891887d56b0f9c3f726b463ba3f73a1",
+      "cfg": [],
+      "ownerCall": "spawn",
+      "callers": [
+        "lib::run event callback spawns this closure once after atomically claiming shutdown."
+      ],
+      "inputs": [
+        "Owned Backend, progress sink, AppHandle, exit code, and completion flag."
+      ],
+      "sideEffects": [
+        "Awaits bootstrap::shutdown, sets shutdown_complete, and calls app exit."
+      ],
+      "errors": [
+        "bootstrap logs internal cleanup failures; closure has no result channel."
+      ],
+      "ownership": [
+        "Untracked Tauri task owns shutdown inputs specifically to avoid coordinator self-wait."
+      ],
+      "locks": [
+        "Uses SeqCst completion atomic; bootstrap/lifecycle own other synchronization."
+      ],
+      "invariants": [
+        "Completion is stored before the second exit request is issued."
+      ],
+      "tests": [
+        "No direct Tauri ExitRequested test exercises this closure; lifecycle::tests::shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks covers the bootstrap/coordinator behavior it awaits."
+      ],
+      "evidence": [
+        "Source span src/lib.rs:310-314, digest f5820d09ec96427e26bfc3d1d712e7db7891887d56b0f9c3f726b463ba3f73a1.",
+        "Direct caller review: lib::run event callback spawns this closure once after atomically claiming shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Own the asynchronous desktop shutdown driver spawned from the first ExitRequested event.",
+      "output": "Unit after bootstrap shutdown marks completion and requests final app exit.",
+      "cancellation": "Desktop runtime drives this task outside the coordinator because coordinated shutdown waits for tracked tasks.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle/admission.rs::lifecycle::admission::impl JobAdmission::publish_subset[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/lifecycle/admission.rs",
+      "line": 246,
+      "endLine": 257,
+      "symbol": "publish_subset",
+      "qualifiedName": "lifecycle::admission::impl JobAdmission::publish_subset",
+      "signature": "pub(crate) async fn publish_subset( mut self, ids: &[String], ) -> Result<Vec<DownloadJob>, AppError>",
+      "sourceDigest": "957fcd8db98a53c9da47a02739394740b95c0bade2889fb1d9ddb14fb6599940",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue playlist admission and preparation/soak tests call this after one durable batch commit."
+      ],
+      "inputs": [
+        "Owned JobAdmission reservation and the accepted preparation operation IDs."
+      ],
+      "sideEffects": [
+        "Truncates unused DownloadJob reservations, then registers the remaining IDs through publish."
+      ],
+      "errors": [
+        "Rejects a subset larger than the reservation and propagates lifecycle publication failures."
+      ],
+      "ownership": [
+        "Consumes JobAdmission so its transition barrier remains held through registration and unused jobs drop at return."
+      ],
+      "locks": [
+        "The owned transition lock in JobAdmission spans validation, durable commit, and publish; publish acquires lifecycle state."
+      ],
+      "invariants": [
+        "Published ID count never exceeds reserved jobs and each published ID maps one-to-one to a job."
+      ],
+      "tests": [
+        "services::preparation::tests::playlist_admission_registers_every_row_before_metadata_preparation and shutdown_between_durable_admission_and_registration_compensates_as_one_batch directly exercise subset publication."
+      ],
+      "evidence": [
+        "Source span src/lifecycle/admission.rs:246-257, digest 957fcd8db98a53c9da47a02739394740b95c0bade2889fb1d9ddb14fb6599940.",
+        "Direct caller review: services::queue playlist admission and preparation/soak tests call this after one durable batch commit.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Shrink an admission reservation to the validated preparation subset and publish exactly those operation IDs.",
+      "output": "Registered DownloadJob handles or an AppError.",
+      "cancellation": "Dropping the consuming future releases unregistered job objects and the transition guard; QueueAdmissionGuard compensates durable work.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle/admission.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle/admission.rs::lifecycle::admission::impl Drop for MaintenanceLease::drop::owned_async_closure#1@366[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/lifecycle/admission.rs",
+      "line": 366,
+      "endLine": 379,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "lifecycle::admission::impl Drop for MaintenanceLease::drop::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "5e21ac76ec6b7f50b8219968ef9a7220e78301a42a768b54763df08a5c6771f2",
+      "cfg": [],
+      "ownerCall": "spawn_cleanup_continuation",
+      "callers": [
+        "Rust Drop invokes this closure when an active MaintenanceLease leaves scope without release."
+      ],
+      "inputs": [
+        "Cloned LifecycleCoordinator and the lease generation."
+      ],
+      "sideEffects": [
+        "May change Paused(generation) to Accepting and notify mode waiters."
+      ],
+      "errors": [
+        "Cleanup-continuation registration is intentionally best effort; no return channel exists in Drop."
+      ],
+      "ownership": [
+        "The closure owns the coordinator clone and generation; Drop marks the lease inactive before scheduling."
+      ],
+      "locks": [
+        "Acquires transition before lifecycle state, matching admission ordering."
+      ],
+      "invariants": [
+        "Only the exact paused generation resumes, and committed installer handoff prevents reopening admission."
+      ],
+      "tests": [
+        "lifecycle::tests::cancel_all_cannot_release_an_update_maintenance_lease and versioned_maintenance_release_cannot_reopen_shutdown exercise generation-safe release behavior."
+      ],
+      "evidence": [
+        "Source span src/lifecycle/admission.rs:366-379, digest 5e21ac76ec6b7f50b8219968ef9a7220e78301a42a768b54763df08a5c6771f2.",
+        "Direct caller review: Rust Drop invokes this closure when an active MaintenanceLease leaves scope without release.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Recover a dropped maintenance lease by asynchronously returning the matching paused generation to accepting mode.",
+      "output": "Unit from Drop after scheduling best-effort cleanup.",
+      "cancellation": "Lifecycle cleanup continuation owns recovery independently of the dropping task.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle/admission.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::impl QueueAdmissionGuard::new[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 13,
+      "endLine": 17,
+      "symbol": "new",
+      "qualifiedName": "lifecycle_cleanup::impl QueueAdmissionGuard::new",
+      "signature": "pub(crate) fn new(store: StateStore, manager: DownloadManager, ids: Vec<String>) -> Self",
+      "sourceDigest": "a6cdb798fefe1e1dde331171f20063e80b54022cd15001a8bd72907fb8eeb503",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Stores the supplied store, manager, and ID vector in the guard; performs no I/O or task registration."
+      ],
+      "errors": [
+        "Infallible constructor."
+      ],
+      "ownership": [
+        "Takes ownership of StateStore and DownloadManager clones plus the complete ID vector in one optional tuple."
+      ],
+      "locks": [
+        "No lock acquisition."
+      ],
+      "invariants": [
+        "A newly returned guard is armed exactly once with the supplied IDs."
+      ],
+      "tests": [
+        "services::preparation::tests::shutdown_between_durable_admission_and_registration_compensates_as_one_batch constructs this guard and exercises its armed path."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:13-17 is the constructor only.",
+        "Direct production caller is services::queue::admit_playlist; the named shutdown-between-admission test also constructs it.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Create a queue-admission rollback guard that owns the store, lifecycle coordinator, and durable preparation operation IDs.",
+      "output": "An armed QueueAdmissionGuard.",
+      "cancellation": "Synchronous constructor has no cancellation point; the returned guard provides later unwind cleanup.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::impl QueueAdmissionGuard::disarm[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 19,
+      "endLine": 21,
+      "symbol": "disarm",
+      "qualifiedName": "lifecycle_cleanup::impl QueueAdmissionGuard::disarm",
+      "signature": "pub(crate) fn disarm(mut self)",
+      "sourceDigest": "ea0812116fabfd6fd55e8a939482d257d70192d7f92d69d1d9a024d1057e3569",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Sets cleanup to None and consumes the guard, so Drop performs no compensation."
+      ],
+      "errors": [
+        "Infallible synchronous state change."
+      ],
+      "ownership": [
+        "Consumes self and drops the owned store, manager, and ID vector after clearing cleanup."
+      ],
+      "locks": [
+        "No lock acquisition."
+      ],
+      "invariants": [
+        "Only the fully published success path calls disarm; Drop observes no cleanup tuple afterward."
+      ],
+      "tests": [
+        "services::preparation::tests::playlist_admission_registers_every_row_before_metadata_preparation exercises the successful publish/disarm path."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:19-21 only clears cleanup.",
+        "Direct production caller is services::queue::admit_playlist after publish_subset succeeds.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Consume the guard after every durable preparation job has been registered successfully.",
+      "output": "Unit after suppressing rollback-on-drop.",
+      "cancellation": "Synchronous method has no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::impl QueueAdmissionGuard::finalize[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 23,
+      "endLine": 28,
+      "symbol": "finalize",
+      "qualifiedName": "lifecycle_cleanup::impl QueueAdmissionGuard::finalize",
+      "signature": "pub(crate) async fn finalize(mut self, error: AppError) -> AppError",
+      "sourceDigest": "82ad13461cc3ccc2aabb9d02f4cde7613e3dab56268bc6af0254f627808838a8",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Finalizes the pending batch as failed, removes registered jobs and pending queue entries, or schedules that sequence in one cleanup continuation; logs cleanup failures."
+      ],
+      "errors": [
+        "Finalization returns the original admission error; cleanup persistence/registration failures are logged because Drop cannot return them."
+      ],
+      "ownership": [
+        "Consumes self, takes the cleanup tuple before awaiting compensation, and returns the caller-supplied error afterward."
+      ],
+      "locks": [
+        "Holds no guard-local lock; cleanup_queue_admission performs delegated StateStore and lifecycle mutations."
+      ],
+      "invariants": [
+        "The original publication error is returned unchanged after one compensation attempt."
+      ],
+      "tests": [
+        "services::preparation::tests::shutdown_between_durable_admission_and_registration_compensates_as_one_batch directly awaits finalize after publish rejection."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:23-28 is the explicit failed-publication path.",
+        "Direct caller is services::queue::admit_playlist when publish_subset returns Err.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Run admission rollback synchronously and return the original publication error.",
+      "output": "The unchanged AppError supplied by the failed caller.",
+      "cancellation": "The production caller is lifecycle tracked; while awaited, this method owns the cleanup tuple locally and Drop sees the guard disarmed.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::impl Drop for QueueAdmissionGuard[trait-impl,cfg=all]",
+      "kind": "trait_impl",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 31,
+      "endLine": 55,
+      "symbol": "impl Drop for QueueAdmissionGuard",
+      "qualifiedName": "impl Drop for QueueAdmissionGuard",
+      "signature": "impl Drop for QueueAdmissionGuard",
+      "sourceDigest": "c1f5293c480cd07bf4cd5cc7adeb94c136988ffe0dbdd48d22032144e464b386",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Finalizes the pending batch as failed, removes registered jobs and pending queue entries, or schedules that sequence in one cleanup continuation; logs cleanup failures."
+      ],
+      "errors": [
+        "Finalization returns the original admission error; cleanup persistence/registration failures are logged because Drop cannot return them."
+      ],
+      "ownership": [
+        "Drop atomically takes the optional cleanup tuple; a disarmed or previously consumed guard performs no work."
+      ],
+      "locks": [
+        "No lock is held while registering the continuation; delegated cleanup owns later StateStore/lifecycle locks."
+      ],
+      "invariants": [
+        "At most one cleanup continuation is registered per guard, and only while cleanup remains armed."
+      ],
+      "tests": [
+        "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration covers caller abort; services preparation shutdown test covers compensation."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:31-55 implements armed Drop handling.",
+        "Direct trigger is implicit guard Drop in services::queue::admit_playlist on unwind or task loss.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Guarantee queue-admission compensation when an armed guard unwinds or its command future is dropped.",
+      "output": "Unit; schedules one lifecycle-owned cleanup continuation when still armed.",
+      "cancellation": "Drop is synchronous; it transfers cleanup ownership to a lifecycle continuation so the dropping task cannot cancel compensation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::impl Drop for QueueAdmissionGuard::drop[cfg=all]",
+      "kind": "destructor",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 32,
+      "endLine": 54,
+      "symbol": "drop",
+      "qualifiedName": "lifecycle_cleanup::impl Drop for QueueAdmissionGuard::drop",
+      "signature": "fn drop(&mut self)",
+      "sourceDigest": "978e4e6f924dad275e90a6ae883c381b90d32a2a66423e610eebe47ab0c6a321",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Finalizes the pending batch as failed, removes registered jobs and pending queue entries, or schedules that sequence in one cleanup continuation; logs cleanup failures."
+      ],
+      "errors": [
+        "Finalization returns the original admission error; cleanup persistence/registration failures are logged because Drop cannot return them."
+      ],
+      "ownership": [
+        "Drop atomically takes the optional cleanup tuple; a disarmed or previously consumed guard performs no work."
+      ],
+      "locks": [
+        "No lock is held while registering the continuation; delegated cleanup owns later StateStore/lifecycle locks."
+      ],
+      "invariants": [
+        "At most one cleanup continuation is registered per guard, and only while cleanup remains armed."
+      ],
+      "tests": [
+        "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration covers caller abort; services preparation shutdown test covers compensation."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:32-54 implements armed Drop handling.",
+        "Direct trigger is implicit guard Drop in services::queue::admit_playlist on unwind or task loss.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Guarantee queue-admission compensation when an armed guard unwinds or its command future is dropped.",
+      "output": "Unit; schedules one lifecycle-owned cleanup continuation when still armed.",
+      "cancellation": "Drop is synchronous; it transfers cleanup ownership to a lifecycle continuation so the dropping task cannot cancel compensation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::impl Drop for QueueAdmissionGuard::drop::owned_async_closure#1@38[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 38,
+      "endLine": 46,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "lifecycle_cleanup::impl Drop for QueueAdmissionGuard::drop::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "439b07f08f2e23f2fbde30e9e786253e5e01dc80dfb4fd3148282c5aac269d65",
+      "cfg": [],
+      "ownerCall": "spawn_cleanup_continuation",
+      "callers": [
+        "QueueAdmissionGuard::drop passes this closure to DownloadManager::spawn_cleanup_continuation."
+      ],
+      "inputs": [
+        "Owned StateStore, task-manager clone, preparation operation IDs, and synthesized unexpected-stop AppError."
+      ],
+      "sideEffects": [
+        "Awaits cleanup_queue_admission, which durably fails the batch and deregisters/dequeues its jobs."
+      ],
+      "errors": [
+        "cleanup_queue_admission logs persistence failure internally; this closure returns unit."
+      ],
+      "ownership": [
+        "The lifecycle coordinator owns this closure; it owns all cleanup inputs until compensation returns."
+      ],
+      "locks": [
+        "Acquires locks only through cleanup_queue_admission; owns no lock at closure creation."
+      ],
+      "invariants": [
+        "Unexpected guard loss produces the same compensation steps as explicit finalize."
+      ],
+      "tests": [
+        "services::preparation::tests::shutdown_between_durable_admission_and_registration_compensates_as_one_batch exercises lifecycle-owned compensation mechanics."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:38-46 is the continuation body registered by Drop.",
+        "Its sole caller is QueueAdmissionGuard::drop.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Run the queue-admission compensation sequence after Drop transfers ownership to the lifecycle coordinator.",
+      "output": "Unit; schedules one lifecycle-owned cleanup continuation when still armed.",
+      "cancellation": "Coordinator shutdown accounts for registered cleanup continuations; caller task cancellation no longer owns this closure.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/lifecycle_cleanup.rs::lifecycle_cleanup::cleanup_queue_admission[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lifecycle_cleanup.rs",
+      "line": 57,
+      "endLine": 79,
+      "symbol": "cleanup_queue_admission",
+      "qualifiedName": "lifecycle_cleanup::cleanup_queue_admission",
+      "signature": "async fn cleanup_queue_admission( store: StateStore, manager: DownloadManager, ids: Vec<String>, error: AppError, )",
+      "sourceDigest": "bfae77dac43a4a0db8b326931c60e837f4f7e3641e655902e95ab25a52699ff4",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "services::queue::admit_playlist and preparation shutdown tests arm/finalize/disarm the guard; Drop is implicit on unwind or cancellation."
+      ],
+      "inputs": [
+        "StateStore, DownloadManager, preparation operation IDs, and the causal AppError where applicable."
+      ],
+      "sideEffects": [
+        "Finalizes the pending batch as failed, removes registered jobs and pending queue entries, or schedules that sequence in one cleanup continuation; logs cleanup failures."
+      ],
+      "errors": [
+        "Finalization returns the original admission error; cleanup persistence/registration failures are logged because Drop cannot return them."
+      ],
+      "ownership": [
+        "Owns store, manager, ID vector, and AppError for the full async cleanup; consumes IDs during deregistration."
+      ],
+      "locks": [
+        "StateStore finalize_pending_batch serializes one durable mutation; each manager.finish and store.cancel_pending call acquires and releases its own short lock."
+      ],
+      "invariants": [
+        "No job is deregistered before durable batch finalization succeeds; a finalization failure returns early and preserves lifecycle ownership for later recovery."
+      ],
+      "tests": [
+        "services::preparation::tests::shutdown_between_durable_admission_and_registration_compensates_as_one_batch asserts one batch save, empty active IDs, and empty pending IDs after this sequence."
+      ],
+      "evidence": [
+        "Source span src/lifecycle_cleanup.rs:57-79 was reviewed with services::queue and preparation shutdown callers.",
+        "The shutdown-between-admission test asserts the durable-finalize-before-deregister result.",
+        "Supplied Rust log records 379 passed, 0 failed, 4 ignored; no tests were run in this review."
+      ],
+      "purpose": "Durably fail every unpublished preparation operation, then deregister and dequeue each lifecycle job.",
+      "output": "Unit after compensation, or after logging and retaining recoverable durable state when batch finalization fails.",
+      "cancellation": "Contains await points; production ownership is either the lifecycle-tracked admission task or a registered cleanup continuation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lifecycle_cleanup.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/outbox.rs::outbox::estimate_queue_item_bytes[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/outbox.rs",
+      "line": 233,
+      "endLine": 265,
+      "symbol": "estimate_queue_item_bytes",
+      "qualifiedName": "outbox::estimate_queue_item_bytes",
+      "signature": "fn estimate_queue_item_bytes(item: &QueueItemRecord) -> usize",
+      "sourceDigest": "7fb205b9b72421e9e936ec05e18bcc178b1c493a2226d3a57a60d7565e14f971",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "estimate_delta_bytes calls this estimator for each upsert delta before StateOutbox::enqueue buffers it."
+      ],
+      "inputs": [
+        "A borrowed QueueItemRecord."
+      ],
+      "sideEffects": [
+        "No side effects; reads string/vector capacities and nested optional allocations."
+      ],
+      "errors": [
+        "Infallible arithmetic over bounded model fields; enclosing enqueue uses saturating accumulation."
+      ],
+      "ownership": [
+        "Borrows the record and allocates nothing."
+      ],
+      "locks": [
+        "No lock; caller computes before acquiring the outbox queue Mutex."
+      ],
+      "invariants": [
+        "Every dynamically allocated field introduced in the corresponding wire record is included once; fixed overhead intentionally overestimates scalar storage."
+      ],
+      "tests": [
+        "outbox::tests::max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered directly exercises every queue dynamic field included by this estimator."
+      ],
+      "evidence": [
+        "Source span src/outbox.rs:233-265, digest 7fb205b9b72421e9e936ec05e18bcc178b1c493a2226d3a57a60d7565e14f971.",
+        "Direct caller review: estimate_delta_bytes calls this estimator for each upsert delta before StateOutbox::enqueue buffers it.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Estimate retained heap bytes for a queue record.",
+      "output": "A conservative usize byte estimate used by the 16 MiB outbox admission bound.",
+      "cancellation": "Synchronous pure estimate has no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/outbox.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/outbox.rs::outbox::estimate_operation_bytes[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/outbox.rs",
+      "line": 267,
+      "endLine": 293,
+      "symbol": "estimate_operation_bytes",
+      "qualifiedName": "outbox::estimate_operation_bytes",
+      "signature": "fn estimate_operation_bytes(operation: &OperationSnapshot) -> usize",
+      "sourceDigest": "5ed51db73c86405ea3968be280ac7745b1fbd0d5d7ac51eabd94deac08916fed",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "estimate_delta_bytes calls this estimator for each upsert delta before StateOutbox::enqueue buffers it."
+      ],
+      "inputs": [
+        "A borrowed OperationSnapshot."
+      ],
+      "sideEffects": [
+        "No side effects; reads string/vector capacities and nested optional allocations."
+      ],
+      "errors": [
+        "Infallible arithmetic over bounded model fields; enclosing enqueue uses saturating accumulation."
+      ],
+      "ownership": [
+        "Borrows the record and allocates nothing."
+      ],
+      "locks": [
+        "No lock; caller computes before acquiring the outbox queue Mutex."
+      ],
+      "invariants": [
+        "Every dynamically allocated field introduced in the corresponding wire record is included once; fixed overhead intentionally overestimates scalar storage."
+      ],
+      "tests": [
+        "outbox receipt and inspection allocation tests exercise nested operation accounting; max-length queue regression does not cover this operation estimator."
+      ],
+      "evidence": [
+        "Source span src/outbox.rs:267-293, digest 5ed51db73c86405ea3968be280ac7745b1fbd0d5d7ac51eabd94deac08916fed.",
+        "Direct caller review: estimate_delta_bytes calls this estimator for each upsert delta before StateOutbox::enqueue buffers it.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Estimate retained heap bytes for an operation record, including nested inspection and playlist receipt allocations.",
+      "output": "A conservative usize byte estimate used by the 16 MiB outbox admission bound.",
+      "cancellation": "Synchronous pure estimate has no cancellation point.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/outbox.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/outbox/tests.rs::outbox::tests::max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/outbox/tests.rs",
+      "line": 86,
+      "endLine": 144,
+      "symbol": "max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered",
+      "qualifiedName": "outbox::tests::max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered",
+      "signature": "fn max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered()",
+      "sourceDigest": "629832a694856b65bbb40cc14e6a74ad7ede75d6aa310bbb027ae7a7b93f3caf",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness invokes this test."
+      ],
+      "inputs": [
+        "No external input; creates bounded fixture records."
+      ],
+      "sideEffects": [
+        "Allocates test deltas, enqueues them, and consumes the resulting publication."
+      ],
+      "errors": [
+        "Panics on invalid UTF-8 fixture or failed assertions."
+      ],
+      "ownership": [
+        "Owns isolated outbox, reader, and fixture vectors."
+      ],
+      "locks": [
+        "No shared test lock; StateOutbox uses its internal Mutex."
+      ],
+      "invariants": [
+        "Overflow leaves zero queued deltas and one resync at the batch high-water sequence."
+      ],
+      "tests": [
+        "This is the regression test itself; it passed in the supplied 379-test Rust log."
+      ],
+      "evidence": [
+        "Source span src/outbox/tests.rs:86-144, digest 629832a694856b65bbb40cc14e6a74ad7ede75d6aa310bbb027ae7a7b93f3caf.",
+        "Direct caller review: Rust test harness invokes this test.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Verify a 1000-row batch with every bounded dynamic queue field exceeds the byte budget and collapses to one resync marker.",
+      "output": "Unit after assertions.",
+      "cancellation": "Synchronous isolated regression test with no await or cancellation behavior.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/outbox/tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    },
+    {
+      "id": "src/outbox/tests.rs::outbox::tests::max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered::local::max_string[cfg=test]",
+      "kind": "local_function",
+      "classification": "test_support",
+      "file": "src/outbox/tests.rs",
+      "line": 87,
+      "endLine": 89,
+      "symbol": "max_string",
+      "qualifiedName": "outbox::tests::max_length_queue_fields_overflow_to_resync_instead_of_remaining_buffered::local::max_string",
+      "signature": "fn max_string(byte: u8) -> String",
+      "sourceDigest": "930e2b3656ff5ffaa202c5f5b717af38cd6baa75cf3d71a85030dc991d50a78a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "The enclosing max_length_queue_fields_overflow_to_resync test invokes the helper."
+      ],
+      "inputs": [
+        "One repeated byte value."
+      ],
+      "sideEffects": [
+        "Allocates a test String."
+      ],
+      "errors": [
+        "String::from_utf8 unwrap can panic only if the supplied repeated byte is invalid UTF-8; all direct callers pass ASCII bytes."
+      ],
+      "ownership": [
+        "Returns an owned String."
+      ],
+      "locks": [
+        "No shared test lock; StateOutbox uses its internal Mutex."
+      ],
+      "invariants": [
+        "Helper output is exactly 4096 bytes."
+      ],
+      "tests": [
+        "This callable is test support for the named outbox regression test."
+      ],
+      "evidence": [
+        "Source span src/outbox/tests.rs:87-89, digest 930e2b3656ff5ffaa202c5f5b717af38cd6baa75cf3d71a85030dc991d50a78a.",
+        "Direct caller review: The enclosing max_length_queue_fields_overflow_to_resync test invokes the helper.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
+      ],
+      "purpose": "Construct maximum-length fields for outbox accounting.",
+      "output": "A 4 KiB String.",
+      "cancellation": "Pure synchronous allocation helper with no await or cancellation check.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/outbox/tests.rs",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
+      "status": "reviewed",
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
+    }
+  ]
+}

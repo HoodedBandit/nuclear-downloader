@@ -1,0 +1,721 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/downloader/inspection/metadata.rs",
+    "src/downloader/inspection/tests.rs",
+    "src/journal/tests.rs"
+  ],
+  "reviewer": "Codex metadata and journal-test ledger review",
+  "entries": [
+    {
+      "id": "src/downloader/inspection/metadata.rs::downloader::inspection::metadata::impl PlaylistRecord::into_entry[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/downloader/inspection/metadata.rs",
+      "line": 52,
+      "endLine": 131,
+      "symbol": "into_entry",
+      "qualifiedName": "downloader::inspection::metadata::impl PlaylistRecord::into_entry",
+      "signature": "fn into_entry(self, parent_url: &str, data: &Value) -> Result<Option<PlaylistEntry>, String>",
+      "sourceDigest": "336c71149e2561405bab57830f6bd078b29781af84433256c5d53891784fd5d8",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "parse_inspection calls it for each bounded non-null playlist record."
+      ],
+      "inputs": [
+        "Owned deserialized PlaylistRecord, validated parent URL, and raw child JSON."
+      ],
+      "sideEffects": [
+        "Allocates normalized URLs, identifiers, optional selection, thumbnail, and possibly VideoInfo; no external I/O."
+      ],
+      "errors": [
+        "Rejects resolved embedded videos lacking ID/extractor/index or invalid selection and propagates video_info identity errors."
+      ],
+      "ownership": [
+        "Consumes PlaylistRecord; clones selection fields only when building owned output."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Flat unresolved children may use their usable source URL as provisional identity; resolved video hydration requires a nonblank media ID; shared-parent embedded videos require authoritative selection identity."
+      ],
+      "tests": [
+        "downloader::inspection::tests::flat_child_without_media_id_uses_its_source_url_as_unknown_identity; downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors; downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata"
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/metadata.rs:52-131, digest 336c71149e2561405bab57830f6bd078b29781af84433256c5d53891784fd5d8.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Convert one yt-dlp playlist child into a safe retained PlaylistEntry or skip it.",
+      "output": "Some normalized entry, None for an unusable child URL, or a validation error.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/downloader/inspection/metadata.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/metadata.rs::downloader::inspection::metadata::video_info[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/downloader/inspection/metadata.rs",
+      "line": 134,
+      "endLine": 186,
+      "symbol": "video_info",
+      "qualifiedName": "downloader::inspection::metadata::video_info",
+      "signature": "fn video_info( url: &str, data: &Value, selection: Option<&MediaSelection>, ) -> Result<VideoInfo, String>",
+      "sourceDigest": "149517f9dab09d2de1954ecd6e409332568a6d80ce49c91190ab9a621e8049fa",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "parse_inspection handles top-level/selected videos with it; PlaylistRecord::into_entry uses it only for resolved formatted children with an ID."
+      ],
+      "inputs": [
+        "Canonical URL, raw JSON value, and optional authoritative MediaSelection."
+      ],
+      "sideEffects": [
+        "Allocates owned metadata strings and a sorted/deduplicated quality list; no I/O."
+      ],
+      "errors": [
+        "Rejects non-object, playlist, URL-wrapper, absent/null/blank ID, invalid or changed selection identity."
+      ],
+      "ownership": [
+        "Borrows JSON and selection; returns fully owned VideoInfo."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "A literal ID value such as unknown is preserved; only structural absence/null/blank is rejected, and selected identity must match ID plus extractor key."
+      ],
+      "tests": [
+        "downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown; downloader::inspection::tests::selected_identity_rejects_wrong_id_or_extractor_key; downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata"
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/metadata.rs:134-186, digest 149517f9dab09d2de1954ecd6e409332568a6d80ce49c91190ab9a621e8049fa.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Validate single-video metadata identity and build normalized VideoInfo.",
+      "output": "Normalized VideoInfo with exact nonblank media ID.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/downloader/inspection/metadata.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/metadata.rs::downloader::inspection::metadata::parse_inspection[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/downloader/inspection/metadata.rs",
+      "line": 188,
+      "endLine": 266,
+      "symbol": "parse_inspection",
+      "qualifiedName": "downloader::inspection::metadata::parse_inspection",
+      "signature": "pub(super) fn parse_inspection( url: &str, bytes: &[u8], selection: Option<&MediaSelection>, ) -> Result<UrlInspection, String>",
+      "sourceDigest": "00b725eb5ab209e3af4206120f0f9da30c19e0de0e0f92beecf92da67aeed482",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "inspection::inspect parses successful subprocess stdout through this function; inspection unit tests call it directly."
+      ],
+      "inputs": [
+        "Source URL, bounded stdout bytes, and optional exact MediaSelection."
+      ],
+      "sideEffects": [
+        "Parses JSON and allocates normalized entries plus a deduplication set; no filesystem/process side effect."
+      ],
+      "errors": [
+        "Rejects oversize/malformed/multiple JSON, invalid selected wrappers/count/identity, missing/invalid video IDs, malformed playlist records, or an empty retained playlist."
+      ],
+      "ownership": [
+        "Borrows input bytes/selection and returns owned inspection data."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Exactly one JSON value is accepted; selected mode yields exactly one identity-matching video; playlists are capped, filtered, and deduplicated by URL plus optional selection identity."
+      ],
+      "tests": [
+        "downloader::inspection::tests::inspection_metadata_is_one_json_value_and_bounded_to_eight_mib; downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown; downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved"
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/metadata.rs:188-266, digest 00b725eb5ab209e3af4206120f0f9da30c19e0de0e0f92beecf92da67aeed482.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Parse one bounded yt-dlp JSON value into a validated video or playlist inspection.",
+      "output": "UrlInspection::Video or UrlInspection::Playlist.",
+      "cancellation": "Synchronous and non-cancellable; process cancellation occurs before this parser boundary.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/downloader/inspection/metadata.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/tests.rs::downloader::inspection::tests::flat_child_without_media_id_uses_its_source_url_as_unknown_identity[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/inspection/tests.rs",
+      "line": 106,
+      "endLine": 135,
+      "symbol": "flat_child_without_media_id_uses_its_source_url_as_unknown_identity",
+      "qualifiedName": "downloader::inspection::tests::flat_child_without_media_id_uses_its_source_url_as_unknown_identity",
+      "signature": "fn flat_child_without_media_id_uses_its_source_url_as_unknown_identity()",
+      "sourceDigest": "13191a56b3a39cdc2ade0343da85cc85378cefa2c9efd49971bbc002d411603a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness only."
+      ],
+      "inputs": [
+        "Synthetic flat URL child and resolved-shaped child without ID."
+      ],
+      "sideEffects": [
+        "Allocates JSON/inspection values only."
+      ],
+      "errors": [
+        "Panics if parsing fails or fallback identity/video-hydration behavior changes."
+      ],
+      "ownership": [
+        "Owns local JSON and parsed inspection."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Both shapes retain the child URL as entry ID and neither produces selection or hydrated VideoInfo."
+      ],
+      "tests": [
+        "This named test directly exercises PlaylistRecord::into_entry fallback behavior."
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/tests.rs:106-135, digest 13191a56b3a39cdc2ade0343da85cc85378cefa2c9efd49971bbc002d411603a.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Prove unresolved flat children without media IDs retain usable source URLs as provisional identity without claiming resolved metadata.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/inspection/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/tests.rs::downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/inspection/tests.rs",
+      "line": 138,
+      "endLine": 206,
+      "symbol": "x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors",
+      "qualifiedName": "downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors",
+      "signature": "fn x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors()",
+      "sourceDigest": "8edddf091b9ea8c9bf2cae4b1566c6640cded9247fd611e6e5f70c3ca4bbc2ff",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness only."
+      ],
+      "inputs": [
+        "Synthetic two-child multi_video metadata sharing the parent URL."
+      ],
+      "sideEffects": [
+        "Allocates and parses local JSON only."
+      ],
+      "errors": [
+        "Panics on parse failure or any URL, ID, extractor, index, quality, audio, or selection mismatch."
+      ],
+      "ownership": [
+        "Owns local metadata and inspection result."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Both children remain distinct at the parent URL because entry ID/extractor/index bind their selections; qualities deduplicate and sort descending."
+      ],
+      "tests": [
+        "This named test directly exercises parse_inspection, into_entry, and video_info."
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/tests.rs:138-206, digest 8edddf091b9ea8c9bf2cae4b1566c6640cded9247fd611e6e5f70c3ca4bbc2ff.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Prove shared-parent X multi-video children keep distinct authoritative ordinal selections and normalized video metadata.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/inspection/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/tests.rs::downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/inspection/tests.rs",
+      "line": 317,
+      "endLine": 342,
+      "symbol": "ordinary_video_and_generic_flat_playlist_are_preserved",
+      "qualifiedName": "downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved",
+      "signature": "fn ordinary_video_and_generic_flat_playlist_are_preserved()",
+      "sourceDigest": "d5f178fe4d1016cc1fb4ab78ed9e5ed015337fef0d67f1b6650500603303e1a2",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness only."
+      ],
+      "inputs": [
+        "One identified top-level video and one generic flat URL entry."
+      ],
+      "sideEffects": [
+        "Local JSON parsing only."
+      ],
+      "errors": [
+        "Panics if either valid shape is rejected or incorrectly gains selection/resolved video data."
+      ],
+      "ownership": [
+        "Owns local parsed values."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Stricter missing-ID rejection does not reject identified videos or generic flat URL children."
+      ],
+      "tests": [
+        "This named regression test directly exercises parse_inspection compatibility paths."
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/tests.rs:317-342, digest d5f178fe4d1016cc1fb4ab78ed9e5ed015337fef0d67f1b6650500603303e1a2.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Guard ordinary top-level video parsing and generic flat-playlist retention after stricter identity validation.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/inspection/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/tests.rs::downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/inspection/tests.rs",
+      "line": 345,
+      "endLine": 364,
+      "symbol": "video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown",
+      "qualifiedName": "downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown",
+      "signature": "fn video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown()",
+      "sourceDigest": "2b4c7bfb43dafef173642d553508002aed4dc18678c5461b7a76dcc1867efd9a",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness only."
+      ],
+      "inputs": [
+        "Four invalid ID representations and one literal string value unknown."
+      ],
+      "sideEffects": [
+        "Local JSON mutation/parsing only."
+      ],
+      "errors": [
+        "Panics if absent, null, empty, or whitespace ID is accepted, or if literal unknown is altered/rejected."
+      ],
+      "ownership": [
+        "Owns each synthetic JSON value and final VideoInfo."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Validation checks presence and nonblank content, not semantic guesses about a literal identifier."
+      ],
+      "tests": [
+        "target/engineering-metadata-before-fix.log records this exact test failing before the fix because missing id was accepted; the current test covers the corrected boundary."
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/tests.rs:345-364, digest 2b4c7bfb43dafef173642d553508002aed4dc18678c5461b7a76dcc1867efd9a.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Lock the media-ID validation boundary that motivated the metadata fix.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/inspection/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/downloader/inspection/tests.rs::downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/inspection/tests.rs",
+      "line": 367,
+      "endLine": 393,
+      "symbol": "fully_resolved_youtube_entry_reuses_normalized_video_metadata",
+      "qualifiedName": "downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata",
+      "signature": "fn fully_resolved_youtube_entry_reuses_normalized_video_metadata()",
+      "sourceDigest": "fe41cb94c58659a26edc54101a489c0a0a8d52cb6e42058b99aa3a2ac9cb5691",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Rust test harness only."
+      ],
+      "inputs": [
+        "Synthetic resolved YouTube child with ID, metadata, formats, and audio codec."
+      ],
+      "sideEffects": [
+        "Local JSON parsing only."
+      ],
+      "errors": [
+        "Panics if parse fails or entry/video identity, metadata, qualities, audio, or selection differs."
+      ],
+      "ownership": [
+        "Owns local inspection result."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Entry and VideoInfo share ID/URL; qualities are sorted/deduplicated; no selection is invented for a distinct child webpage URL."
+      ],
+      "tests": [
+        "This named test directly exercises PlaylistRecord::into_entry calling video_info."
+      ],
+      "evidence": [
+        "Current source span src/downloader/inspection/tests.rs:367-393, digest fe41cb94c58659a26edc54101a489c0a0a8d52cb6e42058b99aa3a2ac9cb5691.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Prove an identified resolved playlist video is hydrated through the same normalized video metadata path.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/downloader/inspection/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::impl JournalStore::reset_save_attempts_for_test[cfg=test]",
+      "kind": "method",
+      "classification": "test_support",
+      "file": "src/journal/tests.rs",
+      "line": 51,
+      "endLine": 53,
+      "symbol": "reset_save_attempts_for_test",
+      "qualifiedName": "journal::tests::impl JournalStore::reset_save_attempts_for_test",
+      "signature": "pub(crate) fn reset_save_attempts_for_test(&self)",
+      "sourceDigest": "f49412496ea6987713b714a5f2c0b862c569c650556ea1020c92b32be00fc5da",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "StateStore test facade and playlist/preparation/service tests call it before measuring a transaction."
+      ],
+      "inputs": [
+        "Borrowed JournalStore."
+      ],
+      "sideEffects": [
+        "Atomically stores zero with SeqCst ordering."
+      ],
+      "errors": [
+        "No Result; test process would panic only outside this method."
+      ],
+      "ownership": [
+        "Borrows store and retains no data."
+      ],
+      "locks": [
+        "Uses the test-only AtomicUsize, not the journal revision mutex."
+      ],
+      "invariants": [
+        "Subsequent observed attempts start from zero across test threads."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt; state::tests::playlist_tests::thousand_pending_finalizations_use_one_durable_save; services::preparation::tests::cancel_all_releases_a_thousand_preparations_and_reopens_admission"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:51-53, digest f49412496ea6987713b714a5f2c0b862c569c650556ea1020c92b32be00fc5da.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Reset the JournalStore test-only durable-save attempt counter.",
+      "output": "Unit.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::impl JournalStore::save_attempts_for_test[cfg=test]",
+      "kind": "method",
+      "classification": "test_support",
+      "file": "src/journal/tests.rs",
+      "line": 55,
+      "endLine": 57,
+      "symbol": "save_attempts_for_test",
+      "qualifiedName": "journal::tests::impl JournalStore::save_attempts_for_test",
+      "signature": "pub(crate) fn save_attempts_for_test(&self) -> usize",
+      "sourceDigest": "2d9e362358a3f7888e5f2404c559d1c5c6c8a638d1c9b51c692fad1acfc5d8e5",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "StateStore test facade and playlist/preparation/service tests use it for exact save-count assertions."
+      ],
+      "inputs": [
+        "Borrowed JournalStore."
+      ],
+      "sideEffects": [
+        "SeqCst atomic load only."
+      ],
+      "errors": [
+        "No Result or internal error path."
+      ],
+      "ownership": [
+        "Borrows store and returns a copied integer."
+      ],
+      "locks": [
+        "Uses the test-only AtomicUsize, not the journal revision mutex."
+      ],
+      "invariants": [
+        "Observation uses the same ordering as increments/resets so transaction-count assertions see the intended sequence."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::hundred_row_playlist_admission_uses_exactly_one_journal_save_attempt; state::tests::playlist_tests::simultaneous_identical_playlist_requests_create_one_durable_batch; services::queue::tests::playlist_replay_uses_raw_fingerprint_before_revalidating_deleted_output"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:55-57, digest 2d9e362358a3f7888e5f2404c559d1c5c6c8a638d1c9b51c692fad1acfc5d8e5.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Read the JournalStore test-only durable-save attempt counter.",
+      "output": "Current usize counter value.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::operation[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/journal/tests.rs",
+      "line": 89,
+      "endLine": 109,
+      "symbol": "operation",
+      "qualifiedName": "journal::tests::operation",
+      "signature": "fn operation(index: usize, state: OperationState, updated_at_ms: u64) -> OperationSnapshot",
+      "sourceDigest": "e029bf0b969a30e9222d4b362bffc3cbcfa82000b8275346425a593e3d2dc320",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Multiple named tests in journal/tests.rs call it."
+      ],
+      "inputs": [
+        "Fixture index, operation state, and update timestamp."
+      ],
+      "sideEffects": [
+        "Allocates fixture strings only."
+      ],
+      "errors": [
+        "No Result; UUID construction is deterministic from u128."
+      ],
+      "ownership": [
+        "Returns a fully owned fixture."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "IDs/correlation IDs are unique by index; finished_at_ms is present exactly for terminal states; new optional operation fields default to None."
+      ],
+      "tests": [
+        "journal::tests::restart_normalization_and_retention_preserve_pending_app_update_proof; journal::tests::pruning_retains_active_and_only_recent_bounded_terminal_attempts; journal::tests::structural_validation_rejects_duplicate_operation_ids"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:89-109, digest e029bf0b969a30e9222d4b362bffc3cbcfa82000b8275346425a593e3d2dc320.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Construct deterministic OperationSnapshot fixtures for journal retention, restart, and structural validation tests.",
+      "output": "Owned download OperationSnapshot with deterministic valid UUIDs and terminal timestamp policy.",
+      "cancellation": "Synchronous test support; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::queue_item[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/journal/tests.rs",
+      "line": 111,
+      "endLine": 134,
+      "symbol": "queue_item",
+      "qualifiedName": "journal::tests::queue_item",
+      "signature": "fn queue_item(index: usize, latest_operation_id: Option<String>) -> QueueItemRecord",
+      "sourceDigest": "213cf5f2db322a2968e4d3e7c9ea40d20b852b1b1c08087595a1357cd2d9fbda",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Journal schema, validation, retention, size, and persistence tests call it."
+      ],
+      "inputs": [
+        "Fixture index and optional latest operation ID."
+      ],
+      "sideEffects": [
+        "Allocates fixture strings/vectors only."
+      ],
+      "errors": [
+        "No Result or internal error path."
+      ],
+      "ownership": [
+        "Returns a fully owned fixture."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Fixture is schema-current and valid; source_media_id, selection, preparation, preparation_operation_id, and other optional fields are explicit None unless a test mutates them."
+      ],
+      "tests": [
+        "journal::tests::schema_one_queue_record_defaults_a_missing_media_selection; journal::tests::schema_v1_queue_defaults_new_optional_fields_across_two_opens; journal::tests::journal_validation_rejects_an_invalid_media_selection"
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:111-134, digest 213cf5f2db322a2968e4d3e7c9ea40d20b852b1b1c08087595a1357cd2d9fbda.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Construct deterministic QueueItemRecord fixtures with every current optional field represented.",
+      "output": "Owned completed QueueItemRecord with deterministic UUID and valid defaults.",
+      "cancellation": "Synchronous test support; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    },
+    {
+      "id": "src/journal/tests.rs::journal::tests::schema_v1_queue_defaults_new_optional_fields_across_two_opens[cfg=test,windows]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/journal/tests.rs",
+      "line": 159,
+      "endLine": 196,
+      "symbol": "schema_v1_queue_defaults_new_optional_fields_across_two_opens",
+      "qualifiedName": "journal::tests::schema_v1_queue_defaults_new_optional_fields_across_two_opens",
+      "signature": "fn schema_v1_queue_defaults_new_optional_fields_across_two_opens()",
+      "sourceDigest": "45ee2006131138ad401136f11da943c388d128ccf76437cddc376eb2286f148b",
+      "cfg": [
+        "test",
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Windows Rust test harness only."
+      ],
+      "inputs": [
+        "Encrypted legacy journal fixture with sourceMediaId, preparation, and preparationOperationId omitted."
+      ],
+      "sideEffects": [
+        "Creates an owned temp directory/journal, encrypts and writes fixture bytes, opens StateStore twice, reads snapshots, then removes the exact test root."
+      ],
+      "errors": [
+        "Panics on setup, encryption, write, open, snapshot, or defaulting assertion failure."
+      ],
+      "ownership": [
+        "Each StateStore owns/releases its journal lock before the second open; test owns the UUID-named temp root."
+      ],
+      "locks": [
+        "Journal lock is intentionally dropped between opens; no async lock."
+      ],
+      "invariants": [
+        "Both opens preserve the queue item ID and default all three omitted newly optional fields to None, proving the first open does not publish an incompatible rewrite."
+      ],
+      "tests": [
+        "This named Windows test directly covers legacy optional-field defaults across two independent JournalStore lifetimes."
+      ],
+      "evidence": [
+        "Current source span src/journal/tests.rs:159-196, digest 45ee2006131138ad401136f11da943c388d128ccf76437cddc376eb2286f148b.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
+      ],
+      "purpose": "Verify a legacy schema-v1 queue record missing newly optional fields defaults safely and remains reopenable.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/journal/tests.rs",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
+      "status": "reviewed",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span."
+    }
+  ]
+}

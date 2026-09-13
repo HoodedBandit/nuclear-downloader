@@ -1,5 +1,10 @@
 # Internal cleanup execution record
 
+The September 13 [engineering follow-up](engineering-status.md) is the current
+implementation record: 384 Rust tests, 214 frontend tests, 1,382 backend review
+units and 451 frontend callables. Its current measurements and acceptance limits
+are separate from the historical stage receipts below.
+
 Comparison source: `df582df4ddc566712729b7006dfb080374c5ef45` on `main`.
 
 The accepted scope preserves application output and behavior while separating ownership. Production changes must follow reproducible baseline checks. New branches, pushes, and release publication are outside this implementation run.

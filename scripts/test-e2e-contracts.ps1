@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 & (Join-Path $PSScriptRoot 'test-publish-contracts.ps1')
+& (Join-Path $PSScriptRoot 'test-frontend-extraction-baseline.ps1')
 
 $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $package = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'nuclear-app\package.json') | ConvertFrom-Json

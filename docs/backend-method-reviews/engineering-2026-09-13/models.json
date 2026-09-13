@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "src/models.rs::models::impl QueueItemRecord::to_download_request[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/models.rs",
+      "line": 313,
+      "endLine": 325,
+      "symbol": "to_download_request",
+      "qualifiedName": "models::impl QueueItemRecord::to_download_request",
+      "signature": "pub fn to_download_request(&self) -> DownloadRequest",
+      "sourceDigest": "7bf2e09c7637c275939ca8976c60a2f1357f5d4292824af3923cc4b6765b3d63",
+      "cfg": [],
+      "callers": [
+        "services/downloads.rs worker execution; services/queue.rs update_queue_item validation"
+      ],
+      "inputs": [
+        "Borrowed QueueItemRecord; source_media_id is optional for older schema-1 records."
+      ],
+      "sideEffects": [
+        "No persistence, process creation, event publication, or mutation of application state."
+      ],
+      "errors": [
+        "No fallible return; allocations have the normal Rust allocation-failure behavior. Validation remains at the service/downloader boundary."
+      ],
+      "ownership": [
+        "Borrows the record only during projection and returns independently owned strings/options; no executable or process lease is acquired."
+      ],
+      "locks": [
+        "No lock acquired; all work is synchronous over borrowed inputs or compile-time test strings."
+      ],
+      "invariants": [
+        "The expected publication identity follows the prepared source_media_id; MediaSelection is preserved independently and its ordinal is not substituted for identity."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::linked_preparation_completion_installs_metadata_without_download_completion",
+        "downloader::publication::tests (machine-record expected identity regressions)"
+      ],
+      "evidence": [
+        "Source src/models.rs:313-325 digest 7bf2e09c7637c275939ca8976c60a2f1357f5d4292824af3923cc4b6765b3d63.",
+        "Root executed target/engineering-final-rust.log: 384 passed, 0 failed, 4 ignored. Strict Clippy rerun passed in target/engineering-final-clippy-rerun.log."
+      ],
+      "purpose": "Project the durable queue request fields into an owned download request without losing the prepared media identity.",
+      "output": "DownloadRequest with cloned source URL, settings, selection, and expected_media_id copied from source_media_id.",
+      "cancellation": "Synchronous callable with no await or cancellation registration; finishes before returning control to its caller.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models.rs",
+      "reviewer": "Codex root method review",
+      "reviewedAt": "2026-09-13T20:55:21.634784Z",
+      "status": "reviewed",
+      "notes": "Reviewed the current source span and named callers/tests; no behavior change was made by this review.",
+      "ownerCall": null,
+      "previousDigest": "b9bc3b5230a44e43012214f6532c91590f6d53f81ba943cc472a5bb715796786",
+      "staleReason": "source_changed"
+    },
+    {
+      "id": "src/models/playlist.rs::models::playlist::impl MediaSelection::validate[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/models/playlist.rs",
+      "line": 18,
+      "endLine": 41,
+      "symbol": "validate",
+      "qualifiedName": "models::playlist::impl MediaSelection::validate",
+      "signature": "pub fn validate(&self) -> Result<(), String>",
+      "sourceDigest": "430513f15e36356f3c596b805dad915005abda69588347eb892a74976dd387ab",
+      "cfg": [],
+      "callers": [
+        "downloader/validation.rs validate_download_request",
+        "downloader/inspection.rs selected inspection",
+        "downloader/inspection/metadata.rs selection construction",
+        "journal/validation.rs queue validation",
+        "state/playlist.rs entry_selection"
+      ],
+      "inputs": [
+        "Borrowed entry_id, extractor_key, and one-based playlist_index."
+      ],
+      "sideEffects": [
+        "No persistence, process creation, event publication, or mutation of application state."
+      ],
+      "errors": [
+        "Returns the existing field-specific String error at the first empty/untrimmed, oversize, control-character, or out-of-range violation."
+      ],
+      "ownership": [
+        "Borrows selection fields; allocates only diagnostic strings on rejection."
+      ],
+      "locks": [
+        "No lock acquired; all work is synchronous over borrowed inputs or compile-time test strings."
+      ],
+      "invariants": [
+        "The 4 KiB budget counts UTF-8 bytes; the one-based index bounds do not replace the separate ID and extractor authority."
+      ],
+      "tests": [
+        "models::tests::media_selection_accepts_the_complete_valid_range",
+        "models::tests::media_selection_rejects_out_of_range_indexes",
+        "models::tests::media_selection_rejects_invalid_entry_ids_and_extractor_keys",
+        "models::tests::media_selection_rejects_fields_over_four_kibibytes"
+      ],
+      "evidence": [
+        "Source src/models/playlist.rs:18-41 digest 430513f15e36356f3c596b805dad915005abda69588347eb892a74976dd387ab.",
+        "Root executed target/engineering-final-rust.log: 384 passed, 0 failed, 4 ignored. Strict Clippy rerun passed in target/engineering-final-clippy-rerun.log."
+      ],
+      "purpose": "Validate a complete extractor media selection before it becomes an actionable process or durable journal input.",
+      "output": "Ok for trimmed, nonempty, control-free IDs/keys of at most 4096 bytes with index in 1..=1000.",
+      "cancellation": "Synchronous callable with no await or cancellation registration; finishes before returning control to its caller.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/playlist.rs",
+      "reviewer": "Codex root method review",
+      "reviewedAt": "2026-09-13T20:55:21.634784Z",
+      "status": "reviewed",
+      "notes": "Reviewed the current source span and named callers/tests; no behavior change was made by this review.",
+      "ownerCall": null,
+      "movedFrom": "src/models.rs::models::impl MediaSelection::validate[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/models/playlist.rs::models::playlist::inspection_settings_fingerprint[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/models/playlist.rs",
+      "line": 81,
+      "endLine": 90,
+      "symbol": "inspection_settings_fingerprint",
+      "qualifiedName": "models::playlist::inspection_settings_fingerprint",
+      "signature": "pub fn inspection_settings_fingerprint( cookie_config: Option<&CookieConfig>, compat_config_path: Option<&str>, ) -> String",
+      "sourceDigest": "fe89eaac3930011f22badb931c45ad8b436cde10244990e29dc7f534a8112858",
+      "cfg": [],
+      "callers": [
+        "services/inspection.rs execute_inspection records the fingerprint on playlist results",
+        "state/playlist.rs plan_playlist_rows compares requested settings with inspection context"
+      ],
+      "inputs": [
+        "Optional borrowed CookieConfig and optional compatibility configuration path; serializes their ordered tuple."
+      ],
+      "sideEffects": [
+        "No persistence, process creation, event publication, or mutation of application state."
+      ],
+      "errors": [
+        "Serialization expect is limited to the fixed CookieConfig/string/option tuple, which has no custom fallible serializer; no filesystem or cookie contents are read."
+      ],
+      "ownership": [
+        "Owns the temporary serialized byte vector and digest; neither is retained by this function."
+      ],
+      "locks": [
+        "No lock acquired; all work is synchronous over borrowed inputs or compile-time test strings."
+      ],
+      "invariants": [
+        "Missing or unequal fingerprint prevents full metadata reuse; this is settings equality, not executable integrity verification or a content hash of the cookie/config files."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::full_metadata_is_ready_without_creating_preparation_operations",
+        "state::tests::playlist_tests::absent_or_changed_inspection_settings_disable_full_metadata_reuse"
+      ],
+      "evidence": [
+        "Source src/models/playlist.rs:81-90 digest fe89eaac3930011f22badb931c45ad8b436cde10244990e29dc7f534a8112858.",
+        "Root executed target/engineering-final-rust.log: 384 passed, 0 failed, 4 ignored. Strict Clippy rerun passed in target/engineering-final-clippy-rerun.log."
+      ],
+      "purpose": "Bind reusable full playlist metadata to the cookie and compatibility settings used by its inspection.",
+      "output": "Lowercase SHA-256 hex digest of the serialized settings tuple.",
+      "cancellation": "Synchronous callable with no await or cancellation registration; finishes before returning control to its caller.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/models/playlist.rs",
+      "reviewer": "Codex root method review",
+      "reviewedAt": "2026-09-13T20:55:21.634784Z",
+      "status": "reviewed",
+      "notes": "Reviewed the current source span and named callers/tests; no behavior change was made by this review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/models/tests.rs::models::tests::committed_typescript_bindings_match_every_public_contract[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/models/tests.rs",
+      "line": 196,
+      "endLine": 241,
+      "symbol": "committed_typescript_bindings_match_every_public_contract",
+      "qualifiedName": "models::tests::committed_typescript_bindings_match_every_public_contract",
+      "signature": "fn committed_typescript_bindings_match_every_public_contract()",
+      "sourceDigest": "94d0116b71bdce0ec4d2af3911871b44b26bbbb32c0963f48dddccb117018ae9",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust test harness invokes this named test; check_binding macro calls assert_committed_binding."
+      ],
+      "inputs": [
+        "Compile-time include_str binding files for all listed public commands/events/models, including six new playlist/preparation contracts."
+      ],
+      "sideEffects": [
+        "No persistence, process creation, event publication, or mutation of application state."
+      ],
+      "errors": [
+        "Compile-time missing files or runtime assertion mismatch fail the test; concurrent ts-rs export writes cannot change include_str input."
+      ],
+      "ownership": [
+        "Test owns no app state, subprocesses, or mutable binding file handle; borrowed static strings feed declaration comparisons."
+      ],
+      "locks": [
+        "No lock acquired; all work is synchronous over borrowed inputs or compile-time test strings."
+      ],
+      "invariants": [
+        "Coverage list includes AddQueueItemResult and all batch/preparation DTOs; boxing the Single variant remains transparent in the generated untagged wire union."
+      ],
+      "tests": [
+        "This named regression passed in target/engineering-final-rust.log (384 passed, 0 failed, 4 ignored total)."
+      ],
+      "evidence": [
+        "Source src/models/tests.rs:196-241 digest 94d0116b71bdce0ec4d2af3911871b44b26bbbb32c0963f48dddccb117018ae9.",
+        "Root executed target/engineering-final-rust.log: 384 passed, 0 failed, 4 ignored. Strict Clippy rerun passed in target/engineering-final-clippy-rerun.log."
+      ],
+      "purpose": "Compare every explicitly listed public Rust wire declaration with the committed pre-test TypeScript binding bytes.",
+      "output": "No value; assertions succeed only when generated declaration text matches the embedded committed declaration.",
+      "cancellation": "Synchronous callable with no await or cancellation registration; finishes before returning control to its caller.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/models/tests.rs",
+      "reviewer": "Codex root method review",
+      "reviewedAt": "2026-09-13T20:55:21.634784Z",
+      "status": "reviewed",
+      "notes": "Reviewed the current source span and named callers/tests; no behavior change was made by this review.",
+      "ownerCall": null,
+      "previousDigest": "c9a0c63aa174c8671ab5716604767c962efe66d60bde315de6d9a6d1a8b5e7fc",
+      "staleReason": "source_changed"
+    }
+  ]
+}

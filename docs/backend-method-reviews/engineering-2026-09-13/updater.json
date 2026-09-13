@@ -1,0 +1,924 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/updater/artifact.rs",
+    "src/updater/artifact/ownership.rs",
+    "src/updater/artifact/path.rs"
+  ],
+  "reviewer": "Codex updater artifact ledger review",
+  "entries": [
+    {
+      "id": "src/updater/artifact.rs::updater::artifact::test_installer_handoff::async_block#1@110[cfg=test]",
+      "kind": "async_block",
+      "classification": "test_support",
+      "file": "src/updater/artifact.rs",
+      "line": 110,
+      "endLine": 113,
+      "symbol": "async_block#1",
+      "qualifiedName": "updater::artifact::test_installer_handoff::async_block#1",
+      "signature": "async",
+      "sourceDigest": "6c91c77e86163099c5591ec38d78490c0e465a97cef9d5c2cfe393bd5732f8d5",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "test_installer_handoff executes it immediately while holding the updater directory lease."
+      ],
+      "inputs": [
+        "The newly created test installer file and fixed test payload."
+      ],
+      "sideEffects": [
+        "Writes the complete test payload and syncs the file before ownership metadata and verification."
+      ],
+      "errors": [
+        "Propagates write_all or sync_all I/O failure to the enclosing cleanup path."
+      ],
+      "ownership": [
+        "Mutably borrows the open Tokio file; the enclosing function drops it before cleanup or verification."
+      ],
+      "locks": [
+        "Runs while test_installer_handoff holds UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "The test artifact is fully written and synced before its ownership record is created."
+      ],
+      "tests": [
+        "updater::tests::installer_handoff_retains_verification_and_directory_leases"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact.rs:110-113, digest 6c91c77e86163099c5591ec38d78490c0e465a97cef9d5c2cfe393bd5732f8d5.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Persist the synthetic installer used by updater handoff tests.",
+      "output": "The combined write and sync result.",
+      "cancellation": "Cancellation can stop the async writes; the enclosing future owns the file and directory lease and normal drop semantics release them.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged."
+    },
+    {
+      "id": "src/updater/artifact.rs::updater::artifact::open_verified_installer::owned_work_closure#1@461[cfg=all]",
+      "kind": "owned_work_closure",
+      "classification": "production",
+      "file": "src/updater/artifact.rs",
+      "line": 461,
+      "endLine": 463,
+      "symbol": "owned_work_closure#1",
+      "qualifiedName": "updater::artifact::open_verified_installer::owned_work_closure#1",
+      "signature": "move ||",
+      "sourceDigest": "fcd75d0275a0b90b6faa643166cd2f903b9e151f0f1af6d8aacf36027b58cbb4",
+      "cfg": [],
+      "ownerCall": "spawn_blocking",
+      "callers": [
+        "open_verified_installer passes it directly to tokio::task::spawn_blocking."
+      ],
+      "inputs": [
+        "Owned installer path, expected size, and expected SHA-256 copied before dispatch."
+      ],
+      "sideEffects": [
+        "Opens and hashes the installer synchronously through open_verified_installer_sync and may retain an open verification lease."
+      ],
+      "errors": [
+        "Returns open_verified_installer_sync validation/I/O errors; a spawn join failure is mapped by the enclosing async function."
+      ],
+      "ownership": [
+        "Moves owned path/hash into the blocking closure; any VerifiedInstaller returned owns its non-shareable file handle."
+      ],
+      "locks": [
+        "Does not acquire the directory lock; callers performing updater mutation already hold it, while the file handle supplies the execution lease."
+      ],
+      "invariants": [
+        "Blocking file I/O does not borrow stack data across dispatch; verification uses the exact supplied identity."
+      ],
+      "tests": [
+        "updater::tests::existing_installer_must_match_signed_size_and_hash",
+        "updater::tests::verified_installer_lease_denies_mutation_and_replacement"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact.rs:461-463, digest fcd75d0275a0b90b6faa643166cd2f903b9e151f0f1af6d8aacf36027b58cbb4.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Move synchronous open-and-hash verification off the async executor.",
+      "output": "Result<Option<VerifiedInstaller>, String> from synchronous verification.",
+      "cancellation": "Dropping the async waiter does not cancel spawn_blocking; moved inputs and any produced handle remain owned by the task until completion.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged."
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::is_owned_partial_installer_name[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 23,
+      "endLine": 32,
+      "symbol": "is_owned_partial_installer_name",
+      "qualifiedName": "updater::artifact::ownership::is_owned_partial_installer_name",
+      "signature": "pub(in crate::updater) fn is_owned_partial_installer_name(name: &str) -> bool",
+      "sourceDigest": "68cabf343448f5bc5c6789d4bae817d81360a193027b57c8352f528c936332a7",
+      "cfg": [],
+      "callers": [
+        "cleanup_owned_partial_installers and cleanup_owned_prepared_directories use it to restrict deletion candidates."
+      ],
+      "inputs": [
+        "A candidate file name."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Returns false for every malformed name, version, UUID, or suffix."
+      ],
+      "ownership": [
+        "Borrows the name only."
+      ],
+      "locks": [
+        "No lock internally; production cleanup entrypoint holds UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "Accepts only Nuclear.Downloader_<parseable-semver>_x64-setup.exe.<UUID>.part."
+      ],
+      "tests": [
+        "updater::tests::partial_cleanup_removes_only_owned_regular_files",
+        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:23-32, digest 68cabf343448f5bc5c6789d4bae817d81360a193027b57c8352f528c936332a7.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Recognize updater-owned partial installer names.",
+      "output": "Boolean ownership-name classification.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::is_exact_owned_installer_name[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 34,
+      "endLine": 45,
+      "symbol": "is_exact_owned_installer_name",
+      "qualifiedName": "updater::artifact::ownership::is_exact_owned_installer_name",
+      "signature": "pub(in crate::updater) fn is_exact_owned_installer_name(name: &str) -> bool",
+      "sourceDigest": "71289c82d1bf1de4f296fb0e190fd4cfcdb60d6265b327ef44744a91d7aeb360",
+      "cfg": [],
+      "callers": [
+        "Prepared-directory cleanup, old-installer cleanup, and quarantine validation use it before mutation."
+      ],
+      "inputs": [
+        "A candidate file name."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Returns false for malformed, prerelease, build-metadata, or noncanonical versions."
+      ],
+      "ownership": [
+        "Borrows the name only."
+      ],
+      "locks": [
+        "No lock internally; mutating callers hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "Accepts only canonical stable Nuclear.Downloader_<version>_x64-setup.exe names."
+      ],
+      "tests": [
+        "updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified",
+        "updater::tests::old_installer_cleanup_keeps_current_and_unrelated_files"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:34-45, digest 71289c82d1bf1de4f296fb0e190fd4cfcdb60d6265b327ef44744a91d7aeb360.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Recognize exact canonical updater installer names.",
+      "output": "Boolean ownership-name classification.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::owner_record_path[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 47,
+      "endLine": 53,
+      "symbol": "owner_record_path",
+      "qualifiedName": "updater::artifact::ownership::owner_record_path",
+      "signature": "pub(in crate::updater) fn owner_record_path(artifact_path: &Path) -> Result<PathBuf, String>",
+      "sourceDigest": "ed02ff3eda872699032cd4726c5eb0e45bd0d27a522c11a7f70023c68c14a1fc",
+      "cfg": [],
+      "callers": [
+        "Ownership read/write, quarantine, installer cleanup, and tests derive the marker path through this helper."
+      ],
+      "inputs": [
+        "An artifact path with a UTF-8 file name."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Rejects missing or non-UTF-8 artifact file names."
+      ],
+      "ownership": [
+        "Borrows the artifact path and returns a new PathBuf."
+      ],
+      "locks": [
+        "No lock internally."
+      ],
+      "invariants": [
+        "Places the marker beside the artifact by appending .nuclear-owner.json to the entire file name."
+      ],
+      "tests": [
+        "updater::tests::ownership_record_growth_is_bounded_and_unrelated_files_are_preserved",
+        "updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:47-53, digest ed02ff3eda872699032cd4726c5eb0e45bd0d27a522c11a7f70023c68c14a1fc.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Derive the ownership-marker path bound to an artifact name.",
+      "output": "Owned marker PathBuf.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::read_owner_record[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 55,
+      "endLine": 80,
+      "symbol": "read_owner_record",
+      "qualifiedName": "updater::artifact::ownership::read_owner_record",
+      "signature": "pub(super) async fn read_owner_record( artifact_path: &Path, ) -> Result<Option<(PathBuf, OwnedArtifactRecord)>, String>",
+      "sourceDigest": "013ea20fa4793f61b280e151fa025b98ef1a03cb9e0c34e7ddb8256c251893c8",
+      "cfg": [],
+      "callers": [
+        "Partial/prepared/old cleanup and invalid-cache quarantine authorization read markers before mutation."
+      ],
+      "inputs": [
+        "Artifact path whose adjacent marker is expected."
+      ],
+      "sideEffects": [
+        "Reads marker metadata and bounded JSON bytes."
+      ],
+      "errors": [
+        "Returns None only when the marker is absent; maps inspection/parse errors and rejects schema, name, size, or SHA-256 mismatch."
+      ],
+      "ownership": [
+        "Returns an owned marker path and decoded record; borrows artifact path only during the call."
+      ],
+      "locks": [
+        "No lock internally; mutating production callers hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "Marker schema is 1, artifact_name equals the exact target name, size is 1..=INSTALLER_LIMIT, and hash is canonical."
+      ],
+      "tests": [
+        "updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents",
+        "updater::tests::partial_cleanup_removes_only_owned_regular_files"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:55-80, digest 013ea20fa4793f61b280e151fa025b98ef1a03cb9e0c34e7ddb8256c251893c8.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Authenticate updater ownership metadata for a specific artifact.",
+      "output": "Optional validated marker path and record.",
+      "cancellation": "Async filesystem reads are cancellation safe because no mutation occurs.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::read_owner_record_bytes[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 82,
+      "endLine": 110,
+      "symbol": "read_owner_record_bytes",
+      "qualifiedName": "updater::artifact::ownership::read_owner_record_bytes",
+      "signature": "pub(in crate::updater) async fn read_owner_record_bytes( record_path: &Path, metadata: &std::fs::Metadata, ) -> Result<Vec<u8>, String>",
+      "sourceDigest": "018e6a69e650f72f2385bc800de74bc54ec9363d9c3d98eba8bd827718ce81d4",
+      "cfg": [],
+      "callers": [
+        "read_owner_record and the bounded-growth regression test call it."
+      ],
+      "inputs": [
+        "Marker path plus its initially observed metadata."
+      ],
+      "sideEffects": [
+        "Opens and reads at most 4 KiB from the marker."
+      ],
+      "errors": [
+        "Rejects nonfiles, reparse paths, oversized initial/opened files, traversal through reparse components, bounded-read overflow, and I/O failures."
+      ],
+      "ownership": [
+        "Owns the opened Tokio file for the read and returns owned bytes."
+      ],
+      "locks": [
+        "No lock internally; callers relying on mutation serialization hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "A stale small metadata snapshot cannot bypass the 4 KiB cap because opened metadata and bounded streaming are checked again."
+      ],
+      "tests": [
+        "updater::tests::ownership_record_growth_is_bounded_and_unrelated_files_are_preserved"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:82-110, digest 018e6a69e650f72f2385bc800de74bc54ec9363d9c3d98eba8bd827718ce81d4.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Read an ownership marker within a hard resource and path-safety bound.",
+      "output": "Marker bytes no larger than 4 KiB.",
+      "cancellation": "Read-only async operation; cancellation drops the file without partial state mutation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/ownership.rs::updater::artifact::ownership::write_owner_record[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/ownership.rs",
+      "line": 112,
+      "endLine": 147,
+      "symbol": "write_owner_record",
+      "qualifiedName": "updater::artifact::ownership::write_owner_record",
+      "signature": "pub(in crate::updater) async fn write_owner_record( artifact_path: &Path, installer_size: u64, installer_sha256: &str, ) -> Result<PathBuf, String>",
+      "sourceDigest": "0408b4498225fb7139e3a8fd49b0a7291f80eb95498c94fe3e2cd8e324b01be7",
+      "cfg": [],
+      "callers": [
+        "Prepared-directory creation, installer download staging, test handoff, and updater tests create ownership proof."
+      ],
+      "inputs": [
+        "Artifact path, signed installer size, and signed SHA-256."
+      ],
+      "sideEffects": [
+        "Creates a new adjacent JSON marker, writes it, syncs it, and removes incomplete marker data on write/sync failure when safe."
+      ],
+      "errors": [
+        "Rejects invalid artifact names and propagates encode/create/write/sync failures with context."
+      ],
+      "ownership": [
+        "Owns the created file until persistence finishes and returns the marker PathBuf."
+      ],
+      "locks": [
+        "No lock internally; production creation paths hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "create_new prevents replacement; marker binds schema 1 and the exact artifact file name, size, and hash."
+      ],
+      "tests": [
+        "updater::tests::failed_partial_removal_retains_ownership_for_startup_retry",
+        "updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/ownership.rs:112-147, digest 0408b4498225fb7139e3a8fd49b0a7291f80eb95498c94fe3e2cd8e324b01be7.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Persist exclusive ownership proof beside an updater artifact.",
+      "output": "Path to the fully written and synced marker.",
+      "cancellation": "Cancellation drops the file; callers' later owned cleanup can remove residue because create_new preserves marker identity.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/ownership.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::impl UpdateDirectoryLock::acquire[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 16,
+      "endLine": 52,
+      "symbol": "acquire",
+      "qualifiedName": "updater::artifact::path::impl UpdateDirectoryLock::acquire",
+      "signature": "pub(in crate::updater) fn acquire(directory: &Path) -> Result<Self, String>",
+      "sourceDigest": "b8f8a3ada2fd4b60e255cc7372e454196bbd7b8341ca30ff62445805c53f757b",
+      "cfg": [],
+      "callers": [
+        "Updater cleanup/download preparation and test handoff acquire it before directory mutation."
+      ],
+      "inputs": [
+        "Updater directory path."
+      ],
+      "sideEffects": [
+        "Creates the directory when absent and opens/creates its lock file with exclusive Windows sharing."
+      ],
+      "errors": [
+        "Rejects reparse parents/root/lock and maps directory, metadata, and competing-owner open failures."
+      ],
+      "ownership": [
+        "Returns a guard owning the lock file handle."
+      ],
+      "locks": [
+        "Acquires the updater-directory process lease; Windows share_mode(0) prevents another opener until Drop."
+      ],
+      "invariants": [
+        "Path components and lock are checked before and after open; successful return retains the file handle."
+      ],
+      "tests": [
+        "updater::tests::updater_lock_is_retained_and_reused_after_release",
+        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:16-52, digest b8f8a3ada2fd4b60e255cc7372e454196bbd7b8341ca30ff62445805c53f757b.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Serialize updater artifact mutations and pin a non-reparse directory.",
+      "output": "RAII UpdateDirectoryLock guard.",
+      "cancellation": "Synchronous acquisition; the guard releases through Drop on every later exit.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::impl Drop for UpdateDirectoryLock[trait-impl,cfg=all]",
+      "kind": "trait_impl",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 55,
+      "endLine": 59,
+      "symbol": "impl Drop for UpdateDirectoryLock",
+      "qualifiedName": "impl Drop for UpdateDirectoryLock",
+      "signature": "impl Drop for UpdateDirectoryLock",
+      "sourceDigest": "0d9a0c9d7d16192fe03fbfd58c6fbec22a953ca1fcbd84bbdffad4ece6b0b866",
+      "cfg": [],
+      "callers": [
+        "Rust invokes this trait implementation whenever the directory-lock guard leaves scope."
+      ],
+      "inputs": [
+        "Owned UpdateDirectoryLock guard."
+      ],
+      "sideEffects": [
+        "Delegates destruction to drop, releasing the stored file handle."
+      ],
+      "errors": [
+        "Drop cannot report errors."
+      ],
+      "ownership": [
+        "Defines RAII release for the optional owned file."
+      ],
+      "locks": [
+        "Releases the updater-directory lease."
+      ],
+      "invariants": [
+        "No lock file deletion or path mutation is required to release ownership."
+      ],
+      "tests": [
+        "updater::tests::updater_lock_is_retained_and_reused_after_release"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:55-59, digest 0d9a0c9d7d16192fe03fbfd58c6fbec22a953ca1fcbd84bbdffad4ece6b0b866.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Define RAII release semantics for the directory lease.",
+      "output": "No value.",
+      "cancellation": "Runs during normal or cancellation-driven destruction.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::impl Drop for UpdateDirectoryLock::drop[cfg=all]",
+      "kind": "destructor",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 56,
+      "endLine": 58,
+      "symbol": "drop",
+      "qualifiedName": "updater::artifact::path::impl Drop for UpdateDirectoryLock::drop",
+      "signature": "fn drop(&mut self)",
+      "sourceDigest": "27f4443a09630a6cd1c190c038c7c876285527d61dfdffcf78ae7fcffbe82619",
+      "cfg": [],
+      "callers": [
+        "Rust invokes it for every UpdateDirectoryLock destruction, including errors and future cancellation."
+      ],
+      "inputs": [
+        "Mutable lock guard."
+      ],
+      "sideEffects": [
+        "Takes and drops the lock file handle."
+      ],
+      "errors": [
+        "None."
+      ],
+      "ownership": [
+        "Moves the File out of Option so it is closed exactly once."
+      ],
+      "locks": [
+        "Releases the OS file-sharing lock."
+      ],
+      "invariants": [
+        "The guard cannot retain a live handle after drop executes."
+      ],
+      "tests": [
+        "updater::tests::updater_lock_is_retained_and_reused_after_release"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:56-58, digest 27f4443a09630a6cd1c190c038c7c876285527d61dfdffcf78ae7fcffbe82619.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Release the updater-directory file lease.",
+      "output": "No value.",
+      "cancellation": "Destructor itself is synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::opened_file_is_reparse[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 61,
+      "endLine": 72,
+      "symbol": "opened_file_is_reparse",
+      "qualifiedName": "updater::artifact::path::opened_file_is_reparse",
+      "signature": "pub(super) fn opened_file_is_reparse(metadata: &std::fs::Metadata) -> bool",
+      "sourceDigest": "489c1dff076923f373ea0f51b067d7645bf313b00cae5eaafe8f76441ea20681",
+      "cfg": [],
+      "callers": [
+        "open_verified_installer_sync checks metadata from the opened handle and final path recheck."
+      ],
+      "inputs": [
+        "Metadata obtained from an opened installer file."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "None."
+      ],
+      "ownership": [
+        "Borrows metadata only."
+      ],
+      "locks": [
+        "No lock."
+      ],
+      "invariants": [
+        "Uses FILE_ATTRIBUTE_REPARSE_POINT on Windows and symlink type elsewhere."
+      ],
+      "tests": [
+        "updater::tests::verified_installer_lease_denies_mutation_and_replacement",
+        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:61-72, digest 489c1dff076923f373ea0f51b067d7645bf313b00cae5eaafe8f76441ea20681.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Detect reparse identity from opened-file metadata.",
+      "output": "Whether metadata identifies a reparse/symlink.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::updater_directory[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 74,
+      "endLine": 79,
+      "symbol": "updater_directory",
+      "qualifiedName": "updater::artifact::path::updater_directory",
+      "signature": "pub(in crate::updater) fn updater_directory() -> PathBuf",
+      "sourceDigest": "51c9f0559d4f9f68d20d5f58dd0459a570fed3e7c5633fc8dc0112898613f9a2",
+      "cfg": [],
+      "callers": [
+        "Updater artifact cleanup and installer preparation select their shared root through this helper."
+      ],
+      "inputs": [
+        "Process-local platform directory configuration."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Falls back to the OS temp directory when local-data lookup is unavailable."
+      ],
+      "ownership": [
+        "Returns a new PathBuf."
+      ],
+      "locks": [
+        "No lock; callers acquire UpdateDirectoryLock before mutation."
+      ],
+      "invariants": [
+        "Always appends NuclearDownloader and the fixed updater directory name."
+      ],
+      "tests": [
+        "No focused test; pure platform folder mapping reviewed, and native path qualification was not executed in this sidecar review."
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:74-79, digest 51c9f0559d4f9f68d20d5f58dd0459a570fed3e7c5633fc8dc0112898613f9a2.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Select the application-owned updater artifact root.",
+      "output": "Updater directory PathBuf.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::is_reparse_or_symlink[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 81,
+      "endLine": 95,
+      "symbol": "is_reparse_or_symlink",
+      "qualifiedName": "updater::artifact::path::is_reparse_or_symlink",
+      "signature": "pub(in crate::updater) fn is_reparse_or_symlink(path: &Path) -> Result<bool, String>",
+      "sourceDigest": "4d83c0516a3ab5d1e50481c8ab75c14c1d79482962653a0acc4e0c20b6c19e74",
+      "cfg": [],
+      "callers": [
+        "Directory locking, verification, ownership reads, and cleanup use it before trusting or mutating paths."
+      ],
+      "inputs": [
+        "Path to inspect without following its final symlink."
+      ],
+      "sideEffects": [
+        "Reads filesystem metadata."
+      ],
+      "errors": [
+        "Maps symlink_metadata failures with the inspected path."
+      ],
+      "ownership": [
+        "Borrows the path only."
+      ],
+      "locks": [
+        "No lock internally."
+      ],
+      "invariants": [
+        "Checks symlink type on every platform and Windows reparse attributes explicitly."
+      ],
+      "tests": [
+        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial",
+        "updater::tests::partial_cleanup_removes_only_owned_regular_files"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:81-95, digest 4d83c0516a3ab5d1e50481c8ab75c14c1d79482962653a0acc4e0c20b6c19e74.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Classify a path as a symlink or reparse point.",
+      "output": "Result<bool, String>.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::ensure_no_reparse_components[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 97,
+      "endLine": 109,
+      "symbol": "ensure_no_reparse_components",
+      "qualifiedName": "updater::artifact::path::ensure_no_reparse_components",
+      "signature": "pub(in crate::updater) fn ensure_no_reparse_components(path: &Path) -> Result<(), String>",
+      "sourceDigest": "9b0e575a308a50663d3c77228b1fdc86ade8c758ac351164fd41c71fb3cfaf89",
+      "cfg": [],
+      "callers": [
+        "All updater artifact roots, markers, installer paths, and lock paths are checked before sensitive access or mutation."
+      ],
+      "inputs": [
+        "Target path."
+      ],
+      "sideEffects": [
+        "Inspects existing ancestors from root to leaf."
+      ],
+      "errors": [
+        "Returns the first metadata error or a path-specific rejection for any reparse component."
+      ],
+      "ownership": [
+        "Allocates a temporary ancestor vector; borrows the path."
+      ],
+      "locks": [
+        "No lock internally; sensitive callers pair it with UpdateDirectoryLock or an open-file lease."
+      ],
+      "invariants": [
+        "Every existing component must be a non-reparse path before success."
+      ],
+      "tests": [
+        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:97-109, digest 9b0e575a308a50663d3c77228b1fdc86ade8c758ac351164fd41c71fb3cfaf89.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Reject path traversal through symlinks or Windows reparse points.",
+      "output": "Success only for a clean existing ancestor chain.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::cleanup_file_if_exists[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 111,
+      "endLine": 120,
+      "symbol": "cleanup_file_if_exists",
+      "qualifiedName": "updater::artifact::path::cleanup_file_if_exists",
+      "signature": "pub(in crate::updater) async fn cleanup_file_if_exists(path: &Path)",
+      "sourceDigest": "748fded5fd144b6b48392a16041e6e37da089cf443a09b7bfe0c0ca723377472",
+      "cfg": [],
+      "callers": [
+        "Ownership write rollback, artifact cleanup, stage cleanup, and installer failure paths use it for best-effort removal."
+      ],
+      "inputs": [
+        "Candidate cleanup path."
+      ],
+      "sideEffects": [
+        "May remove one regular non-reparse file; ignores missing, unsafe, and removal-error cases."
+      ],
+      "errors": [
+        "Does not return errors; inspection and deletion failures leave the path untouched."
+      ],
+      "ownership": [
+        "Borrows the path; owns metadata temporarily."
+      ],
+      "locks": [
+        "No lock internally; production cleanup sequences hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "Never asks remove_file to delete a nonfile, reparse path, or path with a reparse ancestor."
+      ],
+      "tests": [
+        "updater::tests::partial_cleanup_removes_only_owned_regular_files",
+        "updater::tests::failed_partial_removal_retains_ownership_for_startup_retry"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:111-120, digest 748fded5fd144b6b48392a16041e6e37da089cf443a09b7bfe0c0ca723377472.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Best-effort cleanup of one safely identified regular file.",
+      "output": "No value.",
+      "cancellation": "Cancellation before remove leaves the file; removal is a single awaited filesystem operation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::cleanup_current_artifact[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 122,
+      "endLine": 135,
+      "symbol": "cleanup_current_artifact",
+      "qualifiedName": "updater::artifact::path::cleanup_current_artifact",
+      "signature": "pub(in crate::updater) async fn cleanup_current_artifact(path: &Path)",
+      "sourceDigest": "304a74d9091a5c688da02cbd6aeaa47ff3d5bf5018cf72c61d93d110faf74784",
+      "cfg": [],
+      "callers": [
+        "Installer preparation and test handoff failure paths clean an artifact plus its marker through this helper."
+      ],
+      "inputs": [
+        "Current artifact path."
+      ],
+      "sideEffects": [
+        "Best-effort removes the artifact, then removes its marker only after absence is confirmed."
+      ],
+      "errors": [
+        "Does not return errors; uninspectable or remaining artifacts retain ownership proof for later retry."
+      ],
+      "ownership": [
+        "Borrows the artifact path and derives an owned marker path."
+      ],
+      "locks": [
+        "No lock internally; production callers hold UpdateDirectoryLock."
+      ],
+      "invariants": [
+        "Ownership marker is preserved whenever artifact removal or absence cannot be confirmed, preventing residue from becoming unowned."
+      ],
+      "tests": [
+        "updater::tests::failed_partial_removal_retains_ownership_for_startup_retry"
+      ],
+      "evidence": [
+        "Current source span src/updater/artifact/path.rs:122-135, digest 304a74d9091a5c688da02cbd6aeaa47ff3d5bf5018cf72c61d93d110faf74784.",
+        "Current implementation, enclosing updater artifact flow, direct callers, and named updater tests were reviewed; extraction into ownership/path children is mechanical and preserves the prior contracts.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored historically; the new full Rust gate is pending and no test or build was run for this sidecar review."
+      ],
+      "purpose": "Clean an updater artifact without discarding proof for a surviving file.",
+      "output": "No value.",
+      "cancellation": "Cancellation can leave residue, but marker-first safety is preserved because marker deletion follows confirmed artifact absence.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex updater artifact ledger review",
+      "reviewedAt": "2026-09-13T21:20:00.000Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed. Lock, ownership-marker, quarantine-hash, invalid-cache, and cleanup behavior remain safe and mechanically unchanged.",
+      "ownerCall": null
+    }
+  ]
+}

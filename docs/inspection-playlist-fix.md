@@ -1,5 +1,9 @@
 # Inspection latency and shared-parent playlist correction
 
+This is the historical inspection correction record. The later
+[engineering and playlist-performance follow-up](engineering-status.md) contains
+the current source review, tests and candidate-specific qualification status.
+
 The manual test reported approximately 20 seconds from Add to the playlist picker,
 followed by a selected-entry error on an X post. The t.co URL in the error was part
 of the title; the inspected source was

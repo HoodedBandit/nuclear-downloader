@@ -12,7 +12,7 @@ Shared styles remain in one route-owned sheet to preserve their interleaved casc
 
 ## Gates
 
-`scripts/check-frontend-extraction.ps1` runs type checking, strict lint, formatting, frontend tests, a production build and test-hook exclusion, all 11 browser workflows, and paired 100%/150% emulated-scale visual captures. It compares each candidate with the same fixed baseline and retains separate logs and a comparison receipt. It cannot generate or replace baselines.
+`scripts/check-frontend-extraction.ps1` runs type checking, strict lint, formatting, frontend tests, a production build and test-hook exclusion, all 11 browser workflows, and paired 100%/150% emulated-scale visual captures. With no `-BaselineArtifact`, it compares against the two historical September 9 artifacts. A reviewed current baseline can be supplied explicitly as exactly two existing JSON files with `-BaselineArtifact <visual-100.json>,<visual-150.json>`; the runner never discovers, selects, replaces, or approves a baseline. The comparator continues to validate artifact content, hashes, and paired-scale parity.
 
 | Extraction | Result | Evidence |
 | --- | --- | --- |

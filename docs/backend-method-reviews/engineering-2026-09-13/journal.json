@@ -1,0 +1,1603 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/journal.rs",
+    "src/journal/platform.rs",
+    "src/journal/validation.rs"
+  ],
+  "reviewer": "Codex journal ledger review",
+  "entries": [
+    {
+      "id": "src/journal.rs::journal::impl PersistentJournal::normalize_after_restart[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/journal.rs",
+      "line": 60,
+      "endLine": 117,
+      "symbol": "normalize_after_restart",
+      "qualifiedName": "journal::impl PersistentJournal::normalize_after_restart",
+      "signature": "pub fn normalize_after_restart(&mut self, now_ms: u64) -> bool",
+      "sourceDigest": "d136c60daabe706d95e16398f04f9cb5aeea11c1f32275d597c8214bc9f3c1a5",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::open invokes it after successful decryption and structural validation."
+      ],
+      "inputs": [
+        "A mutable journal and current epoch milliseconds."
+      ],
+      "sideEffects": [
+        "Mutates queued/running items and nonterminal operations to Interrupted, clears transient inspection results, and prunes history."
+      ],
+      "errors": [
+        "No direct error result; saturating revision advancement and the following save handle persistence errors."
+      ],
+      "ownership": [
+        "Borrows the journal mutably; temporary ID sets borrow record strings only within the call."
+      ],
+      "locks": [
+        "No lock is acquired here; startup holds the JournalStore process lock and save later takes the revision mutex."
+      ],
+      "invariants": [
+        "Pending app-update operation remains nonterminal; interrupted preparation items follow their linked interrupted inspection; latest references are repaired after pruning."
+      ],
+      "tests": [
+        "journal::tests::restart_normalization_and_retention_preserve_pending_app_update_proof",
+        "journal::tests::restart_converts_nonterminal_operations_to_interrupted",
+        "journal::tests::dangling_latest_reference_is_repaired_once_and_persisted"
+      ],
+      "evidence": [
+        "Current source span src/journal.rs:60-117, digest d136c60daabe706d95e16398f04f9cb5aeea11c1f32275d597c8214bc9f3c1a5.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Normalize persisted runtime state after process restart.",
+      "output": "Whether normalization or retention changed the journal.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal.rs::journal::impl PersistentJournal::prune_and_repair_latest_references[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/journal.rs",
+      "line": 119,
+      "endLine": 198,
+      "symbol": "prune_and_repair_latest_references",
+      "qualifiedName": "journal::impl PersistentJournal::prune_and_repair_latest_references",
+      "signature": "pub(crate) fn prune_and_repair_latest_references( &mut self, now_ms: u64, ) -> JournalRetentionChanges",
+      "sourceDigest": "4cd790d58a6a3d76cc3656d7f2078946ae1d4f7f78ef221481f97cac43e14b69",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "normalize_after_restart and prepare_for_persistence call it before publishing state."
+      ],
+      "inputs": [
+        "A mutable journal and retention cutoff time."
+      ],
+      "sideEffects": [
+        "Moves and sorts the operations vector, removes expired/excess terminal history, preserves required references, and clears dangling latest-operation IDs."
+      ],
+      "errors": [
+        "No direct error result."
+      ],
+      "ownership": [
+        "Temporarily owns the prior operations vector via mem::take and owns returned ID lists."
+      ],
+      "locks": [
+        "No internal lock; callers provide exclusive journal mutation and persistence serialization."
+      ],
+      "invariants": [
+        "Pending update, preparation, and live playlist receipt references remain retained; resulting operations are deterministically ordered; every remaining latest reference exists."
+      ],
+      "tests": [
+        "journal::tests::pruning_retains_active_and_only_recent_bounded_terminal_attempts",
+        "journal::tests::age_pruning_clears_only_the_reference_to_the_expired_attempt",
+        "journal::tests::count_retention_repairs_references_to_evicted_attempts"
+      ],
+      "evidence": [
+        "Current source span src/journal.rs:119-198, digest 4cd790d58a6a3d76cc3656d7f2078946ae1d4f7f78ef221481f97cac43e14b69.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Apply bounded operation retention and repair queue latest-operation links.",
+      "output": "JournalRetentionChanges listing removed operations and queue items whose latest reference was cleared.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal.rs::journal::impl JournalStore::open[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/journal.rs",
+      "line": 324,
+      "endLine": 362,
+      "symbol": "open",
+      "qualifiedName": "journal::impl JournalStore::open",
+      "signature": "pub fn open(path: PathBuf) -> Result<(Self, PersistentJournal, Option<PathBuf>), AppError>",
+      "sourceDigest": "76dcf7d89639f0824e043495cc5cd8f4ad3145dd4793e2db63225cc903fd5eee",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "open_default and StateStore test/setup paths call JournalStore::open."
+      ],
+      "inputs": [
+        "An explicit journal path."
+      ],
+      "sideEffects": [
+        "Creates parent/lock file, retains exclusive lock, reads/decrypts/validates existing state, may normalize and atomically resave, or quarantine corrupt input."
+      ],
+      "errors": [
+        "Propagates lock, I/O, crypto, schema, validation, quarantine, mutex-poison, and save errors; only journal_corrupt enters quarantine recovery."
+      ],
+      "ownership": [
+        "Returned store owns the open lock handle and path; loaded journal is returned by value."
+      ],
+      "locks": [
+        "Exclusive OS file lock spans store lifetime; revision mutex is set before any normalized save."
+      ],
+      "invariants": [
+        "Unsupported-version and oversize errors preserve the original file; corrupt data is quarantined; normalization save uses a strictly newer revision."
+      ],
+      "tests": [
+        "journal::tests::future_schema_fails_closed_without_quarantining_the_journal",
+        "journal::tests::malformed_encrypted_json_is_quarantined",
+        "journal::tests::journal_lock_rejects_a_concurrent_instance_and_releases_on_drop"
+      ],
+      "evidence": [
+        "Current source span src/journal.rs:324-362, digest 76dcf7d89639f0824e043495cc5cd8f4ad3145dd4793e2db63225cc903fd5eee.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Open the single-writer encrypted journal, recover validated state, and normalize restart state.",
+      "output": "JournalStore, loaded/default PersistentJournal, and optional corrupt-file quarantine path.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal.rs::journal::impl JournalStore::save_prepared[cfg=all]",
+      "kind": "method",
+      "classification": "production",
+      "file": "src/journal.rs",
+      "line": 369,
+      "endLine": 443,
+      "symbol": "save_prepared",
+      "qualifiedName": "journal::impl JournalStore::save_prepared",
+      "signature": "pub(crate) fn save_prepared(&self, prepared: PreparedJournal) -> Result<(), AppError>",
+      "sourceDigest": "b2e9c30889e67cb530722f37c42cd32e1312fbef540b9ab0c0a8155d9c8a2054",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::save and StateStore durable commit paths call save_prepared."
+      ],
+      "inputs": [
+        "Opaque PreparedJournal whose revision and references have already been normalized."
+      ],
+      "sideEffects": [
+        "Revalidates, creates the data directory, serializes/encrypts, creates a unique temporary file, writes and syncs it, atomically replaces the journal, and updates persisted revision; the temporary guard removes unpublished temp files."
+      ],
+      "errors": [
+        "Returns validation, poisoned-lock, serialization, size, crypto, create/write/sync, or atomic publication errors with stable AppError context."
+      ],
+      "ownership": [
+        "Consumes PreparedJournal; owns protected bytes, temp path/file and cleanup guard until publication."
+      ],
+      "locks": [
+        "Holds persisted_revision mutex across stale check and the entire write/publish/update sequence, serializing writers."
+      ],
+      "invariants": [
+        "Only strictly increasing revisions publish; exact published structure is revalidated; persisted_revision advances only after atomic replacement succeeds."
+      ],
+      "tests": [
+        "journal::tests::stale_journal_revision_cannot_overwrite_a_newer_snapshot",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes",
+        "journal::tests::oversized_save_preserves_the_previous_journal_and_removes_temporary_files"
+      ],
+      "evidence": [
+        "Current source span src/journal.rs:369-443, digest b2e9c30889e67cb530722f37c42cd32e1312fbef540b9ab0c0a8155d9c8a2054.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Serialize, encrypt, durably publish, and advance the revision of an already prepared journal.",
+      "output": "Unit on durable publication, including no-op success for a stale/equal revision.",
+      "cancellation": "Synchronous and non-cancellable; the lock and temporary guard preserve ordering/cleanup across early errors.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::read_encrypted_journal[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 8,
+      "endLine": 19,
+      "symbol": "read_encrypted_journal",
+      "qualifiedName": "journal::platform::read_encrypted_journal",
+      "signature": "pub(super) fn read_encrypted_journal<R: Read>(reader: &mut R) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "10fae83491bf974e6faf1819c4f98092294326aad0a6b76f071456eefcd23e01",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::read calls it after the metadata fast-path size check."
+      ],
+      "inputs": [
+        "A mutable Read implementation."
+      ],
+      "sideEffects": [
+        "Consumes bytes from the reader, including one probe byte at the bound."
+      ],
+      "errors": [
+        "Maps overflow to journal_too_large, I/O to internal read failure, and impossible invalid limit to a distinct internal error."
+      ],
+      "ownership": [
+        "Returns an owned byte vector; does not retain the reader."
+      ],
+      "locks": [
+        "No lock internally; JournalStore owns the process lock and opened file."
+      ],
+      "invariants": [
+        "Never allocates/returns more than the encrypted limit and distinguishes overflow from I/O failure."
+      ],
+      "tests": [
+        "journal::tests::encrypted_journal_growth_after_metadata_is_rejected_with_the_size_contract",
+        "journal::tests::oversized_existing_journal_is_preserved_without_quarantine"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:8-19, digest 10fae83491bf974e6faf1819c4f98092294326aad0a6b76f071456eefcd23e01.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Read encrypted journal bytes through the shared exact-size bounded reader.",
+      "output": "Encrypted bytes up to MAX_ENCRYPTED_JOURNAL_BYTES.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::journal_too_large[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 21,
+      "endLine": 26,
+      "symbol": "journal_too_large",
+      "qualifiedName": "journal::platform::journal_too_large",
+      "signature": "pub(super) fn journal_too_large() -> AppError",
+      "sourceDigest": "bea9a5c4a7cc19e3de50bf11e28168f47ecc28242a83ed0f6f1795aa6d4c6979",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "Encrypted metadata/read checks and decrypted serialization/read checks call it."
+      ],
+      "inputs": [
+        "No inputs."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "This function constructs the error returned by callers."
+      ],
+      "ownership": [
+        "Returns an owned AppError."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "All journal size boundaries use one stable code and do not imply deletion/quarantine."
+      ],
+      "tests": [
+        "journal::tests::encrypted_journal_growth_after_metadata_is_rejected_with_the_size_contract",
+        "journal::tests::oversized_save_preserves_the_previous_journal_and_removes_temporary_files"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:21-26, digest bea9a5c4a7cc19e3de50bf11e28168f47ecc28242a83ed0f6f1795aa6d4c6979.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Construct the stable fail-closed oversize journal error.",
+      "output": "AppError with code journal_too_large and preservation guidance.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::acquire_journal_lock[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 28,
+      "endLine": 52,
+      "symbol": "acquire_journal_lock",
+      "qualifiedName": "journal::platform::acquire_journal_lock",
+      "signature": "pub(super) fn acquire_journal_lock(journal_path: &Path) -> Result<fs::File, AppError>",
+      "sourceDigest": "b300a52e0060ad0fe355debb5761b02102ef6f87abbddb1b1d91e0abb8081626",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::open calls it before reading or creating journal state."
+      ],
+      "inputs": [
+        "Journal path used to derive parent and .lock path."
+      ],
+      "sideEffects": [
+        "Creates the parent directory and lock file; opens the lock file read/write."
+      ],
+      "errors": [
+        "Returns path-parent/create errors or retryable already_running with OS error detail when the lock cannot be opened exclusively."
+      ],
+      "ownership": [
+        "Transfers ownership of the open file handle to JournalStore."
+      ],
+      "locks": [
+        "On Windows share_mode(0) denies other opens while the handle lives."
+      ],
+      "invariants": [
+        "Lock acquisition precedes journal inspection and the handle is never dropped while the store is active."
+      ],
+      "tests": [
+        "journal::tests::journal_lock_rejects_a_concurrent_instance_and_releases_on_drop"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:28-52, digest b300a52e0060ad0fe355debb5761b02102ef6f87abbddb1b1d91e0abb8081626.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Create/open the companion lock file and acquire exclusive Windows sharing semantics.",
+      "output": "An open file handle retained by JournalStore for its lifetime.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::atomic_replace[cfg=windows]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 55,
+      "endLine": 87,
+      "symbol": "atomic_replace",
+      "qualifiedName": "journal::platform::atomic_replace",
+      "signature": "pub(super) fn atomic_replace(source: &Path, destination: &Path) -> std::io::Result<()>",
+      "sourceDigest": "e0bff6ec4fc658df1c59a1910f02adbb54855ee49934019633568eb21baebd4d",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::save_prepared calls it after writing and syncing the temp file."
+      ],
+      "inputs": [
+        "Source and destination filesystem paths."
+      ],
+      "sideEffects": [
+        "Calls MoveFileExW with replacement and write-through flags."
+      ],
+      "errors": [
+        "Returns last_os_error when MoveFileExW reports zero."
+      ],
+      "ownership": [
+        "Owns temporary UTF-16 path buffers only for the FFI call."
+      ],
+      "locks": [
+        "No Rust lock; caller holds persisted_revision and the process journal lock."
+      ],
+      "invariants": [
+        "Destination changes only through replace-existing write-through publication."
+      ],
+      "tests": [
+        "journal::tests::stale_journal_revision_cannot_overwrite_a_newer_snapshot",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:55-87, digest e0bff6ec4fc658df1c59a1910f02adbb54855ee49934019633568eb21baebd4d.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Atomically replace the Windows journal destination with a flushed temporary file.",
+      "output": "I/O success or the last Windows OS error.",
+      "cancellation": "Synchronous OS call and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::atomic_replace::local::MoveFileExW[cfg=windows]",
+      "kind": "ffi_declaration",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 62,
+      "endLine": 62,
+      "symbol": "MoveFileExW",
+      "qualifiedName": "journal::platform::atomic_replace::local::MoveFileExW",
+      "signature": "fn MoveFileExW(existing: *const u16, new: *const u16, flags: u32) -> i32",
+      "sourceDigest": "c3a41eced929e3fdaf256dc2a53ccb32cfd300dd59ac2b1be2c9cbcb494dce61",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "The enclosing Windows atomic_replace function is the sole caller."
+      ],
+      "inputs": [
+        "NUL-terminated existing/new UTF-16 pointers and replacement/write-through flags."
+      ],
+      "sideEffects": [
+        "Windows filesystem replacement and flush request."
+      ],
+      "errors": [
+        "Failure is converted by atomic_replace through last_os_error."
+      ],
+      "ownership": [
+        "Pointers borrow vectors that remain alive for the call."
+      ],
+      "locks": [
+        "Caller holds journal locks; the OS performs the filesystem operation."
+      ],
+      "invariants": [
+        "System ABI/link name and pointer lifetimes match the enclosing wrapper; moved declaration was re-reviewed in platform context."
+      ],
+      "tests": [
+        "journal::tests::stale_journal_revision_cannot_overwrite_a_newer_snapshot",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:62-62, digest c3a41eced929e3fdaf256dc2a53ccb32cfd300dd59ac2b1be2c9cbcb494dce61.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Declare the exact Windows MoveFileExW ABI used for atomic journal publication.",
+      "output": "Nonzero success or zero failure status.",
+      "cancellation": "Synchronous FFI call and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::atomic_replace[cfg=not(windows)]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 90,
+      "endLine": 92,
+      "symbol": "atomic_replace",
+      "qualifiedName": "journal::platform::atomic_replace",
+      "signature": "pub(super) fn atomic_replace(source: &Path, destination: &Path) -> std::io::Result<()>",
+      "sourceDigest": "540ac9c13e5898179a65ab0b4323d4bd7a7e3bfa3a02378635dadb9cb35e77f3",
+      "cfg": [
+        "not(windows)"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::save_prepared calls it on non-Windows targets."
+      ],
+      "inputs": [
+        "Source and destination paths."
+      ],
+      "sideEffects": [
+        "Renames the source path to destination."
+      ],
+      "errors": [
+        "Propagates the rename I/O error."
+      ],
+      "ownership": [
+        "No retained ownership; source name is consumed by the filesystem on success."
+      ],
+      "locks": [
+        "Caller holds persisted_revision and process journal lock."
+      ],
+      "invariants": [
+        "Uses the target platform rename semantics and reports failure without marking the temp guard published."
+      ],
+      "tests": [
+        "No named runtime test executes this non-Windows cfg branch in the supplied Windows test run; compilation and wrapper review are the available evidence."
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:90-92, digest 540ac9c13e5898179a65ab0b4323d4bd7a7e3bfa3a02378635dadb9cb35e77f3.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Replace the journal destination using the platform rename primitive.",
+      "output": "std::io::Result from fs::rename.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::protect_for_current_user[cfg=windows]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 95,
+      "endLine": 97,
+      "symbol": "protect_for_current_user",
+      "qualifiedName": "journal::platform::protect_for_current_user",
+      "signature": "pub(super) fn protect_for_current_user(plaintext: &[u8]) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "1340390cd8018f1fbe3cd4ae4a76c51a13a50e87f8a39aea227f844a779ea14b",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::save_prepared calls it before temp-file creation."
+      ],
+      "inputs": [
+        "Plaintext bytes."
+      ],
+      "sideEffects": [
+        "Delegates to Windows DPAPI without UI."
+      ],
+      "errors": [
+        "Propagates bounded-length or journal_crypto_failed errors."
+      ],
+      "ownership": [
+        "Borrows plaintext for the call and returns an owned copy of DPAPI output."
+      ],
+      "locks": [
+        "No Rust lock; caller holds persisted_revision."
+      ],
+      "invariants": [
+        "Ciphertext is bound to the current Windows user and no UI prompt is permitted."
+      ],
+      "tests": [
+        "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:95-97, digest 1340390cd8018f1fbe3cd4ae4a76c51a13a50e87f8a39aea227f844a779ea14b.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Encrypt serialized journal bytes for the current Windows user.",
+      "output": "Owned DPAPI ciphertext.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::unprotect_for_current_user[cfg=windows]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 100,
+      "endLine": 102,
+      "symbol": "unprotect_for_current_user",
+      "qualifiedName": "journal::platform::unprotect_for_current_user",
+      "signature": "pub(super) fn unprotect_for_current_user(ciphertext: &[u8]) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "3c1be01266f65ef0a51782c1c4032c4a22136fa00a402352a3ad8afdb45a4862",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::read calls it after bounded encrypted input read."
+      ],
+      "inputs": [
+        "Ciphertext bytes."
+      ],
+      "sideEffects": [
+        "Delegates to Windows DPAPI without UI."
+      ],
+      "errors": [
+        "Maps invalid-data decryption to journal_corrupt and other failures to journal_crypto_failed."
+      ],
+      "ownership": [
+        "Borrows ciphertext for the call and returns an owned copy of DPAPI output."
+      ],
+      "locks": [
+        "No Rust lock; JournalStore retains the process lock."
+      ],
+      "invariants": [
+        "Only current-user DPAPI data is accepted; corrupt input remains distinguishable for quarantine policy."
+      ],
+      "tests": [
+        "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:100-102, digest 3c1be01266f65ef0a51782c1c4032c4a22136fa00a402352a3ad8afdb45a4862.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Decrypt current-user Windows DPAPI journal bytes.",
+      "output": "Owned plaintext journal bytes.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::crypt_protect[cfg=windows]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 105,
+      "endLine": 198,
+      "symbol": "crypt_protect",
+      "qualifiedName": "journal::platform::crypt_protect",
+      "signature": "fn crypt_protect(input: &[u8], decrypt: bool) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "837492a49747e608dcd31da6a8a9e0f904f2cd66d3a207171ed1abb8da24fd35",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "Windows protect_for_current_user and unprotect_for_current_user wrappers call it."
+      ],
+      "inputs": [
+        "Input bytes and a decrypt-mode flag."
+      ],
+      "sideEffects": [
+        "Invokes CryptProtectData or CryptUnprotectData and frees the LocalAlloc output."
+      ],
+      "errors": [
+        "Rejects lengths above u32, maps invalid decrypt data to journal_corrupt, and maps other OS failures to journal_crypto_failed."
+      ],
+      "ownership": [
+        "Input pointer borrows the slice during FFI; output is copied before LocalFree."
+      ],
+      "locks": [
+        "No lock internally."
+      ],
+      "invariants": [
+        "Length conversion is checked; UI is forbidden; DPAPI output is copied before exactly one LocalFree; moved implementation was re-reviewed with its wrappers."
+      ],
+      "tests": [
+        "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:105-198, digest 837492a49747e608dcd31da6a8a9e0f904f2cd66d3a207171ed1abb8da24fd35.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Provide the memory-safe boundary around Windows DPAPI protect/unprotect calls.",
+      "output": "Owned DPAPI result bytes.",
+      "cancellation": "Synchronous FFI and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::crypt_protect::local::CryptProtectData[cfg=windows]",
+      "kind": "ffi_declaration",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 115,
+      "endLine": 123,
+      "symbol": "CryptProtectData",
+      "qualifiedName": "journal::platform::crypt_protect::local::CryptProtectData",
+      "signature": "fn CryptProtectData( input: *const DataBlob, description: *const u16, entropy: *const DataBlob, reserved: *mut core::ffi::c_void, prompt: *const core::ffi::c_void, flags: u32, output: *mut DataBlob, ) -> i32",
+      "sourceDigest": "1a36ddfdb5dc40a907018248fb2107fffc810e712ccca986512233df0f7f1717",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "crypt_protect calls it only in encrypt mode."
+      ],
+      "inputs": [
+        "Borrowed input DATA_BLOB, null optional parameters, UI-forbidden flag, writable output blob."
+      ],
+      "sideEffects": [
+        "Windows allocates protected output tied to the current user."
+      ],
+      "errors": [
+        "crypt_protect reads last_os_error on zero."
+      ],
+      "ownership": [
+        "Output allocation ownership passes to crypt_protect for LocalFree after copying."
+      ],
+      "locks": [
+        "No Rust lock."
+      ],
+      "invariants": [
+        "ABI, link library, nullable arguments, and output ownership were reviewed after the declaration move."
+      ],
+      "tests": [
+        "journal::tests::oversized_save_preserves_the_previous_journal_and_removes_temporary_files",
+        "journal::tests::stale_journal_revision_cannot_overwrite_a_newer_snapshot"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:115-123, digest 1a36ddfdb5dc40a907018248fb2107fffc810e712ccca986512233df0f7f1717.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Declare the Windows DPAPI encryption ABI.",
+      "output": "Nonzero success/zero failure and an allocated output blob.",
+      "cancellation": "Synchronous FFI and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::crypt_protect::local::CryptUnprotectData[cfg=windows]",
+      "kind": "ffi_declaration",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 124,
+      "endLine": 132,
+      "symbol": "CryptUnprotectData",
+      "qualifiedName": "journal::platform::crypt_protect::local::CryptUnprotectData",
+      "signature": "fn CryptUnprotectData( input: *const DataBlob, description: *mut *mut u16, entropy: *const DataBlob, reserved: *mut core::ffi::c_void, prompt: *const core::ffi::c_void, flags: u32, output: *mut DataBlob, ) -> i32",
+      "sourceDigest": "3cb77e66585e90d2ba2a208d38681a4f3bdfdbbb8c631ddb26e6a2ab6972a3f9",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "crypt_protect calls it only in decrypt mode."
+      ],
+      "inputs": [
+        "Borrowed ciphertext DATA_BLOB, null optional parameters, UI-forbidden flag, writable output blob."
+      ],
+      "sideEffects": [
+        "Windows allocates decrypted output for the current user context."
+      ],
+      "errors": [
+        "crypt_protect distinguishes invalid-data error 13 from other failures."
+      ],
+      "ownership": [
+        "Output allocation ownership passes to crypt_protect for LocalFree after copying."
+      ],
+      "locks": [
+        "No Rust lock."
+      ],
+      "invariants": [
+        "ABI and null description-output pointer avoid an extra allocation; moved declaration was context-reviewed."
+      ],
+      "tests": [
+        "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:124-132, digest 3cb77e66585e90d2ba2a208d38681a4f3bdfdbbb8c631ddb26e6a2ab6972a3f9.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Declare the Windows DPAPI decryption ABI.",
+      "output": "Nonzero success/zero failure and an allocated plaintext blob.",
+      "cancellation": "Synchronous FFI and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::crypt_protect::local::LocalFree[cfg=windows]",
+      "kind": "ffi_declaration",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 136,
+      "endLine": 136,
+      "symbol": "LocalFree",
+      "qualifiedName": "journal::platform::crypt_protect::local::LocalFree",
+      "signature": "fn LocalFree(memory: *mut core::ffi::c_void) -> *mut core::ffi::c_void",
+      "sourceDigest": "9f56abb3b668a7eb69a50998430d645bd1b2d7800397951ac1bcbc27aebbcb34",
+      "cfg": [
+        "windows"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "crypt_protect calls it after copying successful output bytes."
+      ],
+      "inputs": [
+        "DPAPI-owned allocation pointer."
+      ],
+      "sideEffects": [
+        "Releases the DPAPI output allocation."
+      ],
+      "errors": [
+        "No AppError path is available from the declaration."
+      ],
+      "ownership": [
+        "Consumes responsibility for the successful DPAPI output allocation."
+      ],
+      "locks": [
+        "No lock."
+      ],
+      "invariants": [
+        "Called only after successful DPAPI output copying; moved declaration was context-reviewed."
+      ],
+      "tests": [
+        "journal::tests::damaged_dpapi_ciphertext_is_quarantined_as_corrupt",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:136-136, digest 9f56abb3b668a7eb69a50998430d645bd1b2d7800397951ac1bcbc27aebbcb34.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Declare the Windows allocator release ABI for DPAPI output.",
+      "output": "Null on success or original pointer on failure, intentionally ignored by the wrapper.",
+      "cancellation": "Synchronous FFI and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::protect_for_current_user[cfg=not(windows)]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 201,
+      "endLine": 206,
+      "symbol": "protect_for_current_user",
+      "qualifiedName": "journal::platform::protect_for_current_user",
+      "signature": "pub(super) fn protect_for_current_user(_plaintext: &[u8]) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "febdce3f8179db511bc7c3e036f31fe2d9cdf2ac366a1adb23f0912ca434e093",
+      "cfg": [
+        "not(windows)"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::save_prepared resolves to this cfg implementation."
+      ],
+      "inputs": [
+        "Plaintext bytes, deliberately unused."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Always returns unsupported_platform."
+      ],
+      "ownership": [
+        "No ownership retained."
+      ],
+      "locks": [
+        "No lock internally."
+      ],
+      "invariants": [
+        "Never writes plaintext as a fallback."
+      ],
+      "tests": [
+        "No named runtime test executes this non-Windows cfg branch in the supplied Windows test run; source review confirms fail-closed unsupported_platform behavior."
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:201-206, digest febdce3f8179db511bc7c3e036f31fe2d9cdf2ac366a1adb23f0912ca434e093.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Fail closed when encrypted journal persistence is requested off Windows.",
+      "output": "unsupported_platform AppError.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/platform.rs::journal::platform::unprotect_for_current_user[cfg=not(windows)]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/platform.rs",
+      "line": 209,
+      "endLine": 214,
+      "symbol": "unprotect_for_current_user",
+      "qualifiedName": "journal::platform::unprotect_for_current_user",
+      "signature": "pub(super) fn unprotect_for_current_user(_ciphertext: &[u8]) -> Result<Vec<u8>, AppError>",
+      "sourceDigest": "75efcdd37afaac9c79c8ea2a72a887bf3046e6072a693058ae3a933126c0515f",
+      "cfg": [
+        "not(windows)"
+      ],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::read resolves to this cfg implementation."
+      ],
+      "inputs": [
+        "Ciphertext bytes, deliberately unused."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Always returns unsupported_platform."
+      ],
+      "ownership": [
+        "No ownership retained."
+      ],
+      "locks": [
+        "No lock internally."
+      ],
+      "invariants": [
+        "Never treats ciphertext as plaintext or bypasses encryption."
+      ],
+      "tests": [
+        "No named runtime test executes this non-Windows cfg branch in the supplied Windows test run; source review confirms fail-closed unsupported_platform behavior."
+      ],
+      "evidence": [
+        "Current source span src/journal/platform.rs:209-214, digest 75efcdd37afaac9c79c8ea2a72a887bf3046e6072a693058ae3a933126c0515f.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Fail closed when encrypted journal loading is requested off Windows.",
+      "output": "unsupported_platform AppError.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/platform.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_serialized_schema[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 26,
+      "endLine": 43,
+      "symbol": "validate_serialized_schema",
+      "qualifiedName": "journal::validation::validate_serialized_schema",
+      "signature": "pub(super) fn validate_serialized_schema(json: &[u8]) -> Result<(), AppError>",
+      "sourceDigest": "f011c657fad65975bce33ef3267822a08166fbdcc547f28ea4b8aafb6e4e8988",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "JournalStore::read calls it on decrypted bounded JSON bytes."
+      ],
+      "inputs": [
+        "Raw decrypted JSON bytes."
+      ],
+      "sideEffects": [
+        "Parses two minimal borrowed validation models; no external side effects."
+      ],
+      "errors": [
+        "Returns journal_corrupt for malformed JSON and retryable journal_migration_required for version mismatch."
+      ],
+      "ownership": [
+        "Owns temporary deserialized header vectors only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Every persisted queue/operation record and the journal root must use APP_SCHEMA_VERSION before full decoding."
+      ],
+      "tests": [
+        "journal::tests::future_schema_fails_closed_without_quarantining_the_journal",
+        "journal::tests::future_record_schema_is_preserved_before_decoding_its_shape",
+        "journal::tests::malformed_encrypted_json_is_quarantined"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:26-43, digest f011c657fad65975bce33ef3267822a08166fbdcc547f28ea4b8aafb6e4e8988.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Reject incompatible top-level and record schema versions before full typed deserialization.",
+      "output": "Unit when top-level, queue, and operation schema versions are current.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::journal_migration_required[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 45,
+      "endLine": 51,
+      "symbol": "journal_migration_required",
+      "qualifiedName": "journal::validation::journal_migration_required",
+      "signature": "fn journal_migration_required() -> AppError",
+      "sourceDigest": "c935cc8f77cde81dc383897ef8dcc031207a0edf2e8d7855d4cd575003e1993d",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_serialized_schema calls it for raw root or record version mismatch."
+      ],
+      "inputs": [
+        "No inputs."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Constructs the error returned by validation."
+      ],
+      "ownership": [
+        "Returns an owned AppError."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Version mismatch is not mislabeled corruption or automatically quarantined; moved helper was context-reviewed."
+      ],
+      "tests": [
+        "journal::tests::future_schema_fails_closed_without_quarantining_the_journal",
+        "journal::tests::future_record_schema_is_preserved_before_decoding_its_shape"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:45-51, digest c935cc8f77cde81dc383897ef8dcc031207a0edf2e8d7855d4cd575003e1993d.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Construct the stable retryable unsupported-journal-version error.",
+      "output": "Retryable AppError with journal_migration_required code.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_journal_structure[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 59,
+      "endLine": 68,
+      "symbol": "validate_journal_structure",
+      "qualifiedName": "journal::validation::validate_journal_structure",
+      "signature": "pub(super) fn validate_journal_structure( journal: &PersistentJournal, latest_reference_policy: LatestReferencePolicy, ) -> Result<(), AppError>",
+      "sourceDigest": "c3b28922ef49fab9803e82521505f41d91c645b25d248a69efe1684f21f51b5e",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "prepare_for_persistence, save_prepared, and JournalStore::read call it with the appropriate latest-reference policy."
+      ],
+      "inputs": [
+        "Journal and AllowDangling/RequirePresent policy."
+      ],
+      "sideEffects": [
+        "Read-only validation with temporary sets."
+      ],
+      "errors": [
+        "Returns the first migration-required or journal_corrupt AppError from its validators."
+      ],
+      "ownership": [
+        "Borrows journal; temporary ID sets do not escape."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Persistence requires present latest references; initial read may allow a dangling latest reference only so restart repair can clear it."
+      ],
+      "tests": [
+        "journal::tests::journal_validation_rejects_an_invalid_media_selection",
+        "journal::tests::structural_validation_rejects_duplicate_operation_ids",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:59-68, digest c3b28922ef49fab9803e82521505f41d91c645b25d248a69efe1684f21f51b5e.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Run the complete typed journal integrity and cross-reference validation pipeline.",
+      "output": "Unit when every schema, limit, ID, receipt, pending update, and reference invariant holds.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_schema_and_limits[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 70,
+      "endLine": 100,
+      "symbol": "validate_schema_and_limits",
+      "qualifiedName": "journal::validation::validate_schema_and_limits",
+      "signature": "fn validate_schema_and_limits(journal: &PersistentJournal) -> Result<(), AppError>",
+      "sourceDigest": "d7bffc87e9ee43015e738ee9bff415ca951b8e7b4d4c0d185cb418a4a2304967",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_journal_structure calls it first."
+      ],
+      "inputs": [
+        "Borrowed PersistentJournal."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Returns retryable migration-required for schema mismatch or journal_corrupt for record-count overflow."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Limits are checked before allocating ID sets or scanning cross references."
+      ],
+      "tests": [
+        "journal::tests::future_schema_fails_closed_without_quarantining_the_journal",
+        "journal::tests::future_record_schema_is_preserved_before_decoding_its_shape"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:70-100, digest d7bffc87e9ee43015e738ee9bff415ca951b8e7b4d4c0d185cb418a4a2304967.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Enforce current typed schema versions and bounded record counts.",
+      "output": "Unit on current schema and queue/operation counts within 1000/1200.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_queue_records[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 102,
+      "endLine": 126,
+      "symbol": "validate_queue_records",
+      "qualifiedName": "journal::validation::validate_queue_records",
+      "signature": "fn validate_queue_records(journal: &PersistentJournal) -> Result<HashSet<&str>, AppError>",
+      "sourceDigest": "354eb3ba588ba165a8c33022cd35ac0908992951f14e4aad72f47d7c65bd8ae1",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_journal_structure calls it before operation validation."
+      ],
+      "inputs": [
+        "Borrowed PersistentJournal."
+      ],
+      "sideEffects": [
+        "Allocates a bounded temporary HashSet."
+      ],
+      "errors": [
+        "Returns journal_corrupt for malformed/duplicate UUIDs, invalid source media IDs, invalid preparation IDs, or invalid selections."
+      ],
+      "ownership": [
+        "Returned set borrows IDs from the journal and cannot outlive it."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Queue IDs are canonical parseable UUIDs and unique; action-bearing selection/source identity fields satisfy their own bounds."
+      ],
+      "tests": [
+        "journal::tests::journal_validation_rejects_an_invalid_media_selection",
+        "journal::tests::schema_v1_queue_defaults_new_optional_fields_across_two_opens"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:102-126, digest 354eb3ba588ba165a8c33022cd35ac0908992951f14e4aad72f47d7c65bd8ae1.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate queue identities, selections, and preparation IDs while building the queue-ID set.",
+      "output": "HashSet of unique borrowed queue IDs.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_operation_records[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 128,
+      "endLine": 150,
+      "symbol": "validate_operation_records",
+      "qualifiedName": "journal::validation::validate_operation_records",
+      "signature": "fn validate_operation_records( journal: &PersistentJournal, queue_ids: &HashSet<&str>, ) -> Result<(), AppError>",
+      "sourceDigest": "30015878949b5b3a5f3da71d18fe21588f4e4c7c66849fb7120d31c25bb3e68c",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_journal_structure calls it after queue IDs are known."
+      ],
+      "inputs": [
+        "Borrowed journal and queue-ID set."
+      ],
+      "sideEffects": [
+        "Allocates a bounded operation-ID set."
+      ],
+      "errors": [
+        "Returns journal_corrupt for malformed or duplicate IDs, dangling queue links, or invalid receipts."
+      ],
+      "ownership": [
+        "All sets borrow journal strings only during validation."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Every optional operation queue link names an existing queue item; every operation ID is unique."
+      ],
+      "tests": [
+        "journal::tests::structural_validation_rejects_duplicate_operation_ids",
+        "journal::tests::restart_converts_nonterminal_operations_to_interrupted"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:128-150, digest 30015878949b5b3a5f3da71d18fe21588f4e4c7c66849fb7120d31c25bb3e68c.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate operation identity/correlation/queue links and playlist admission receipts.",
+      "output": "Unit when all operations are unique, well-formed, linked, and receipt-valid.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_playlist_receipt[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 152,
+      "endLine": 181,
+      "symbol": "validate_playlist_receipt",
+      "qualifiedName": "journal::validation::validate_playlist_receipt",
+      "signature": "fn validate_playlist_receipt(operation: &crate::models::OperationSnapshot) -> Result<(), AppError>",
+      "sourceDigest": "c244362ebb10810468641d8562674f20099a83503b283a4ec0f6ce8dcdcdcb9d",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_operation_records calls it for every operation."
+      ],
+      "inputs": [
+        "Borrowed OperationSnapshot."
+      ],
+      "sideEffects": [
+        "None."
+      ],
+      "errors": [
+        "Returns journal_corrupt for wrong operation state/kind/link, unsafe request ID, noncanonical fingerprint, excessive counts, or malformed item IDs."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Receipt belongs only to completed unbound inspection; fingerprint is exactly 64 lowercase hex; IDs/counts remain bounded."
+      ],
+      "tests": [
+        "state::tests::playlist_tests::receipt_replays_after_restart_and_rejects_changed_payload",
+        "journal::tests::restart_normalization_and_retention_preserve_pending_app_update_proof"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:152-181, digest c244362ebb10810468641d8562674f20099a83503b283a4ec0f6ce8dcdcdcb9d.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate replay-security and shape invariants for an optional playlist admission receipt.",
+      "output": "Unit for no receipt or a valid completed inspection receipt.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_pending_update[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 183,
+      "endLine": 220,
+      "symbol": "validate_pending_update",
+      "qualifiedName": "journal::validation::validate_pending_update",
+      "signature": "fn validate_pending_update(journal: &PersistentJournal) -> Result<(), AppError>",
+      "sourceDigest": "17e96264305a099adf1d12cfc1fbe31735a0a633dca5846fef6daacdec367c43",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_journal_structure calls it before queue cross-reference checks."
+      ],
+      "inputs": [
+        "Borrowed PersistentJournal."
+      ],
+      "sideEffects": [
+        "Searches the bounded operation vector only."
+      ],
+      "errors": [
+        "Returns journal_corrupt for malformed UUID/version, missing operation, or wrong operation kind."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Expected version is canonical stable semver without prerelease/build data and operation link exists with AppUpdate kind."
+      ],
+      "tests": [
+        "journal::tests::restart_normalization_and_retention_preserve_pending_app_update_proof",
+        "state::tests::app_update_handoff_completes_only_on_target_version_and_is_restart_idempotent",
+        "state::tests::app_update_handoff_mismatch_becomes_retryable_interruption"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:183-220, digest 17e96264305a099adf1d12cfc1fbe31735a0a633dca5846fef6daacdec367c43.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate the durable pending app-update handoff and its referenced operation.",
+      "output": "Unit for no pending update or a valid canonical release-version link to AppUpdate operation.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_queue_operation_references[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 222,
+      "endLine": 231,
+      "symbol": "validate_queue_operation_references",
+      "qualifiedName": "journal::validation::validate_queue_operation_references",
+      "signature": "fn validate_queue_operation_references( journal: &PersistentJournal, latest_reference_policy: LatestReferencePolicy, ) -> Result<(), AppError>",
+      "sourceDigest": "7710b2a46cc06eed0547577276762877835a81576112e16bf22c8398d9171a04",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_journal_structure calls it after record and pending-update validation."
+      ],
+      "inputs": [
+        "Borrowed journal and latest-reference policy."
+      ],
+      "sideEffects": [
+        "Repeated bounded operation-vector lookups; no mutation."
+      ],
+      "errors": [
+        "Propagates journal_corrupt from preparation/latest validators."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Every queue item independently passes preparation and latest reference validation."
+      ],
+      "tests": [
+        "journal::tests::dangling_latest_reference_is_repaired_once_and_persisted",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:222-231, digest 7710b2a46cc06eed0547577276762877835a81576112e16bf22c8398d9171a04.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate each queue item preparation and latest-operation relationship.",
+      "output": "Unit when all per-item references satisfy their state/kind/ownership rules.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_preparation_reference[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 233,
+      "endLine": 261,
+      "symbol": "validate_preparation_reference",
+      "qualifiedName": "journal::validation::validate_preparation_reference",
+      "signature": "fn validate_preparation_reference( journal: &PersistentJournal, item: &crate::models::QueueItemRecord, ) -> Result<(), AppError>",
+      "sourceDigest": "37dbbb2fd31d9fdd95e87e28c12a3df4549c9bee981814c6cc0c8ef900ddd546",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_queue_operation_references calls it for each queue item."
+      ],
+      "inputs": [
+        "Borrowed journal and queue item."
+      ],
+      "sideEffects": [
+        "Searches the bounded operation vector."
+      ],
+      "errors": [
+        "Returns journal_corrupt for missing operation or inconsistent item state, latest link, kind, or reverse queue link."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "A preparation reference requires Pending preparation, no latest download, Inspection kind, and matching queue_item_id."
+      ],
+      "tests": [
+        "journal::tests::restart_converts_nonterminal_operations_to_interrupted",
+        "state::tests::playlist_tests::interrupted_preparation_stays_explicit_across_two_restarts"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:233-261, digest 37dbbb2fd31d9fdd95e87e28c12a3df4549c9bee981814c6cc0c8ef900ddd546.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate a queue item optional preparation-operation relationship.",
+      "output": "Unit for no reference or a consistent pending inspection reference.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    },
+    {
+      "id": "src/journal/validation.rs::journal::validation::validate_latest_reference[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/journal/validation.rs",
+      "line": 263,
+      "endLine": 296,
+      "symbol": "validate_latest_reference",
+      "qualifiedName": "journal::validation::validate_latest_reference",
+      "signature": "fn validate_latest_reference( journal: &PersistentJournal, item: &crate::models::QueueItemRecord, latest_reference_policy: LatestReferencePolicy, ) -> Result<(), AppError>",
+      "sourceDigest": "a36ba0ea115d7f5b788ec973bd0b1b7feb9bd2e8f220b0ff57e2ed6a0408de7a",
+      "cfg": [],
+      "ownerCall": null,
+      "callers": [
+        "validate_queue_operation_references calls it for each queue item."
+      ],
+      "inputs": [
+        "Borrowed journal/item and AllowDangling or RequirePresent policy."
+      ],
+      "sideEffects": [
+        "Searches the bounded operation vector."
+      ],
+      "errors": [
+        "Returns journal_corrupt for a required missing reference, wrong operation kind, or mismatched reverse queue link."
+      ],
+      "ownership": [
+        "Borrow only."
+      ],
+      "locks": [
+        "None."
+      ],
+      "invariants": [
+        "Dangling latest IDs are tolerated only during initial read and must be repaired before persistence."
+      ],
+      "tests": [
+        "journal::tests::dismiss_repair_clears_a_dangling_latest_operation_reference",
+        "journal::tests::dangling_latest_reference_is_repaired_once_and_persisted",
+        "journal::tests::invalid_prepared_journal_preserves_previous_published_bytes"
+      ],
+      "evidence": [
+        "Current source span src/journal/validation.rs:263-296, digest a36ba0ea115d7f5b788ec973bd0b1b7feb9bd2e8f220b0ff57e2ed6a0408de7a.",
+        "Current implementation, enclosing module, direct callers, and named journal/state tests were reviewed; moved spans were evaluated in their new platform/validation context.",
+        "target/engineering-structural-rust-final.log records 379 passed, 0 failed, and 4 ignored; no Rust or Clippy command was run for this sidecar review."
+      ],
+      "purpose": "Validate a queue item optional latest download-operation relationship with restart repair policy.",
+      "output": "Unit for no reference, an allowed dangling read-time reference, or a matching Download operation.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/journal/validation.rs",
+      "reviewer": "Codex journal ledger review",
+      "reviewedAt": "2026-09-13T20:43:31.674Z",
+      "status": "reviewed",
+      "notes": "Source, callers, inputs, outputs, side effects, error mapping, ownership, locking, cancellation, invariants, and available tests were reviewed with no separate defect found in this callable span."
+    }
+  ]
+}
