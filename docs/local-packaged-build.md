@@ -56,11 +56,30 @@ To check prerequisites and safeguards without building or launching anything:
 pwsh -NoProfile -File .\scripts\build-local-app.ps1 -PreflightOnly
 ```
 
-The first attempted local package build compiled dependencies for about nine
-minutes and then failed in the release build script because the required public
-updater-key variables were absent. That failure is preserved in
-`target/engineering-local-packaged-build.log`; it is not a successful build or
-qualification result. No local package has been successfully built, signed,
-launched, or accepted. The local command
-uses Tauri's `--no-sign` mode and cannot replace the protected signed release
-candidate workflow.
+The final local construction completed from clean source commit
+`dd224013e8fe613fac98d41a399514ba75caeedd` as run
+`local-0.7.1-20260913T223412Z-473c88b5838e4ff9b260b376a7bad6cc`. Its exact
+receipt is
+`nuclear-app/src-tauri/target/p/local-0.7.1-20260913T223412Z-473c88b5838e4ff9b260b376a7bad6cc/local-packaged-build-receipt.json`.
+The receipt records version 0.7.1, target `x86_64-pc-windows-msvc`, an empty Git
+status, and construction from 2026-09-13 22:34:13 UTC through 22:46:13 UTC. The
+receipt-bound standalone executable is 20,692,992 bytes with SHA-256
+`56fdc3c37c8fb6e2540c3c3f8b4fc30b9c5ac90092f8c3fd72be00a5ed3275b6`.
+The separate outer NSIS installer container is 106,321,199 bytes with SHA-256
+`c834f3289e7eb3b14f7d272a490bce4ad21ac9a35241f268c19ab171a54d2d83`.
+Both files and all four receipt-bound sidecars were independently rehashed at
+their exact receipt-relative paths and matched their recorded sizes and hashes.
+
+This is construction and byte-identity evidence only. Native smoke remains
+paused: neither the standalone executable nor installer was launched, and no
+controls or download workflows were exercised. The build used Tauri's
+`--no-sign` mode. The installer inner executable was not extracted or verified,
+so no relationship between its hash and the standalone executable is claimed.
+This local result does not modify the registered active installation and cannot
+replace the protected signed release-candidate workflow.
+
+The first attempt compiled dependencies for about nine minutes and then failed
+because the required public updater trust-anchor variables were absent; its
+preserved log is failure evidence only. A later successful package built before
+the final source rename is superseded by the receipt above. Neither historical
+attempt is current qualification evidence.

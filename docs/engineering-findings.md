@@ -18,7 +18,10 @@ Rust test-executable evidence do not qualify the installed native application.
 | Extraction changes visible output | Page composition and focused components | Stable 60-scenario decoded-pixel/geometry/text/control/focus comparison using matching frozen inputs. |
 | Complexity silently grows | Source-health contract and gate parity | Python and frontend fixtures, exact legacy ceilings, stale/malformed exception rejection and explicit-any lint. |
 | Local builds are development/stale/unowned outputs | Packaged build and contract helpers | Exact Git root/version, reparse/overlap, tool identity and preflight tests; actual artifact receipt recorded separately after construction. |
+| Missing public update keys fail late in release compilation | Packaged build preflight | Missing/malformed current key, partial/duplicate rotation pair and valid public-key fixtures; real public configuration accepted; final production package built. |
+| Debug-only binding produces a release warning | Verified runtime fallback | Identifier-only correction; full Rust regression run and strict release Clippy with warnings denied. |
 | Evidence attributes wrong source or workload | Input manifests; exact-root guards; frozen executable hashes | Parent-Git rejection, preserved invalid receipts, matched recaptures and same-mode counterbalanced backend runs. |
+| Debug benchmark memory and timing review flags | Performance evidence | Three final matched repeats, bounded journal-phase diagnostics and PE inspection; hard gates pass, performance review remains open. See the dated performance report. |
 
 Final ordinary checks executed 384 Rust tests and 214 frontend tests, plus
 strict Clippy, frontend static/build and tooling contract gates. Opt-in soaks

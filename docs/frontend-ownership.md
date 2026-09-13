@@ -24,9 +24,12 @@ reports all 15 browser workflows passing, including batch admission and
 `target/engineering-matched-visual-comparison.json` passed all 60 scenarios with
 unchanged decoded pixels, geometry, text, controls, and focus. Its browser scale
 emulation does not qualify native Windows scaling. The renderer two-hour run
-started under `target/renderer-soak/20260913T210906Z-5d8475e67a4e414f851090988aa723fe`
-and remains active, so it is not a passed gate. These results do not establish
-native Windows behavior.
+passed under `target/renderer-soak/20260913T210906Z-5d8475e67a4e414f851090988aa723fe`:
+318,745 mount/unmount cycles, 63,749 cycles of each of five workflow patterns,
+and matching playlist resynchronization counts. All 110 input hashes stayed
+unchanged, and both owned test processes exited. The receipt records heap
+observations without a heap pass threshold. This jsdom/mock-IPC evidence does
+not establish native Windows behavior.
 
 ## Ownership map
 
