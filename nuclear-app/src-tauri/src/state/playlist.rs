@@ -411,27 +411,45 @@ fn new_preparation_operation(id: String, queue_item_id: String, now: u64) -> Ope
 }
 
 impl StateStore {
+    #[cfg(test)]
     pub async fn add_playlist_items(
         &self,
         input: AddQueueItemInput,
     ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError> {
-        validate_playlist_input(&input)?;
-        let playlist_input = input.playlist.as_ref().expect("validated playlist input");
-        let fingerprint = request_fingerprint(&input)?;
+        let output_dir = input.output_dir.clone();
+        self.add_playlist_items_at_output(input, output_dir).await
+    }
+
+    pub async fn add_playlist_items_at_output(
+        &self,
+        raw_input: AddQueueItemInput,
+        canonical_output: String,
+    ) -> Result<(PlaylistAdmissionResult, Vec<String>), AppError> {
+        validate_playlist_input(&raw_input)?;
+        validate_actionable_field("output folder", &canonical_output)?;
+        let request_id = raw_input
+            .playlist
+            .as_ref()
+            .expect("validated playlist input")
+            .request_id
+            .clone();
+        let fingerprint = request_fingerprint(&raw_input)?;
+        let mut queue_input = raw_input.clone();
+        queue_input.output_dir = canonical_output;
         let mutation = self.inner.mutation_gate.clone().lock_owned().await;
         let now = now_ms();
         let (mut state, mut deltas, retention_now) = self.durable_candidate()?;
-        let playlist = match authoritative_playlist(&state, &input, &fingerprint)? {
+        let playlist = match authoritative_playlist(&state, &raw_input, &fingerprint)? {
             ParentPlaylist::Replay(result) => return Ok((result, Vec::new())),
             ParentPlaylist::Available(playlist) => playlist,
         };
-        let plan = plan_rows(&state, &input, playlist)?;
+        let plan = plan_rows(&state, &queue_input, playlist)?;
         let receipt = apply_plan(
             &mut state,
             &mut deltas,
-            &input,
+            &queue_input,
             plan,
-            playlist_input.request_id.clone(),
+            request_id,
             fingerprint,
             now,
         )?;

@@ -342,6 +342,28 @@ fn ordinary_video_and_generic_flat_playlist_are_preserved() {
 }
 
 #[test]
+fn video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown() {
+    for id in [None, Some(Value::Null), Some(json!("")), Some(json!("   "))] {
+        let mut metadata = json!({
+            "_type":"video", "title":"Identity required", "formats":[]
+        });
+        if let Some(id) = id {
+            metadata["id"] = id;
+        }
+        assert!(parse(&metadata, None).is_err(), "accepted {metadata}");
+    }
+
+    let UrlInspection::Video { video } = parse(
+        &json!({"_type":"video", "id":"unknown", "title":"Literal", "formats":[]}),
+        None,
+    )
+    .unwrap() else {
+        panic!("expected video");
+    };
+    assert_eq!(video.id, "unknown");
+}
+
+#[test]
 fn fully_resolved_youtube_entry_reuses_normalized_video_metadata() {
     let UrlInspection::Playlist { playlist } = parse(
         &json!({"_type":"playlist", "entries":[{

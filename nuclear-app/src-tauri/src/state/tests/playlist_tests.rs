@@ -789,3 +789,41 @@ async fn preparation_completion_save_failure_keeps_metadata_unready() {
     assert_ne!(item.title, "must not publish");
     assert_eq!(item.state, QueueItemState::Failed);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn simultaneous_identical_playlist_requests_create_one_durable_batch() {
+    let store = test_store();
+    let parent = completed_playlist(
+        &store,
+        vec![
+            entry("concurrent-first", Some(1), false),
+            entry("concurrent-second", Some(2), false),
+        ],
+    )
+    .await;
+    let input = playlist_input(&parent, "concurrent-request", vec![0, 1]);
+    store.reset_save_attempts_for_test();
+    let barrier = std::sync::Arc::new(tokio::sync::Barrier::new(3));
+    let first_store = store.clone();
+    let first_input = input.clone();
+    let first_barrier = barrier.clone();
+    let first = tokio::spawn(async move {
+        first_barrier.wait().await;
+        first_store.add_playlist_items(first_input).await
+    });
+    let second_store = store.clone();
+    let second_barrier = barrier.clone();
+    let second = tokio::spawn(async move {
+        second_barrier.wait().await;
+        second_store.add_playlist_items(input).await
+    });
+    barrier.wait().await;
+
+    let (first_receipt, first_preparations) = first.await.unwrap().unwrap();
+    let (second_receipt, second_preparations) = second.await.unwrap().unwrap();
+    assert_eq!(first_receipt.item_ids, second_receipt.item_ids);
+    assert!(first_preparations.is_empty() || second_preparations.is_empty());
+    assert_eq!(first_preparations.len() + second_preparations.len(), 2);
+    assert_eq!(store.snapshot().unwrap().queue.len(), 2);
+    assert_eq!(store.save_attempts_for_test(), 1);
+}

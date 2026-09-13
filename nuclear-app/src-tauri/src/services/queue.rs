@@ -8,6 +8,9 @@ use crate::models::{
     QueuePriority, UpdateQueueItemInput,
 };
 
+#[cfg(test)]
+mod tests;
+
 pub(crate) async fn add_inspection_result_to_queue(
     backend: Backend,
     mut input: AddQueueItemInput,
@@ -16,10 +19,10 @@ pub(crate) async fn add_inspection_result_to_queue(
     run_tracked_command(&coordinator, TrackedTaskKind::Admission, async move {
         uuid::Uuid::parse_str(input.inspection_operation_id.trim())
             .map_err(|_| AppError::invalid("Invalid inspection operation ID."))?;
-        input.output_dir = downloader::validate_output_directory(&input.output_dir)?;
         if input.playlist.is_some() {
             return admit_playlist(&backend, input).await;
         }
+        input.output_dir = downloader::validate_output_directory(&input.output_dir)?;
         let inspection = backend
             .state_store
             .completed_inspection_video(&input.inspection_operation_id)?;
@@ -69,8 +72,12 @@ async fn admit_playlist(
             "Select between 1 and 1,000 playlist entries.",
         ));
     }
+    let canonical_output = downloader::validate_output_directory(&input.output_dir)?;
     let admission = backend.download_manager.begin_job_admission(count).await?;
-    let (receipt, ids) = backend.state_store.add_playlist_items(input).await?;
+    let (receipt, ids) = backend
+        .state_store
+        .add_playlist_items_at_output(input, canonical_output)
+        .await?;
     let cleanup = crate::lifecycle_cleanup::QueueAdmissionGuard::new(
         backend.state_store.clone(),
         backend.download_manager.clone(),

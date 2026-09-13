@@ -142,8 +142,12 @@ fn video_info(
     {
         return Err("The selected entry did not resolve to a single video.".into());
     }
+    let id = data["id"]
+        .as_str()
+        .filter(|id| !id.trim().is_empty())
+        .ok_or("The video metadata has no media identity.")?;
     if let Some(selection) = selection {
-        if data["id"].as_str() != Some(selection.entry_id.as_str())
+        if id != selection.entry_id.as_str()
             || data["extractor_key"].as_str() != Some(selection.extractor_key.as_str())
         {
             return Err(
@@ -163,7 +167,7 @@ fn video_info(
     heights.dedup();
     heights.reverse();
     Ok(VideoInfo {
-        id: data["id"].as_str().unwrap_or("unknown").to_string(),
+        id: id.to_string(),
         title: data["title"]
             .as_str()
             .unwrap_or("Unknown Title")

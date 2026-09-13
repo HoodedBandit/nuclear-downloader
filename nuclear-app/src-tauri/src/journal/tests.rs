@@ -7,6 +7,8 @@ use crate::models::{
     MediaSelection, OperationKind, OperationSnapshot, OperationState, PendingAppUpdateRecovery,
     QueueItemRecord, QueueItemState, UrlInspection, VideoInfo, APP_SCHEMA_VERSION,
 };
+#[cfg(windows)]
+use crate::state::StateStore;
 use std::io::Read;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Condvar, Mutex};
@@ -150,6 +152,47 @@ fn schema_one_queue_record_defaults_a_missing_media_selection() {
     let item: QueueItemRecord = serde_json::from_value(value).unwrap();
 
     assert!(item.selection.is_none());
+}
+
+#[cfg(windows)]
+#[test]
+fn schema_v1_queue_defaults_new_optional_fields_across_two_opens() {
+    let root = std::env::temp_dir().join(format!(
+        "nuclear-schema-v1-queue-defaults-{}",
+        uuid::Uuid::new_v4()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let journal_path = root.join("state.dpapi");
+    let diagnostics_path = root.join("diagnostics");
+    let expected_id = uuid::Uuid::from_u128(100_001).to_string();
+    let mut legacy_item = serde_json::to_value(queue_item(1, None)).unwrap();
+    let legacy_object = legacy_item.as_object_mut().unwrap();
+    legacy_object.remove("sourceMediaId");
+    legacy_object.remove("preparation");
+    legacy_object.remove("preparationOperationId");
+    let legacy = serde_json::json!({
+        "schemaVersion": APP_SCHEMA_VERSION,
+        "revision": 1,
+        "queue": [legacy_item],
+        "operations": [],
+        "pendingAppUpdate": null,
+    });
+    let protected = protect_for_current_user(&serde_json::to_vec(&legacy).unwrap()).unwrap();
+    std::fs::write(&journal_path, protected).unwrap();
+
+    for _ in 0..2 {
+        let store = StateStore::open_at(journal_path.clone(), diagnostics_path.clone()).unwrap();
+        let snapshot = store.snapshot().unwrap();
+        assert_eq!(snapshot.queue.len(), 1);
+        let item = &snapshot.queue[0];
+        assert_eq!(item.id, expected_id);
+        assert!(item.source_media_id.is_none());
+        assert!(item.preparation.is_none());
+        assert!(item.preparation_operation_id.is_none());
+        drop(store);
+    }
+
+    let _ = std::fs::remove_dir_all(root);
 }
 
 #[test]
