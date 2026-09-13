@@ -18,6 +18,7 @@ $runnerPath = [IO.Path]::GetFullPath($PSCommandPath)
 $nodePath = Join-Path $appRoot 'src-tauri\target\toolchains\node-v22.23.1-win-x64\node.exe'
 $vitestPath = Join-Path $appRoot 'node_modules\vitest\vitest.mjs'
 $testPath = Join-Path $appRoot 'src\routes\page-lifecycle-soak.test.ts'
+$metricsContractPath = Join-Path $PSScriptRoot 'renderer-soak-metrics-contract.ps1'
 $configuredSeconds = if ($PSCmdlet.ParameterSetName -eq 'Seconds') {
     $DurationSeconds
 } else {
@@ -49,7 +50,8 @@ function Get-InputManifest {
         'nuclear-app\vitest.config.ts',
         'nuclear-app\jsconfig.json',
         'nuclear-app\src\routes\page-lifecycle-soak.test.ts',
-        'scripts\run-renderer-soak.ps1'
+        'scripts\run-renderer-soak.ps1',
+        'scripts\renderer-soak-metrics-contract.ps1'
     )) {
         $path = Join-Path $repoRoot $relative
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { throw "Required soak input is missing: $relative" }
@@ -83,11 +85,6 @@ function Get-InputManifest {
     })
 }
 
-function Test-PositiveJsonInteger {
-    param([AllowNull()][object]$Value)
-    return (($Value -is [int]) -or ($Value -is [long])) -and [long]$Value -gt 0
-}
-
 function Stop-OwnedProcessTree {
     param([Diagnostics.Process]$OwnedProcess)
     if ($null -eq $OwnedProcess) { return }
@@ -106,6 +103,10 @@ if (-not (Test-Path -LiteralPath $nodePath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $vitestPath -PathType Leaf)) {
     throw "Vitest entrypoint is missing: $vitestPath"
 }
+if (-not (Test-Path -LiteralPath $metricsContractPath -PathType Leaf)) {
+    throw "Renderer soak metrics contract is missing: $metricsContractPath"
+}
+. $metricsContractPath
 
 New-Item -ItemType Directory -Path $runRoot | Out-Null
 $beforeManifest = Get-InputManifest
@@ -228,26 +229,11 @@ if (Test-Path -LiteralPath $stdoutPath) {
 if ($null -eq $result -and $null -eq $runnerError) { $runnerError = 'Renderer soak result was missing.' }
 if ($null -ne $result -and $null -eq $runnerError) {
     $runnerElapsedMs = ($endedAt - $startedAt).TotalMilliseconds
-    $validCycleCounts =
-        (Test-PositiveJsonInteger $result.activeOperationCycles) -and
-        (Test-PositiveJsonInteger $result.lateListenerCycles) -and
-        (Test-PositiveJsonInteger $result.delayedStartupCycles) -and
-        (Test-PositiveJsonInteger $result.completedWorkflowCycles) -and
-        (Test-PositiveJsonInteger $result.mounts)
-    $cycleSum = if ($validCycleCounts) {
-        [long]$result.activeOperationCycles + [long]$result.lateListenerCycles +
-            [long]$result.delayedStartupCycles + [long]$result.completedWorkflowCycles
-    } else { -1 }
-    if ([double]$result.configuredSeconds -ne $configuredSeconds -or
-        -not [double]::IsFinite([double]$result.elapsedMs) -or
-        [double]$result.elapsedMs -lt ($configuredSeconds * 1000) -or
-        [double]$result.elapsedMs -gt (($configuredSeconds + 60) * 1000) -or
-        [double]$result.elapsedMs -gt ($runnerElapsedMs + 5000) -or
-        -not $validCycleCounts -or
-        $cycleSum -ne [long]$result.mounts -or
-        -not ($result.gcAvailable -is [bool]) -or
-        $result.gcAvailable -ne $true) {
-        $runnerError = 'Renderer soak metrics did not prove the configured duration and all four cycles.'
+    if (-not (Test-RendererSoakMetrics `
+        -Metrics $result `
+        -ConfiguredSeconds $configuredSeconds `
+        -RunnerElapsedMilliseconds $runnerElapsedMs)) {
+        $runnerError = 'Renderer soak metrics did not prove the configured duration, all five cycles, and playlist resync correspondence.'
     }
 }
 $receipt = [ordered]@{

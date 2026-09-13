@@ -254,7 +254,7 @@ describe('opt-in mounted page lifecycle soak', () => {
         return nativeClearTimeout(id);
       });
 
-      while (performance.now() < deadline || mounts < 4) {
+      while (performance.now() < deadline || mounts < 5) {
         const mode = mounts % 5;
         resizeObservers.length = 0;
         const unlistenCounts = new Map(eventNames.map((name) => [name, 0]));

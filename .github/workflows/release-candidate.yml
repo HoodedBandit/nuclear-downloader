@@ -66,6 +66,8 @@ jobs:
           python -m unittest scripts/test_backend_architecture.py
           python scripts/check-backend-architecture.py
           python scripts/inventory-backend-methods.py check
+          python -B scripts/source-health.test.py
+          python -B scripts/source-health.py
 
       - name: Test normal-user process launcher before building
         shell: pwsh
@@ -104,12 +106,16 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           node scripts/frontend-source-inventory.test.mjs
           node scripts/frontend-source-inventory.mjs --check
+          node --test scripts/source-health-frontend.test.mjs
+          node scripts/source-health-frontend.mjs
           node scripts/page-style-contract.test.mjs
           node scripts/compare-frontend-performance.test.mjs
           node --test nuclear-app/e2e/browser/support/performance-clock.test.mjs
           pwsh -NoProfile -File scripts/test-backend-performance-contracts.ps1
           pwsh -NoProfile -File scripts/test-renderer-input-provenance.ps1
           pwsh -NoProfile -File scripts/test-renderer-baseline.ps1
+          pwsh -NoProfile -File scripts/test-renderer-source-root.ps1
+          pwsh -NoProfile -File scripts/test-renderer-soak-metrics-contract.ps1
           pwsh -NoProfile -File scripts/test-publish-contracts.ps1
 
       - name: Run frontend quality gate
@@ -181,6 +187,10 @@ jobs:
       - name: Download and verify locked x64 sidecars
         shell: pwsh
         run: pwsh -NoProfile -File scripts/fetch-sidecars.ps1
+
+      - name: Test local packaged-build safeguards
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/test-local-packaged-build.ps1
 
       - name: Confirm tracked source is still clean
         shell: pwsh

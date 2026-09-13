@@ -47,11 +47,17 @@ export default ts.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
       ]
     }
+  },
+  {
+    // Test doubles exercise malformed wire data. Production inputs retain
+    // generated types or use unknown followed by explicit narrowing.
+    files: ['**/*.test.ts', 'e2e/**/*.mjs'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' }
   }
 );

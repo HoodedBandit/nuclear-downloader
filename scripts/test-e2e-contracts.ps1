@@ -60,7 +60,13 @@ $backendSourceGateContracts = @(
     'python -m unittest scripts/test_inventory_backend_methods.py',
     'python -m unittest scripts/test_backend_architecture.py',
     'python scripts/check-backend-architecture.py',
-    'python scripts/inventory-backend-methods.py check'
+    'python scripts/inventory-backend-methods.py check',
+    'python -B scripts/source-health.test.py',
+    'python -B scripts/source-health.py',
+    'node --test scripts/source-health-frontend.test.mjs',
+    'node scripts/source-health-frontend.mjs',
+    'pwsh -NoProfile -File scripts/test-renderer-source-root.ps1',
+    'pwsh -NoProfile -File scripts/test-renderer-soak-metrics-contract.ps1'
 )
 foreach ($required in $backendSourceGateContracts) {
     if (-not $ciWorkflow.Contains($required) -or -not $candidateWorkflow.Contains($required)) {
@@ -85,6 +91,12 @@ foreach ($required in @(
     if (-not $candidateWorkflow.Contains($required)) {
         throw "Release-candidate workflow is missing required acceptance contract: $required"
     }
+}
+if (-not $ciWorkflow.Contains('pwsh -NoProfile -File ..\scripts\test-local-packaged-build.ps1')) {
+    throw 'CI is missing the local packaged-build contract gate.'
+}
+if (-not $candidateWorkflow.Contains('pwsh -NoProfile -File scripts/test-local-packaged-build.ps1')) {
+    throw 'Release candidate is missing the local packaged-build contract gate.'
 }
 
 $acceptanceScript = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'scripts\run-windows-candidate-acceptance.ps1')

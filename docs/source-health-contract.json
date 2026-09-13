@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "limits": {
+    "productionFileLoc": 500,
+    "callableLoc": 100,
+    "flowNesting": 5
+  },
+  "measurement": {
+    "production": "Nonblank, noncomment Rust, TypeScript, JavaScript, and separate Svelte script/template/style regions.",
+    "excluded": [
+      "generated bindings",
+      "test files and cfg(test) items",
+      "declared test-support sources"
+    ]
+  },
+  "frontendDependencies": {
+    "queuePresentationNoIpc": true,
+    "workflowsNoSvelteComponents": true,
+    "pageCompositionNoDomainMethodBodies": true,
+    "exceptions": [
+      {
+        "id": "page-domain:formatByteCount",
+        "responsibility": "Format diagnostic byte counts",
+        "ceiling": 14,
+        "why": "Existing route-local display helper",
+        "alternatives": "Move to a formatting module",
+        "tests": ["frontend tests"]
+      },
+      {
+        "id": "page-domain:getSettings",
+        "responsibility": "Read composed settings state",
+        "ceiling": 17,
+        "why": "Existing adapter across composed controllers",
+        "alternatives": "Expose one settings projection",
+        "tests": ["frontend tests"]
+      },
+      {
+        "id": "page-domain:setup",
+        "responsibility": "Connect controller ports",
+        "ceiling": 88,
+        "why": "Existing composition-root setup",
+        "alternatives": "Extract a page controller factory",
+        "tests": ["frontend lifecycle tests"]
+      },
+      {
+        "id": "page-domain:reloadAppSnapshot",
+        "responsibility": "Reload composed state",
+        "ceiling": 9,
+        "why": "Existing page recovery adapter",
+        "alternatives": "Move to state reconciler",
+        "tests": ["state presentation tests"]
+      },
+      {
+        "id": "page-domain:applyBackendSnapshot",
+        "responsibility": "Apply state to composed controllers",
+        "ceiling": 15,
+        "why": "Existing composition adapter",
+        "alternatives": "Move to app state controller",
+        "tests": ["state presentation tests"]
+      },
+      {
+        "id": "page-domain:waitForOperation",
+        "responsibility": "Delegate operation waits",
+        "ceiling": 11,
+        "why": "Existing composition adapter",
+        "alternatives": "Expose the registry directly",
+        "tests": ["operation wait registry tests"]
+      },
+      {
+        "id": "page-domain:handleFilenameEditorKeydown",
+        "responsibility": "Map editor keys to composed actions",
+        "ceiling": 11,
+        "why": "Existing route event adapter",
+        "alternatives": "Move into QueueRow",
+        "tests": ["queue component tests"]
+      }
+    ]
+  },
+  "frontendExceptions": {},
+  "exceptions": {
+    "file:loc:src/downloader/engine.rs": {
+      "responsibility": "Download orchestration engine",
+      "ceiling": 642,
+      "why": "Coordinates subprocess setup, conversion fallback, cancellation, progress, and publication in their required lifecycle order.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "file:loc:src/downloader/process/output.rs": {
+      "responsibility": "Bounded child process output",
+      "ceiling": 574,
+      "why": "Owns concurrent stdout and stderr draining, byte limits, cancellation, process exit, and reader cleanup without deadlock.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "file:loc:src/downloader/publication/staging.rs": {
+      "responsibility": "Atomic publication staging",
+      "ceiling": 594,
+      "why": "Keeps destination validation, collision handling, temporary staging, and atomic publication cleanup in one custody boundary.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/publication/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "file:loc:src/runtime/manifest.rs": {
+      "responsibility": "Runtime manifest validation",
+      "ceiling": 619,
+      "why": "Validates manifest schema, paths, hashes, executable identity, and managed-runtime completeness before trust is granted.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "file:loc:src/runtime/promotion.rs": {
+      "responsibility": "Runtime promotion transaction",
+      "ceiling": 724,
+      "why": "Owns crash-recoverable runtime promotion, rollback, journal transitions, and cleanup ordering.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "file:loc:src/runtime.rs": {
+      "responsibility": "Managed runtime workflow",
+      "ceiling": 617,
+      "why": "Coordinates runtime discovery, repair, download, verification, promotion, cancellation, and progress reporting.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/downloader/engine.rs::downloader::engine::run_webm_conversion[cfg=all]": {
+      "responsibility": "WebM conversion lifecycle",
+      "ceiling": 137,
+      "why": "Runs the conversion subprocess through cancellation, bounded output, progress, cleanup, and publication.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/engine.rs::downloader::engine::run_webm_download[cfg=all]": {
+      "responsibility": "WebM download lifecycle",
+      "ceiling": 104,
+      "why": "Runs the WebM download and conversion handoff while preserving cancellation and failure cleanup.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/engine.rs::downloader::engine::start_download[cfg=all]": {
+      "responsibility": "Download startup ordering",
+      "ceiling": 143,
+      "why": "Validates the request and sequences staging, download mode selection, cancellation, and final publication.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/errors.rs::downloader::errors::classify_process_error[cfg=all]": {
+      "responsibility": "Downloader error classification",
+      "ceiling": 108,
+      "why": "Maps bounded process evidence into stable user-facing error codes while redacting unsafe output.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/process/output.rs::downloader::process::output::wait_with_streamed_stdout[cfg=all]": {
+      "responsibility": "Streamed process capture",
+      "ceiling": 198,
+      "why": "Drains streamed output and stderr concurrently while enforcing cancellation, line, and total-byte bounds.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/process/output.rs::downloader::process::output::wait_with_bounded_output_and_drain[cfg=all]": {
+      "responsibility": "Bounded process drain",
+      "ceiling": 146,
+      "why": "Coordinates bounded stdout and stderr readers with cancellation and child termination without pipe deadlock.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/publication/resolution.rs::downloader::publication::resolution::resolve_recorded_output[cfg=all]": {
+      "responsibility": "Published output resolution",
+      "ceiling": 122,
+      "why": "Resolves the exact produced file while enforcing expected identity, selection, containment, and ambiguity checks.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/publication/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/downloader/validation.rs::downloader::validation::validate_output_directory[cfg=all]": {
+      "responsibility": "Output directory safety",
+      "ceiling": 101,
+      "why": "Validates canonical output ownership and platform path constraints before any download write.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/downloader/process/tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/runtime.rs::runtime::check_downloader_runtime_cancellable[cfg=all]": {
+      "responsibility": "Cancellable runtime check",
+      "ceiling": 113,
+      "why": "Checks all managed runtime tools while preserving one cancellation and progress contract.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/runtime.rs::runtime::update_downloader_runtime_inner[cfg=all]": {
+      "responsibility": "Runtime update transaction",
+      "ceiling": 158,
+      "why": "Coordinates download, verification, promotion, rollback, cancellation, and terminal progress for one update.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/runtime/archive.rs::runtime::archive::extract_runtime_zip[cfg=all]": {
+      "responsibility": "Bounded archive extraction",
+      "ceiling": 175,
+      "why": "Validates every archive entry and extracts within path, type, count, and byte limits.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/runtime/manifest.rs::runtime::manifest::discover_managed_runtime_at_with_verifier[cfg=all]": {
+      "responsibility": "Managed runtime discovery",
+      "ceiling": 104,
+      "why": "Discovers a complete managed runtime only after manifest and executable verification.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/runtime/manifest.rs::runtime::manifest::validate_manifest_at[cfg=all]": {
+      "responsibility": "Runtime manifest verification",
+      "ceiling": 119,
+      "why": "Verifies schema, version, tool inventory, paths, sizes, and hashes before accepting a runtime.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/runtime/promotion.rs::runtime::promotion::recover_runtime_update_transaction_at[cfg=all]": {
+      "responsibility": "Runtime transaction recovery",
+      "ceiling": 138,
+      "why": "Reconciles interrupted promotion states without exposing a partially installed runtime.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+    },
+    "callable:loc:src/state/commit.rs::state::commit::impl StateStore::finalize_operation_inner[cfg=all]": {
+      "responsibility": "Operation finalization",
+      "ceiling": 163,
+      "why": "Commits terminal operation state, queue projection, retention, and deltas as one durable transition.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": [
+        "src/state/tests.rs",
+        "src/state/tests/playlist_tests.rs",
+        "scripts/source-health.test.py"
+      ]
+    },
+    "callable:loc:src/updater/installer.rs::updater::installer::download_installer[cfg=all]": {
+      "responsibility": "Verified installer download",
+      "ceiling": 212,
+      "why": "Streams and hashes the installer under size, cancellation, ownership, and cleanup constraints.",
+      "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
+      "tests": ["src/updater/tests.rs", "scripts/source-health.test.py"]
+    }
+  }
+}

@@ -106,6 +106,11 @@ See [developer setup](docs/quickstart.md) for local builds and
 [testing](docs/testing.md) for the complete checks, isolated renderer profiles,
 visual comparisons, performance measurements, and native acceptance.
 
+For a packaged local Windows GUI, use the single guarded command in
+[local packaged build](docs/local-packaged-build.md). It creates a unique owned
+target directory and a receipt for the exact executable, installer, and sidecar
+bytes. A plain `cargo build --release` does not produce a qualified packaged GUI.
+
 ## Code and contribution guide
 
 | Area                                        | Starting point                                                                                                        |

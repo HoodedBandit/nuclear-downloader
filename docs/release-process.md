@@ -109,6 +109,10 @@ python -m unittest scripts/test_inventory_backend_methods.py
 python -m unittest scripts/test_backend_architecture.py
 python scripts/check-backend-architecture.py
 python scripts/inventory-backend-methods.py check
+python -B scripts/source-health.test.py
+python -B scripts/source-health.py
+node --test scripts/source-health-frontend.test.mjs
+node scripts/source-health-frontend.mjs
 pwsh -NoProfile -File scripts/test-windows-user-process.ps1
 cd nuclear-app
 npm ci

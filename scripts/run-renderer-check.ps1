@@ -14,6 +14,29 @@ $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $appRoot = Join-Path $repositoryRoot 'nuclear-app'
 $nodePath = Join-Path $appRoot 'src-tauri/target/toolchains/node-v22.23.1-win-x64/node.exe'
 
+function Get-ExactRepositoryCommit([string] $RepositoryRoot) {
+    $expectedRoot = [IO.Path]::GetFullPath($RepositoryRoot).TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar
+    )
+    $gitRoot = [string](& git -C $expectedRoot rev-parse --show-toplevel 2>$null)
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitRoot)) {
+        throw 'Cannot identify the renderer repository root.'
+    }
+    $actualRoot = [IO.Path]::GetFullPath($gitRoot.Trim()).TrimEnd(
+        [IO.Path]::DirectorySeparatorChar,
+        [IO.Path]::AltDirectorySeparatorChar
+    )
+    if (-not $actualRoot.Equals($expectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Renderer source root is not the exact Git worktree root: $expectedRoot"
+    }
+    $commit = [string](& git -C $expectedRoot rev-parse HEAD)
+    if ($LASTEXITCODE -ne 0 -or $commit -cnotmatch '^[0-9a-f]{40}$') {
+        throw 'Cannot identify renderer source commit.'
+    }
+    $commit
+}
+
 function Relative-InputPath([string] $Path) {
     [IO.Path]::GetRelativePath($repositoryRoot, [IO.Path]::GetFullPath($Path)).Replace('\', '/')
 }
@@ -128,6 +151,11 @@ function Identities-Match([object] $Before, [object] $After) {
     $Before.path -ceq $After.path -and $Before.size -eq $After.size -and $Before.sha256 -ceq $After.sha256
 }
 
+# Resolve provenance before inspecting executables, creating run-owned
+# directories, or launching a renderer. Git must not discover an unrelated
+# parent worktree for an archive.
+$commit = Get-ExactRepositoryCommit $repositoryRoot
+
 foreach ($executable in @($ChromeBinary,$ChromeDriverBinary,$nodePath)) {
     if (-not [IO.Path]::IsPathFullyQualified($executable)) {
         throw "Renderer executable must be absolute: $executable"
@@ -189,11 +217,6 @@ Write-Utf8Json $productionManifestPath $productionManifest
 Write-Utf8Json $harnessManifestPath $harnessManifest
 $productionManifestSha = (Get-FileHash -LiteralPath $productionManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $harnessManifestSha = (Get-FileHash -LiteralPath $harnessManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$commit = git rev-parse HEAD
-if ($LASTEXITCODE -ne 0 -or $commit -cnotmatch '^[0-9a-f]{40}$') {
-    throw 'Cannot identify renderer source commit.'
-}
-
 $command = @(
     'node_modules/@wdio/cli/bin/wdio.js',
     'run',

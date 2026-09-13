@@ -34,8 +34,24 @@ function Check-Node([string] $Name, [string[]] $Arguments) {
     Write-Host "Passed $Name"
 }
 
+function Check-PowerShell([string] $Name, [string] $Script) {
+    $log = Join-Path $logRoot "$Name.log"
+    & pwsh -NoProfile -File (Join-Path $PSScriptRoot $Script) *> $log
+    if ($LASTEXITCODE -ne 0) {
+        Get-Content -LiteralPath $log -Tail 40
+        throw "$Name failed; evidence: $log"
+    }
+    Write-Host "Passed $Name"
+}
+
 Push-Location $appRoot
 try {
+    Check-Node 'source-health-fixtures' @('--test', (Join-Path $repositoryRoot 'scripts/source-health-frontend.test.mjs'))
+    Check-Node 'source-health' @((Join-Path $repositoryRoot 'scripts/source-health-frontend.mjs'))
+    Check-Node 'frontend-inventory-fixtures' @('--test', (Join-Path $repositoryRoot 'scripts/frontend-source-inventory.test.mjs'))
+    Check-Node 'frontend-inventory-check' @((Join-Path $repositoryRoot 'scripts/frontend-source-inventory.mjs'), '--check')
+    Check-PowerShell 'renderer-source-root' 'test-renderer-source-root.ps1'
+    Check-PowerShell 'renderer-soak-metrics-contract' 'test-renderer-soak-metrics-contract.ps1'
     Check-Node 'svelte-sync' @('node_modules/@sveltejs/kit/svelte-kit.js', 'sync')
     Check-Node 'typecheck' @('node_modules/svelte-check/bin/svelte-check', '--tsconfig', './jsconfig.json')
     Check-Node 'lint' @('node_modules/eslint/bin/eslint.js', '.', '--max-warnings', '0')
