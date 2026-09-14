@@ -25,6 +25,14 @@ review (`target/engineering-review/backend-memory-pe-observation.md`).
 
 The measurement runner verified receipt and executable hashes before and after the run. Source-manifest hashes below were recorded and checked during compilation. The measurement runner did not rehash either working tree against its manifest, so final working-tree verification is separate evidence.
 
+That final verification completed after both two-hour soaks: all 178 backend
+inputs, 110 renderer inputs and six packaged artifacts matched their recorded
+sizes and hashes. The exact identity receipt is embedded in
+[`engineering-validation-2026-09-13.json`](engineering-validation-2026-09-13.json).
+The production source was committed as `dd22401`; subsequent changes are
+documentation only. This identity check does not clear the performance review
+or qualify native application behavior.
+
 | Role | Source identity | Executable SHA-256 | Receipt SHA-256 |
 | --- | --- | --- | --- |
 | Baseline | commit `242d3270017dcb2c50631d9327e599b8d1ce5023`; archive SHA-256 `470b6c75bf48cea43e82a13f0bab7fd5db37cf566da46b822ed7861d9191f29e` | `8f3a22a53c47d4c248ca8df2cc84fdc01af81c62a74813f8e68b06508dba1385` | `08ff25e147217b3c27f6b8fb82b217d368258af2649c0597fd0da2bad2ec68ee` |

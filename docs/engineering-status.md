@@ -4,6 +4,11 @@ Execution was authorized on 2026-09-13 from main at
 `242d3270017dcb2c50631d9327e599b8d1ce5023`. Automated qualification is separate
 from native release acceptance.
 
+The structural implementation and its functional regression gates are complete.
+The matched backend performance review and native release acceptance remain
+open. The [consolidated validation receipt](engineering-validation-2026-09-13.json)
+records the exact evidence, source identities, artifact hashes and scope limits.
+
 ## Implemented
 
 - One authoritative, durable, idempotent playlist batch replaces per-entry
@@ -44,7 +49,7 @@ No push or release was performed.
 | Matched backend | All 45 hard gates passed in each of three final paired runs. Every report remains `review_required` for timing and memory differences. The earlier large journal median delay did not recur. |
 | Matched renderer | All 18 runs passed the existing thresholds: three repeats per side at 1/100/1,000 rows. Input archives, source/tool hashes and environment matched. |
 | Renderer long soak | Two hours passed: 318,745 mount/unmount cycles, 63,749 cycles of each of five workflow patterns and playlist resynchronization. All 110 input hashes stayed unchanged; both owned test processes exited. Heap measurements remain observational. |
-| Backend long soak | Fresh final-source two-hour run is active; it is not counted as passed. |
+| Backend long soak | Two hours passed: 1,438 mixed-workload cycles, 7,190 operations and 1,440 samples. Final journal reopened; no pending jobs, child processes, outbox backlog or output residue at quiescent samples. Frozen executable unchanged; owned test process exited. |
 | Local package | Production executable and NSIS container built successfully from clean `dd22401`, without compiler warnings. No signing, installation, launch or native workflow acceptance was performed. |
 
 Logs use the `target/engineering-*` prefix. See the
@@ -119,7 +124,7 @@ larger at 1/100 rows and 1.79–1.81 MiB larger at 1,000 rows. Working set is no
 equivalent to retained heap. These measurements do not establish a cause or
 qualify native app memory behavior; the performance review remains open.
 
-The final backend soak is
+The passing final backend soak is
 `target/soak/after-20260913T221524Z-5a83597ec4f045f887260a1f81b3a928/`.
 Its frozen executable has SHA-256
 `5236e2a512517f40884e8b7214d6a175495ee23174ed17ff9294d2c843c4092d`,
@@ -131,6 +136,21 @@ It observed 7,200,050 ms with zero stderr bytes. The controlled final GC reading
 was 74,344,744 bytes versus 66,712,416 bytes initially; that comparison is not
 an arbitrary heap pass threshold or native memory qualification. Exact process
 exit evidence is `target/engineering-renderer-process-exit.json`.
+
+The backend observed 7,202,810 ms and completed 1,438 playlist batches,
+2,876 row admissions, 1,438 preparation retries, 119 lifecycle drains and
+119 runtime mutations. All 1,440 quiescent samples stayed within the configured
+resource bounds. Sampled maxima were 24,879,104 bytes working set,
+9,248,768 bytes private memory, 100 queue rows and 200 retained operations.
+The final journal was 152,134 bytes and reopened successfully. These are isolated
+debug test-process observations, not native application memory qualification.
+
+After both soaks, independent verification rehashed all 178 backend inputs,
+110 renderer inputs and six packaged artifacts. All matched. The packaged app
+source is clean commit `dd22401`; later commits change documentation only.
+The consolidated receipt embeds that final identity check and hashes the raw
+logs and sample files. Passing the soak does not clear the separate matched
+backend performance review.
 
 ## Preserved boundaries and incomplete native acceptance
 
