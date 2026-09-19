@@ -153,6 +153,9 @@ jobs:
       - name: Fetch locked Cargo sources for offline packaging verification
         run: cargo fetch --manifest-path src-tauri/Cargo.toml --locked
 
+      - name: Download and verify locked x64 sidecars for packaged-build safeguards
+        run: pwsh -NoProfile -File ..\scripts\fetch-sidecars.ps1
+
       - name: Test PowerShell packaging contracts
         run: |
           pwsh -NoProfile -File ..\scripts\test-packaging.ps1

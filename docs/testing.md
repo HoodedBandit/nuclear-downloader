@@ -22,7 +22,7 @@ The full native suite requires:
 - `NUCLEAR_E2E_FIXTURE_FILE`, the runner-owned media used by the loopback playlist fixture;
 - `NUCLEAR_E2E_FIXTURE_TITLE` and `NUCLEAR_E2E_RESTART_TITLE`, used to prove reload and interrupted-process journal recovery.
 
-The exact-candidate runner generates bounded media with the candidate's own FFmpeg, hosts it on loopback, installs the exact NSIS bytes into an isolated directory, exercises real download/conversion/cancellation/reload/diagnostics paths, starts a second process to verify journal recovery, starts the exact portable bytes, silently uninstalls, verifies user data retention, and re-verifies every candidate hash.
+The exact-candidate runner generates bounded media with the candidate's own FFmpeg, hosts it on loopback, installs the exact NSIS bytes into an isolated directory, exercises MP4 downloads, retry, filename collisions, playlist admission, cancellation, reload, runtime checks, and diagnostic clearing, starts a second process to verify journal recovery, starts the exact portable bytes, silently uninstalls, verifies user data retention, and re-verifies every candidate hash. Fixture generation is not an application conversion test; this suite does not qualify every output format or conversion path.
 
 ## Windows 11 manual evidence
 
