@@ -33,6 +33,9 @@ dark theme, a new Nuclear icon, and a major cleanup underneath it all.
   order, operation identity, persistence, and rollback. Starts await pending edits.
 - Added durable batch playlist admission and bounded background metadata work.
 - Fixed download worker startup publication and simultaneous staging-root creation.
+- Updated Rustls to 0.23.45 and its WebPKI dependency to 0.103.15, addressing
+  [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285.html)
+  detected by the release dependency gate.
 
 ### Verification
 

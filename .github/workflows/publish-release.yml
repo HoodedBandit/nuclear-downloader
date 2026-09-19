@@ -282,6 +282,7 @@ jobs:
             '- **Rebuilt underneath:** focused session, queue-view, filename, presentation, and error-reporting controllers replace tangled ownership and retired UI paths.'
             '- **Reliability fixes throughout:** recovery restores download controls, repeated errors are tracked correctly, dialog failures reach Settings, and tool-update progress settles properly.'
             '- **Stronger queue foundations:** durable playlist admission, bounded background metadata preparation, reliable worker startup, and safe concurrent staging-folder creation.'
+            '- **Dependency security:** updated Rustls to 0.23.45 and WebPKI to 0.103.15 to address [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285.html), caught by the release gate.'
             ''
             '### Get the update'
             ''
