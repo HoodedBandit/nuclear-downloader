@@ -1,4 +1,6 @@
 mod app_error;
+mod app_paths;
+mod appearance;
 mod artifact_contract;
 #[cfg(test)]
 mod backend_lifecycle_tests;
@@ -187,6 +189,9 @@ async fn begin_app_update(
     state: State<'_, AppState>,
     expected_version: String,
 ) -> Result<BeginOperationResult, AppError> {
+    if cfg!(feature = "local-preview") {
+        return Err(AppError::new("preview_update_disabled", "App installation is disabled in the UI preview. Use your regular installation for updates."));
+    }
     services::updates::begin_app_update(
         state.inner().clone(),
         app.package_info().version.to_string(),
@@ -210,6 +215,35 @@ fn clear_diagnostics(state: State<'_, AppState>) -> Result<(), AppError> {
     state.state_store.diagnostics().clear()
 }
 
+fn set_window_appearance(window: &tauri::Window, theme: appearance::UiTheme) {
+    let theme = match theme {
+        appearance::UiTheme::Light => Some(tauri::Theme::Light),
+        appearance::UiTheme::Dark => Some(tauri::Theme::Dark),
+        appearance::UiTheme::System => None,
+    };
+    let _ = window.set_theme(theme);
+}
+
+#[tauri::command]
+fn get_ui_theme(window: tauri::Window) -> Result<appearance::UiTheme, AppError> {
+    let theme = appearance::read_theme()?;
+    set_window_appearance(&window, theme);
+    Ok(theme)
+}
+
+#[tauri::command]
+fn set_ui_theme(window: tauri::Window, theme: appearance::UiTheme) -> Result<(), AppError> {
+    appearance::write_theme(theme)?;
+    set_window_appearance(&window, theme);
+    Ok(())
+}
+
+#[tauri::command]
+fn reveal_download(state: State<'_, AppState>, item_id: String) -> Result<(), AppError> {
+    let path = appearance::published_file(&state.state_store.snapshot()?, &item_id)?;
+    appearance::reveal_file(&path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let shutdown_started = Arc::new(AtomicBool::new(false));
@@ -225,6 +259,11 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .setup(move |app| {
+            if cfg!(feature = "local-preview")
+                && app.config().identifier != "com.mrw.nuclear.preview"
+            {
+                return Err("The local-preview feature requires tauri.preview.conf.json.".into());
+            }
             // The single-instance plugin is deliberately registered before this
             // setup hook. Persistent state must not be opened until that plugin
             // has rejected any secondary process.
@@ -273,6 +312,9 @@ pub fn run() {
             begin_app_update,
             export_diagnostics,
             clear_diagnostics,
+            get_ui_theme,
+            set_ui_theme,
+            reveal_download,
         ])
         .build(tauri::generate_context!());
     let app = match app {
@@ -288,6 +330,14 @@ pub fn run() {
         }
     };
 
+    run_with_graceful_shutdown(app, shutdown_started, shutdown_complete);
+}
+
+fn run_with_graceful_shutdown(
+    app: tauri::App,
+    shutdown_started: Arc<AtomicBool>,
+    shutdown_complete: Arc<AtomicBool>,
+) {
     app.run(move |app_handle, event| {
         if let tauri::RunEvent::ExitRequested { api, code, .. } = event {
             if shutdown_complete.load(Ordering::SeqCst) {

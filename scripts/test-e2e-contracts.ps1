@@ -357,8 +357,8 @@ try {
     $asset = [ordered]@{ fileName = 'fixture.bin'; size = 3; sha256 = ('a' * 64) }
     $inventory = [ordered]@{
         schemaVersion = 1
-        releaseVersion = '0.7.1'
-        releaseTag = 'v0.7.1'
+        releaseVersion = '0.7.9'
+        releaseTag = 'v0.7.9'
         platform = 'windows-x86_64'
         keyId = 'fixture-key'
         sourceCommit = ('b' * 40)
@@ -381,7 +381,7 @@ try {
     }
     $evidence = [ordered]@{
         schemaVersion = 1
-        releaseVersion = '0.7.1'
+        releaseVersion = '0.7.9'
         sourceCommit = ('b' * 40)
         candidateRunId = '12345'
         candidateCreatedAt = '2026-08-18T12:00:00Z'
@@ -591,9 +591,9 @@ try {
     $manualRunId = '12345'
     $candidateCreatedAt = [DateTimeOffset]::UtcNow.AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')
     $caseCompletedAt = [DateTimeOffset]::UtcNow.AddMinutes(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')
-    $installerName = 'Nuclear.Downloader_0.7.1_x64-setup.exe'
-    $portableName = 'Nuclear.Downloader_0.7.1_x64-portable.zip'
-    $appManifestName = 'nuclear-downloader-v0.7.1-update.json'
+    $installerName = 'Nuclear.Downloader_0.7.9_x64-setup.exe'
+    $portableName = 'Nuclear.Downloader_0.7.9_x64-portable.zip'
+    $appManifestName = 'nuclear-downloader-v0.7.9-update.json'
     $runtimeDescriptorName = 'nuclear-downloader-runtime-windows-x64.json'
     $runtimeArchiveName = 'nuclear-downloader-runtime-1.2.3-windows-x64.zip'
     $assetHashes = [ordered]@{
@@ -608,8 +608,8 @@ try {
     })
     $manualInventory = [ordered]@{
         schemaVersion = 1
-        releaseVersion = '0.7.1'
-        releaseTag = 'v0.7.1'
+        releaseVersion = '0.7.9'
+        releaseTag = 'v0.7.9'
         platform = 'windows-x86_64'
         keyId = 'fixture-key'
         sourceCommit = $manualCommit
@@ -685,7 +685,7 @@ try {
             artifactFileName = $installerName; artifactSha256 = $assetHashes[$installerName]; fixtureId = 'cookie-controlled-01'
         }))
         (New-ManualCase 'signed-app-update' ([ordered]@{
-            fromVersion = '0.6.0'; toVersion = '0.7.1'
+            fromVersion = '0.6.0'; toVersion = '0.7.9'
             manifestSha256 = $assetHashes[$appManifestName]; installerSha256 = $assetHashes[$installerName]
         }))
         (New-ManualCase 'signed-runtime-update-rollback' ([ordered]@{
@@ -703,7 +703,7 @@ try {
             updateBuildRevision = [long]4946
             architecture = 'X64'
             webView2RuntimeVersion = '151.0.4129.101'
-            applicationVersion = '0.7.1'
+            applicationVersion = '0.7.9'
             managedRuntimeVersion = '1.2.3'
             runtimeToolVersions = [ordered]@{
                 ytDlp = '2026.07.04'
@@ -764,7 +764,7 @@ try {
     Assert-ManualEvidenceRejected { param($value) $value.clientEnvironment.buildNumber = [long]21999 }
     Assert-ManualEvidenceRejected { param($value) $value.clientEnvironment.webView2RuntimeVersion = 'not-a-version' }
     Assert-ManualEvidenceRejected { param($value) $value.clientEnvironment.managedRuntimeVersion = '9.9.9' }
-    Assert-ManualEvidenceRejected { param($value) $value.cases[5].details.fromVersion = '0.7.2' }
+    Assert-ManualEvidenceRejected { param($value) $value.cases[5].details.fromVersion = '0.8.0' }
     Assert-ManualEvidenceRejected { param($value) $value.cases[6].details.fromVersion = '1.2.4' }
     Assert-ManualEvidenceRejected { param($value) $value | Add-Member -NotePropertyName unexpected -NotePropertyValue $true }
 

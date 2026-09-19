@@ -52,6 +52,9 @@ fn public_command_registry_is_exact_and_ordered() {
             "begin_app_update",
             "export_diagnostics",
             "clear_diagnostics",
+            "get_ui_theme",
+            "set_ui_theme",
+            "reveal_download",
         ]
     );
 }

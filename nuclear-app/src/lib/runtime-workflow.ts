@@ -2,9 +2,9 @@ import type { RuntimeReadiness } from './bindings/RuntimeReadiness';
 import type { DownloaderRuntimeStatus } from './bindings/DownloaderRuntimeStatus';
 import type { DownloaderRuntimeUpdateCheck } from './bindings/DownloaderRuntimeUpdateCheck';
 import type { DownloaderToolStatus } from './bindings/DownloaderToolStatus';
-import { normalizeAppError } from './frontend-errors';
 import type { DownloaderRuntimeUpdateProgressPayload } from './frontend-types';
 import type { OperationWorkflow } from './frontend-workflow-ports';
+import type { ErrorAttempt, UiErrorReporter } from './ui-error-reporter';
 import {
   runtimeAllowsDownloads,
   runtimeStartupSubsystemState,
@@ -17,15 +17,17 @@ export interface RuntimeWorkflowState {
   checkState: 'checking' | 'idle';
   updateRunning: boolean;
   updateProgress: DownloaderRuntimeUpdateProgressPayload | null;
-  error: string | null;
+  healthError: string | null;
+  updateError: string | null;
+  readonly error: string | null;
 }
 
 export interface RuntimeWorkflowDependencies extends OperationWorkflow {
+  errors: UiErrorReporter;
   appUpdateRunning: () => boolean;
   hasUpdateBlockingWork: () => boolean;
   backendReadiness: () => RuntimeReadiness | null;
   setStartupSubsystem: (state: StartupSubsystemState) => void;
-  reportStartupIssue: (subsystem: string, error: unknown) => void;
 }
 
 export function createRuntimeWorkflowState(): RuntimeWorkflowState {
@@ -35,11 +37,17 @@ export function createRuntimeWorkflowState(): RuntimeWorkflowState {
     checkState: 'checking',
     updateRunning: false,
     updateProgress: null,
-    error: null
+    healthError: null,
+    updateError: null,
+    get error() {
+      return this.updateError ?? this.healthError;
+    }
   };
 }
 
 export class RuntimeWorkflowController {
+  private updateAttempt: ErrorAttempt | null = null;
+  private updatePending = false;
   constructor(
     readonly state: RuntimeWorkflowState,
     private readonly dependencies: RuntimeWorkflowDependencies
@@ -48,16 +56,14 @@ export class RuntimeWorkflowController {
   async initialize(): Promise<void> {
     await this.refresh();
     if (!this.dependencies.isActive()) return;
-    if (!this.state.status) {
-      this.dependencies.reportStartupIssue('Downloader runtime', this.state.error ?? 'Unavailable');
-    }
     void this.checkForUpdate();
   }
 
   async refresh(): Promise<void> {
     if (!this.dependencies.isActive()) return;
     this.state.checkState = 'checking';
-    this.state.error = null;
+    this.state.healthError = null;
+    const attempt = this.dependencies.errors.begin('runtime-health', 'Checking download tools');
     try {
       const status = await this.dependencies.invoke('check_downloader_runtime');
       if (!this.dependencies.isActive()) return;
@@ -66,7 +72,7 @@ export class RuntimeWorkflowController {
     } catch (error) {
       if (!this.dependencies.isActive()) return;
       this.state.status = null;
-      this.state.error = normalizeAppError(error);
+      this.state.healthError = attempt.fail(error);
       this.dependencies.setStartupSubsystem(runtimeStartupSubsystemState(null));
     } finally {
       if (this.dependencies.isActive()) this.state.checkState = 'idle';
@@ -85,17 +91,27 @@ export class RuntimeWorkflowController {
   }
 
   async update(): Promise<void> {
+    if (this.updatePending || !this.dependencies.isActive()) return;
+    this.updateAttempt = this.dependencies.errors.begin(
+      'runtime-update',
+      'Updating download tools'
+    );
     if (this.dependencies.appUpdateRunning()) {
-      this.state.error = 'Wait for the app update operation to finish.';
+      this.state.updateError = this.updateAttempt.fail(
+        'Wait for the app update operation to finish.'
+      );
       return;
     }
     if (this.dependencies.hasUpdateBlockingWork()) {
-      this.state.error = 'Finish or cancel queued downloads before updating the runtime.';
+      this.state.updateError = this.updateAttempt.fail(
+        'Finish or cancel queued downloads before updating the runtime.'
+      );
       return;
     }
 
+    this.updatePending = true;
     this.state.updateRunning = true;
-    this.state.error = null;
+    this.state.updateError = null;
     this.state.updateProgress = {
       status: 'checking',
       version: this.state.updateCheck?.latestRuntimeVersion ?? null,
@@ -114,13 +130,19 @@ export class RuntimeWorkflowController {
       }
     } catch (error) {
       if (!this.dependencies.isActive()) return;
-      this.state.error = normalizeAppError(error);
+      this.state.updateError = this.updateAttempt.fail(error);
+      this.state.updateProgress = {
+        ...this.state.updateProgress!,
+        status: 'error',
+        message: this.state.updateError
+      };
     } finally {
       if (this.dependencies.isActive()) {
         this.state.updateRunning = false;
         await this.refresh();
         if (this.dependencies.isActive()) await this.checkForUpdate();
       }
+      this.updatePending = false;
     }
   }
 
@@ -128,8 +150,15 @@ export class RuntimeWorkflowController {
     this.state.updateProgress = progress;
     if (progress.status === 'error') {
       this.state.updateRunning = false;
-      this.state.error = progress.message ?? 'Downloader runtime update failed.';
+      this.updateAttempt ??= this.dependencies.errors.begin(
+        'runtime-update',
+        'Updating download tools'
+      );
+      this.state.updateError = this.updateAttempt.fail(
+        progress.message ?? 'Downloader runtime update failed.'
+      );
     }
+    if (progress.status === 'complete') this.state.updateRunning = false;
   }
 
   canDownload(): boolean {

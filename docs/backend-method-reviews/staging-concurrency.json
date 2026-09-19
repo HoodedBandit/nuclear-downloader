@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/downloader/publication/tests.rs"
+  ],
+  "entries": [
+    {
+      "id": "src/downloader/publication/tests.rs::downloader::publication::tests::simultaneous_downloads_share_a_new_staging_root[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/downloader/publication/tests.rs",
+      "line": 19,
+      "endLine": 52,
+      "symbol": "simultaneous_downloads_share_a_new_staging_root",
+      "qualifiedName": "downloader::publication::tests::simultaneous_downloads_share_a_new_staging_root",
+      "signature": "fn simultaneous_downloads_share_a_new_staging_root()",
+      "sourceDigest": "8d55be8021b01e82594f1dfb284bc0437e8208af39ca396170b17f80fb43e1d0",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Publication staging regression runner."
+      ],
+      "inputs": [
+        "Unique test output directories, per-worker UUIDs and a scoped thread barrier."
+      ],
+      "sideEffects": [
+        "Creates isolated temporary staging directories; joins all threads before removing the fixture."
+      ],
+      "errors": [
+        "The unpatched test reproduced Windows error 183; all other I/O and unsafe-layout errors remain failures."
+      ],
+      "ownership": [
+        "Scoped test threads own distinct operation directories."
+      ],
+      "locks": [
+        "Test barrier aligns 32 callers; no production lock or synchronization exception added."
+      ],
+      "invariants": [
+        "Each successful worker gets its own verified marker; the fixture is removed only after every worker has joined."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview: 396 passed, 4 ignored, including the new simultaneous staging regression and existing path/marker tests."
+      ],
+      "evidence": [
+        "Source read: src/downloader/publication/tests.rs:19-52; SHA-256 8d55be8021b01e82594f1dfb284bc0437e8208af39ca396170b17f80fb43e1d0.",
+        "Native failure evidence: target/qc-native-20260919-r2; red regression: nuclear-app/src-tauri/target/qc-code-audit/staging-race-before.log; green suite: rust-preview-final.log."
+      ],
+      "purpose": "Exercise 32 simultaneous legitimate staging initializations against each of four fresh destinations and verify each operation marker.",
+      "output": "Regression assertions and cleanup of the owned fixture.",
+      "cancellation": "No asynchronous work is introduced; scoped test threads are joined and existing staging cleanup ownership remains unchanged.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/downloader/publication/tests.rs",
+      "reviewer": "Codex native QC follow-up source review",
+      "reviewedAt": "2026-09-19T02:08:19.724185Z",
+      "status": "reviewed",
+      "notes": "Native multi-download QC exposed an existing create-if-missing race. Accepting AlreadyExists is followed by the same identity and containment checks, including for newly created roots.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/downloader/publication/tests.rs::downloader::publication::tests::simultaneous_downloads_share_a_new_staging_root::owned_work_closure#1@31[cfg=test]",
+      "kind": "owned_work_closure",
+      "classification": "test",
+      "file": "src/downloader/publication/tests.rs",
+      "line": 31,
+      "endLine": 37,
+      "symbol": "owned_work_closure#1",
+      "qualifiedName": "downloader::publication::tests::simultaneous_downloads_share_a_new_staging_root::owned_work_closure#1",
+      "signature": "move ||",
+      "sourceDigest": "5497d1eb08a7176b30a50bccc4ef45b400a8aa9a62ded126662fdc7945f7b416",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "callers": [
+        "Publication staging regression runner."
+      ],
+      "inputs": [
+        "Unique test output directories, per-worker UUIDs and a scoped thread barrier."
+      ],
+      "sideEffects": [
+        "Creates isolated temporary staging directories; joins all threads before removing the fixture."
+      ],
+      "errors": [
+        "The unpatched test reproduced Windows error 183; all other I/O and unsafe-layout errors remain failures."
+      ],
+      "ownership": [
+        "Scoped test threads own distinct operation directories."
+      ],
+      "locks": [
+        "Test barrier aligns 32 callers; no production lock or synchronization exception added."
+      ],
+      "invariants": [
+        "Each successful worker gets its own verified marker; the fixture is removed only after every worker has joined."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview: 396 passed, 4 ignored, including the new simultaneous staging regression and existing path/marker tests."
+      ],
+      "evidence": [
+        "Source read: src/downloader/publication/tests.rs:31-37; SHA-256 5497d1eb08a7176b30a50bccc4ef45b400a8aa9a62ded126662fdc7945f7b416.",
+        "Native failure evidence: target/qc-native-20260919-r2; red regression: nuclear-app/src-tauri/target/qc-code-audit/staging-race-before.log; green suite: rust-preview-final.log."
+      ],
+      "purpose": "Exercise 32 simultaneous legitimate staging initializations against each of four fresh destinations and verify each operation marker.",
+      "output": "Regression assertions and cleanup of the owned fixture.",
+      "cancellation": "No asynchronous work is introduced; scoped test threads are joined and existing staging cleanup ownership remains unchanged.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/downloader/publication/tests.rs",
+      "reviewer": "Codex native QC follow-up source review",
+      "reviewedAt": "2026-09-19T02:08:19.724185Z",
+      "status": "reviewed",
+      "notes": "Native multi-download QC exposed an existing create-if-missing race. Accepting AlreadyExists is followed by the same identity and containment checks, including for newly created roots."
+    }
+  ]
+}

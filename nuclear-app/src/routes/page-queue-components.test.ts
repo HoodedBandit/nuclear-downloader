@@ -104,9 +104,9 @@ function commandResult(command: string): unknown {
 async function mountReadyPage() {
   const view = render(Page);
   await waitFor(() =>
-    expect((view.getByRole('button', { name: 'Download All' }) as HTMLButtonElement).disabled).toBe(
-      false
-    )
+    expect(
+      (view.getByRole('button', { name: 'Download queued' }) as HTMLButtonElement).disabled
+    ).toBe(false)
   );
   return view;
 }
@@ -118,10 +118,10 @@ async function scrollQueue(
   const viewport = view.container.querySelector<HTMLElement>('section.queue')!;
   Object.defineProperties(viewport, {
     clientHeight: { configurable: true, value: 530 },
-    scrollHeight: { configurable: true, value: 53_034 },
+    scrollHeight: { configurable: true, value: 88_000 },
     scrollTop: { configurable: true, writable: true, value: 0 }
   });
-  viewport.scrollTop = index * 53;
+  viewport.scrollTop = index * 88;
   await fireEvent.scroll(viewport);
   await waitFor(() => expect(view.queryByLabelText(`Select Queue item ${index}`)).not.toBeNull());
   return viewport;
@@ -149,6 +149,21 @@ afterEach(() => {
 });
 
 describe('mounted page queue component boundary', () => {
+  it('opens the filename editor with a single click on a waiting download', async () => {
+    const waiting = snapshot(1);
+    waiting.queue[0].state = 'queued';
+    ipc.invoke.mockImplementation(async (command: string) =>
+      command === 'get_app_snapshot' ? waiting : commandResult(command)
+    );
+    const view = render(Page);
+    const title = await view.findByRole('button', { name: 'Queue item 0' });
+    await fireEvent.click(title);
+    const editor = (await view.findByLabelText('Edit queued filename')) as HTMLInputElement;
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(editor.selectionStart).toBe(0);
+    expect(editor.selectionEnd).toBe(editor.value.length);
+  });
+
   it('preserves the real bottom scroll range when the table header extends beyond row heights', async () => {
     ipc.invoke.mockImplementation(async (command: string) =>
       command === 'get_app_snapshot' ? snapshot(9) : commandResult(command)
@@ -175,7 +190,7 @@ describe('mounted page queue component boundary', () => {
     await scrollQueue(view, 800);
     const checkbox = view.getByLabelText('Select Queue item 800');
     await fireEvent.click(checkbox);
-    await fireEvent.click(view.getByRole('button', { name: 'Download Selected' }));
+    await fireEvent.click(view.getByRole('button', { name: 'Download selected' }));
 
     await waitFor(() =>
       expect(ipc.invoke).toHaveBeenCalledWith('enqueue_queue_items', {
@@ -206,7 +221,7 @@ describe('mounted page queue component boundary', () => {
   it('observes the viewport and clamps scroll after the snapshot queue shrinks', async () => {
     const view = await mountReadyPage();
     const viewport = await scrollQueue(view, 900);
-    let scrollHeight = 53_034;
+    let scrollHeight = 88_000;
     Object.defineProperties(viewport, {
       clientHeight: { configurable: true, value: 424 },
       scrollHeight: { configurable: true, get: () => scrollHeight }
@@ -232,14 +247,13 @@ describe('mounted page queue component boundary', () => {
     expect(resizeObservers[0].disconnect).not.toHaveBeenCalled();
   });
 
-  it('sets select-all indeterminate through row selection UI', async () => {
+  it('exposes mixed selection through the visible Select all control', async () => {
     const view = await mountReadyPage();
-    const selectAll = view.getByLabelText('Select all queue items') as HTMLInputElement;
-    expect(selectAll.indeterminate).toBe(false);
+    const selectAll = view.getByRole('button', { name: 'Select all' });
+    expect(selectAll.getAttribute('aria-pressed')).toBe('false');
     await fireEvent.click(view.getByLabelText('Select Queue item 0'));
-    await waitFor(() => expect(selectAll.indeterminate).toBe(true));
+    await waitFor(() => expect(selectAll.getAttribute('aria-pressed')).toBe('mixed'));
     await fireEvent.click(selectAll);
-    await waitFor(() => expect(selectAll.indeterminate).toBe(false));
-    expect(selectAll.checked).toBe(true);
+    await waitFor(() => expect(selectAll.getAttribute('aria-pressed')).toBe('true'));
   });
 });

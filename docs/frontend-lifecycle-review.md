@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Frontend lifecycle regression record
 
 This record separates demonstrated defects from structural extraction. The comparison production source is `df582df4ddc566712729b7006dfb080374c5ef45`. Renderer disposal owns local resources; durable operations remain owned by Rust.

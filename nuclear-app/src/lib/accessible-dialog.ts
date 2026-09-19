@@ -6,6 +6,7 @@ export interface AccessibleDialogOptions {
 const FOCUSABLE_SELECTOR = [
   'button:not([disabled])',
   '[href]',
+  'summary',
   'input:not([disabled])',
   'select:not([disabled])',
   'textarea:not([disabled])',

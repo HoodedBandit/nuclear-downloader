@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/downloader/publication/staging/layout.rs"
+  ],
+  "entries": [
+    {
+      "id": "src/downloader/publication/staging/layout.rs::downloader::publication::staging::layout::validate_staging_layout[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/downloader/publication/staging/layout.rs",
+      "line": 4,
+      "endLine": 70,
+      "symbol": "validate_staging_layout",
+      "qualifiedName": "downloader::publication::staging::layout::validate_staging_layout",
+      "signature": "pub(super) fn validate_staging_layout( path: &Path, output_dir: &Path, operation_id: &str, require_operation: bool, ) -> Result<(PathBuf, PathBuf, String), String>",
+      "sourceDigest": "830cde8759096cef3094ffcfe266275518a6f24f14ce3fb5217cff42505ca664",
+      "cfg": [],
+      "callers": [
+        "reset_staging_dir and existing staging validation callers."
+      ],
+      "inputs": [
+        "Expected operation staging path, canonicalizable output directory, operation UUID and require_operation flag."
+      ],
+      "sideEffects": [
+        "Attempts create_dir only when creation is allowed; AlreadyExists proceeds to validation rather than failing legitimate concurrent creation."
+      ],
+      "errors": [
+        "The unpatched test reproduced Windows error 183; all other I/O and unsafe-layout errors remain failures."
+      ],
+      "ownership": [
+        "Existing staging root and per-operation lease ownership are preserved."
+      ],
+      "locks": [
+        "No new lock; atomic create_dir plus subsequent regular-directory and canonical-parent validation handles the race."
+      ],
+      "invariants": [
+        "An existing file, reparse directory or escaped canonical root is still rejected; requiring an existing operation never creates its root."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview: 396 passed, 4 ignored, including the new simultaneous staging regression and existing path/marker tests."
+      ],
+      "evidence": [
+        "Source read: src/downloader/publication/staging/layout.rs:4-70; SHA-256 830cde8759096cef3094ffcfe266275518a6f24f14ce3fb5217cff42505ca664.",
+        "Red/green concurrent startup regression and complete 396-test Rust suite; existing path and marker tests retain containment checks."
+      ],
+      "purpose": "Initialize the shared staging root idempotently under concurrent download startup, then enforce the existing directory identity and containment checks.",
+      "output": "Validated canonical root, operation path and normalized ID, or an explicit validation error.",
+      "cancellation": "No asynchronous work is introduced; scoped test threads are joined and existing staging cleanup ownership remains unchanged.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
+      "destination": "src/downloader/publication/staging/layout.rs",
+      "reviewer": "Codex native QC follow-up source review",
+      "reviewedAt": "2026-09-19T02:10:10.188245Z",
+      "status": "reviewed",
+      "notes": "Extracted the reviewed staging layout validation into a cohesive private child module. It imports only the parent path builder and metadata classifier; creation, validation and errors are unchanged. The staging file ceiling is lowered, not raised.",
+      "ownerCall": null
+    }
+  ]
+}

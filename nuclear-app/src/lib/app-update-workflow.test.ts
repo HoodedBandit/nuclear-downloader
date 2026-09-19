@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { invokeCommand } from './ipc-client';
+import { InterfaceErrorReporter } from './ui-error-reporter';
+import { createErrorInbox } from './error-inbox';
 import {
   AppUpdateWorkflowController,
   createAppUpdateWorkflowState,
@@ -8,6 +10,11 @@ import {
 
 function dependencies(overrides: Partial<AppUpdateWorkflowDependencies> = {}) {
   return {
+    errors: new InterfaceErrorReporter(
+      createErrorInbox(),
+      () => false,
+      () => true
+    ),
     invoke: vi.fn() as unknown as typeof invokeCommand,
     waitForOperation: vi.fn(),
     isActive: () => true,
@@ -17,8 +24,6 @@ function dependencies(overrides: Partial<AppUpdateWorkflowDependencies> = {}) {
     hasUpdateBlockingWork: () => false,
     setAppVersionStartup: vi.fn(),
     setUpdateCheckStartup: vi.fn(),
-    reportStartupIssue: vi.fn(),
-    appendStartupIssue: vi.fn(),
     ...overrides
   } satisfies AppUpdateWorkflowDependencies;
 }
@@ -49,7 +54,6 @@ describe('AppUpdateWorkflowController', () => {
       createAppUpdateWorkflowState(),
       bad
     ).initializeAppVersion();
-    expect(bad.reportStartupIssue).toHaveBeenCalledWith('App version', expect.any(Error));
     expect(bad.setAppVersionStartup).toHaveBeenCalledWith('degraded');
   });
 
@@ -78,17 +82,25 @@ describe('AppUpdateWorkflowController', () => {
     });
   });
 
-  it('records the exact degraded startup issue when an initial check fails', async () => {
-    const deps = dependencies();
+  it('retains a failed initial check in history after recovery clears the banner condition', async () => {
+    const inbox = createErrorInbox();
+    const deps = dependencies({
+      errors: new InterfaceErrorReporter(
+        inbox,
+        () => false,
+        () => true
+      )
+    });
     vi.mocked(deps.invoke).mockRejectedValueOnce(new Error('offline'));
-    await new AppUpdateWorkflowController(
-      createAppUpdateWorkflowState(),
-      deps
-    ).initializeUpdateCheck();
-    expect(deps.appendStartupIssue).toHaveBeenCalledWith(
-      'App update check was unavailable; downloads remain usable.'
-    );
+    const controller = new AppUpdateWorkflowController(createAppUpdateWorkflowState(), deps);
+    await controller.initializeUpdateCheck();
+    expect(inbox.entries[0].detail).toBe('offline');
     expect(deps.setUpdateCheckStartup).toHaveBeenCalledWith('degraded');
+    vi.mocked(deps.invoke).mockResolvedValueOnce(updateInfo);
+    await controller.check({ openModal: false, showErrors: true });
+    expect(inbox.entries).toHaveLength(1);
+    expect(inbox.reportedActive).toEqual({});
+    expect(deps.setUpdateCheckStartup).toHaveBeenLastCalledWith('ready');
   });
 
   it('preserves runtime and queue blockers', async () => {

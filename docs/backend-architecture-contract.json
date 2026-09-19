@@ -22,6 +22,8 @@
     ],
     "engines": [
       "src/app_error.rs",
+      "src/app_paths.rs",
+      "src/appearance.rs",
       "src/app_error/**/*.rs",
       "src/artifact_contract.rs",
       "src/bounded_read.rs",

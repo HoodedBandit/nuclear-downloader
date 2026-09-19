@@ -75,7 +75,6 @@ export interface QueueItem {
   error: string | null;
   errorCode: string | null;
   errorDetail: string | null;
-  diagnosticsOpen: boolean;
   filename: string | null;
   selected: boolean;
 }

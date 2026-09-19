@@ -66,7 +66,11 @@ describe('real backend fixture lifecycle', () => {
     assert.ok(fixtureFile && path.isAbsolute(fixtureFile), 'NUCLEAR_E2E_FIXTURE_FILE is required.');
     assert.ok(collisionStem, 'NUCLEAR_E2E_COLLISION_STEM is required.');
     await waitForWorkReady();
-    outputDirectory = await $('#outdir').getValue();
+    outputDirectory = await $('#outdir').getAttribute('title');
+    assert.ok(
+      path.isAbsolute(outputDirectory),
+      'The output picker must expose its full destination.'
+    );
   });
 
   it('publishes the exact successful MP4 fixture', async () => {
@@ -139,12 +143,14 @@ describe('real backend fixture lifecycle', () => {
     await startRow(first);
     await startRow(second);
 
-    const cancelAll = await $('button=Cancel All');
+    await $('summary[aria-label="More queue actions"]').click();
+    const cancelAll = await $('button=Cancel all downloads');
     await cancelAll.waitForClickable({ timeout: 60_000 });
     await cancelAll.click();
     await waitForTerminalQueueStatus(first, 'cancelled', 90_000);
     await waitForTerminalQueueStatus(second, 'cancelled', 90_000);
-    await $('button=Add').waitForClickable({
+    await $('summary[aria-label="More queue actions"]').click();
+    await $('button=Add link').waitForClickable({
       timeout: 60_000,
       timeoutMsg: 'Admission did not reopen after Cancel All drained.'
     });
@@ -180,7 +186,9 @@ describe('real backend fixture lifecycle', () => {
     await waitForQueueCount(expectedCount, 30_000);
     assert.match(await $('.queue').getText(), new RegExp(fixtureTitle, 'i'));
 
+    await $('.settings-nav').click();
     const runtimeCheck = await $('button=Check Runtime');
+    await runtimeCheck.scrollIntoView({ block: 'center' });
     await runtimeCheck.waitForClickable({ timeout: 60_000 });
     await runtimeCheck.click();
     await runtimeCheck.waitUntil(async () => (await runtimeCheck.getText()) === 'Check Runtime', {
@@ -192,10 +200,15 @@ describe('real backend fixture lifecycle', () => {
     await browser.execute(() => {
       window.confirm = () => true;
     });
-    await $('button=Clear Diagnostics').click();
-    await expect($('.actions [role="status"]')).toHaveText(expect.stringContaining('diagnostics'));
+    const clearDiagnostics = await $('button=Clear diagnostics');
+    await clearDiagnostics.scrollIntoView({ block: 'center' });
+    await clearDiagnostics.click();
+    await expect($('.settings-dialog [role="status"]')).toHaveText(
+      expect.stringContaining('diagnostics')
+    );
 
     const checkUpdates = await $('button=Check for Updates');
+    await checkUpdates.scrollIntoView({ block: 'center' });
     await checkUpdates.waitForClickable({ timeout: 60_000 });
     await checkUpdates.click();
     const updateDialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');

@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Frontend workflow extraction review
 
 Stage 3 moved the large workflow implementations out of `+page.svelte` while retaining the UI, state bindings, backend contracts, and async ordering. The page now composes state proxies and controllers once, installs lifecycle/event wiring, and forwards UI events to their domain owner.

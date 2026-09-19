@@ -72,19 +72,9 @@ async function prepareRenderer(stateId) {
   await browser.waitUntil(
     async () => {
       const ready = await browser.execute(() => ({
-        runtime: document.querySelector('[data-testid="runtime-status"]')?.textContent ?? '',
-        version: document.querySelector('.badge.neutral')?.textContent?.trim() ?? '',
-        update: [...document.querySelectorAll('button')].some((button) =>
-          button.textContent?.includes('Update v0.6.1')
-        ),
-        output: document.querySelector('#outdir')?.value ?? ''
+        output: document.querySelector('#outdir')?.title ?? ''
       }));
-      return (
-        ready.runtime.includes('Runtime ready') &&
-        ready.version.length > 1 &&
-        ready.update &&
-        ready.output === 'C:\\fixture-output'
-      );
+      return ready.output === 'C:\\fixture-output';
     },
     { timeout: 10_000, timeoutMsg: 'Renderer startup fields did not reach their fixture values.' }
   );
@@ -92,7 +82,7 @@ async function prepareRenderer(stateId) {
   if (stateId === 'playlist-modal') {
     await mocks.begin_inspection.mockResolvedValueOnce({ operationId: IDS.playlistInspection });
     await $('#video-url').setValue('https://fixture.test/playlist');
-    await $('button=Add').click();
+    await $('button=Add link').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
     const delta = {
       schemaVersion: 1,
@@ -108,6 +98,7 @@ async function prepareRenderer(stateId) {
     await browser.tauri.emitEvent('app-state-changed', delta);
     await $('[role="dialog"][aria-labelledby="playlist-modal-title"]').waitForDisplayed();
   } else if (stateId === 'update-modal') {
+    await $('.settings-nav').click();
     await $('button=Update v0.6.1').click();
     await $('[role="dialog"][aria-labelledby="update-modal-title"]').waitForDisplayed();
   }

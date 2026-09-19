@@ -12,6 +12,7 @@ use std::sync::Arc;
 use tokio::sync::Notify;
 
 mod playlist_tests;
+mod queue_rename_tests;
 
 pub(crate) struct TestCommitPause {
     entered: Notify,

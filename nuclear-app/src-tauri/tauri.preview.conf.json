@@ -1,0 +1,16 @@
+{
+  "productName": "Nuclear Downloader Preview",
+  "identifier": "com.mrw.nuclear.preview",
+  "app": {
+    "windows": [
+      {
+        "title": "Nuclear Downloader — UI Preview",
+        "width": 1340,
+        "height": 880,
+        "minWidth": 800,
+        "minHeight": 500,
+        "incognito": true
+      }
+    ]
+  }
+}

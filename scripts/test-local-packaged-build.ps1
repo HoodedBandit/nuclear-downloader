@@ -60,20 +60,20 @@ try {
     $env:NUCLEAR_UPDATE_PUBLIC_KEY = $validPublicKey
 
     $validConfig = [pscustomobject]@{
-        version = '0.7.1'
+        version = '0.7.9'
         build = [pscustomobject]@{
             beforeBuildCommand = 'npm run build'
             devUrl = 'http://localhost:1420'
             frontendDist = '../build'
         }
     }
-    Assert-NuclearPackagedConfiguration $validConfig '0.7.1'
+    Assert-NuclearPackagedConfiguration $validConfig '0.7.9'
     $devPayloadConfig = $validConfig | ConvertTo-Json -Depth 4 | ConvertFrom-Json
     $devPayloadConfig.build.frontendDist = $devPayloadConfig.build.devUrl
-    Assert-Rejected { Assert-NuclearPackagedConfiguration $devPayloadConfig '0.7.1' } `
+    Assert-Rejected { Assert-NuclearPackagedConfiguration $devPayloadConfig '0.7.9' } `
         'A development URL was accepted as the packaged frontend payload.'
-    Assert-NuclearExactExecutableVersion '0.7.1' '0.7.1'
-    Assert-Rejected { Assert-NuclearExactExecutableVersion '0.7.10' '0.7.1' } `
+    Assert-NuclearExactExecutableVersion '0.7.9' '0.7.9'
+    Assert-Rejected { Assert-NuclearExactExecutableVersion '0.7.90' '0.7.9' } `
         'Executable version validation accepted a longer version prefix.'
 
     $fixtureId = [Guid]::NewGuid().ToString('N')

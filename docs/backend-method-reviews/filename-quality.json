@@ -1,0 +1,604 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/services/queue/tests.rs",
+    "src/state/queue.rs",
+    "src/state/tests/queue_rename_tests.rs"
+  ],
+  "reviewer": "Codex UI quality source review",
+  "entries": [
+    {
+      "id": "src/services/queue/tests.rs::services::queue::tests::filename_only_service_update_preserves_the_waiting_destination[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/services/queue/tests.rs",
+      "line": 9,
+      "endLine": 48,
+      "symbol": "filename_only_service_update_preserves_the_waiting_destination",
+      "qualifiedName": "services::queue::tests::filename_only_service_update_preserves_the_waiting_destination",
+      "signature": "async fn filename_only_service_update_preserves_the_waiting_destination()",
+      "sourceDigest": "318acd7673f566d9b7cd9e9f757d02b3d7d1dd61bf22097723fa24040bc20c9b",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/services/queue/tests.rs:9-48; SHA-256 318acd7673f566d9b7cd9e9f757d02b3d7d1dd61bf22097723fa24040bc20c9b.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Exercise filename-only admission through the real queue service with a prepared queued record and ensure canonical destination validation does not inject an output directory mutation.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/services/queue/tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/queue.rs::state::queue::permits_waiting_filename[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/state/queue.rs",
+      "line": 216,
+      "endLine": 243,
+      "symbol": "permits_waiting_filename",
+      "qualifiedName": "state::queue::permits_waiting_filename",
+      "signature": "fn permits_waiting_filename( state: &super::data::StateData, id: &str, input: &UpdateQueueItemInput, ) -> bool",
+      "sourceDigest": "d27b214b61d730c417e72bef7c7f3e76ec817da4a4ed1803e2eb820fd2f1975b",
+      "cfg": [],
+      "callers": [
+        "update_queue_item IPC service and queue regression tests."
+      ],
+      "inputs": [
+        "Item ID and typed UpdateQueueItemInput; existing queue, operation and pending-download state."
+      ],
+      "sideEffects": [
+        "Service validates destination and request; StateStore commits only the requested fields and emits the existing queue delta."
+      ],
+      "errors": [
+        "Active or already-claimed work rejects a rename; invalid fields, unprepared metadata and journal failures remain explicit errors."
+      ],
+      "ownership": [
+        "The existing tracked command and durable commit machinery retain operation and state ownership."
+      ],
+      "locks": [
+        "Pure predicate runs against the durable candidate while the caller holds the mutation gate."
+      ],
+      "invariants": [
+        "All three non-filename fields must be absent.",
+        "Item and operation identity, operation kind and state, preparation state, and pending membership must agree."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/queue.rs:216-243; SHA-256 d27b214b61d730c417e72bef7c7f3e76ec817da4a4ed1803e2eb820fd2f1975b.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Allow only prepared filename-only queued edits whose matching download operation is queued and still present in pending_downloads.",
+      "output": "Committed state deltas or a validation/claim/persistence error; predicate returns eligibility.",
+      "cancellation": "No new background work or cancellation boundary; existing tracked admission and durable commit ownership remain in force.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
+      "destination": "src/state/queue.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::rename[cfg=test]",
+      "kind": "free_function",
+      "classification": "test_support",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 3,
+      "endLine": 8,
+      "symbol": "rename",
+      "qualifiedName": "state::tests::queue_rename_tests::rename",
+      "signature": "fn rename(name: &str) -> UpdateQueueItemInput",
+      "sourceDigest": "cc5801fd6a08b32b3c31253510d54426d373b6975c4ae089de795adf1235aee8",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:3-8; SHA-256 cc5801fd6a08b32b3c31253510d54426d373b6975c4ae089de795adf1235aee8.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Construct a filename-only update fixture with all other mutation fields absent.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 11,
+      "endLine": 42,
+      "symbol": "worker_waits_for_a_durable_rename_before_taking_the_request",
+      "qualifiedName": "state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request",
+      "signature": "async fn worker_waits_for_a_durable_rename_before_taking_the_request()",
+      "sourceDigest": "c642af8c7ef0c475f434c3985d760ebcce03a4ebb8d72268a9e4b913a39345de",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:11-42; SHA-256 c642af8c7ef0c475f434c3985d760ebcce03a4ebb8d72268a9e4b913a39345de.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Hold journal commit at a barrier, race the real pending-work claim, and prove the worker stays blocked until it can observe the committed filename.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request::owned_async_closure#1@20[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 20,
+      "endLine": 24,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "c91f5898709cfd48cb4b41998fa1c6486dc6942ccef19366b341f3554b637567",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:20-24; SHA-256 c91f5898709cfd48cb4b41998fa1c6486dc6942ccef19366b341f3554b637567.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Hold journal commit at a barrier, race the real pending-work claim, and prove the worker stays blocked until it can observe the committed filename.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review."
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request::owned_async_closure#2@27[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 27,
+      "endLine": 27,
+      "symbol": "owned_async_closure#2",
+      "qualifiedName": "state::tests::queue_rename_tests::worker_waits_for_a_durable_rename_before_taking_the_request::owned_async_closure#2",
+      "signature": "async move",
+      "sourceDigest": "8cf325bac0e93c3f0107cffb278103d61403448ec36436cb4d089ef8490de81e",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn",
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:27-27; SHA-256 8cf325bac0e93c3f0107cffb278103d61403448ec36436cb4d089ef8490de81e.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Hold journal commit at a barrier, race the real pending-work claim, and prove the worker stays blocked until it can observe the committed filename.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review."
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::renamed_waiting_filename_survives_a_journal_restart[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 45,
+      "endLine": 72,
+      "symbol": "renamed_waiting_filename_survives_a_journal_restart",
+      "qualifiedName": "state::tests::queue_rename_tests::renamed_waiting_filename_survives_a_journal_restart",
+      "signature": "async fn renamed_waiting_filename_survives_a_journal_restart()",
+      "sourceDigest": "4897452d76940bd091a01f95e393db85ce6fac8ae8ec851f64ccbea0d80dc12f",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:45-72; SHA-256 4897452d76940bd091a01f95e393db85ce6fac8ae8ec851f64ccbea0d80dc12f.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Reopen a real isolated journal after renaming a waiting item and verify the filename is persisted.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::waiting_rename_preserves_operation_and_queue_order[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 75,
+      "endLine": 95,
+      "symbol": "waiting_rename_preserves_operation_and_queue_order",
+      "qualifiedName": "state::tests::queue_rename_tests::waiting_rename_preserves_operation_and_queue_order",
+      "signature": "async fn waiting_rename_preserves_operation_and_queue_order()",
+      "sourceDigest": "e43e29c6ced46330cb341b4271021ead65a28bb1b68e62a059968ea6f82e818c",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:75-95; SHA-256 e43e29c6ced46330cb341b4271021ead65a28bb1b68e62a059968ea6f82e818c.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Verify a waiting rename preserves both operation identifiers and pending queue order.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::worker_claim_wins_over_a_late_rename[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 98,
+      "endLine": 112,
+      "symbol": "worker_claim_wins_over_a_late_rename",
+      "qualifiedName": "state::tests::queue_rename_tests::worker_claim_wins_over_a_late_rename",
+      "signature": "async fn worker_claim_wins_over_a_late_rename()",
+      "sourceDigest": "cba3829554bbedef51482ed3b161e30446c00726a5c2c163cba1231a9adddcee",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:98-112; SHA-256 cba3829554bbedef51482ed3b161e30446c00726a5c2c163cba1231a9adddcee.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Claim pending work before renaming and verify the late mutation fails without modifying either the worker request or queue record.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::waiting_rename_failure_rolls_back_without_reordering_pending_work[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 115,
+      "endLine": 142,
+      "symbol": "waiting_rename_failure_rolls_back_without_reordering_pending_work",
+      "qualifiedName": "state::tests::queue_rename_tests::waiting_rename_failure_rolls_back_without_reordering_pending_work",
+      "signature": "async fn waiting_rename_failure_rolls_back_without_reordering_pending_work()",
+      "sourceDigest": "724321398bbd27c25907c73b9c33b270540d42d1d8b6619dc9e1c2f5a2e98c39",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:115-142; SHA-256 724321398bbd27c25907c73b9c33b270540d42d1d8b6619dc9e1c2f5a2e98c39.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Inject a journal failure and verify the sequence and worker filename remain at their committed values.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/state/tests/queue_rename_tests.rs::state::tests::queue_rename_tests::waiting_item_rejects_changes_other_than_its_filename[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/state/tests/queue_rename_tests.rs",
+      "line": 145,
+      "endLine": 169,
+      "symbol": "waiting_item_rejects_changes_other_than_its_filename",
+      "qualifiedName": "state::tests::queue_rename_tests::waiting_item_rejects_changes_other_than_its_filename",
+      "signature": "async fn waiting_item_rejects_changes_other_than_its_filename()",
+      "sourceDigest": "f2868eed52d52bbe0d1285358386a6a6fa2cbb81369346c08e88a0a7f066497e",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust queue regression runner; spawned closures are owned and awaited by their named test."
+      ],
+      "inputs": [
+        "Fresh StateStore or started_backend fixtures; explicit filename-only updates and deterministic commit/claim barriers."
+      ],
+      "sideEffects": [
+        "Fixture-only queue operations and owned temporary journals; cleanup occurs after owned work completes."
+      ],
+      "errors": [
+        "Injected persistence and claim errors must remain errors and must not publish the candidate filename."
+      ],
+      "ownership": [
+        "The named test owns its StateStore, backend, spawned task handles and unique fixture directory."
+      ],
+      "locks": [
+        "Exercises the existing StateStore mutation gate and commit barrier; no new production locks."
+      ],
+      "invariants": [
+        "No rename changes queue order, operation identity or destination; no acknowledged save is lost at restart."
+      ],
+      "tests": [
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
+      ],
+      "evidence": [
+        "Source read: src/state/tests/queue_rename_tests.rs:145-169; SHA-256 f2868eed52d52bbe0d1285358386a6a6fa2cbb81369346c08e88a0a7f066497e.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
+      ],
+      "purpose": "Reject mixed filename requests containing quality, format or destination changes while queued.",
+      "output": "Assertions on committed queue state, pending work, or a re-opened journal.",
+      "cancellation": "Spawned race tasks are awaited before the test completes; service test begins coordinator shutdown before dropping its fixture.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/state/tests/queue_rename_tests.rs",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
+      "status": "reviewed",
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null
+    }
+  ]
+}

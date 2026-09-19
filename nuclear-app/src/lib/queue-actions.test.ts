@@ -33,7 +33,6 @@ function item(overrides: Partial<QueueItem> = {}): QueueItem {
     error: null,
     errorCode: null,
     errorDetail: null,
-    diagnosticsOpen: false,
     filename: null,
     selected: false,
     ...overrides
@@ -51,6 +50,7 @@ function setup(initialItems: QueueItem[] = [item()]) {
   const clearProgressDisplayState = vi.fn();
   const cancelFilenameEdit = vi.fn();
   const reloadAppSnapshot = vi.fn(async () => undefined);
+  const flushFilenameEdits = vi.fn(async (_ids: readonly string[]) => true);
   const dependencies: QueueActionDependencies = {
     invoke: invokeMock as unknown as typeof invokeCommand,
     isActive: () => active,
@@ -67,6 +67,7 @@ function setup(initialItems: QueueItem[] = [item()]) {
     clearProgressDisplayState,
     getEditingTitleId: () => editingTitleId,
     cancelFilenameEdit,
+    flushFilenameEdits,
     reloadAppSnapshot
   };
   const state = createQueueActionState();
@@ -78,6 +79,7 @@ function setup(initialItems: QueueItem[] = [item()]) {
     clearProgressDisplayState,
     cancelFilenameEdit,
     reloadAppSnapshot,
+    flushFilenameEdits,
     getItems: () => items,
     setActive: (value: boolean) => (active = value),
     setCanStart: (value: boolean) => (canStart = value),
@@ -88,15 +90,24 @@ function setup(initialItems: QueueItem[] = [item()]) {
 }
 
 describe('QueueActionsController', () => {
-  it('persists filename overrides through the queue command port', async () => {
+  it('waits for filename persistence and does not enqueue after a failed save', async () => {
     const test = setup();
-    test.invokeMock.mockResolvedValue(undefined);
-
-    await test.controller.saveFilename('one', 'Renamed.mp4');
-
-    expect(test.invokeMock).toHaveBeenCalledWith('update_queue_item', {
-      itemId: 'one',
-      input: { filenameOverride: 'Renamed.mp4' }
+    let finish!: (saved: boolean) => void;
+    test.flushFilenameEdits.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    const downloading = test.controller.downloadAll();
+    expect(test.flushFilenameEdits).toHaveBeenCalledWith(['one']);
+    expect(test.invokeMock).not.toHaveBeenCalled();
+    finish(false);
+    await downloading;
+    expect(test.invokeMock).not.toHaveBeenCalled();
+    await test.controller.downloadAll();
+    expect(test.invokeMock).toHaveBeenCalledWith('enqueue_queue_items', {
+      itemIds: ['one'],
+      priority: 'normal'
     });
   });
 
@@ -162,8 +173,7 @@ describe('QueueActionsController', () => {
     expect(test.getItems()[0]).toMatchObject({
       status: 'postprocessing',
       error: 'Cancellation failed: backend refused (busy)',
-      errorCode: 'cancel_failed',
-      diagnosticsOpen: true
+      errorCode: 'cancel_failed'
     });
   });
 

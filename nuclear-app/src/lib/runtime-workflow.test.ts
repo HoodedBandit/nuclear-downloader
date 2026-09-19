@@ -1,3 +1,5 @@
+import { InterfaceErrorReporter } from './ui-error-reporter';
+import { createErrorInbox } from './error-inbox';
 import { describe, expect, it, vi } from 'vitest';
 import type { invokeCommand } from './ipc-client';
 import {
@@ -9,6 +11,11 @@ import {
 
 function dependencies(overrides: Partial<RuntimeWorkflowDependencies> = {}) {
   return {
+    errors: new InterfaceErrorReporter(
+      createErrorInbox(),
+      () => false,
+      () => true
+    ),
     invoke: vi.fn() as unknown as typeof invokeCommand,
     waitForOperation: vi.fn(),
     isActive: () => true,
@@ -17,7 +24,6 @@ function dependencies(overrides: Partial<RuntimeWorkflowDependencies> = {}) {
     hasUpdateBlockingWork: () => false,
     backendReadiness: () => 'ready' as const,
     setStartupSubsystem: vi.fn(),
-    reportStartupIssue: vi.fn(),
     ...overrides
   } satisfies RuntimeWorkflowDependencies;
 }
@@ -45,6 +51,51 @@ const runtimeStatus = {
 };
 
 describe('RuntimeWorkflowController', () => {
+  it('deduplicates a failed update reported by both progress and the operation reply', async () => {
+    const inbox = createErrorInbox();
+    const deps = dependencies({
+      errors: new InterfaceErrorReporter(
+        inbox,
+        () => false,
+        () => true
+      )
+    });
+    const controller = new RuntimeWorkflowController(createRuntimeWorkflowState(), deps);
+    vi.mocked(deps.invoke).mockImplementation((async (command: string) => {
+      if (command === 'begin_runtime_update') return { operationId: 'op' };
+      if (command === 'check_downloader_runtime') return runtimeStatus;
+      return { updateAvailable: false, latestRuntimeVersion: null, message: null };
+    }) as typeof invokeCommand);
+    vi.mocked(deps.waitForOperation).mockImplementation(async () => {
+      controller.applyProgress({
+        status: 'error',
+        version: null,
+        downloadedBytes: 0,
+        totalBytes: null,
+        message: 'Update failed'
+      });
+      return { state: 'failed', error: new Error('Update failed') } as never;
+    });
+    await controller.update();
+    expect(inbox.entries).toHaveLength(1);
+    expect(controller.state.updateRunning).toBe(false);
+    expect(controller.state.updateError).toBe('Update failed');
+    await controller.update();
+    expect(inbox.entries).toHaveLength(2);
+  });
+  it('retains an update failure when the installed runtime refresh succeeds', async () => {
+    const deps = dependencies();
+    vi.mocked(deps.invoke)
+      .mockRejectedValueOnce(new Error('runtime update admission failed'))
+      .mockResolvedValueOnce(runtimeStatus)
+      .mockResolvedValueOnce({ updateAvailable: false, latestRuntimeVersion: null, message: null });
+    const state = createRuntimeWorkflowState();
+    await new RuntimeWorkflowController(state, deps).update();
+    expect(state.status?.state).toBe('ready');
+    expect(state.error).toBe('runtime update admission failed');
+    expect(state.updateRunning).toBe(false);
+  });
+
   it('refreshes runtime state and startup readiness', async () => {
     const deps = dependencies();
     vi.mocked(deps.invoke).mockResolvedValueOnce(runtimeStatus);
@@ -76,7 +127,7 @@ describe('RuntimeWorkflowController', () => {
       .mockReturnValueOnce(updateCheck as never);
     const controller = new RuntimeWorkflowController(createRuntimeWorkflowState(), deps);
     await controller.initialize();
-    expect(deps.reportStartupIssue).toHaveBeenCalledWith('Downloader runtime', 'missing');
+    expect(controller.state.healthError).toBe('missing');
     expect(deps.invoke).toHaveBeenNthCalledWith(2, 'check_runtime_update');
   });
 

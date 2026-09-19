@@ -31,8 +31,7 @@
   } = $props();
 </script>
 
-<header>
-  <h1>Nuclear Downloader</h1>
+<div class="runtime-settings">
   <div class="header-tools">
     <div class="status-badges">
       {#if appUpdateState.appVersion}
@@ -95,4 +94,4 @@
       {/if}
     </button>
   </div>
-</header>
+</div>

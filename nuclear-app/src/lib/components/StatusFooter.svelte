@@ -1,26 +1,17 @@
 <script lang="ts">
-  interface Props {
-    counts: {
-      total: number;
-      ready: number;
-      downloading: number;
-      completed: number;
-      failed: number;
-    };
-  }
-  let { counts }: Props = $props();
+  import Icon from './Icon.svelte';
+  import { getPathBasename } from '$lib/settings-diagnostics-workflow';
+  let {
+    total,
+    outputDir,
+    browseOutputDir
+  }: { total: number; outputDir: string; browseOutputDir: () => void } = $props();
 </script>
 
-<footer role="status" aria-live="polite">
-  <span>{counts.total} items</span>
-  <span class="sep">|</span>
-  <span>{counts.ready} ready</span>
-  <span class="sep">|</span>
-  <span>{counts.downloading} downloading</span>
-  <span class="sep">|</span>
-  <span>{counts.completed} done</span>
-  {#if counts.failed > 0}
-    <span class="sep">|</span>
-    <span class="error-text">{counts.failed} failed</span>
-  {/if}
+<footer class="status-footer">
+  <button class="footer-folder" onclick={browseOutputDir} title={outputDir}
+    ><Icon name="folder" size={19} /><span
+      >Save to <strong>{getPathBasename(outputDir) || 'Downloads'}</strong></span
+    ></button
+  ><span>{total} {total === 1 ? 'item' : 'items'}</span>
 </footer>

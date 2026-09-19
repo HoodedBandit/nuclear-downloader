@@ -513,11 +513,11 @@
       "classification": "test_support",
       "file": "src/downloader/command_args.rs",
       "line": 209,
-      "endLine": 220,
+      "endLine": 221,
       "symbol": "download_request",
       "qualifiedName": "downloader::command_args::tests::download_request",
       "signature": "fn download_request(format: &str, quality: &str) -> DownloadRequest",
-      "sourceDigest": "8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f",
+      "sourceDigest": "73433e5cb70ab55965716b721926d0a8c23a4922b34f358cd250d5b653f3c05c",
       "cfg": [
         "test"
       ],
@@ -555,7 +555,8 @@
       ],
       "evidence": [
         "Source review src/downloader/command_args.rs:209-219: fn download_request(format: &str, quality: &str) -> DownloadRequest { DownloadRequest { url: \"https://example.com/video\".into(), quality: quality.into(), format: format.into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_over",
-        "Rereviewed current changed test span src/downloader/command_args.rs:209-220, digest 8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/command_args.rs:209-220, digest 8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/command_args.rs:209-221, digest 73433e5cb70ab55965716b721926d0a8c23a4922b34f358cd250d5b653f3c05c; direct callers and named tests were checked in source."
       ],
       "purpose": "Construct a validated-style request fixture for one format and quality.",
       "output": "Returns an owned DownloadRequest rooted at the fixed test output path.",
@@ -563,10 +564,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/command_args.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -574,8 +575,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/command_args.rs",
-      "line": 222,
-      "endLine": 228,
+      "line": 223,
+      "endLine": 229,
       "symbol": "deterministic_runtime_config",
       "qualifiedName": "downloader::command_args::tests::deterministic_runtime_config",
       "signature": "fn deterministic_runtime_config() -> YtdlpCommandConfig",
@@ -627,8 +628,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 231,
-      "endLine": 242,
+      "line": 243,
+      "endLine": 254,
       "symbol": "mp4_download_uses_compatible_selector_and_remuxes_final_video",
       "qualifiedName": "downloader::command_args::tests::mp4_download_uses_compatible_selector_and_remuxes_final_video",
       "signature": "fn mp4_download_uses_compatible_selector_and_remuxes_final_video()",
@@ -680,8 +681,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 245,
-      "endLine": 257,
+      "line": 257,
+      "endLine": 269,
       "symbol": "mp4_quality_download_keeps_requested_height_before_remux",
       "qualifiedName": "downloader::command_args::tests::mp4_quality_download_keeps_requested_height_before_remux",
       "signature": "fn mp4_quality_download_keeps_requested_height_before_remux()",
@@ -733,8 +734,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 260,
-      "endLine": 296,
+      "line": 272,
+      "endLine": 308,
       "symbol": "download_args_include_deterministic_runtime_flags",
       "qualifiedName": "downloader::command_args::tests::download_args_include_deterministic_runtime_flags",
       "signature": "fn download_args_include_deterministic_runtime_flags()",
@@ -787,8 +788,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 299,
-      "endLine": 311,
+      "line": 311,
+      "endLine": 323,
       "symbol": "mkv_download_remuxes_final_video_to_mkv",
       "qualifiedName": "downloader::command_args::tests::mkv_download_remuxes_final_video_to_mkv",
       "signature": "fn mkv_download_remuxes_final_video_to_mkv()",
@@ -840,8 +841,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 314,
-      "endLine": 324,
+      "line": 326,
+      "endLine": 336,
       "symbol": "mkv_quality_download_keeps_requested_height_before_remux",
       "qualifiedName": "downloader::command_args::tests::mkv_quality_download_keeps_requested_height_before_remux",
       "signature": "fn mkv_quality_download_keeps_requested_height_before_remux()",
@@ -893,8 +894,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 327,
-      "endLine": 338,
+      "line": 339,
+      "endLine": 350,
       "symbol": "webm_download_prefers_webm_streams_and_leaves_conversion_to_ffmpeg",
       "qualifiedName": "downloader::command_args::tests::webm_download_prefers_webm_streams_and_leaves_conversion_to_ffmpeg",
       "signature": "fn webm_download_prefers_webm_streams_and_leaves_conversion_to_ffmpeg()",
@@ -946,8 +947,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 341,
-      "endLine": 351,
+      "line": 353,
+      "endLine": 363,
       "symbol": "webm_quality_download_keeps_requested_height_before_ffmpeg_conversion",
       "qualifiedName": "downloader::command_args::tests::webm_quality_download_keeps_requested_height_before_ffmpeg_conversion",
       "signature": "fn webm_quality_download_keeps_requested_height_before_ffmpeg_conversion()",
@@ -999,8 +1000,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 354,
-      "endLine": 366,
+      "line": 366,
+      "endLine": 378,
       "symbol": "every_audio_output_uses_extract_audio_conversion",
       "qualifiedName": "downloader::command_args::tests::every_audio_output_uses_extract_audio_conversion",
       "signature": "fn every_audio_output_uses_extract_audio_conversion()",
@@ -1052,8 +1053,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 369,
-      "endLine": 379,
+      "line": 381,
+      "endLine": 391,
       "symbol": "capped_video_selectors_never_contain_an_uncapped_fallback",
       "qualifiedName": "downloader::command_args::tests::capped_video_selectors_never_contain_an_uncapped_fallback",
       "signature": "fn capped_video_selectors_never_contain_an_uncapped_fallback()",
@@ -1105,8 +1106,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 382,
-      "endLine": 397,
+      "line": 394,
+      "endLine": 409,
       "symbol": "output_record_args_use_after_move_json_and_escape_percent_in_record_path",
       "qualifiedName": "downloader::command_args::tests::output_record_args_use_after_move_json_and_escape_percent_in_record_path",
       "signature": "fn output_record_args_use_after_move_json_and_escape_percent_in_record_path()",
@@ -1698,11 +1699,11 @@
       "classification": "production",
       "file": "src/downloader/engine.rs",
       "line": 428,
-      "endLine": 536,
+      "endLine": 535,
       "symbol": "run_webm_download",
       "qualifiedName": "downloader::engine::run_webm_download",
       "signature": "async fn run_webm_download( notifications: &DownloadNotifications, download_id: &str, request: &DownloadRequest, manager: &DownloadManager, job: &DownloadJob, ) -> DownloadAttemptResult",
-      "sourceDigest": "c35f85d796bdf555119b99208e1c7ab4813335b29d52618786dced93b1a9285d",
+      "sourceDigest": "46289d4b939f66e61cd8363d332231dc3025e1204be7b101292deabb766fc24c",
       "cfg": [],
       "callers": [
         "Download service/process orchestration."
@@ -1731,7 +1732,8 @@
       "evidence": [
         "Current source span src/downloader/engine.rs:425-533, digest c35f85d796bdf555119b99208e1c7ab4813335b29d52618786dced93b1a9285d.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/engine.rs:428-535, digest 46289d4b939f66e61cd8363d332231dc3025e1204be7b101292deabb766fc24c; direct callers and named tests were checked in source."
       ],
       "purpose": "Run the existing download workflow while carrying selected-media identity into publication.",
       "output": "Completed download result/path according to signature.",
@@ -1739,25 +1741,23 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "ownerCall": null,
-      "previousDigest": "610265c929ac2527bb55f51822db4534d28f96e3a684b84fcd3dce4e40ee7fcb",
-      "staleReason": "source_changed"
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     },
     {
       "id": "src/downloader/engine.rs::downloader::engine::start_download[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/engine.rs",
-      "line": 538,
-      "endLine": 691,
+      "line": 537,
+      "endLine": 689,
       "symbol": "start_download",
       "qualifiedName": "downloader::engine::start_download",
       "signature": "pub async fn start_download( notifications: DownloadNotifications, download_id: String, mut request: DownloadRequest, manager: DownloadManager, job: DownloadJob, ) -> DownloadOutcome",
-      "sourceDigest": "e6253098510d145f764c0e3aa0dad0e2c2089793e88fbe49c6b010b28bf7ad0d",
+      "sourceDigest": "01e103585b6564343e151595e1b0f0b14a246ea25c4b55cdcadd3977cf4fd87f",
       "cfg": [],
       "callers": [
         "Download service/process orchestration."
@@ -1786,7 +1786,8 @@
       "evidence": [
         "Current source span src/downloader/engine.rs:535-688, digest e6253098510d145f764c0e3aa0dad0e2c2089793e88fbe49c6b010b28bf7ad0d.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/engine.rs:537-689, digest 01e103585b6564343e151595e1b0f0b14a246ea25c4b55cdcadd3977cf4fd87f; direct callers and named tests were checked in source."
       ],
       "purpose": "Run the existing download workflow while carrying selected-media identity into publication.",
       "output": "Completed download result/path according to signature.",
@@ -1794,21 +1795,19 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/engine.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "ownerCall": null,
-      "previousDigest": "0f79ff92ee1083798b80e010c5ae2d068870fd9976a584ee9d5edcbb7ef2fea8",
-      "staleReason": "source_changed"
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     },
     {
       "id": "src/downloader/engine.rs::downloader::engine::tests::terminal_outcome_preserves_published_filename[cfg=test]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 726,
-      "endLine": 739,
+      "line": 724,
+      "endLine": 737,
       "symbol": "terminal_outcome_preserves_published_filename",
       "qualifiedName": "downloader::engine::tests::terminal_outcome_preserves_published_filename",
       "signature": "fn terminal_outcome_preserves_published_filename()",
@@ -1860,8 +1859,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 742,
-      "endLine": 759,
+      "line": 740,
+      "endLine": 757,
       "symbol": "terminal_outcome_preserves_structured_failure",
       "qualifiedName": "downloader::engine::tests::terminal_outcome_preserves_structured_failure",
       "signature": "fn terminal_outcome_preserves_structured_failure()",
@@ -2860,8 +2859,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 338,
-      "endLine": 349,
+      "line": 441,
+      "endLine": 452,
       "symbol": "stalled_inspection_hits_deadline_without_becoming_user_cancelled",
       "qualifiedName": "downloader::inspection::tests::stalled_inspection_hits_deadline_without_becoming_user_cancelled",
       "signature": "async fn stalled_inspection_hits_deadline_without_becoming_user_cancelled()",
@@ -3477,11 +3476,11 @@
       "classification": "test",
       "file": "src/downloader/naming.rs",
       "line": 211,
-      "endLine": 227,
+      "endLine": 228,
       "symbol": "uses_default_template_without_override",
       "qualifiedName": "downloader::naming::tests::uses_default_template_without_override",
       "signature": "fn uses_default_template_without_override()",
-      "sourceDigest": "9aea0c671feb67aa32d9d0696131f21f3201599afab8f9eb24a5dc28c3c10ad3",
+      "sourceDigest": "84badabeebd6cecd671799889a4893c1b529b7b307df408cc8d69215799487d7",
       "cfg": [
         "test"
       ],
@@ -3511,7 +3510,8 @@
       ],
       "evidence": [
         "Source review src/downloader/naming.rs:211-226: fn uses_default_template_without_override() { let request = DownloadRequest { url: \"https://example.com/video\".into(), quality: \"best\".into(), format: \"mp4\".into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_override: None, ",
-        "Rereviewed current changed test span src/downloader/naming.rs:211-227, digest 9aea0c671feb67aa32d9d0696131f21f3201599afab8f9eb24a5dc28c3c10ad3; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/naming.rs:211-227, digest 9aea0c671feb67aa32d9d0696131f21f3201599afab8f9eb24a5dc28c3c10ad3; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/naming.rs:211-228, digest 84badabeebd6cecd671799889a4893c1b529b7b307df408cc8d69215799487d7; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify Windows-safe output naming and path construction: uses default template without override.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -3519,10 +3519,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/naming.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -3530,12 +3530,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/naming.rs",
-      "line": 230,
-      "endLine": 246,
+      "line": 231,
+      "endLine": 248,
       "symbol": "uses_custom_filename_override_when_present",
       "qualifiedName": "downloader::naming::tests::uses_custom_filename_override_when_present",
       "signature": "fn uses_custom_filename_override_when_present()",
-      "sourceDigest": "56a15ebe70333e6bc39cfbb6b0fe8d68e22f0984899406599de6ca63613cf23a",
+      "sourceDigest": "ff90df0bd9e948f0fd5aaa2d1488e5035defbf375462b18300431b063cfea766",
       "cfg": [
         "test"
       ],
@@ -3565,7 +3565,8 @@
       ],
       "evidence": [
         "Source review src/downloader/naming.rs:229-244: fn uses_custom_filename_override_when_present() { let request = DownloadRequest { url: \"https://example.com/video\".into(), quality: \"best\".into(), format: \"mp4\".into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_override: So",
-        "Rereviewed current changed test span src/downloader/naming.rs:230-246, digest 56a15ebe70333e6bc39cfbb6b0fe8d68e22f0984899406599de6ca63613cf23a; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/naming.rs:230-246, digest 56a15ebe70333e6bc39cfbb6b0fe8d68e22f0984899406599de6ca63613cf23a; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/naming.rs:231-248, digest ff90df0bd9e948f0fd5aaa2d1488e5035defbf375462b18300431b063cfea766; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify Windows-safe output naming and path construction: uses custom filename override when present.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -3573,10 +3574,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/naming.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -3584,12 +3585,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/naming.rs",
-      "line": 249,
-      "endLine": 265,
+      "line": 251,
+      "endLine": 268,
       "symbol": "sanitizes_invalid_filename_characters_and_percent_signs",
       "qualifiedName": "downloader::naming::tests::sanitizes_invalid_filename_characters_and_percent_signs",
       "signature": "fn sanitizes_invalid_filename_characters_and_percent_signs()",
-      "sourceDigest": "50856f5159af1dbbb6d64bcdb883e2c3b347b82e5e8085e0627e2a4de827609f",
+      "sourceDigest": "9d89f0975e24d040923cefe18d3182c8673c09ccd78bf885b4c5ce9b9040fae7",
       "cfg": [
         "test"
       ],
@@ -3619,7 +3620,8 @@
       ],
       "evidence": [
         "Source review src/downloader/naming.rs:247-262: fn sanitizes_invalid_filename_characters_and_percent_signs() { let request = DownloadRequest { url: \"https://example.com/video\".into(), quality: \"best\".into(), format: \"mp4\".into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\100%Downloads\".into(), cookie_config: None, file",
-        "Rereviewed current changed test span src/downloader/naming.rs:249-265, digest 50856f5159af1dbbb6d64bcdb883e2c3b347b82e5e8085e0627e2a4de827609f; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/naming.rs:249-265, digest 50856f5159af1dbbb6d64bcdb883e2c3b347b82e5e8085e0627e2a4de827609f; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/naming.rs:251-268, digest 9d89f0975e24d040923cefe18d3182c8673c09ccd78bf885b4c5ce9b9040fae7; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify Windows-safe output naming and path construction: sanitizes invalid filename characters and percent signs.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -3627,10 +3629,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/naming.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -3638,8 +3640,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/naming.rs",
-      "line": 268,
-      "endLine": 278,
+      "line": 271,
+      "endLine": 281,
       "symbol": "normalizes_reserved_extensions_and_utf16_length",
       "qualifiedName": "downloader::naming::tests::normalizes_reserved_extensions_and_utf16_length",
       "signature": "fn normalizes_reserved_extensions_and_utf16_length()",
@@ -3691,12 +3693,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/naming.rs",
-      "line": 281,
-      "endLine": 303,
+      "line": 284,
+      "endLine": 307,
       "symbol": "webm_final_path_uses_custom_filename_or_staged_stem",
       "qualifiedName": "downloader::naming::tests::webm_final_path_uses_custom_filename_or_staged_stem",
       "signature": "fn webm_final_path_uses_custom_filename_or_staged_stem()",
-      "sourceDigest": "56fbd93fcacef9b31d3e090123ce5cee9d3523d6a23fad97fb50fa56bda9632d",
+      "sourceDigest": "b307f291cc21c3db949c75f02ae4d38c8c3dcfa597109f77d7f1e25457a88529",
       "cfg": [
         "test"
       ],
@@ -3726,7 +3728,8 @@
       ],
       "evidence": [
         "Source review src/downloader/naming.rs:278-299: fn webm_final_path_uses_custom_filename_or_staged_stem() { let mut request = DownloadRequest { url: \"https://example.com/video\".into(), quality: \"best\".into(), format: \"webm\".into(), output_dir: r\"C:\\Users\\Mr.W\\Desktop\".into(), cookie_config: None, filename_ov",
-        "Rereviewed current changed test span src/downloader/naming.rs:281-303, digest 56fbd93fcacef9b31d3e090123ce5cee9d3523d6a23fad97fb50fa56bda9632d; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/naming.rs:281-303, digest 56fbd93fcacef9b31d3e090123ce5cee9d3523d6a23fad97fb50fa56bda9632d; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/naming.rs:284-307, digest b307f291cc21c3db949c75f02ae4d38c8c3dcfa597109f77d7f1e25457a88529; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify Windows-safe output naming and path construction: webm final path uses custom filename or staged stem.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -3734,10 +3737,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/naming.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -7481,8 +7484,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication.rs",
-      "line": 27,
-      "endLine": 34,
+      "line": 41,
+      "endLine": 48,
       "symbol": "test_create_owned_stage",
       "qualifiedName": "downloader::publication::test_create_owned_stage",
       "signature": "pub(crate) fn test_create_owned_stage( output_root: &Path, operation_id: &str, ) -> Result<PathBuf, String>",
@@ -7540,8 +7543,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication.rs",
-      "line": 37,
-      "endLine": 43,
+      "line": 51,
+      "endLine": 57,
       "symbol": "test_publish_staged_file",
       "qualifiedName": "downloader::publication::test_publish_staged_file",
       "signature": "pub(crate) async fn test_publish_staged_file( staged_output: &Path, desired_path: &Path, job: Option<&DownloadJob>, ) -> Result<PathBuf, String>",
@@ -7599,8 +7602,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication.rs",
-      "line": 46,
-      "endLine": 55,
+      "line": 60,
+      "endLine": 69,
       "symbol": "test_cleanup_owned_stage",
       "qualifiedName": "downloader::publication::test_cleanup_owned_stage",
       "signature": "pub(crate) fn test_cleanup_owned_stage( output_root: &Path, operation_id: &str, ) -> Result<(), String>",
@@ -7658,8 +7661,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication.rs",
-      "line": 58,
-      "endLine": 60,
+      "line": 72,
+      "endLine": 74,
       "symbol": "test_cleanup_abandoned_stages",
       "qualifiedName": "downloader::publication::test_cleanup_abandoned_stages",
       "signature": "pub(crate) fn test_cleanup_abandoned_stages(output_root: &Path) -> Result<(), String>",
@@ -8123,11 +8126,11 @@
       "classification": "production",
       "file": "src/downloader/publication/resolution.rs",
       "line": 75,
-      "endLine": 98,
+      "endLine": 104,
       "symbol": "resolve_staged_output",
       "qualifiedName": "downloader::publication::resolution::resolve_staged_output",
-      "signature": "pub(in crate::downloader) fn resolve_staged_output( staging_dir: &Path, selection: Option<&MediaSelection>, ) -> Result<PathBuf, StagedOutputError>",
-      "sourceDigest": "32c1cf9855e6ce5d35837c72e901a4ca23059c4edc80f457f65752b88d9a6be2",
+      "signature": "pub(in crate::downloader) fn resolve_staged_output( staging_dir: &Path, selection: Option<&MediaSelection>, expected_media_id: Option<&str>, ) -> Result<PathBuf, StagedOutputError>",
+      "sourceDigest": "3b170bdff68d8ca8cd1871d4ca67c0d5bebbe22064d5ce4ba4fb9f17b83f4ff8",
       "cfg": [],
       "callers": [
         "download engine publication path."
@@ -8156,7 +8159,8 @@
       "evidence": [
         "Current source span src/downloader/publication/resolution.rs:75-98, digest 32c1cf9855e6ce5d35837c72e901a4ca23059c4edc80f457f65752b88d9a6be2.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/resolution.rs:75-104, digest 3b170bdff68d8ca8cd1871d4ca67c0d5bebbe22064d5ce4ba4fb9f17b83f4ff8; direct callers and named tests were checked in source."
       ],
       "purpose": "Resolve the one publishable staged output under optional selected-media authority.",
       "output": "Validated staged output path.",
@@ -8164,25 +8168,23 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/publication/resolution.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "ownerCall": null,
-      "previousDigest": "e6187acb736e1f95b3c74667044823f7adbcc981e6e851036a58ed21c92f62c7",
-      "staleReason": "source_changed"
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     },
     {
       "id": "src/downloader/publication/resolution.rs::downloader::publication::resolution::resolve_recorded_output[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/resolution.rs",
-      "line": 100,
-      "endLine": 226,
+      "line": 106,
+      "endLine": 224,
       "symbol": "resolve_recorded_output",
       "qualifiedName": "downloader::publication::resolution::resolve_recorded_output",
-      "signature": "pub(super) fn resolve_recorded_output( record_path: &Path, metadata: &std::fs::Metadata, staging_dir: &Path, selection: Option<&MediaSelection>, ) -> Result<PathBuf, StagedOutputError>",
-      "sourceDigest": "8df83633857be062f79333ff6891cfd29cebcdec4823b9a573b500b2b45c7ca7",
+      "signature": "pub(super) fn resolve_recorded_output( record_path: &Path, metadata: &std::fs::Metadata, staging_dir: &Path, selection: Option<&MediaSelection>, expected_media_id: Option<&str>, ) -> Result<PathBuf, StagedOutputError>",
+      "sourceDigest": "5a3ed7429721e3787ca070dc07561cc356f80a6922313fa3d59d1661f5db0247",
       "cfg": [],
       "callers": [
         "resolve_staged_output."
@@ -8211,7 +8213,8 @@
       "evidence": [
         "Current source span src/downloader/publication/resolution.rs:100-226, digest 8df83633857be062f79333ff6891cfd29cebcdec4823b9a573b500b2b45c7ca7.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/resolution.rs:106-224, digest 5a3ed7429721e3787ca070dc07561cc356f80a6922313fa3d59d1661f5db0247; direct callers and named tests were checked in source."
       ],
       "purpose": "Validate machine output records and return their unique staged file.",
       "output": "Unique validated PathBuf.",
@@ -8219,21 +8222,19 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/publication/resolution.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "ownerCall": null,
-      "previousDigest": "d762cff90254ab54ba40ac0f24e024fdb4e550c1d0d0d14fb868f59f9c2a74ba",
-      "staleReason": "source_changed"
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     },
     {
       "id": "src/downloader/publication/resolution.rs::downloader::publication::resolution::resolve_unambiguous_fallback[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/resolution.rs",
-      "line": 228,
-      "endLine": 292,
+      "line": 249,
+      "endLine": 313,
       "symbol": "resolve_unambiguous_fallback",
       "qualifiedName": "downloader::publication::resolution::resolve_unambiguous_fallback",
       "signature": "fn resolve_unambiguous_fallback(staging_dir: &Path) -> Result<PathBuf, StagedOutputError>",
@@ -8289,8 +8290,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 26,
-      "endLine": 63,
+      "line": 29,
+      "endLine": 66,
       "symbol": "open",
       "qualifiedName": "downloader::publication::staging::impl NewStagingDirectoryLease::open",
       "signature": "fn open(path: &Path) -> Result<Self, String>",
@@ -8346,8 +8347,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 65,
-      "endLine": 108,
+      "line": 68,
+      "endLine": 111,
       "symbol": "rollback",
       "qualifiedName": "downloader::publication::staging::impl NewStagingDirectoryLease::rollback",
       "signature": "fn rollback(self, marker_file: Option<std::fs::File>) -> Result<(), String>",
@@ -8403,8 +8404,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 111,
-      "endLine": 113,
+      "line": 114,
+      "endLine": 116,
       "symbol": "staging_root",
       "qualifiedName": "downloader::publication::staging::staging_root",
       "signature": "fn staging_root(output_dir: &Path) -> PathBuf",
@@ -8460,8 +8461,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 115,
-      "endLine": 122,
+      "line": 118,
+      "endLine": 125,
       "symbol": "build_staging_dir",
       "qualifiedName": "downloader::publication::staging::build_staging_dir",
       "signature": "pub(in crate::downloader) fn build_staging_dir(output_dir: &Path, download_id: &str) -> PathBuf",
@@ -8517,8 +8518,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 124,
-      "endLine": 199,
+      "line": 127,
+      "endLine": 202,
       "symbol": "reset_staging_dir",
       "qualifiedName": "downloader::publication::staging::reset_staging_dir",
       "signature": "pub(in crate::downloader) fn reset_staging_dir( path: &Path, output_dir: &Path, operation_id: &str, ) -> Result<(), String>",
@@ -8574,8 +8575,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 201,
-      "endLine": 220,
+      "line": 204,
+      "endLine": 223,
       "symbol": "open_new_staging_marker",
       "qualifiedName": "downloader::publication::staging::open_new_staging_marker",
       "signature": "fn open_new_staging_marker(path: &Path) -> Result<std::fs::File, String>",
@@ -8631,8 +8632,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 223,
-      "endLine": 226,
+      "line": 226,
+      "endLine": 229,
       "symbol": "mark_open_handle_for_deletion",
       "qualifiedName": "downloader::publication::staging::mark_open_handle_for_deletion",
       "signature": "fn mark_open_handle_for_deletion(file: &std::fs::File) -> Result<(), String>",
@@ -8690,8 +8691,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 228,
-      "endLine": 237,
+      "line": 231,
+      "endLine": 240,
       "symbol": "cleanup_staging_dir",
       "qualifiedName": "downloader::publication::staging::cleanup_staging_dir",
       "signature": "pub(super) fn cleanup_staging_dir( path: &Path, output_dir: &Path, operation_id: &str, ) -> Result<(), String>",
@@ -8747,8 +8748,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 239,
-      "endLine": 248,
+      "line": 242,
+      "endLine": 251,
       "symbol": "cleanup_staging_with_warning",
       "qualifiedName": "downloader::publication::staging::cleanup_staging_with_warning",
       "signature": "pub(in crate::downloader) fn cleanup_staging_with_warning( notifications: &DownloadNotifications, path: &Path, output_dir: &Path, operation_id: &str, )",
@@ -8804,8 +8805,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 250,
-      "endLine": 272,
+      "line": 253,
+      "endLine": 275,
       "symbol": "quarantine_and_remove_staging_dir",
       "qualifiedName": "downloader::publication::staging::quarantine_and_remove_staging_dir",
       "signature": "fn quarantine_and_remove_staging_dir( root: &Path, source: &Path, operation_id: &str, require_operation_name: bool, ) -> Result<(), String>",
@@ -8861,8 +8862,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 274,
-      "endLine": 301,
+      "line": 277,
+      "endLine": 304,
       "symbol": "validate_owned_staging_directory",
       "qualifiedName": "downloader::publication::staging::validate_owned_staging_directory",
       "signature": "fn validate_owned_staging_directory( root: &Path, path: &Path, operation_id: &str, require_operation_name: bool, ) -> Result<(), String>",
@@ -8914,69 +8915,12 @@
       "ownerCall": null
     },
     {
-      "id": "src/downloader/publication/staging.rs::downloader::publication::staging::validate_staging_layout[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/downloader/publication/staging.rs",
-      "line": 303,
-      "endLine": 366,
-      "symbol": "validate_staging_layout",
-      "qualifiedName": "downloader::publication::staging::validate_staging_layout",
-      "signature": "fn validate_staging_layout( path: &Path, output_dir: &Path, operation_id: &str, require_operation: bool, ) -> Result<(PathBuf, PathBuf, String), String>",
-      "sourceDigest": "d38742a7fd2be05226a355b1a81b59672627a887fb856219e94400128b890532",
-      "cfg": [],
-      "callers": [
-        "reset_staging_dir and cleanup_staging_dir."
-      ],
-      "inputs": [
-        "Expected stage path, output directory, operation ID, and whether operation existence is required."
-      ],
-      "sideEffects": [
-        "Reads/canonicalizes path metadata and may create the hidden staging root when operation absence is allowed."
-      ],
-      "errors": [
-        "Rejects invalid UUID, lexical mismatch, missing/unsafe/reparse/canonically escaped output/root/operation paths, or creation failure."
-      ],
-      "ownership": [
-        "Borrows caller paths and returns owned normalized paths/UUID."
-      ],
-      "locks": [
-        "none; this helper uses synchronous metadata/enumeration or callback operations without shared Rust state."
-      ],
-      "invariants": [
-        "The operation path is exactly staging_root(canonical_output)/normalized_uuid with no reparse directory component at the checked levels."
-      ],
-      "tests": [
-        "active_stage_reset_refuses_a_reparse_staging_root and marker initialization tests."
-      ],
-      "evidence": [
-        "Current source declaration src/downloader/publication/staging.rs:303-366, digest d38742a7fd2be05226a355b1a81b59672627a887fb856219e94400128b890532.",
-        "Stage 5 publication extraction body-equivalence inventory verified every canonical publication callable, including methods, local functions, FFI declarations, and cfg duplicates, with no omitted extracted callable.",
-        "Declaration and visibility review confirmed private children, downloader-scoped re-exports, test-only facade imports, and unchanged crate visibility for abandoned-stage cleanup.",
-        "Lifetime review confirmed retained opened-marker identity, bounded opened-handle record reads, lease rollback, quarantine-before-delete ownership, staged-file sync before move, and atomic no-clobber publication order.",
-        "Executed downloader::publication::tests receipt: 17 passed; target/internal-cleanup-stage5/publication-tests.log SHA-256 415e7f1354aaa849baf4163ce466900246cb857d333c8ee1afd6874693905a3c.",
-        "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
-        "No separate source defect identified in this span."
-      ],
-      "purpose": "Validate UUID-derived lexical and canonical staging layout and create only the missing staging root when allowed.",
-      "output": "Validated (staging root, operation path, normalized UUID) tuple or String error.",
-      "cancellation": "No DownloadJob input or cancellation point; this synchronous filesystem helper completes or returns its current bounded operation.",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/downloader/publication/staging.rs",
-      "reviewer": "/root/visual_contract",
-      "reviewedAt": "2026-09-09T09:18:03Z",
-      "status": "reviewed",
-      "notes": "Context-reviewed after the mechanical Stage 5 publication split against the current scan and the preserved semantic contract; generated identity now names the applied child or retained facade.",
-      "ownerCall": null
-    },
-    {
       "id": "src/downloader/publication/staging.rs::downloader::publication::staging::verify_staging_marker[cfg=test]",
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication/staging.rs",
-      "line": 369,
-      "endLine": 374,
+      "line": 307,
+      "endLine": 312,
       "symbol": "verify_staging_marker",
       "qualifiedName": "downloader::publication::staging::verify_staging_marker",
       "signature": "pub(super) fn verify_staging_marker( path: &Path, expected_operation_id: &str, ) -> Result<(), String>",
@@ -9034,8 +8978,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 376,
-      "endLine": 389,
+      "line": 314,
+      "endLine": 327,
       "symbol": "verify_staging_marker_with_name_policy",
       "qualifiedName": "downloader::publication::staging::verify_staging_marker_with_name_policy",
       "signature": "fn verify_staging_marker_with_name_policy( path: &Path, expected_operation_id: &str, require_operation_name: bool, ) -> Result<(), String>",
@@ -9091,8 +9035,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 391,
-      "endLine": 427,
+      "line": 329,
+      "endLine": 365,
       "symbol": "verify_opened_staging_marker",
       "qualifiedName": "downloader::publication::staging::verify_opened_staging_marker",
       "signature": "fn verify_opened_staging_marker( marker_file: &mut std::fs::File, directory: &Path, expected_operation_id: &str, require_operation_name: bool, ) -> Result<(), String>",
@@ -9148,8 +9092,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 429,
-      "endLine": 458,
+      "line": 367,
+      "endLine": 396,
       "symbol": "open_staging_marker",
       "qualifiedName": "downloader::publication::staging::open_staging_marker",
       "signature": "fn open_staging_marker(path: &Path) -> Result<std::fs::File, String>",
@@ -9205,8 +9149,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 461,
-      "endLine": 500,
+      "line": 399,
+      "endLine": 438,
       "symbol": "verify_opened_marker_identity",
       "qualifiedName": "downloader::publication::staging::verify_opened_marker_identity",
       "signature": "fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<(), String>",
@@ -9264,8 +9208,8 @@
       "kind": "local_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 469,
-      "endLine": 472,
+      "line": 407,
+      "endLine": 410,
       "symbol": "identity",
       "qualifiedName": "downloader::publication::staging::verify_opened_marker_identity::local::identity",
       "signature": "fn identity(file: &std::fs::File) -> Result<crate::windows_file::FileIdentity, String>",
@@ -9323,8 +9267,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 503,
-      "endLine": 522,
+      "line": 441,
+      "endLine": 460,
       "symbol": "verify_opened_marker_identity",
       "qualifiedName": "downloader::publication::staging::verify_opened_marker_identity",
       "signature": "fn verify_opened_marker_identity(opened: &std::fs::File, path: &Path) -> Result<(), String>",
@@ -9382,8 +9326,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 525,
-      "endLine": 532,
+      "line": 463,
+      "endLine": 470,
       "symbol": "verify_opened_marker_identity",
       "qualifiedName": "downloader::publication::staging::verify_opened_marker_identity",
       "signature": "fn verify_opened_marker_identity(_opened: &std::fs::File, path: &Path) -> Result<(), String>",
@@ -9441,8 +9385,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 534,
-      "endLine": 542,
+      "line": 472,
+      "endLine": 480,
       "symbol": "cleanup_abandoned_download_stages",
       "qualifiedName": "downloader::publication::staging::cleanup_abandoned_download_stages",
       "signature": "pub(crate) fn cleanup_abandoned_download_stages(output_roots: &[String]) -> Vec<String>",
@@ -9498,8 +9442,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 544,
-      "endLine": 608,
+      "line": 482,
+      "endLine": 546,
       "symbol": "cleanup_abandoned_download_stages_at",
       "qualifiedName": "downloader::publication::staging::cleanup_abandoned_download_stages_at",
       "signature": "pub(super) fn cleanup_abandoned_download_stages_at(output_root: &Path) -> Result<(), String>",
@@ -9555,8 +9499,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 610,
-      "endLine": 622,
+      "line": 548,
+      "endLine": 560,
       "symbol": "is_reparse_metadata",
       "qualifiedName": "downloader::publication::staging::is_reparse_metadata",
       "signature": "pub(super) fn is_reparse_metadata(metadata: &std::fs::Metadata) -> bool",
@@ -9612,8 +9556,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 625,
-      "endLine": 648,
+      "line": 563,
+      "endLine": 586,
       "symbol": "mark_hidden",
       "qualifiedName": "downloader::publication::staging::mark_hidden",
       "signature": "fn mark_hidden(path: &Path) -> Result<(), String>",
@@ -9671,8 +9615,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 630,
-      "endLine": 630,
+      "line": 568,
+      "endLine": 568,
       "symbol": "GetFileAttributesW",
       "qualifiedName": "downloader::publication::staging::mark_hidden::local::GetFileAttributesW",
       "signature": "fn GetFileAttributesW(path: *const u16) -> u32",
@@ -9730,8 +9674,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 631,
-      "endLine": 631,
+      "line": 569,
+      "endLine": 569,
       "symbol": "SetFileAttributesW",
       "qualifiedName": "downloader::publication::staging::mark_hidden::local::SetFileAttributesW",
       "signature": "fn SetFileAttributesW(path: *const u16, attributes: u32) -> i32",
@@ -9789,8 +9733,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/publication/staging.rs",
-      "line": 651,
-      "endLine": 653,
+      "line": 589,
+      "endLine": 591,
       "symbol": "mark_hidden",
       "qualifiedName": "downloader::publication::staging::mark_hidden",
       "signature": "fn mark_hidden(_path: &Path) -> Result<(), String>",
@@ -9909,8 +9853,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication/tests.rs",
-      "line": 18,
-      "endLine": 24,
+      "line": 54,
+      "endLine": 60,
       "symbol": "write_record",
       "qualifiedName": "downloader::publication::tests::write_record",
       "signature": "fn write_record(stage: &std::path::Path, path: &std::path::Path)",
@@ -9964,12 +9908,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 50,
-      "endLine": 62,
+      "line": 86,
+      "endLine": 98,
       "symbol": "machine_record_resolves_the_exact_staged_output",
       "qualifiedName": "downloader::publication::tests::machine_record_resolves_the_exact_staged_output",
       "signature": "fn machine_record_resolves_the_exact_staged_output()",
-      "sourceDigest": "483249c1c220beeead4c142909ba8327fc0db0295f5272abbfa99ec4f535f8ce",
+      "sourceDigest": "f9543f08daeea0af87a8ebba8055cca08087466703ddfff07e7378712cc9aff6",
       "cfg": [
         "test"
       ],
@@ -10000,7 +9944,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:27-39: fn machine_record_resolves_the_exact_staged_output() { let stage = temp_stage(); let media = stage.join(\"chosen.mp4\"); std::fs::write(&media, b\"media\").unwrap(); std::fs::write(stage.join(\"other.txt\"), b\"not media\").unwrap(); write_record(&stage, &media); asse",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:50-62, digest 483249c1c220beeead4c142909ba8327fc0db0295f5272abbfa99ec4f535f8ce; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:50-62, digest 483249c1c220beeead4c142909ba8327fc0db0295f5272abbfa99ec4f535f8ce; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:50-62, digest f9543f08daeea0af87a8ebba8055cca08087466703ddfff07e7378712cc9aff6; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: machine record resolves the exact staged output.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10008,10 +9953,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10019,12 +9964,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 65,
-      "endLine": 75,
+      "line": 101,
+      "endLine": 111,
       "symbol": "malformed_present_record_never_uses_fallback",
       "qualifiedName": "downloader::publication::tests::malformed_present_record_never_uses_fallback",
       "signature": "fn malformed_present_record_never_uses_fallback()",
-      "sourceDigest": "5cf253b34ec75915756b36e386f986dd4f405abad8b10c0896fd4aeab2e7cca6",
+      "sourceDigest": "bb111f3f50e87b76cefadc6437f8f3c27548d33754a19f9c433d28337076a2a9",
       "cfg": [
         "test"
       ],
@@ -10055,7 +10000,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:42-52: fn malformed_present_record_never_uses_fallback() { let stage = temp_stage(); std::fs::write(stage.join(\"only.mp4\"), b\"media\").unwrap(); std::fs::write(final_output_record_path(&stage), b\"not json\\n\").unwrap(); let error = resolve_staged_output(&stage).unwrap_",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:65-75, digest 5cf253b34ec75915756b36e386f986dd4f405abad8b10c0896fd4aeab2e7cca6; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:65-75, digest 5cf253b34ec75915756b36e386f986dd4f405abad8b10c0896fd4aeab2e7cca6; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:65-75, digest bb111f3f50e87b76cefadc6437f8f3c27548d33754a19f9c433d28337076a2a9; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: malformed present record never uses fallback.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10063,10 +10009,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10074,12 +10020,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 78,
-      "endLine": 98,
+      "line": 114,
+      "endLine": 135,
       "symbol": "stale_small_record_metadata_never_allows_an_unbounded_read",
       "qualifiedName": "downloader::publication::tests::stale_small_record_metadata_never_allows_an_unbounded_read",
       "signature": "fn stale_small_record_metadata_never_allows_an_unbounded_read()",
-      "sourceDigest": "026ac7798765939e697b6d061b745f0db29fc21b07d325e4ab8d3d1199c2b6fc",
+      "sourceDigest": "d61b306d5b057524dd7409569c0947a116be9e91ac09334769cce682dac550ec",
       "cfg": [
         "test"
       ],
@@ -10110,7 +10056,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:55-75: fn stale_small_record_metadata_never_allows_an_unbounded_read() { let stage = temp_stage(); let record_path = final_output_record_path(&stage); std::fs::write(&record_path, b\"{}\\n\").unwrap(); let stale_small_metadata = std::fs::symlink_metadata(&record_path).u",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:78-98, digest 026ac7798765939e697b6d061b745f0db29fc21b07d325e4ab8d3d1199c2b6fc; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:78-98, digest 026ac7798765939e697b6d061b745f0db29fc21b07d325e4ab8d3d1199c2b6fc; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:78-99, digest d61b306d5b057524dd7409569c0947a116be9e91ac09334769cce682dac550ec; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: stale small record metadata never allows an unbounded read.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10118,10 +10065,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10129,12 +10076,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 101,
-      "endLine": 120,
+      "line": 138,
+      "endLine": 157,
       "symbol": "multiple_machine_records_are_rejected_as_ambiguous_authority",
       "qualifiedName": "downloader::publication::tests::multiple_machine_records_are_rejected_as_ambiguous_authority",
       "signature": "fn multiple_machine_records_are_rejected_as_ambiguous_authority()",
-      "sourceDigest": "279dfe1371005634eb1b3441856c57ff13ec2ff21fab0300550a9577f90587f0",
+      "sourceDigest": "3afc0a0f9961df08b8171d46014a9a79cfc713de1be77dd9f46eac5c23571246",
       "cfg": [
         "test"
       ],
@@ -10165,7 +10112,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:78-97: fn multiple_machine_records_are_rejected_as_ambiguous_authority() { let stage = temp_stage(); let media = stage.join(\"chosen.mp4\"); std::fs::write(&media, b\"media\").unwrap(); let line = serde_json::json!({ \"schema_version\": 1, \"filepath\": media.to_string_lossy",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:101-120, digest 279dfe1371005634eb1b3441856c57ff13ec2ff21fab0300550a9577f90587f0; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:101-120, digest 279dfe1371005634eb1b3441856c57ff13ec2ff21fab0300550a9577f90587f0; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:102-121, digest 3afc0a0f9961df08b8171d46014a9a79cfc713de1be77dd9f46eac5c23571246; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: multiple machine records are rejected as ambiguous authority.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10173,10 +10121,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10184,12 +10132,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 123,
-      "endLine": 134,
+      "line": 160,
+      "endLine": 171,
       "symbol": "absent_record_accepts_exactly_one_media_candidate",
       "qualifiedName": "downloader::publication::tests::absent_record_accepts_exactly_one_media_candidate",
       "signature": "fn absent_record_accepts_exactly_one_media_candidate()",
-      "sourceDigest": "f51a3e179cd118bd7e2a5985f8a43f1dc086224bbc7d8c7e05ed70296e1edf6d",
+      "sourceDigest": "09043d77754bb1b23035e90fb8c696db1462412076902f8ab2a57d7ec5af0213",
       "cfg": [
         "test"
       ],
@@ -10220,7 +10168,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:100-111: fn absent_record_accepts_exactly_one_media_candidate() { let stage = temp_stage(); let media = stage.join(\"only.mkv\"); std::fs::write(&media, b\"media\").unwrap(); std::fs::write(stage.join(\"sidecar.info.json\"), b\"{}\").unwrap(); assert_eq!( resolve_staged_output",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:123-134, digest f51a3e179cd118bd7e2a5985f8a43f1dc086224bbc7d8c7e05ed70296e1edf6d; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:123-134, digest f51a3e179cd118bd7e2a5985f8a43f1dc086224bbc7d8c7e05ed70296e1edf6d; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:124-135, digest 09043d77754bb1b23035e90fb8c696db1462412076902f8ab2a57d7ec5af0213; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: absent record accepts exactly one media candidate.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10228,10 +10177,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10239,12 +10188,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 137,
-      "endLine": 147,
+      "line": 174,
+      "endLine": 184,
       "symbol": "absent_record_rejects_multiple_media_candidates_without_mtime_selection",
       "qualifiedName": "downloader::publication::tests::absent_record_rejects_multiple_media_candidates_without_mtime_selection",
       "signature": "fn absent_record_rejects_multiple_media_candidates_without_mtime_selection()",
-      "sourceDigest": "b49206f4d8e0bce2e1ebd36941951cb03bdf38f85d89ff63f457685c08ea06be",
+      "sourceDigest": "983d348430cb22c7ecaa764ab915e75addaf8fa772eda95273561e8a5b29816d",
       "cfg": [
         "test"
       ],
@@ -10275,7 +10224,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:114-124: fn absent_record_rejects_multiple_media_candidates_without_mtime_selection() { let stage = temp_stage(); std::fs::write(stage.join(\"older.mp4\"), b\"older\").unwrap(); std::fs::write(stage.join(\"newer.mkv\"), b\"newer\").unwrap(); let error = resolve_staged_output(&",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:137-147, digest b49206f4d8e0bce2e1ebd36941951cb03bdf38f85d89ff63f457685c08ea06be; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:137-147, digest b49206f4d8e0bce2e1ebd36941951cb03bdf38f85d89ff63f457685c08ea06be; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:138-148, digest 983d348430cb22c7ecaa764ab915e75addaf8fa772eda95273561e8a5b29816d; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: absent record rejects multiple media candidates without mtime selection.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10283,10 +10233,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10294,12 +10244,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 150,
-      "endLine": 164,
+      "line": 187,
+      "endLine": 201,
       "symbol": "recorded_output_outside_stage_is_rejected",
       "qualifiedName": "downloader::publication::tests::recorded_output_outside_stage_is_rejected",
       "signature": "fn recorded_output_outside_stage_is_rejected()",
-      "sourceDigest": "9cee2b1e691d50fc975f12920ffb2860b9cf3230dc0fb0932aa7b2e1c7ee2b65",
+      "sourceDigest": "737772173ea03d9dcd5534fdb3f2115ff8f8666ee1eb6eee674bd227baed703e",
       "cfg": [
         "test"
       ],
@@ -10330,7 +10280,8 @@
       "evidence": [
         "Fresh integrated Rust proof: Clippy --all-targets --all-features -D warnings passed; cargo test --locked --offline --all-features compiled current sources and passed 304 tests with 0 failures and 3 ignored; receipt target/internal-cleanup-stage5/rust-test-receipt.json, test executable SHA-256 951475bcc53d7cfc341679dc943cc8b48da34e34d0458f819d8a036b516fc339 (26,301,440 bytes).",
         "Source review src/downloader/publication/tests.rs:127-141: fn recorded_output_outside_stage_is_rejected() { let stage = temp_stage(); let outside = stage.parent().unwrap().join(format!( \"nuclear-outside-output-{}.mp4\", uuid::Uuid::new_v4() )); std::fs::write(&outside, b\"outside\").unwrap(); write_record(&stage, &outsid",
-        "Rereviewed current changed test span src/downloader/publication/tests.rs:150-164, digest 9cee2b1e691d50fc975f12920ffb2860b9cf3230dc0fb0932aa7b2e1c7ee2b65; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/publication/tests.rs:150-164, digest 9cee2b1e691d50fc975f12920ffb2860b9cf3230dc0fb0932aa7b2e1c7ee2b65; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:151-165, digest 737772173ea03d9dcd5534fdb3f2115ff8f8666ee1eb6eee674bd227baed703e; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify owned staging, output-record resolution, and collision-safe publication: recorded output outside stage is rejected.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -10338,10 +10289,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -10349,8 +10300,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 245,
-      "endLine": 265,
+      "line": 337,
+      "endLine": 357,
       "symbol": "publishing_never_overwrites_and_adds_a_suffix",
       "qualifiedName": "downloader::publication::tests::publishing_never_overwrites_and_adds_a_suffix",
       "signature": "async fn publishing_never_overwrites_and_adds_a_suffix()",
@@ -10403,8 +10354,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 268,
-      "endLine": 296,
+      "line": 360,
+      "endLine": 388,
       "symbol": "concurrent_publication_allocates_distinct_names",
       "qualifiedName": "downloader::publication::tests::concurrent_publication_allocates_distinct_names",
       "signature": "async fn concurrent_publication_allocates_distinct_names()",
@@ -10457,8 +10408,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 299,
-      "endLine": 312,
+      "line": 391,
+      "endLine": 404,
       "symbol": "publication_rejects_a_path_that_terminal_metadata_cannot_store",
       "qualifiedName": "downloader::publication::tests::publication_rejects_a_path_that_terminal_metadata_cannot_store",
       "signature": "async fn publication_rejects_a_path_that_terminal_metadata_cannot_store()",
@@ -10511,8 +10462,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 315,
-      "endLine": 335,
+      "line": 407,
+      "endLine": 427,
       "symbol": "abandoned_stage_cleanup_deletes_only_marker_owned_uuid_directories",
       "qualifiedName": "downloader::publication::tests::abandoned_stage_cleanup_deletes_only_marker_owned_uuid_directories",
       "signature": "fn abandoned_stage_cleanup_deletes_only_marker_owned_uuid_directories()",
@@ -10565,8 +10516,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 338,
-      "endLine": 360,
+      "line": 430,
+      "endLine": 452,
       "symbol": "active_stage_cleanup_refuses_a_wrong_operation_marker",
       "qualifiedName": "downloader::publication::tests::active_stage_cleanup_refuses_a_wrong_operation_marker",
       "signature": "fn active_stage_cleanup_refuses_a_wrong_operation_marker()",
@@ -10619,8 +10570,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 364,
-      "endLine": 387,
+      "line": 456,
+      "endLine": 479,
       "symbol": "marker_initialization_failure_removes_the_empty_new_stage",
       "qualifiedName": "downloader::publication::tests::marker_initialization_failure_removes_the_empty_new_stage",
       "signature": "fn marker_initialization_failure_removes_the_empty_new_stage()",
@@ -10674,8 +10625,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 391,
-      "endLine": 411,
+      "line": 483,
+      "endLine": 503,
       "symbol": "partial_marker_failure_removes_only_the_handle_owned_stage",
       "qualifiedName": "downloader::publication::tests::partial_marker_failure_removes_only_the_handle_owned_stage",
       "signature": "fn partial_marker_failure_removes_only_the_handle_owned_stage()",
@@ -10729,8 +10680,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 414,
-      "endLine": 438,
+      "line": 506,
+      "endLine": 530,
       "symbol": "marker_initialization_rollback_preserves_unexpected_content",
       "qualifiedName": "downloader::publication::tests::marker_initialization_rollback_preserves_unexpected_content",
       "signature": "fn marker_initialization_rollback_preserves_unexpected_content()",
@@ -10783,8 +10734,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 441,
-      "endLine": 464,
+      "line": 533,
+      "endLine": 556,
       "symbol": "oversized_staging_marker_is_rejected_without_removing_input",
       "qualifiedName": "downloader::publication::tests::oversized_staging_marker_is_rejected_without_removing_input",
       "signature": "fn oversized_staging_marker_is_rejected_without_removing_input()",
@@ -10837,8 +10788,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 468,
-      "endLine": 489,
+      "line": 560,
+      "endLine": 581,
       "symbol": "active_stage_reset_refuses_a_reparse_staging_root",
       "qualifiedName": "downloader::publication::tests::active_stage_reset_refuses_a_reparse_staging_root",
       "signature": "fn active_stage_reset_refuses_a_reparse_staging_root()",
@@ -10995,11 +10946,11 @@
       "classification": "production",
       "file": "src/downloader/validation.rs",
       "line": 42,
-      "endLine": 80,
+      "endLine": 89,
       "symbol": "validate_download_request",
       "qualifiedName": "downloader::validation::validate_download_request",
       "signature": "pub fn validate_download_request(request: &DownloadRequest) -> Result<(), String>",
-      "sourceDigest": "d30e28bf2f4ac78d306fa228906f972066f1fd3c1ffb57e7b37b5e2bc2420b6b",
+      "sourceDigest": "9ee4f7997d1ddb326d559aeab84c1b6a47f5515baf4b98791df3c72b726bb8ad",
       "cfg": [],
       "callers": [
         "download start paths and validation tests."
@@ -11028,7 +10979,8 @@
       "evidence": [
         "Current source span src/downloader/validation.rs:42-80, digest d30e28bf2f4ac78d306fa228906f972066f1fd3c1ffb57e7b37b5e2bc2420b6b.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/validation.rs:42-89, digest 9ee4f7997d1ddb326d559aeab84c1b6a47f5515baf4b98791df3c72b726bb8ad; direct callers and named tests were checked in source."
       ],
       "purpose": "Validate every download request field including optional exact media selection.",
       "output": "Unit on success.",
@@ -11036,21 +10988,19 @@
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/validation.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "ownerCall": null,
-      "previousDigest": "353c2257a2e9cd823c83d4c5786d48c3b975606825207bc143d04ba14c8c74b7",
-      "staleReason": "source_changed"
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "ownerCall": null
     },
     {
       "id": "src/downloader/validation.rs::downloader::validation::validate_output_directory[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 82,
-      "endLine": 185,
+      "line": 91,
+      "endLine": 194,
       "symbol": "validate_output_directory",
       "qualifiedName": "downloader::validation::validate_output_directory",
       "signature": "pub fn validate_output_directory(path: &str) -> Result<String, AppError>",
@@ -11100,8 +11050,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 188,
-      "endLine": 221,
+      "line": 197,
+      "endLine": 230,
       "symbol": "free_space_bytes",
       "qualifiedName": "downloader::validation::free_space_bytes",
       "signature": "fn free_space_bytes(path: &Path) -> Result<u64, AppError>",
@@ -11153,8 +11103,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 192,
-      "endLine": 197,
+      "line": 201,
+      "endLine": 206,
       "symbol": "GetDiskFreeSpaceExW",
       "qualifiedName": "downloader::validation::free_space_bytes::local::GetDiskFreeSpaceExW",
       "signature": "fn GetDiskFreeSpaceExW( directory: *const u16, available: *mut u64, total: *mut u64, free: *mut u64, ) -> i32",
@@ -11206,8 +11156,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 223,
-      "endLine": 259,
+      "line": 232,
+      "endLine": 268,
       "symbol": "validate_cookie_config",
       "qualifiedName": "downloader::validation::validate_cookie_config",
       "signature": "fn validate_cookie_config(config: &CookieConfig) -> Result<(), String>",
@@ -11258,8 +11208,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 261,
-      "endLine": 274,
+      "line": 270,
+      "endLine": 283,
       "symbol": "validate_compat_config_path",
       "qualifiedName": "downloader::validation::validate_compat_config_path",
       "signature": "fn validate_compat_config_path(path: Option<&str>) -> Result<(), String>",
@@ -11309,8 +11259,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 276,
-      "endLine": 282,
+      "line": 285,
+      "endLine": 291,
       "symbol": "validate_actionable_input",
       "qualifiedName": "downloader::validation::validate_actionable_input",
       "signature": "pub(super) fn validate_actionable_input(name: &str, value: &str) -> Result<(), String>",
@@ -11360,8 +11310,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 284,
-      "endLine": 286,
+      "line": 293,
+      "endLine": 295,
       "symbol": "is_allowed_format",
       "qualifiedName": "downloader::validation::is_allowed_format",
       "signature": "fn is_allowed_format(format: &str) -> bool",
@@ -11411,8 +11361,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 288,
-      "endLine": 290,
+      "line": 297,
+      "endLine": 299,
       "symbol": "is_allowed_quality",
       "qualifiedName": "downloader::validation::is_allowed_quality",
       "signature": "fn is_allowed_quality(quality: &str) -> bool",
@@ -11462,8 +11412,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/validation.rs",
-      "line": 293,
-      "endLine": 304,
+      "line": 302,
+      "endLine": 313,
       "symbol": "is_x_or_twitter_url",
       "qualifiedName": "downloader::validation::is_x_or_twitter_url",
       "signature": "pub(super) fn is_x_or_twitter_url(raw: &str) -> bool",
@@ -11515,12 +11465,12 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/validation.rs",
-      "line": 311,
-      "endLine": 322,
+      "line": 320,
+      "endLine": 332,
       "symbol": "download_request",
       "qualifiedName": "downloader::validation::tests::download_request",
       "signature": "fn download_request(format: &str, quality: &str) -> DownloadRequest",
-      "sourceDigest": "8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f",
+      "sourceDigest": "73433e5cb70ab55965716b721926d0a8c23a4922b34f358cd250d5b653f3c05c",
       "cfg": [
         "test"
       ],
@@ -11550,7 +11500,8 @@
       ],
       "evidence": [
         "Source review src/downloader/validation.rs:308-318: fn download_request(format: &str, quality: &str) -> DownloadRequest { DownloadRequest { url: \"https://example.com/video\".into(), quality: quality.into(), format: format.into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_over",
-        "Rereviewed current changed test span src/downloader/validation.rs:311-322, digest 8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/validation.rs:311-322, digest 8dd330337dbec3b2993b43b3c071f85243eb508b4e8529d2a729a5fe0128af8f; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/validation.rs:320-332, digest 73433e5cb70ab55965716b721926d0a8c23a4922b34f358cd250d5b653f3c05c; direct callers and named tests were checked in source."
       ],
       "purpose": "Construct a stable DownloadRequest fixture for validation tests.",
       "output": "Returns an owned DownloadRequest with caller-selected format and quality.",
@@ -11558,10 +11509,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/validation.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -11569,12 +11520,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 324,
-      "endLine": 337,
+      "line": 334,
+      "endLine": 348,
       "symbol": "rejects_non_http_download_urls",
       "qualifiedName": "downloader::validation::tests::rejects_non_http_download_urls",
       "signature": "fn rejects_non_http_download_urls()",
-      "sourceDigest": "5e5e7b123302027b748d504188a148bfe9d28059bb0393cabeb67e809f2b7aeb",
+      "sourceDigest": "d11fa6c34af1b8f4e4eacc44ca24bebd5dad55efbcd250ab44b136d43865dc13",
       "cfg": [
         "test"
       ],
@@ -11604,7 +11555,8 @@
       ],
       "evidence": [
         "Source review src/downloader/validation.rs:320-332: fn rejects_non_http_download_urls() { let request = DownloadRequest { url: \"file:///C:/Users/Mr.W/video.mp4\".into(), quality: \"best\".into(), format: \"mp4\".into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_override: None, co",
-        "Rereviewed current changed test span src/downloader/validation.rs:324-337, digest 5e5e7b123302027b748d504188a148bfe9d28059bb0393cabeb67e809f2b7aeb; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/validation.rs:324-337, digest 5e5e7b123302027b748d504188a148bfe9d28059bb0393cabeb67e809f2b7aeb; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/validation.rs:334-348, digest d11fa6c34af1b8f4e4eacc44ca24bebd5dad55efbcd250ab44b136d43865dc13; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify download request and configuration validation: rejects non http download urls.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -11612,10 +11564,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/validation.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -11623,12 +11575,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 340,
-      "endLine": 353,
+      "line": 351,
+      "endLine": 365,
       "symbol": "rejects_invalid_output_format",
       "qualifiedName": "downloader::validation::tests::rejects_invalid_output_format",
       "signature": "fn rejects_invalid_output_format()",
-      "sourceDigest": "cf66858f464e8c427701d835d2c1303b365cf9f6824b7305b54ee54f8165e5e7",
+      "sourceDigest": "c8b60a9c262e356856a6a8bac3dfbbde74e5f28302f1c7f8e55efed147e007d5",
       "cfg": [
         "test"
       ],
@@ -11658,7 +11610,8 @@
       ],
       "evidence": [
         "Source review src/downloader/validation.rs:335-347: fn rejects_invalid_output_format() { let request = DownloadRequest { url: \"https://example.com/video\".into(), quality: \"best\".into(), format: \"avi\".into(), output_dir: \"C:\\\\Users\\\\Mr.W\\\\Downloads\".into(), cookie_config: None, filename_override: None, compat_co",
-        "Rereviewed current changed test span src/downloader/validation.rs:340-353, digest cf66858f464e8c427701d835d2c1303b365cf9f6824b7305b54ee54f8165e5e7; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Rereviewed current changed test span src/downloader/validation.rs:340-353, digest cf66858f464e8c427701d835d2c1303b365cf9f6824b7305b54ee54f8165e5e7; existing scenario ownership and assertions remain applicable with typed selection fixtures.",
+        "Reviewed immutable inventory span src/downloader/validation.rs:351-365, digest c8b60a9c262e356856a6a8bac3dfbbde74e5f28302f1c7f8e55efed147e007d5; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify download request and configuration validation: rejects invalid output format.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -11666,10 +11619,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/validation.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -11677,12 +11630,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 368,
-      "endLine": 405,
+      "line": 380,
+      "endLine": 423,
       "symbol": "rejects_actionable_request_fields_over_four_kibibytes",
       "qualifiedName": "downloader::validation::tests::rejects_actionable_request_fields_over_four_kibibytes",
       "signature": "fn rejects_actionable_request_fields_over_four_kibibytes()",
-      "sourceDigest": "4f4c866a35c77805370a2b6c9bc3eec6d991d17d2702026bfdcc1e42a0951e5e",
+      "sourceDigest": "0514e2b8aea5bb7b8993fd3f81c51f602579f3b503e72c710eda7d24382d62a7",
       "cfg": [
         "test"
       ],
@@ -11711,7 +11664,8 @@
         "downloader::validation::tests::rejects_actionable_request_fields_over_four_kibibytes"
       ],
       "evidence": [
-        "Source review src/downloader/validation.rs:350-387: fn rejects_actionable_request_fields_over_four_kibibytes() { let oversized = \"x\".repeat(MAX_ACTIONABLE_FIELD_BYTES + 1); let mut request = download_request(\"mp4\", \"best\"); request.url = format!(\"https://example.com/{oversized}\"); assert!(validate_download_requ"
+        "Source review src/downloader/validation.rs:350-387: fn rejects_actionable_request_fields_over_four_kibibytes() { let oversized = \"x\".repeat(MAX_ACTIONABLE_FIELD_BYTES + 1); let mut request = download_request(\"mp4\", \"best\"); request.url = format!(\"https://example.com/{oversized}\"); assert!(validate_download_requ",
+        "Reviewed immutable inventory span src/downloader/validation.rs:380-423, digest 0514e2b8aea5bb7b8993fd3f81c51f602579f3b503e72c710eda7d24382d62a7; direct callers and named tests were checked in source."
       ],
       "purpose": "Verify download request and configuration validation: rejects actionable request fields over four kibibytes.",
       "output": "Unit-test completion; assertions encode the expected behavior and any failure panics the test.",
@@ -11719,10 +11673,10 @@
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/downloader/validation.rs",
-      "reviewer": "download-engine-review",
-      "reviewedAt": "2026-09-08T23:09:26Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Test or test-support row reviewed after extraction to its natural child module; production behavior is unchanged.",
       "ownerCall": null
     },
     {
@@ -11730,8 +11684,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 408,
-      "endLine": 420,
+      "line": 438,
+      "endLine": 450,
       "symbol": "rejects_cookie_file_mode_without_path",
       "qualifiedName": "downloader::validation::tests::rejects_cookie_file_mode_without_path",
       "signature": "fn rejects_cookie_file_mode_without_path()",
@@ -11783,8 +11737,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 423,
-      "endLine": 443,
+      "line": 453,
+      "endLine": 473,
       "symbol": "rejects_missing_cookie_file",
       "qualifiedName": "downloader::validation::tests::rejects_missing_cookie_file",
       "signature": "fn rejects_missing_cookie_file()",
@@ -11836,8 +11790,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/command_args.rs",
-      "line": 400,
-      "endLine": 419,
+      "line": 412,
+      "endLine": 431,
       "symbol": "selected_media_uses_exact_playlist_ordinal_and_machine_identity_record",
       "qualifiedName": "downloader::command_args::tests::selected_media_uses_exact_playlist_ordinal_and_machine_identity_record",
       "signature": "fn selected_media_uses_exact_playlist_ordinal_and_machine_identity_record()",
@@ -12104,51 +12058,51 @@
       "classification": "production",
       "file": "src/downloader/inspection/metadata.rs",
       "line": 52,
-      "endLine": 127,
+      "endLine": 131,
       "symbol": "into_entry",
       "qualifiedName": "downloader::inspection::metadata::impl PlaylistRecord::into_entry",
-      "signature": "fn into_entry( self, parent_url: &str, has_formats: bool, ) -> Result<Option<PlaylistEntry>, String>",
-      "sourceDigest": "9ea20a91a517408003739842f082acde9cfa9677eb9c162bb2875cd5d579cf25",
+      "signature": "fn into_entry(self, parent_url: &str, data: &Value) -> Result<Option<PlaylistEntry>, String>",
+      "sourceDigest": "336c71149e2561405bab57830f6bd078b29781af84433256c5d53891784fd5d8",
       "cfg": [],
       "callers": [
-        "parse_inspection."
+        "parse_inspection calls it for each bounded non-null playlist record."
       ],
       "inputs": [
-        "Owned deserialized record, validated parent URL, and format-presence hint."
+        "Owned deserialized PlaylistRecord, validated parent URL, and raw child JSON."
       ],
       "sideEffects": [
-        "None."
+        "Allocates normalized URLs, identifiers, optional selection, thumbnail, and possibly VideoInfo; no external I/O."
       ],
       "errors": [
-        "Rejects embedded records lacking id, extractor identity, ordinal, or valid selection; skips records without a safe distinct child URL."
+        "Rejects resolved embedded videos lacking ID/extractor/index or invalid selection and propagates video_info identity errors."
       ],
       "ownership": [
-        "Consumes the record and owns returned strings/selection."
+        "Consumes PlaylistRecord; clones selection fields only when building owned output."
       ],
       "locks": [
         "None."
       ],
       "invariants": [
-        "Same-parent embedded videos retain parent URL plus exact id/extractor/index; distinct safe child URLs remain ordinary entries."
+        "Flat unresolved children may use their usable source URL as provisional identity; resolved video hydration requires a nonblank media ID; shared-parent embedded videos require authoritative selection identity."
       ],
       "tests": [
-        "x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors; shared_parent_embedded_video_requires_authoritative_playlist_index; formats_bearing_record_without_type_uses_verified_selector."
+        "downloader::inspection::tests::flat_child_without_media_id_uses_its_source_url_as_unknown_identity; downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors; downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata"
       ],
       "evidence": [
-        "Current source span src/downloader/inspection/metadata.rs:52-127, digest 9ea20a91a517408003739842f082acde9cfa9677eb9c162bb2875cd5d579cf25.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Current source span src/downloader/inspection/metadata.rs:52-131, digest 336c71149e2561405bab57830f6bd078b29781af84433256c5d53891784fd5d8.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
       ],
-      "purpose": "Convert one untrusted playlist record into a safe replayable entry.",
-      "output": "Optional validated PlaylistEntry.",
-      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
+      "purpose": "Convert one yt-dlp playlist child into a safe retained PlaylistEntry or skip it.",
+      "output": "Some normalized entry, None for an unusable child URL, or a validation error.",
+      "cancellation": "Synchronous and non-cancellable.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/inspection/metadata.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span.",
       "ownerCall": null
     },
     {
@@ -12156,52 +12110,52 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/inspection/metadata.rs",
-      "line": 130,
-      "endLine": 178,
+      "line": 134,
+      "endLine": 186,
       "symbol": "video_info",
       "qualifiedName": "downloader::inspection::metadata::video_info",
       "signature": "fn video_info( url: &str, data: &Value, selection: Option<&MediaSelection>, ) -> Result<VideoInfo, String>",
-      "sourceDigest": "d6695c283e208056fdfec5f9521c52f1693d320791fd95b175703dcd876be260",
+      "sourceDigest": "149517f9dab09d2de1954ecd6e409332568a6d80ce49c91190ab9a621e8049fa",
       "cfg": [],
       "callers": [
-        "parse_inspection."
+        "parse_inspection handles top-level/selected videos with it; PlaylistRecord::into_entry uses it only for resolved formatted children with an ID."
       ],
       "inputs": [
-        "Requested URL, JSON object, optional MediaSelection."
+        "Canonical URL, raw JSON value, and optional authoritative MediaSelection."
       ],
       "sideEffects": [
-        "None."
+        "Allocates owned metadata strings and a sorted/deduplicated quality list; no I/O."
       ],
       "errors": [
-        "Rejects playlist/url wrappers and selected id or extractor mismatch."
+        "Rejects non-object, playlist, URL-wrapper, absent/null/blank ID, invalid or changed selection identity."
       ],
       "ownership": [
-        "Clones bounded display fields and the validated selection."
+        "Borrows JSON and selection; returns fully owned VideoInfo."
       ],
       "locks": [
         "None."
       ],
       "invariants": [
-        "Selected output must equal both entry_id and extractor_key before it is exposed as VideoInfo."
+        "A literal ID value such as unknown is preserved; only structural absence/null/blank is rejected, and selected identity must match ID plus extractor key."
       ],
       "tests": [
-        "selected_single_wrapper_returns_exact_video_identity; selected_identity_rejects_wrong_id_or_extractor_key."
+        "downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown; downloader::inspection::tests::selected_identity_rejects_wrong_id_or_extractor_key; downloader::inspection::tests::fully_resolved_youtube_entry_reuses_normalized_video_metadata"
       ],
       "evidence": [
-        "Current source span src/downloader/inspection/metadata.rs:130-178, digest d6695c283e208056fdfec5f9521c52f1693d320791fd95b175703dcd876be260.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Current source span src/downloader/inspection/metadata.rs:134-186, digest 149517f9dab09d2de1954ecd6e409332568a6d80ce49c91190ab9a621e8049fa.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
       ],
-      "purpose": "Project one resolved video JSON object and verify selected identity.",
-      "output": "Validated VideoInfo.",
-      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
+      "purpose": "Validate single-video metadata identity and build normalized VideoInfo.",
+      "output": "Normalized VideoInfo with exact nonblank media ID.",
+      "cancellation": "Synchronous and non-cancellable.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/inspection/metadata.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span.",
       "ownerCall": null
     },
     {
@@ -12209,52 +12163,52 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/downloader/inspection/metadata.rs",
-      "line": 180,
-      "endLine": 258,
+      "line": 188,
+      "endLine": 266,
       "symbol": "parse_inspection",
       "qualifiedName": "downloader::inspection::metadata::parse_inspection",
       "signature": "pub(super) fn parse_inspection( url: &str, bytes: &[u8], selection: Option<&MediaSelection>, ) -> Result<UrlInspection, String>",
-      "sourceDigest": "90e79c695b5d28d2146c3b65ca66dd66498b8d848140aa2d7d1afc64a18ac029",
+      "sourceDigest": "00b725eb5ab209e3af4206120f0f9da30c19e0de0e0f92beecf92da67aeed482",
       "cfg": [],
       "callers": [
-        "inspect_url_inner and parser tests."
+        "inspection::inspect parses successful subprocess stdout through this function; inspection unit tests call it directly."
       ],
       "inputs": [
-        "Requested URL, captured bytes, optional selection."
+        "Source URL, bounded stdout bytes, and optional exact MediaSelection."
       ],
       "sideEffects": [
-        "None."
+        "Parses JSON and allocates normalized entries plus a deduplication set; no filesystem/process side effect."
       ],
       "errors": [
-        "Rejects oversized/invalid JSON, malformed selected wrappers, identity mismatch, missing required embedded identity, or an empty usable playlist."
+        "Rejects oversize/malformed/multiple JSON, invalid selected wrappers/count/identity, missing/invalid video IDs, malformed playlist records, or an empty retained playlist."
       ],
       "ownership": [
-        "Owns parsed JSON and result; HashSet owns deduplication identities."
+        "Borrows input bytes/selection and returns owned inspection data."
       ],
       "locks": [
         "None."
       ],
       "invariants": [
-        "At most 1000 raw entries are examined; duplicates use URL plus optional typed identity so same-parent siblings remain distinct; selected wrappers resolve exactly one verified video."
+        "Exactly one JSON value is accepted; selected mode yields exactly one identity-matching video; playlists are capped, filtered, and deduplicated by URL plus optional selection identity."
       ],
       "tests": [
-        "playlist_entries_are_deduplicated_and_bounded_at_one_thousand; x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors; selected_wrapper_rejects_zero_multiple_nested_and_null_entries; inspection_metadata_is_one_json_value_and_bounded_to_eight_mib."
+        "downloader::inspection::tests::inspection_metadata_is_one_json_value_and_bounded_to_eight_mib; downloader::inspection::tests::video_metadata_rejects_absent_null_or_blank_ids_but_preserves_literal_unknown; downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved"
       ],
       "evidence": [
-        "Current source span src/downloader/inspection/metadata.rs:180-258, digest 90e79c695b5d28d2146c3b65ca66dd66498b8d848140aa2d7d1afc64a18ac029.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Current source span src/downloader/inspection/metadata.rs:188-266, digest 00b725eb5ab209e3af4206120f0f9da30c19e0de0e0f92beecf92da67aeed482.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
       ],
-      "purpose": "Parse bounded yt-dlp JSON into one video or a deduplicated bounded playlist.",
-      "output": "Typed UrlInspection.",
-      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
+      "purpose": "Parse one bounded yt-dlp JSON value into a validated video or playlist inspection.",
+      "output": "UrlInspection::Video or UrlInspection::Playlist.",
+      "cancellation": "Synchronous and non-cancellable; process cancellation occurs before this parser boundary.",
       "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/downloader/inspection/metadata.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span.",
       "ownerCall": null
     },
     {
@@ -12537,54 +12491,54 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 106,
-      "endLine": 156,
+      "line": 138,
+      "endLine": 206,
       "symbol": "x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors",
       "qualifiedName": "downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors",
       "signature": "fn x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors()",
-      "sourceDigest": "2dd3ff360c4e73dccc3e38d63b88a7c0fc8a4d3c83d1ad6816b1d64cb83ecab7",
+      "sourceDigest": "8edddf091b9ea8c9bf2cae4b1566c6640cded9247fd611e6e5f70c3ca4bbc2ff",
       "cfg": [
         "test"
       ],
       "callers": [
-        "Rust test harness or the lexically enclosing named test."
+        "Rust test harness only."
       ],
       "inputs": [
-        "Deterministic fixtures and values constructed in this test body."
+        "Synthetic two-child multi_video metadata sharing the parent URL."
       ],
       "sideEffects": [
-        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+        "Allocates and parses local JSON only."
       ],
       "errors": [
-        "Panics on an unmet assertion or fixture/setup failure."
+        "Panics on parse failure or any URL, ID, extractor, index, quality, audio, or selection mismatch."
       ],
       "ownership": [
-        "The test or enclosing async task owns its fixtures and releases them at scope end."
+        "Owns local metadata and inspection result."
       ],
       "locks": [
-        "Only synchronization explicitly constructed by this test or delegated production code."
+        "None."
       ],
       "invariants": [
-        "The scenario x multi video children sharing parent are retained with ordinal selectors remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+        "Both children remain distinct at the parent URL because entry ID/extractor/index bind their selections; qualities deduplicate and sort descending."
       ],
       "tests": [
-        "downloader::inspection::tests::x_multi_video_children_sharing_parent_are_retained_with_ordinal_selectors"
+        "This named test directly exercises parse_inspection, into_entry, and video_info."
       ],
       "evidence": [
-        "Current source span src/downloader/inspection/tests.rs:106-156, digest 2dd3ff360c4e73dccc3e38d63b88a7c0fc8a4d3c83d1ad6816b1d64cb83ecab7.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Current source span src/downloader/inspection/tests.rs:138-206, digest 8edddf091b9ea8c9bf2cae4b1566c6640cded9247fd611e6e5f70c3ca4bbc2ff.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
       ],
-      "purpose": "Provide or verify the concrete regression scenario: x multi video children sharing parent are retained with ordinal selectors.",
-      "output": "Unit after assertions.",
-      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "purpose": "Prove shared-parent X multi-video children keep distinct authoritative ordinal selections and normalized video metadata.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/inspection/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span.",
       "ownerCall": null
     },
     {
@@ -12592,8 +12546,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 159,
-      "endLine": 169,
+      "line": 209,
+      "endLine": 219,
       "symbol": "shared_parent_embedded_video_requires_authoritative_playlist_index",
       "qualifiedName": "downloader::inspection::tests::shared_parent_embedded_video_requires_authoritative_playlist_index",
       "signature": "fn shared_parent_embedded_video_requires_authoritative_playlist_index()",
@@ -12647,8 +12601,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 172,
-      "endLine": 189,
+      "line": 222,
+      "endLine": 239,
       "symbol": "shared_parent_flat_record_prefers_child_url_and_skips_one_without_it",
       "qualifiedName": "downloader::inspection::tests::shared_parent_flat_record_prefers_child_url_and_skips_one_without_it",
       "signature": "fn shared_parent_flat_record_prefers_child_url_and_skips_one_without_it()",
@@ -12702,8 +12656,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 192,
-      "endLine": 207,
+      "line": 242,
+      "endLine": 257,
       "symbol": "formats_bearing_record_without_type_uses_verified_selector",
       "qualifiedName": "downloader::inspection::tests::formats_bearing_record_without_type_uses_verified_selector",
       "signature": "fn formats_bearing_record_without_type_uses_verified_selector()",
@@ -12757,8 +12711,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 210,
-      "endLine": 226,
+      "line": 260,
+      "endLine": 276,
       "symbol": "selected_single_wrapper_returns_exact_video_identity",
       "qualifiedName": "downloader::inspection::tests::selected_single_wrapper_returns_exact_video_identity",
       "signature": "fn selected_single_wrapper_returns_exact_video_identity()",
@@ -12812,8 +12766,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 229,
-      "endLine": 245,
+      "line": 279,
+      "endLine": 295,
       "symbol": "selected_identity_rejects_wrong_id_or_extractor_key",
       "qualifiedName": "downloader::inspection::tests::selected_identity_rejects_wrong_id_or_extractor_key",
       "signature": "fn selected_identity_rejects_wrong_id_or_extractor_key()",
@@ -12867,8 +12821,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 248,
-      "endLine": 264,
+      "line": 298,
+      "endLine": 314,
       "symbol": "selected_wrapper_rejects_zero_multiple_nested_and_null_entries",
       "qualifiedName": "downloader::inspection::tests::selected_wrapper_rejects_zero_multiple_nested_and_null_entries",
       "signature": "fn selected_wrapper_rejects_zero_multiple_nested_and_null_entries()",
@@ -12922,54 +12876,54 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 267,
-      "endLine": 290,
+      "line": 317,
+      "endLine": 342,
       "symbol": "ordinary_video_and_generic_flat_playlist_are_preserved",
       "qualifiedName": "downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved",
       "signature": "fn ordinary_video_and_generic_flat_playlist_are_preserved()",
-      "sourceDigest": "1274865bc735e95c8d00a80fed920a5410732bba2400d2474d6f5ca0ebcc4214",
+      "sourceDigest": "d5f178fe4d1016cc1fb4ab78ed9e5ed015337fef0d67f1b6650500603303e1a2",
       "cfg": [
         "test"
       ],
       "callers": [
-        "Rust test harness or the lexically enclosing named test."
+        "Rust test harness only."
       ],
       "inputs": [
-        "Deterministic fixtures and values constructed in this test body."
+        "One identified top-level video and one generic flat URL entry."
       ],
       "sideEffects": [
-        "Creates only test-scoped state, files, processes, channels, or assertions named by the source body."
+        "Local JSON parsing only."
       ],
       "errors": [
-        "Panics on an unmet assertion or fixture/setup failure."
+        "Panics if either valid shape is rejected or incorrectly gains selection/resolved video data."
       ],
       "ownership": [
-        "The test or enclosing async task owns its fixtures and releases them at scope end."
+        "Owns local parsed values."
       ],
       "locks": [
-        "Only synchronization explicitly constructed by this test or delegated production code."
+        "None."
       ],
       "invariants": [
-        "The scenario ordinary video and generic flat playlist are preserved remains deterministic and asserts the current typed-selection, bounded-output, persistence, or publication behavior."
+        "Stricter missing-ID rejection does not reject identified videos or generic flat URL children."
       ],
       "tests": [
-        "downloader::inspection::tests::ordinary_video_and_generic_flat_playlist_are_preserved"
+        "This named regression test directly exercises parse_inspection compatibility paths."
       ],
       "evidence": [
-        "Current source span src/downloader/inspection/tests.rs:267-290, digest 1274865bc735e95c8d00a80fed920a5410732bba2400d2474d6f5ca0ebcc4214.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Current source span src/downloader/inspection/tests.rs:317-342, digest d5f178fe4d1016cc1fb4ab78ed9e5ed015337fef0d67f1b6650500603303e1a2.",
+        "Current implementation plus direct callers and assertions were read for this review; source_changed entries were re-reviewed rather than inheriting prior approval.",
+        "target/engineering-metadata-before-fix.log is used only as the preserved pre-fix failure for the named missing-ID regression; the active full Rust gate is not claimed complete by this sidecar review."
       ],
-      "purpose": "Provide or verify the concrete regression scenario: ordinary video and generic flat playlist are preserved.",
-      "output": "Unit after assertions.",
-      "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
+      "purpose": "Guard ordinary top-level video parsing and generic flat-playlist retention after stricter identity validation.",
+      "output": "Test unit; assertions pass or panic.",
+      "cancellation": "Synchronous test; no cancellation.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/inspection/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex metadata and journal-test ledger review",
+      "reviewedAt": "2026-09-13T20:52:52.928Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Current callable context was reviewed for purpose, callers, inputs/output, effects, errors, ownership, locks, cancellation, invariants, and test evidence; no separate defect remains in this span.",
       "ownerCall": null
     },
     {
@@ -12977,8 +12931,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 293,
-      "endLine": 301,
+      "line": 396,
+      "endLine": 404,
       "symbol": "inspection_metadata_is_one_json_value_and_bounded_to_eight_mib",
       "qualifiedName": "downloader::inspection::tests::inspection_metadata_is_one_json_value_and_bounded_to_eight_mib",
       "signature": "fn inspection_metadata_is_one_json_value_and_bounded_to_eight_mib()",
@@ -13032,8 +12986,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/inspection/tests.rs",
-      "line": 304,
-      "endLine": 335,
+      "line": 407,
+      "endLine": 438,
       "symbol": "inspection_command_uses_one_bounded_pass_and_selected_ordinal",
       "qualifiedName": "downloader::inspection::tests::inspection_command_uses_one_bounded_pass_and_selected_ordinal",
       "signature": "fn inspection_command_uses_one_bounded_pass_and_selected_ordinal()",
@@ -13409,8 +13363,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication/tests.rs",
-      "line": 26,
-      "endLine": 32,
+      "line": 62,
+      "endLine": 68,
       "symbol": "selected_media",
       "qualifiedName": "downloader::publication::tests::selected_media",
       "signature": "fn selected_media() -> crate::models::MediaSelection",
@@ -13464,8 +13418,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/downloader/publication/tests.rs",
-      "line": 34,
-      "endLine": 47,
+      "line": 70,
+      "endLine": 83,
       "symbol": "write_selected_record",
       "qualifiedName": "downloader::publication::tests::write_selected_record",
       "signature": "fn write_selected_record( stage: &std::path::Path, path: &std::path::Path, id: &str, extractor_key: &str, )",
@@ -13519,12 +13473,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 167,
-      "endLine": 178,
+      "line": 256,
+      "endLine": 267,
       "symbol": "selected_media_requires_matching_record_identity",
       "qualifiedName": "downloader::publication::tests::selected_media_requires_matching_record_identity",
       "signature": "fn selected_media_requires_matching_record_identity()",
-      "sourceDigest": "1e2fcc32a7ca69f49a9763e203db2d99fbfa05f0f8aca301e0952c38e926b972",
+      "sourceDigest": "6022b457ba32f64cb5d616ecf64e150a6ae1aae196e532e75750cfdb329f50b8",
       "cfg": [
         "test"
       ],
@@ -13555,18 +13509,19 @@
       "evidence": [
         "Current source span src/downloader/publication/tests.rs:167-178, digest 1e2fcc32a7ca69f49a9763e203db2d99fbfa05f0f8aca301e0952c38e926b972.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:220-231, digest 6022b457ba32f64cb5d616ecf64e150a6ae1aae196e532e75750cfdb329f50b8; direct callers and named tests were checked in source."
       ],
       "purpose": "Provide or verify the concrete regression scenario: selected media requires matching record identity.",
       "output": "Unit after assertions.",
       "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null
     },
     {
@@ -13574,12 +13529,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 181,
-      "endLine": 206,
+      "line": 270,
+      "endLine": 296,
       "symbol": "selected_media_rejects_missing_or_mismatched_identity",
       "qualifiedName": "downloader::publication::tests::selected_media_rejects_missing_or_mismatched_identity",
       "signature": "fn selected_media_rejects_missing_or_mismatched_identity()",
-      "sourceDigest": "a75084e87d4306197ff3ee206c4b4d4ed49fea857efffd37bef4097081b3557a",
+      "sourceDigest": "b0a23f045d288ebbfa722d96af8d8d25c68954840105884b5cc8b066d647b3a3",
       "cfg": [
         "test"
       ],
@@ -13610,18 +13565,19 @@
       "evidence": [
         "Current source span src/downloader/publication/tests.rs:181-206, digest a75084e87d4306197ff3ee206c4b4d4ed49fea857efffd37bef4097081b3557a.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:234-260, digest b0a23f045d288ebbfa722d96af8d8d25c68954840105884b5cc8b066d647b3a3; direct callers and named tests were checked in source."
       ],
       "purpose": "Provide or verify the concrete regression scenario: selected media rejects missing or mismatched identity.",
       "output": "Unit after assertions.",
       "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null
     },
     {
@@ -13629,12 +13585,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 209,
-      "endLine": 218,
+      "line": 299,
+      "endLine": 309,
       "symbol": "selected_media_rejects_missing_record_without_fallback",
       "qualifiedName": "downloader::publication::tests::selected_media_rejects_missing_record_without_fallback",
       "signature": "fn selected_media_rejects_missing_record_without_fallback()",
-      "sourceDigest": "bfcdb583f3d8ca5463df2ad75ba257543766f68113c03d36140ae2e5787256da",
+      "sourceDigest": "b14b481b746ba9082eb51e353545bec671c4c973e29d215b07a457825b22a076",
       "cfg": [
         "test"
       ],
@@ -13665,18 +13621,19 @@
       "evidence": [
         "Current source span src/downloader/publication/tests.rs:209-218, digest bfcdb583f3d8ca5463df2ad75ba257543766f68113c03d36140ae2e5787256da.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:263-273, digest b14b481b746ba9082eb51e353545bec671c4c973e29d215b07a457825b22a076; direct callers and named tests were checked in source."
       ],
       "purpose": "Provide or verify the concrete regression scenario: selected media rejects missing record without fallback.",
       "output": "Unit after assertions.",
       "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null
     },
     {
@@ -13684,12 +13641,12 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/publication/tests.rs",
-      "line": 221,
-      "endLine": 242,
+      "line": 312,
+      "endLine": 334,
       "symbol": "selected_media_rejects_multiple_matching_records",
       "qualifiedName": "downloader::publication::tests::selected_media_rejects_multiple_matching_records",
       "signature": "fn selected_media_rejects_multiple_matching_records()",
-      "sourceDigest": "ad426c58fd482b870af9c41dd94695ef42397285b392f677c1b7977d10d3cf4c",
+      "sourceDigest": "f5d88f78a8961783fe7e968aafe704119d75c1f9e403a46373bd3f111ff93805",
       "cfg": [
         "test"
       ],
@@ -13720,18 +13677,19 @@
       "evidence": [
         "Current source span src/downloader/publication/tests.rs:221-242, digest ad426c58fd482b870af9c41dd94695ef42397285b392f677c1b7977d10d3cf4c.",
         "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound.",
+        "Reviewed immutable inventory span src/downloader/publication/tests.rs:276-298, digest f5d88f78a8961783fe7e968aafe704119d75c1f9e403a46373bd3f111ff93805; direct callers and named tests were checked in source."
       ],
       "purpose": "Provide or verify the concrete regression scenario: selected media rejects multiple matching records.",
       "output": "Unit after assertions.",
       "cancellation": "Test cancellation behavior is explicit in the named scenario; otherwise not applicable.",
       "findingStatus": "none",
-      "disposition": "keep",
+      "disposition": "test_only",
       "destination": "src/downloader/publication/tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "/root/playlist_frontend",
+      "reviewedAt": "2026-09-13T20:30:00Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
+      "notes": "Reviewed for machine final-record authority, request identity/selection, resource ownership, and cleanup distinctions. Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
       "ownerCall": null
     },
     {
@@ -13739,8 +13697,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/validation.rs",
-      "line": 356,
-      "endLine": 365,
+      "line": 368,
+      "endLine": 377,
       "symbol": "rejects_invalid_media_selection",
       "qualifiedName": "downloader::validation::tests::rejects_invalid_media_selection",
       "signature": "fn rejects_invalid_media_selection()",
@@ -13849,8 +13807,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 700,
-      "endLine": 705,
+      "line": 698,
+      "endLine": 703,
       "symbol": "typed_spawn_cancellation_becomes_a_cancelled_attempt",
       "qualifiedName": "downloader::engine::tests::typed_spawn_cancellation_becomes_a_cancelled_attempt",
       "signature": "fn typed_spawn_cancellation_becomes_a_cancelled_attempt()",
@@ -13906,8 +13864,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/downloader/engine.rs",
-      "line": 708,
-      "endLine": 723,
+      "line": 706,
+      "endLine": 721,
       "symbol": "typed_spawn_failure_preserves_the_existing_runtime_failure_context",
       "qualifiedName": "downloader::engine::tests::typed_spawn_failure_preserves_the_existing_runtime_failure_context",
       "signature": "fn typed_spawn_failure_preserves_the_existing_runtime_failure_context()",

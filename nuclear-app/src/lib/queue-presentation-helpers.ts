@@ -50,7 +50,7 @@ export function isEditablePendingStatus(status: DownloadStatus): boolean {
   return status === 'ready';
 }
 export function canEditFilename(item: QueueItem): boolean {
-  return isEditablePendingStatus(item.status) && item.infoLoaded;
+  return (item.status === 'ready' || item.status === 'queued') && item.infoLoaded;
 }
 export function getQueueItemDisplayTitle(item: QueueItem): string {
   return item.customFilename ?? item.title;
@@ -190,7 +190,6 @@ export function projectQueueItem(
       (interrupted ? 'The previous app session ended before this attempt completed.' : null),
     errorCode: operation?.error?.code ?? (interrupted ? 'interrupted' : null),
     errorDetail: operationErrorDetail(operation),
-    diagnosticsOpen: existing?.diagnosticsOpen ?? false,
     filename: publishedOutputPath(operation) ?? (same ? (existing?.filename ?? null) : null),
     selected: existing?.selected ?? false
   };
@@ -391,4 +390,19 @@ function operationErrorDetail(operation: OperationSnapshot | null): string | nul
 }
 function clampProgress(value: number): number {
   return Math.min(100, Math.max(0, value));
+}
+
+export function formatByteCount(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  const digits = value >= 10 || unitIndex === 0 ? 0 : 1;
+  return `${value.toFixed(digits)} ${units[unitIndex]}`;
 }

@@ -40,9 +40,6 @@ function snapshot(sequence = 10): AppSnapshot {
 async function setup(load = vi.fn(async () => snapshot())) {
   const state = createQueuePresentationState();
   const presentation = new QueuePresentationController(state, {
-    saveFilename: async () => {
-      throw new Error('This projection test must not invoke a command.');
-    },
     isActive: () => true
   });
   const publish = vi.fn((value: AppSnapshot, delta?: StateDelta) =>

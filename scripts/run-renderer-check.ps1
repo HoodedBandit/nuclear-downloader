@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)] [ValidateSet('workflows', 'performance', 'visual')] [string] $Suite,
+    [Parameter(Mandatory)] [ValidateSet('workflows', 'performance', 'visual', 'clarity')] [string] $Suite,
     [Parameter(Mandatory)] [string] $ChromeBinary,
     [Parameter(Mandatory)] [string] $ChromeDriverBinary,
     [Parameter(Mandatory)] [ValidatePattern('^\d+\.\d+\.\d+\.\d+$')] [string] $ExpectedBrowserVersion,
@@ -208,6 +208,7 @@ $spec = switch ($Suite) {
     'workflows' { 'e2e/browser/renderer-workflows.e2e.mjs' }
     'performance' { 'e2e/browser/performance-acceptance.e2e.mjs' }
     'visual' { 'e2e/browser/visual-baseline.e2e.mjs' }
+    'clarity' { 'e2e/browser/clarity-ui.e2e.mjs' }
 }
 $productionManifest = Input-Manifest 'production' (Production-InputPaths) $runRoot
 $harnessManifest = Input-Manifest 'harness' (Harness-InputPaths $spec) $runRoot
@@ -238,7 +239,7 @@ $environment = [ordered]@{
     NUCLEAR_E2E_SCALE = ($ScalePercent / 100.0).ToString([Globalization.CultureInfo]::InvariantCulture)
     NUCLEAR_E2E_QUEUE_SIZE = [string] $QueueSize
     NUCLEAR_RENDERER_OUTPUT_DIRECTORY = $runRoot
-    NUCLEAR_VISUAL_OUTPUT_DIRECTORY = $(if ($Suite -eq 'visual') { $runRoot } else { $null })
+    NUCLEAR_VISUAL_OUTPUT_DIRECTORY = $(if ($Suite -in @('visual', 'clarity')) { $runRoot } else { $null })
     NUCLEAR_VISUAL_SOURCE_COMMIT = $commit
     NUCLEAR_VISUAL_PRODUCTION_HASH = $productionManifest.aggregateHash
     NUCLEAR_VISUAL_OS_VERSION = $osVersion

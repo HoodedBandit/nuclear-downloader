@@ -524,3 +524,78 @@ async fn event_pump_waits_for_producers_without_waiting_for_itself() {
         .await
         .unwrap();
 }
+
+#[tokio::test]
+async fn desktop_worker_set_opens_startup_and_drains_on_shutdown() {
+    let root = std::env::temp_dir().join(format!("nuclear-worker-set-{}", uuid::Uuid::new_v4()));
+    let store =
+        crate::state::StateStore::open_at(root.join("state.dpapi"), root.join("diagnostics"))
+            .unwrap();
+    let lifecycle = super::create_download_manager();
+    crate::services::downloads::spawn_download_workers(Arc::new(|_| {}), &store, &lifecycle)
+        .unwrap();
+    crate::services::preparation::spawn_preparation_worker(&store, &lifecycle).unwrap();
+    lifecycle.spawn_startup(async { Ok(()) }, |_| {}).unwrap();
+
+    let startup = tokio::time::timeout(Duration::from_secs(2), lifecycle.wait_for_startup())
+        .await
+        .expect("the actual desktop worker set must resolve startup");
+    let download_workers = lifecycle
+        .task_diagnostics()
+        .iter()
+        .filter(|task| task.kind == TrackedTaskKind::Worker)
+        .count();
+    let admission_open = lifecycle.begin_job_admission(1).await.is_ok();
+    lifecycle.begin_shutdown().await;
+    lifecycle
+        .wait_for_shutdown_tasks(Duration::from_secs(2))
+        .await
+        .unwrap();
+    assert!(lifecycle.task_diagnostics().is_empty());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+
+    startup.expect("playlist preparation must not invalidate the fixed download pool");
+    assert_eq!(download_workers, super::DOWNLOAD_CAPACITY);
+    assert!(admission_open);
+}
+
+#[tokio::test]
+async fn incomplete_worker_set_cannot_count_preparation_as_a_download_worker() {
+    let root = std::env::temp_dir().join(format!(
+        "nuclear-incomplete-worker-set-{}",
+        uuid::Uuid::new_v4()
+    ));
+    let store =
+        crate::state::StateStore::open_at(root.join("state.dpapi"), root.join("diagnostics"))
+            .unwrap();
+    let lifecycle = super::create_download_manager();
+    let workers = (0..super::DOWNLOAD_CAPACITY - 1)
+        .map(|_| {
+            lifecycle
+                .register_task(TrackedTaskKind::Worker, None, false)
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    crate::services::preparation::spawn_preparation_worker(&store, &lifecycle).unwrap();
+    lifecycle.spawn_startup(async { Ok(()) }, |_| {}).unwrap();
+
+    let startup = tokio::time::timeout(Duration::from_secs(2), lifecycle.wait_for_startup())
+        .await
+        .expect("an incomplete pool must resolve startup with an error");
+    let admission_open = lifecycle.begin_job_admission(1).await.is_ok();
+    lifecycle.begin_shutdown().await;
+    drop(workers);
+    lifecycle
+        .wait_for_shutdown_tasks(Duration::from_secs(2))
+        .await
+        .unwrap();
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+
+    assert!(
+        startup.is_err(),
+        "a preparation worker cannot replace the missing download worker"
+    );
+    assert!(!admission_open);
+}

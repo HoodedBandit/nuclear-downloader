@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Engineering quality and playlist performance
 
 Execution was authorized on 2026-09-13 from main at

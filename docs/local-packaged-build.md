@@ -83,3 +83,19 @@ because the required public updater trust-anchor variables were absent; its
 preserved log is failure evidence only. A later successful package built before
 the final source rename is superseded by the receipt above. Neither historical
 attempt is current qualification evidence.
+
+## Isolated UI preview
+
+Use `scripts/build-local-app.ps1 -Preview` for the Clarity UI preview. This
+selects the `local-preview` Cargo feature and `tauri.preview.conf.json` together.
+The preview uses a separate Windows application identifier, window title,
+queue journal, appearance preference, diagnostics directory, and tool cache.
+App installer updates are disabled in this preview; download tool updates
+remain available in its own cache. The normal build retains its existing paths.
+
+Run the standalone executable with its four adjacent sidecars. No installer
+execution or taskbar change is required. Light, Dark, and System appearance are
+saved in the preview profile. Errors are collected into a bounded history of
+the most recent 200 errors for the current session; reading Settings clears
+the notification dot without deleting those entries. Download errors restored
+with the queue are collected again when the application starts.

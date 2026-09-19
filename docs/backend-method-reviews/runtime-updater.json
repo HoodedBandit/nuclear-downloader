@@ -78,7 +78,7 @@
       "symbol": "main",
       "qualifiedName": "main",
       "signature": "fn main()",
-      "sourceDigest": "877613e7bc2d2ca9a57dc256fec1b864e36d1624502c6a590155a91b3b4aadb3",
+      "sourceDigest": "49c3eabafe1bc39022f422106d51a2e14b59aa83a4fb130136a55fd3f5241169",
       "cfg": [],
       "ownerCall": null,
       "purpose": "Validate release inputs and locked sidecars, merge the Tauri external-binary overlay, and invoke the Tauri build script.",
@@ -110,17 +110,14 @@
       ],
       "findingStatus": "none",
       "evidence": [
-        "Current source span build.rs:46-108, digest 877613e7bc2d2ca9a57dc256fec1b864e36d1624502c6a590155a91b3b4aadb3.",
-        "Current direct caller resolution: Cargo invokes this build-script entrypoint.",
-        "Current direct named-test resolution: Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers.",
-        "No separate source defect identified in this span."
+        "Read build.rs::main lines 46-108 and compared the release preparation diff: version text only; control flow and all verification calls unchanged."
       ],
       "disposition": "keep",
       "destination": "build.rs",
       "reviewer": "/root",
-      "reviewedAt": "2026-09-10T03:57:53Z",
+      "reviewedAt": "2026-09-19T03:55:38Z",
       "status": "reviewed",
-      "notes": "Reviewed the 0.7.1 version-only update to the unsupported release target message. Target validation, key checks, sidecar verification, and build ownership remain unchanged."
+      "notes": "Release 0.7.9 review: only the unsupported-target error version changes. The Windows x64 release restriction, update-key validation, locked sidecar verification, inherited Tauri overlay merge, and final tauri_build invocation are unchanged."
     },
     {
       "id": "build.rs::sha256_file[cfg=all]",
@@ -5344,49 +5341,50 @@
       "symbol": "local_data_root",
       "qualifiedName": "runtime::manifest::local_data_root",
       "signature": "pub(super) fn local_data_root() -> PathBuf",
-      "sourceDigest": "043f1522fd1f451cf133017f8c596b5af6c212a7e5d6bddedadf24d6cc3b03c4",
+      "sourceDigest": "34afbdf164c869161316b23ec46995a4e6a21290f9dd6ca4f5f30135942e8959",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Derive NuclearDownloader's per-user local data root.",
       "callers": [
         "runtime::manifest::managed_runtime_root",
         "runtime::manifest::app_plugin_dir"
       ],
       "inputs": [
-        "No parameters."
+        "pub(super) fn local_data_root() -> PathBuf"
       ],
-      "output": "Owned PathBuf.",
       "sideEffects": [
-        "Queries OS local-data directory; may query temp directory as fallback."
+        "Retains the existing directory creation and fallback behavior of this function."
       ],
       "errors": [
-        "No error channel; missing local-data directory falls back to std::env::temp_dir."
+        "Retains the existing path and I/O error contract."
       ],
       "ownership": [
-        "Returns owned joined path."
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
       ],
       "locks": [
-        "No lock is acquired directly; any caller/cache/transaction synchronization is outside this callable."
+        "Existing function synchronization is unchanged."
       ],
-      "cancellation": "Synchronous pure/path computation with no await, blocking I/O, or cancellation parameter; it completes immediately from borrowed values or process configuration.",
       "invariants": [
-        "Always appends NuclearDownloader to the selected base."
+        "Regular builds preserve their exact historical folder names; preview builds use distinct names."
       ],
       "tests": [
-        "Static-only: no current named test invokes this environment-derived path helper."
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/runtime/manifest.rs:501-505, digest 043f1522fd1f451cf133017f8c596b5af6c212a7e5d6bddedadf24d6cc3b03c4.",
-        "Body-specific callers and named tests were resolved against cb616a1 source.",
-        "No separate source defect identified in this span."
+        "Source read: src/runtime/manifest.rs:501-505; SHA-256 34afbdf164c869161316b23ec46995a4e6a21290f9dd6ca4f5f30135942e8959.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
       ],
+      "purpose": "Resolve existing application storage through feature-selected folder constants.",
+      "output": "PathBuf",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/runtime/manifest.rs",
-      "reviewer": "/root/lifecycle_ledger",
-      "reviewedAt": "2026-09-09T01:35:20Z",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.88Z",
       "status": "reviewed",
-      "notes": "Substantive body review complete and identity fields reconciled to cb616a1-final.json."
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
     },
     {
       "id": "src/runtime/manifest.rs::runtime::manifest::managed_runtime_root[cfg=all]",
@@ -12583,49 +12581,53 @@
       "endLine": 143,
       "symbol": "resolve_tool_fallback",
       "qualifiedName": "runtime::verified::resolve_tool_fallback",
-      "signature": "fn resolve_tool_fallback( name: &str, allow_fallback: bool, ) -> Result<Option<RuntimeToolLease>, String>",
-      "sourceDigest": "dc02686ff178e37182686f7a570b9ab1447ee4812e3ca0cc351d356623863039",
+      "signature": "fn resolve_tool_fallback( _name: &str, allow_fallback: bool, ) -> Result<Option<RuntimeToolLease>, String>",
+      "sourceDigest": "96f591bdb55e2fe707153f77f1574b4764abda8aa12dc42b4d8c50371ba4cf20",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Implement the explicitly gated debug-only unresolved-tool PATH fallback.",
       "callers": [
         "runtime::verified::resolve_tool_lease_from_cache"
       ],
       "inputs": [
-        "Borrowed tool name and fallback permission."
+        "Borrowed tool name and explicit fallback permission; the underscore-prefixed binding remains semantically live in debug builds."
       ],
-      "output": "Result<Option<RuntimeToolLease>, String>; Some path-only lease only in debug with permission.",
       "sideEffects": [
-        "No filesystem access; cfg(test) increments successful-resolution counter for debug fallback."
+        "No filesystem access; cfg(test) increments the successful-resolution counter when the debug fallback is returned."
       ],
       "errors": [
-        "No current error branch despite Result return."
+        "No current error branch despite the Result return type."
       ],
       "ownership": [
-        "Debug Some owns PathBuf/name-derived source and no File/cache guard."
+        "A debug Some result owns a PathBuf derived from _name and contains no File or cache guard."
       ],
       "locks": [
-        "No lock."
+        "No lock is acquired."
       ],
-      "cancellation": "Synchronous and not cancellable.",
       "invariants": [
-        "allow_fallback=false and all non-debug builds return None, preventing unverified PATH execution in production."
+        "allow_fallback=false returns None in every profile.",
+        "Only debug_assertions builds may resolve the supplied tool name through development PATH fallback; release builds always return None and cannot execute an unverified PATH tool."
       ],
       "tests": [
-        "Static-only for direct invocation; runtime::verified::resolve_tool_lease_from_cache is tested with fallback disabled, while release refusal is compile-time cfg behavior."
+        "runtime::tests::verified_runtime_cache_waits_for_leases_and_blocks_reacquisition exercises resolve_tool_lease_from_cache with fallback disabled and a verified cache lease.",
+        "runtime::tests::explicit_root_runtime_harness_reuses_leases_and_refreshes exercises the same resolver boundary with fallback disabled through the explicit-root harness.",
+        "The debug PATH-fallback and release refusal branches are compile-time cfg behavior and have no focused direct runtime test; the identifier-only correction required no new focused test."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/runtime/verified.rs:118-143, digest dc02686ff178e37182686f7a570b9ab1447ee4812e3ca0cc351d356623863039.",
-        "Body-specific callers and named tests were resolved against cb616a1 source.",
-        "No separate source defect identified in this span."
+        "Reviewed current source span src/runtime/verified.rs:118-143, digest 96f591bdb55e2fe707153f77f1574b4764abda8aa12dc42b4d8c50371ba4cf20, plus its direct caller and existing cache-resolution tests.",
+        "The name-to-_name correction changes only binding spelling: debug PathBuf construction still uses the supplied name, while release compilation no longer reports it unused.",
+        "target/engineering-post-release-warning-rust.log records 384 passed, 0 failed, and 4 ignored after the correction.",
+        "target/engineering-strict-release-clippy.log records strict release Clippy across all targets and all features with -D warnings completing successfully."
       ],
+      "purpose": "Implement the explicitly gated debug-only development PATH fallback for an unresolved runtime tool.",
+      "output": "Result<Option<RuntimeToolLease>, String>; Some path-only lease only in debug with permission, otherwise None.",
+      "cancellation": "Synchronous and non-cancellable.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/runtime/verified.rs",
-      "reviewer": "/root/lifecycle_ledger",
-      "reviewedAt": "2026-09-09T01:37:58Z",
+      "reviewer": "Codex release-warning method review",
+      "reviewedAt": "2026-09-13T22:20:00Z",
       "status": "reviewed",
-      "notes": "Substantive body review complete and identity fields reconciled to cb616a1-final.json."
+      "notes": "Source identity and the functional debug/release boundary were re-reviewed after the release-only unused-variable correction; behavior is unchanged and this is development PATH fallback rather than logging.",
+      "ownerCall": null
     },
     {
       "id": "src/runtime/verified.rs::runtime::verified::resolve_tool_lease[cfg=all]",
@@ -14981,174 +14983,12 @@
       "notes": "Current production contract reviewed against the final source body; tests name only concrete current callers that execute the behavior."
     },
     {
-      "id": "src/updater/artifact.rs::impl Drop for UpdateDirectoryLock[trait-impl,cfg=all]",
-      "kind": "trait_impl",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 115,
-      "endLine": 119,
-      "symbol": "impl Drop for UpdateDirectoryLock",
-      "qualifiedName": "impl Drop for UpdateDirectoryLock",
-      "signature": "impl Drop for UpdateDirectoryLock",
-      "sourceDigest": "0d9a0c9d7d16192fe03fbfd58c6fbec22a953ca1fcbd84bbdffad4ece6b0b866",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Close the updater lock-file handle and release cross-process cache mutation exclusion.",
-      "callers": [
-        "Rust trait selection uses this implementation; its separately inventoried methods carry executable call contracts."
-      ],
-      "inputs": [
-        "Compile-time implementing type and trait named in the implementation header; no runtime arguments on this row."
-      ],
-      "output": "Declares trait behavior; the associated method row defines the runtime return value.",
-      "sideEffects": [
-        "Defines destructor behavior that takes and drops the Option<File>, closing the zero-share update.lock handle and releasing cross-process exclusion."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "The trait implementation owns no independent state; its drop method mutably borrows the guard and consumes the File stored in self.file via Option::take."
-      ],
-      "locks": [
-        "Releases the UpdateDirectoryLock lease through its drop method."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "Dropping the guard always dispatches its destructor and cannot leave self.file owned by the destroyed value."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes this implementation/block; behavior is exercised through its enclosing method or wrapper."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:115-119 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "downloader-ledger-source-review",
-      "reviewedAt": "2026-09-09T01:32:33.212908Z",
-      "status": "reviewed",
-      "notes": "Current production contract reviewed against the final source body; tests name only concrete current callers that execute the behavior."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::cleanup_current_artifact[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 773,
-      "endLine": 786,
-      "symbol": "cleanup_current_artifact",
-      "qualifiedName": "updater::artifact::cleanup_current_artifact",
-      "signature": "pub(super) async fn cleanup_current_artifact(path: &Path)",
-      "sourceDigest": "a76c2362929e9caf14d6892ddbf06c7510db158d0dbb3619ba5e3c3262e011ed",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Best-effort remove the current updater artifact while retaining its adjacent ownership proof unless a post-cleanup inspection confirms the artifact is absent.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::test_installer_handoff",
-        "Direct current-source caller: updater::installer::download_installer"
-      ],
-      "inputs": [
-        "Borrows the artifact path owned by the current update attempt; derives its adjacent record path."
-      ],
-      "output": "Returns unit after attempting artifact cleanup and, only when absence is confirmed, adjacent owner-record cleanup.",
-      "sideEffects": [
-        "Delegates safe best-effort artifact deletion, then calls symlink_metadata on the artifact. It removes the derivable adjacent owner record only when that inspection returns NotFound; an existing, replaced, or uninspectable artifact keeps its record for a later owned-cleanup retry."
-      ],
-      "errors": [
-        "Returns no error. Artifact deletion, metadata inspection, owner-path derivation, and marker deletion failures are suppressed; inspection outcomes other than NotFound deliberately retain the marker."
-      ],
-      "ownership": [
-        "Borrows the artifact path and temporarily owns only metadata/error results and the optional derived owner-record PathBuf; the adjacent record remains durable ownership proof while the artifact may remain."
-      ],
-      "locks": [
-        "Acquires no lock directly; callers own any updater directory or lifecycle serialization."
-      ],
-      "cancellation": "Checks no cancellation token. Dropping before confirmed absence retains the owner record; dropping after absence confirmation but during best-effort marker cleanup may leave a stale marker, which is safe residue.",
-      "invariants": [
-        "Ownership proof is never intentionally erased while the artifact still exists or cannot be inspected. The marker becomes eligible for deletion only after post-cleanup symlink_metadata reports NotFound."
-      ],
-      "tests": [
-        "updater::tests::failed_partial_removal_retains_ownership_for_startup_retry directly holds a Windows verified-file lease, invokes cleanup_current_artifact, proves the blocked deletion retains artifact and owner record, then drops the lease and proves startup owned-part cleanup removes both."
-      ],
-      "findingStatus": "resolved",
-      "evidence": [
-        "Source span src/updater/artifact.rs:773-786 at d1f6571ed9da69e7aa63b2cdf47818e22f90161b.",
-        "Direct RED/GREEN regression: updater::tests::failed_partial_removal_retains_ownership_for_startup_retry; RED receipt target/regression-evidence/installer-partial-owner-red/receipt.json."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Resolved retained-ownership defect: failed artifact deletion no longer erases the marker required for a later safe cleanup retry."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::cleanup_file_if_exists[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 762,
-      "endLine": 771,
-      "symbol": "cleanup_file_if_exists",
-      "qualifiedName": "updater::artifact::cleanup_file_if_exists",
-      "signature": "pub(super) async fn cleanup_file_if_exists(path: &Path)",
-      "sourceDigest": "4112246ac8a14bcac1e77b61caa8214582bc3388c90771012a86c585c389ae8d",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Best-effort delete one path only when current metadata proves it is a regular non-reparse file with safe ancestors.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_current_artifact",
-        "Direct current-source caller: updater::artifact::cleanup_owned_old_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_partial_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_prepared_directories",
-        "Direct current-source caller: updater::artifact::test_installer_handoff",
-        "Direct current-source caller: updater::artifact::write_owner_record",
-        "Direct current-source caller: updater::installer::download_installer"
-      ],
-      "inputs": [
-        "Borrows the exact candidate path: &Path selected by the caller for best-effort removal."
-      ],
-      "output": "Returns unit after its stated state transition or side effect.",
-      "sideEffects": [
-        "Best-effort symlink-metadata inspection and remove_file only when the path is a regular file, is_reparse_or_symlink is Ok(false), and all existing components pass ensure_no_reparse_components."
-      ],
-      "errors": [
-        "Returns no error; metadata, reparse inspection, ancestor validation, and removal failures are all suppressed."
-      ],
-      "ownership": [
-        "Borrows path and retains no resource after the awaits."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No token is checked. Dropping before removal may leave the file; dropping while the Tokio removal is in flight does not guarantee it is cancelled. Completed deletion remains and no error is returned.",
-      "invariants": [
-        "Removes only when symlink_metadata succeeds, reports a regular file, is_reparse_or_symlink returns Ok(false), and all existing ancestors pass ensure_no_reparse_components.",
-        "Missing, unsafe, nonregular, inspection-failed, or removal-failed paths are left in place because the function is best effort."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:762-771 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
       "id": "src/updater/artifact.rs::updater::artifact::cleanup_owned_installer_stages[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 130,
-      "endLine": 135,
+      "line": 82,
+      "endLine": 87,
       "symbol": "cleanup_owned_installer_stages",
       "qualifiedName": "updater::artifact::cleanup_owned_installer_stages",
       "signature": "pub(crate) async fn cleanup_owned_installer_stages() -> Result<(), String>",
@@ -15198,8 +15038,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 353,
-      "endLine": 386,
+      "line": 294,
+      "endLine": 327,
       "symbol": "cleanup_owned_old_installers",
       "qualifiedName": "updater::artifact::cleanup_owned_old_installers",
       "signature": "pub(super) async fn cleanup_owned_old_installers( target_dir: &Path, current_installer_name: &str, ) -> Result<(), String>",
@@ -15251,8 +15091,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 207,
-      "endLine": 241,
+      "line": 159,
+      "endLine": 193,
       "symbol": "cleanup_owned_partial_installers",
       "qualifiedName": "updater::artifact::cleanup_owned_partial_installers",
       "signature": "pub(super) async fn cleanup_owned_partial_installers(target_dir: &Path) -> Result<(), String>",
@@ -15307,8 +15147,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 243,
-      "endLine": 340,
+      "line": 195,
+      "endLine": 292,
       "symbol": "cleanup_owned_prepared_directories",
       "qualifiedName": "updater::artifact::cleanup_owned_prepared_directories",
       "signature": "pub(super) async fn cleanup_owned_prepared_directories(target_dir: &Path) -> Result<(), String>",
@@ -15362,8 +15202,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 598,
-      "endLine": 626,
+      "line": 424,
+      "endLine": 452,
       "symbol": "create_prepared_directory",
       "qualifiedName": "updater::artifact::create_prepared_directory",
       "signature": "pub(super) async fn create_prepared_directory( target_dir: &Path, installer_size: u64, installer_sha256: &str, ) -> Result<PathBuf, String>",
@@ -15413,124 +15253,12 @@
       "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::ensure_no_reparse_components[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 748,
-      "endLine": 760,
-      "symbol": "ensure_no_reparse_components",
-      "qualifiedName": "updater::artifact::ensure_no_reparse_components",
-      "signature": "pub(super) fn ensure_no_reparse_components(path: &Path) -> Result<(), String>",
-      "sourceDigest": "c3f461f30e2605d9d22a2e0348ad9ea91e4b464fd72ead1d78e5d5e4ed55376b",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Walk existing updater-path ancestors from root to leaf and reject symbolic links or Windows reparse points.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_file_if_exists",
-        "Direct current-source caller: updater::artifact::cleanup_owned_old_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_partial_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_prepared_directories",
-        "Direct current-source caller: updater::artifact::create_prepared_directory",
-        "Direct current-source caller: updater::artifact::impl UpdateDirectoryLock::acquire",
-        "Direct current-source caller: updater::artifact::open_or_quarantine_cached_installer",
-        "Direct current-source caller: updater::artifact::open_verified_installer_sync",
-        "Direct current-source caller: updater::artifact::quarantine_cached_installer",
-        "Direct current-source caller: updater::artifact::read_owner_record",
-        "Direct current-source caller: updater::installer::download_installer"
-      ],
-      "inputs": [
-        "Borrows path: &Path, including its existing ancestors."
-      ],
-      "output": "Returns Result<(), String>.",
-      "sideEffects": [
-        "Collects borrowed path ancestors, visits them from root to leaf, checks Path::exists, and performs symlink_metadata through is_reparse_or_symlink for each component that exists."
-      ],
-      "errors": [
-        "Path::exists is nonfallible and merely skips absent components; for existing components, propagates is_reparse_or_symlink metadata errors and explicitly errors on a detected symlink/reparse point."
-      ],
-      "ownership": [
-        "Borrows path and owns a Vec of borrowed ancestor paths for reversed root-to-leaf traversal."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "Walks root-to-leaf ancestors, skips nonexistent components because Path::exists returns false, and accepts only when every existing component inspected by metadata is non-reparse."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:748-760 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::impl Drop for UpdateDirectoryLock::drop[cfg=all]",
-      "kind": "destructor",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 116,
-      "endLine": 118,
-      "symbol": "drop",
-      "qualifiedName": "updater::artifact::impl Drop for UpdateDirectoryLock::drop",
-      "signature": "fn drop(&mut self)",
-      "sourceDigest": "27f4443a09630a6cd1c190c038c7c876285527d61dfdffcf78ae7fcffbe82619",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Take and close the owned updater lock File, releasing the cross-process non-shareable directory lease.",
-      "callers": [
-        "Rust drop glue invokes this destructor when the RAII guard leaves scope or unwinds."
-      ],
-      "inputs": [
-        "Mutably borrows the UpdateDirectoryLock being destroyed."
-      ],
-      "output": "Returns unit after its stated state transition or side effect.",
-      "sideEffects": [
-        "Takes self.file and drops the File immediately, closing the zero-share update.lock handle; no error is returned."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "Borrows &mut self, takes the owned File from Option<File>, and consumes that handle by dropping it."
-      ],
-      "locks": [
-        "Releases the OS lock by dropping/taking the owned file handle."
-      ],
-      "cancellation": "Drop is cancellation-independent: scope exit and unwinding still execute this release/rollback path.",
-      "invariants": [
-        "Option::take leaves self.file empty before the File closes, so the zero-share handle is released once."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes this implementation/block; behavior is exercised through its enclosing method or wrapper."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:116-118 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
       "id": "src/updater/artifact.rs::updater::artifact::impl InstallerHandoff::expected_version[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 52,
-      "endLine": 54,
+      "line": 65,
+      "endLine": 67,
       "symbol": "expected_version",
       "qualifiedName": "updater::artifact::impl InstallerHandoff::expected_version",
       "signature": "pub(crate) fn expected_version(&self) -> &str",
@@ -15582,8 +15310,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 56,
-      "endLine": 58,
+      "line": 69,
+      "endLine": 71,
       "symbol": "installer_name",
       "qualifiedName": "updater::artifact::impl InstallerHandoff::installer_name",
       "signature": "pub(crate) fn installer_name(&self) -> &str",
@@ -15634,8 +15362,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 64,
-      "endLine": 66,
+      "line": 77,
+      "endLine": 79,
       "symbol": "installer_path",
       "qualifiedName": "updater::artifact::impl InstallerHandoff::installer_path",
       "signature": "pub(crate) fn installer_path(&self) -> &Path",
@@ -15687,8 +15415,8 @@
       "kind": "method",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 60,
-      "endLine": 62,
+      "line": 73,
+      "endLine": 75,
       "symbol": "installer_size",
       "qualifiedName": "updater::artifact::impl InstallerHandoff::installer_size",
       "signature": "pub(crate) fn installer_size(&self) -> u64",
@@ -15735,76 +15463,12 @@
       "notes": "Current production contract reviewed against the final source body; tests name only concrete current callers that execute the behavior."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::impl UpdateDirectoryLock::acquire[cfg=all]",
-      "kind": "method",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 76,
-      "endLine": 112,
-      "symbol": "acquire",
-      "qualifiedName": "updater::artifact::impl UpdateDirectoryLock::acquire",
-      "signature": "pub(super) fn acquire(directory: &Path) -> Result<Self, String>",
-      "sourceDigest": "8abe2449dbf7d6ad78ab3d7058c0f515f42ee8f178c0108fe1b38137b2b2e883",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Create and validate a non-reparse updater directory, then open its lock file with zero Windows sharing so the returned guard excludes other updater processes.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_owned_installer_stages",
-        "Direct current-source caller: updater::artifact::test_installer_handoff",
-        "Direct current-source caller: updater::prepare_app_update_inner",
-        "Direct current-source caller: updater::tests::installer_handoff_retains_verification_and_directory_leases",
-        "Direct current-source caller: updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification",
-        "Direct current-source caller: updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified",
-        "Direct current-source caller: updater::tests::updater_lock_is_retained_and_reused_after_release",
-        "Direct current-source caller: updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
-      ],
-      "inputs": [
-        "Borrows directory: &Path; derives the updater lock path inside it."
-      ],
-      "output": "Returns Result<Self, String>.",
-      "sideEffects": [
-        "May create the updater directory, inspect every existing path component and lock metadata, and create/open update.lock; on Windows the opened file uses share_mode(0)."
-      ],
-      "errors": [
-        "Propagates ancestor/reparse inspection, directory creation/metadata, lock metadata/open, and post-open safety errors; rejects non-directory/reparse updater roots, non-file/reparse locks, and a lock that becomes reparse after open."
-      ],
-      "ownership": [
-        "Borrows directory and returns UpdateDirectoryLock owning the opened File in Option<File>."
-      ],
-      "locks": [
-        "Opens update.lock with Windows share_mode(0), creating a cross-process exclusion lease retained in Option<File> until UpdateDirectoryLock::drop takes and closes it."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "The directory is a regular non-reparse directory before lock trust.",
-        "An existing lock must be a regular non-reparse file, and the path is rechecked after open.",
-        "The Windows zero-share handle remains live in the returned guard."
-      ],
-      "tests": [
-        "updater::tests::installer_handoff_retains_verification_and_directory_leases",
-        "updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification",
-        "updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified",
-        "updater::tests::updater_lock_is_retained_and_reused_after_release",
-        "updater::tests::updater_rejects_reparse_root_and_preserves_reparse_partial"
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:76-112 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
       "id": "src/updater/artifact.rs::updater::artifact::impl VerifiedInstaller::path[cfg=all]",
       "kind": "method",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 30,
-      "endLine": 32,
+      "line": 43,
+      "endLine": 45,
       "symbol": "path",
       "qualifiedName": "updater::artifact::impl VerifiedInstaller::path",
       "signature": "pub(super) fn path(&self) -> &Path",
@@ -15851,174 +15515,12 @@
       "notes": "Current production contract reviewed against the final source body; tests name only concrete current callers that execute the behavior."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::is_exact_owned_installer_name[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 388,
-      "endLine": 399,
-      "symbol": "is_exact_owned_installer_name",
-      "qualifiedName": "updater::artifact::is_exact_owned_installer_name",
-      "signature": "pub(super) fn is_exact_owned_installer_name(name: &str) -> bool",
-      "sourceDigest": "b5de31f2213ba2a2a965192ee6334ef2f5275e5dbc2c77fdbfeed6223e52371e",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Recognize only canonical release SemVer installer names without prerelease or build metadata.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_owned_old_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_prepared_directories",
-        "Direct current-source caller: updater::artifact::quarantine_cached_installer"
-      ],
-      "inputs": [
-        "Borrows the complete candidate filename as name: &str."
-      ],
-      "output": "Returns bool.",
-      "sideEffects": [
-        "Checks exact prefix/suffix and parses/formats SemVer in memory; performs no filesystem access."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "Borrows name and returns only a Boolean."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "True requires exact reconstruction from a canonical release SemVer with empty prerelease/build fields."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:388-399 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::is_owned_partial_installer_name[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 342,
-      "endLine": 351,
-      "symbol": "is_owned_partial_installer_name",
-      "qualifiedName": "updater::artifact::is_owned_partial_installer_name",
-      "signature": "pub(super) fn is_owned_partial_installer_name(name: &str) -> bool",
-      "sourceDigest": "1dc6760605fc72c5682fc510d21b40211dd0edb566d137ebc6abbd4b69dec0cb",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Recognize only canonical installer partial names containing a parseable SemVer and UUID operation ID.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_owned_partial_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_prepared_directories"
-      ],
-      "inputs": [
-        "Borrows the candidate filename as name: &str."
-      ],
-      "output": "Returns bool.",
-      "sideEffects": [
-        "Parses borrowed filename slices, a SemVer value and a UUID in memory; performs no filesystem access."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "Borrows name and returns only a Boolean."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "True requires the exact Nuclear.Downloader_ prefix, x64 setup partial suffix, a parseable SemVer segment, and a parseable UUID operation segment."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:342-351 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::is_reparse_or_symlink[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 732,
-      "endLine": 746,
-      "symbol": "is_reparse_or_symlink",
-      "qualifiedName": "updater::artifact::is_reparse_or_symlink",
-      "signature": "pub(super) fn is_reparse_or_symlink(path: &Path) -> Result<bool, String>",
-      "sourceDigest": "b0e347c64f2e35b20694592900bc693df0c971fab27834b54f8b7a31f1ceaa28",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Inspect path metadata and report symbolic links plus the Windows reparse-point attribute.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_file_if_exists",
-        "Direct current-source caller: updater::artifact::cleanup_owned_partial_installers",
-        "Direct current-source caller: updater::artifact::cleanup_owned_prepared_directories",
-        "Direct current-source caller: updater::artifact::ensure_no_reparse_components",
-        "Direct current-source caller: updater::artifact::impl UpdateDirectoryLock::acquire",
-        "Direct current-source caller: updater::artifact::open_verified_installer_sync",
-        "Direct current-source caller: updater::artifact::read_owner_record"
-      ],
-      "inputs": [
-        "Borrows path: &Path for a fresh symlink_metadata lookup."
-      ],
-      "output": "Returns Result<bool, String>.",
-      "sideEffects": [
-        "Performs symlink_metadata on the supplied path, then inspects file_type and, on Windows, file_attributes."
-      ],
-      "errors": [
-        "Returns metadata inspection errors; otherwise returns a Boolean classification."
-      ],
-      "ownership": [
-        "Borrows path and returns only a Boolean."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "Returns true for a symbolic link on all targets; on Windows also returns true for FILE_ATTRIBUTE_REPARSE_POINT (0x400), and otherwise false. A metadata lookup failure returns Err."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:732-746 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
       "id": "src/updater/artifact.rs::updater::artifact::open_or_quarantine_cached_installer[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 503,
-      "endLine": 546,
+      "line": 329,
+      "endLine": 372,
       "symbol": "open_or_quarantine_cached_installer",
       "qualifiedName": "updater::artifact::open_or_quarantine_cached_installer",
       "signature": "pub(super) async fn open_or_quarantine_cached_installer( target_dir: &Path, final_path: &Path, expected_size: u64, expected_sha256: &str, ) -> Result<CachedInstaller, String>",
@@ -16068,12 +15570,12 @@
       "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::open_verified_installer::owned_work_closure#1@635[cfg=all]",
+      "id": "src/updater/artifact.rs::updater::artifact::open_verified_installer::owned_work_closure#1@461[cfg=all]",
       "kind": "owned_work_closure",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 635,
-      "endLine": 637,
+      "line": 461,
+      "endLine": 463,
       "symbol": "owned_work_closure#1",
       "qualifiedName": "updater::artifact::open_verified_installer::owned_work_closure#1",
       "signature": "move ||",
@@ -16123,8 +15625,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 628,
-      "endLine": 640,
+      "line": 454,
+      "endLine": 466,
       "symbol": "open_verified_installer",
       "qualifiedName": "updater::artifact::open_verified_installer",
       "signature": "pub(super) async fn open_verified_installer( path: &Path, expected_size: u64, expected_sha256: &str, ) -> Result<Option<VerifiedInstaller>, String>",
@@ -16185,8 +15687,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 642,
-      "endLine": 710,
+      "line": 468,
+      "endLine": 536,
       "symbol": "open_verified_installer_sync",
       "qualifiedName": "updater::artifact::open_verified_installer_sync",
       "signature": "pub(super) fn open_verified_installer_sync( path: &Path, expected_size: u64, expected_sha256: &str, ) -> Result<Option<VerifiedInstaller>, String>",
@@ -16234,120 +15736,12 @@
       "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::opened_file_is_reparse[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 712,
-      "endLine": 723,
-      "symbol": "opened_file_is_reparse",
-      "qualifiedName": "updater::artifact::opened_file_is_reparse",
-      "signature": "fn opened_file_is_reparse(metadata: &std::fs::Metadata) -> bool",
-      "sourceDigest": "b6f66e4db705d73bacac59f6503e1cef1fbd794a2b13b1ce6791deb40f3ae6c1",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Report the Windows reparse-point attribute or, on non-Windows, whether the opened installer metadata identifies a symbolic link.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::open_verified_installer_sync"
-      ],
-      "inputs": [
-        "Borrows std::fs::Metadata obtained from the opened File."
-      ],
-      "output": "Returns bool.",
-      "sideEffects": [
-        "Reads file_attributes on Windows or file_type on other targets from the supplied Metadata only; performs no new filesystem call."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "Borrows metadata only and returns bool."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "Windows checks FILE_ATTRIBUTE_REPARSE_POINT (0x400); non-Windows checks metadata.file_type().is_symlink()."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:712-723 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::owner_record_path[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 401,
-      "endLine": 407,
-      "symbol": "owner_record_path",
-      "qualifiedName": "updater::artifact::owner_record_path",
-      "signature": "pub(super) fn owner_record_path(artifact_path: &Path) -> Result<PathBuf, String>",
-      "sourceDigest": "94c7834f30d252481db886f4af7534e8d143607f58c6751da479eb4e4ce4eb04",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Derive the adjacent ownership-record filename for an updater artifact.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_current_artifact",
-        "Direct current-source caller: updater::artifact::open_or_quarantine_cached_installer",
-        "Direct current-source caller: updater::artifact::quarantine_cached_installer",
-        "Direct current-source caller: updater::artifact::read_owner_record",
-        "Direct current-source caller: updater::artifact::write_owner_record",
-        "Direct current-source caller: updater::installer::download_installer",
-        "Direct current-source caller: updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents"
-      ],
-      "inputs": [
-        "Borrows artifact_path: &Path and requires a final UTF-8 filename component."
-      ],
-      "output": "Returns Result<PathBuf, String>.",
-      "sideEffects": [
-        "Reads the supplied Path filename and allocates an adjacent PathBuf ending in .nuclear-owner.json; does not inspect disk."
-      ],
-      "errors": [
-        "Returns an invalid artifact-name String when file_name is absent or non-UTF-8."
-      ],
-      "ownership": [
-        "Borrows artifact_path and returns a newly owned adjacent PathBuf."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "The record is adjacent to the artifact and appends .nuclear-owner.json to the complete UTF-8 artifact filename."
-      ],
-      "tests": [
-        "updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents"
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:401-407 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
       "id": "src/updater/artifact.rs::updater::artifact::quarantine_cached_installer[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/updater/artifact.rs",
-      "line": 548,
-      "endLine": 596,
+      "line": 374,
+      "endLine": 422,
       "symbol": "quarantine_cached_installer",
       "qualifiedName": "updater::artifact::quarantine_cached_installer",
       "signature": "pub(super) async fn quarantine_cached_installer( target_dir: &Path, final_path: &Path, record_path: &Path, ) -> Result<PathBuf, String>",
@@ -16394,120 +15788,12 @@
       "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
     },
     {
-      "id": "src/updater/artifact.rs::updater::artifact::read_owner_record[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 409,
-      "endLine": 434,
-      "symbol": "read_owner_record",
-      "qualifiedName": "updater::artifact::read_owner_record",
-      "signature": "async fn read_owner_record( artifact_path: &Path, ) -> Result<Option<(PathBuf, OwnedArtifactRecord)>, String>",
-      "sourceDigest": "b83bd65e8e681f5061bb1308254a68854d05028cd49593e3faed0300f076a640",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Load and validate the adjacent ownership marker for one artifact, distinguishing an absent marker from invalid or unreadable ownership data.",
-      "callers": [
-        "updater::artifact::cleanup_owned_partial_installers",
-        "updater::artifact::cleanup_owned_prepared_directories",
-        "updater::artifact::cleanup_owned_old_installers",
-        "updater::artifact::open_or_quarantine_cached_installer"
-      ],
-      "inputs": [
-        "Borrows artifact_path and derives its adjacent owner-record PathBuf."
-      ],
-      "output": "Returns Ok(None) only when marker metadata is NotFound; otherwise returns the owned record path and parsed OwnedArtifactRecord, or String.",
-      "sideEffects": [
-        "Reads marker metadata, delegates bounded open/read to read_owner_record_bytes, and parses JSON; it does not mutate either file."
-      ],
-      "errors": [
-        "Returns derivation/metadata errors except NotFound, bounded-reader errors, strict JSON parse errors, invalid artifact filename, or the common mismatch error for schema != 1, wrong artifact name, zero/over-limit size, or invalid SHA-256."
-      ],
-      "ownership": [
-        "Borrows artifact_path; owns record_path, bounded bytes, parsed record, and returns the path and record on success."
-      ],
-      "locks": [
-        "none"
-      ],
-      "cancellation": "No token is checked. Dropping while awaiting metadata or bounded bytes stops the caller from consuming the result; delegated filesystem work can finish and releases its file handle without mutation.",
-      "invariants": [
-        "Absence is recognized only from symlink_metadata NotFound.",
-        "Accepted records are strict camelCase JSON with no unknown fields, schema 1, exact artifact filename, size in 1..=INSTALLER_LIMIT, and valid SHA-256 text."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:409-434 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::read_owner_record_bytes[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 436,
-      "endLine": 464,
-      "symbol": "read_owner_record_bytes",
-      "qualifiedName": "updater::artifact::read_owner_record_bytes",
-      "signature": "pub(super) async fn read_owner_record_bytes( record_path: &Path, metadata: &std::fs::Metadata, ) -> Result<Vec<u8>, String>",
-      "sourceDigest": "d0a20524d1cb1a4d842b87cf0245f70be48e39cb0206e7893f91a9bdbd65cfc5",
-      "cfg": [],
-      "ownerCall": null,
-      "callers": [
-        "updater::artifact::read_owner_record",
-        "updater::tests::ownership_record_growth_is_bounded_and_unrelated_files_are_preserved"
-      ],
-      "inputs": [
-        "Borrows record_path and a caller-supplied symlink_metadata snapshot."
-      ],
-      "sideEffects": [
-        "Inspects path safety, opens the marker once with tokio::fs::File, obtains metadata from that opened handle, and reads through read_bounded_async with a 4096-byte limit; no file is changed."
-      ],
-      "errors": [
-        "Returns the regular-bounded-file error for an initial non-file, initial size over 4096, reparse/symlink path, opened non-file, opened size over 4096, or bounded-reader LimitExceeded/InvalidLimit; propagates path-safety failures and maps open/opened-metadata/read I/O failures to the two stated ownership-data messages."
-      ],
-      "locks": [
-        "none"
-      ],
-      "invariants": [
-        "The initial metadata and fresh opened-handle metadata must pass file/size checks; existing path components must pass reparse checks.",
-        "The shared reader consumes at most 4097 bytes and returns at most 4096, rejecting observed growth even if earlier metadata was small. Neither the record nor the artifact is modified."
-      ],
-      "tests": [
-        "updater::tests::ownership_record_growth_is_bounded_and_unrelated_files_are_preserved"
-      ],
-      "evidence": [
-        "Source span src/updater/artifact.rs:436-464 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "purpose": "Open one ownership marker and return at most 4096 bytes while defending against growth after the caller's metadata snapshot.",
-      "output": "Returns owned Vec<u8> containing the opened marker bytes, or String.",
-      "ownership": [
-        "Borrows path and initial metadata; owns the single opened File and returned byte vector, closing the File on return/error."
-      ],
-      "cancellation": "No token is checked. Dropping stops awaiting open/metadata/read and drops local buffers and any acquired File; already-started Tokio filesystem work may finish and release its unobserved handle/result.",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::test_installer_handoff::async_block#1@158[cfg=test]",
+      "id": "src/updater/artifact.rs::updater::artifact::test_installer_handoff::async_block#1@110[cfg=test]",
       "kind": "async_block",
       "classification": "test_support",
       "file": "src/updater/artifact.rs",
-      "line": 158,
-      "endLine": 161,
+      "line": 110,
+      "endLine": 113,
       "symbol": "async_block#1",
       "qualifiedName": "updater::artifact::test_installer_handoff::async_block#1",
       "signature": "async",
@@ -16559,8 +15845,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/updater/artifact.rs",
-      "line": 138,
-      "endLine": 205,
+      "line": 90,
+      "endLine": 157,
       "symbol": "test_installer_handoff",
       "qualifiedName": "updater::artifact::test_installer_handoff",
       "signature": "pub(crate) async fn test_installer_handoff( root: &Path, expected_version: &str, ) -> Result<InstallerHandoff, UpdateRunError>",
@@ -16607,121 +15893,6 @@
       "reviewedAt": "2026-09-09T01:51:21Z",
       "status": "reviewed",
       "notes": "Current-source nonproduction review; no production qualification claim is made from this row."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::updater_directory[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 725,
-      "endLine": 730,
-      "symbol": "updater_directory",
-      "qualifiedName": "updater::artifact::updater_directory",
-      "signature": "pub(super) fn updater_directory() -> PathBuf",
-      "sourceDigest": "ffb006b73cf85029dd8798e490bdc937c8cad84988825ede8dd3138e92724e30",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Derive the updater cache directory beneath local application data, with the existing temp fallback.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::cleanup_owned_installer_stages",
-        "Direct current-source caller: updater::prepare_app_update_inner"
-      ],
-      "inputs": [
-        "Takes no arguments; reads the process local-data-directory setting with temp_dir fallback."
-      ],
-      "output": "Returns PathBuf.",
-      "sideEffects": [
-        "Queries dirs::data_local_dir(), falls back to std::env::temp_dir(), and allocates the joined NuclearDownloader/updater path without creating it."
-      ],
-      "errors": [
-        "This signature has no recoverable error channel."
-      ],
-      "ownership": [
-        "Owns and returns a newly joined PathBuf."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No cancellation parameter or await point; the synchronous operation runs to completion.",
-      "invariants": [
-        "Returns the NuclearDownloader/updater child of the selected local-data root, or of the temporary root when local-data resolution is unavailable."
-      ],
-      "tests": [
-        "Static-only for this callable: no current named test directly invokes it; coverage, if any, is through its named callers."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:725-730 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
-    },
-    {
-      "id": "src/updater/artifact.rs::updater::artifact::write_owner_record[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/updater/artifact.rs",
-      "line": 466,
-      "endLine": 501,
-      "symbol": "write_owner_record",
-      "qualifiedName": "updater::artifact::write_owner_record",
-      "signature": "pub(super) async fn write_owner_record( artifact_path: &Path, installer_size: u64, installer_sha256: &str, ) -> Result<PathBuf, String>",
-      "sourceDigest": "db6ebecb5d75fdef5cda354fdd49a9bc72c80841dbcf9c1cf08db071e616a174",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Create-new, serialize, write, and sync an updater artifact ownership record.",
-      "callers": [
-        "Direct current-source caller: updater::artifact::create_prepared_directory",
-        "Direct current-source caller: updater::artifact::test_installer_handoff",
-        "Direct current-source caller: updater::installer::download_installer",
-        "Direct current-source caller: updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification",
-        "Direct current-source caller: updater::tests::old_installer_cleanup_keeps_current_and_unrelated_files",
-        "Direct current-source caller: updater::tests::partial_cleanup_removes_only_owned_regular_files",
-        "Direct current-source caller: updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents",
-        "Direct current-source caller: updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified"
-      ],
-      "inputs": [
-        "Borrows artifact_path: &Path and installer_sha256: &str; copies installer_size: u64 into the record. The caller supplies already-validated size and digest."
-      ],
-      "output": "Returns Result<PathBuf, String>.",
-      "sideEffects": [
-        "Serializes the strict adjacent ownership record, opens it with create_new/write, writes all bytes, and syncs the file; write or sync failure closes the handle and best-effort removes the marker."
-      ],
-      "errors": [
-        "Returns invalid artifact name/path, JSON serialization, create-new, write-all, or sync errors with operation-specific text; cleanup failure is suppressed."
-      ],
-      "ownership": [
-        "Borrows artifact path/hash, owns record path, JSON bytes and File, and returns the record PathBuf after sync succeeds."
-      ],
-      "locks": [
-        "No lock is acquired directly in this callable."
-      ],
-      "cancellation": "No token is checked. Dropping during create/write/sync does not run the explicit error cleanup branch and may leave a created or partially written marker; already-started filesystem work may finish. Reported write/sync errors instead attempt marker cleanup.",
-      "invariants": [
-        "create_new prevents replacing an existing marker.",
-        "Success follows write_all and sync_all of schema 1, the exact artifact filename and caller-supplied size/digest. This function records those values; it does not authenticate or validate them itself."
-      ],
-      "tests": [
-        "updater::tests::invalid_cached_installer_is_quarantined_before_fresh_verification",
-        "updater::tests::old_installer_cleanup_keeps_current_and_unrelated_files",
-        "updater::tests::partial_cleanup_removes_only_owned_regular_files",
-        "updater::tests::prepared_cleanup_requires_complete_owned_non_reparse_contents",
-        "updater::tests::unowned_canonical_collision_is_preserved_while_prepared_path_is_verified"
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "Source span src/updater/artifact.rs:466-501 at cb616a1ef5cd29c0d57503df3e707baeda23d646 reviewed with direct callers and tests."
-      ],
-      "disposition": "keep",
-      "destination": "src/updater/artifact.rs",
-      "reviewer": "root_source_contract_review",
-      "reviewedAt": "2026-09-09T01:39:25Z",
-      "status": "reviewed",
-      "notes": "Root reread this source body and corrected the callable-specific contract; final independent review remains required."
     },
     {
       "id": "src/updater/installer.rs::updater::installer::download_installer[cfg=all]",

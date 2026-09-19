@@ -114,7 +114,9 @@ pub(crate) async fn update_queue_item(
         downloader::validate_download_request(&request).map_err(AppError::invalid)?;
         let canonical_output = downloader::validate_output_directory(&request.output_dir)?;
         request.output_dir.clone_from(&canonical_output);
-        input.output_dir = Some(canonical_output);
+        if input.output_dir.is_some() {
+            input.output_dir = Some(canonical_output);
+        }
         if !current.has_audio
             && matches!(
                 request.format.as_str(),

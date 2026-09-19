@@ -74,7 +74,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     assert.equal(await sourceUrlInput.getAttribute('aria-autocomplete'), 'none');
 
     await sourceUrlInput.setValue(video.url);
-    await $('button=Add').click();
+    await $('button=Add link').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
     const missedCompletion = {
       schemaVersion: 1,
@@ -135,11 +135,11 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     assert.match(await $('.progress-fill').getAttribute('style'), /width:\s*20%/);
     await expect($('tr.queue-item .col-speed')).toHaveText(expect.stringContaining('1 MiB/s'));
     await expect($('tr.queue-item .col-eta')).toHaveText(expect.stringContaining('12s'));
-    await $('button=Cancel All').click();
+    await $('summary[aria-label="More queue actions"]').click();
+    await $('button=Cancel all downloads').click();
+    await $('summary[aria-label="More queue actions"]').click();
     await waitForMockCalls(mocks.cancel_all_downloads, 1);
-    await expect($('.actions')).toHaveText(
-      expect.stringContaining('1 operation still stopping. New work remains paused.')
-    );
+    await expect($('.error-notice')).toHaveText(expect.stringContaining('Check Settings'));
     await $('button[aria-label="Cancel Fixture Video"]').click();
     await waitForMockCalls(mocks.cancel_operation, 1);
     assert.deepEqual(mocks.cancel_operation.mock.calls[0][0], { operationId: IDS.download });
@@ -159,7 +159,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await $('button=Retry').click();
     await waitForMockCalls(mocks.enqueue_queue_items, 2);
     await $('input[aria-label="Select Fixture Video"]').click();
-    await $('button=Remove Selected').click();
+    await $('button[aria-label="Remove selected"]').click();
     await waitForMockCalls(mocks.remove_queue_items, 1);
     assert.deepEqual(mocks.remove_queue_items.mock.calls[0][0], { itemIds: [IDS.item] });
 
@@ -210,10 +210,19 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await $('button[aria-label="Cancel Fixture Video"]').click();
     await waitForMockCalls(mocks.cancel_operation, 1);
     await expect($('.status-pill')).toHaveText('Downloading');
-    await expect($('.error-summary')).toHaveText(
-      expect.stringContaining('Cancellation failed: fixture cancellation rejected')
+    await expect($('.error-summary')).toHaveText('Check Settings for details.');
+    assert.equal(
+      await $('main')
+        .getText()
+        .then((text) => text.includes('fixture cancellation rejected')),
+      false
     );
-    await expect($('.diagnostics-panel')).toBeDisplayed();
+    await $('.settings-nav').click();
+    await $('.error-entry summary').click();
+    await expect($('.error-history')).toHaveText(
+      expect.stringContaining('fixture cancellation rejected')
+    );
+    await browser.keys('Escape');
     await expect($('button=Retry')).not.toBeExisting();
   });
 
@@ -257,7 +266,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     const fixture = await startRenderer();
     const { mocks } = fixture;
     await $('#video-url').setValue(video.url);
-    await $('button=Add').click();
+    await $('button=Add link').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
     await $('button=Cancel').click();
     await waitForMockCalls(mocks.cancel_operation, 1);
@@ -268,7 +277,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       'operation_upserted',
       operation(IDS.videoInspection, 'inspection', 'cancelled')
     );
-    await $('button=Add').waitForEnabled();
+    await $('button=Add link').waitForEnabled();
     await expect($('#url-error')).not.toBeExisting();
   });
 
@@ -283,7 +292,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       skippedCount: 0
     }));
     await $('#video-url').setValue('https://fixture.test/playlist');
-    await $('button=Add').click();
+    await $('button=Add link').click();
     await waitForMockCalls(mocks.begin_inspection, 1);
     await fixture.emit(
       'operation_upserted',
@@ -363,7 +372,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       trace('inspection mock installed');
       await $('#video-url').setValue('https://fixture.test/large-playlist');
       trace('URL set');
-      await $('button=Add').click();
+      await $('button=Add link').click();
       trace('Add clicked');
       await waitForMockCalls(mocks.begin_inspection, 1);
       trace('inspection call observed');
@@ -538,9 +547,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await $('.title-button').click();
     await replaceFilenameDraft('   ');
     await browser.keys('Enter');
-    await expect($('.filename-error')).toHaveText(
-      'Filename must contain at least one valid character.'
-    );
+    await expect($('.filename-error')).toHaveText('Check Settings for filename details.');
     await mocks.update_queue_item.update();
     assert.equal(mocks.update_queue_item.mock.calls.length, 0);
     await replaceFilenameDraft('Renamed Fixture.mp4');
@@ -653,13 +660,14 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       input: { format: 'mp3' }
     });
     await mocks['plugin:dialog|open'].mockResolvedValueOnce('C:\\chosen-output');
-    await $('button=Browse').click();
+    await $('button[aria-label="Choose output folder"]').click();
     await waitForMockCalls(mocks.validate_output_directory, 2);
     assert.deepEqual(mocks.validate_output_directory.mock.calls.at(-1)[0], {
       path: 'C:\\chosen-output'
     });
-    await expect($('#outdir')).toHaveValue('C:\\chosen-output');
-    await $('label=Cookies').click();
+    await expect($('#outdir')).toHaveAttribute('title', 'C:\\chosen-output');
+    await $('.settings-nav').click();
+    await $('label=Use browser cookies').click();
     await $('#cookie-mode').selectByAttribute('value', 'file');
     await mocks['plugin:dialog|open'].mockResolvedValueOnce('C:\\fixtures\\cookies.txt');
     await $('button=Select cookies.txt').click();
@@ -672,19 +680,23 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
   it('covers diagnostics and persistence degradation', async () => {
     const fixture = await startRenderer();
     const { mocks } = fixture;
-    await $('button=Export Diagnostics').click();
+    await $('.settings-nav').click();
+    await $('button=Export diagnostics').click();
     await waitForMockCalls(mocks.export_diagnostics, 1);
     assert.deepEqual(mocks.export_diagnostics.mock.calls[0][0], {
       destination: 'C:\\fixture-output\\diagnostics.jsonl'
     });
-    await $('button=Clear Diagnostics').click();
+    await $('button=Clear diagnostics').click();
     await waitForMockCalls(mocks.clear_diagnostics, 1);
-    await expect($('.actions')).toHaveText(expect.stringContaining('diagnostics were cleared'));
+    await expect($('.settings-dialog')).toHaveText(
+      expect.stringContaining('diagnostics were cleared')
+    );
     await fixture.emit('persistence_health_changed', {
       degraded: true,
       error: 'Fixture persistence is degraded.'
     });
-    await expect($('.actions')).toHaveText(
+    await $('.error-entry summary').click();
+    await expect($('.error-history')).toHaveText(
       expect.stringContaining('Fixture persistence is degraded.')
     );
   });
@@ -710,18 +722,22 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     await mocks.update_queue_item.mockRejectedValueOnce('fixture setting rejected');
     await $('#quality').selectByAttribute('value', '720p');
     await waitForMockCalls(mocks.update_queue_item, 1);
-    await expect($('.actions')).toHaveText(expect.stringContaining('fixture setting rejected'));
+    await expect($('.error-notice')).toHaveText(expect.stringContaining('Check Settings'));
     await waitForMockCalls(mocks.get_app_snapshot, 2);
 
+    await $('.settings-nav').click();
     await mocks.export_diagnostics.mockRejectedValueOnce('fixture export rejected');
-    await $('button=Export Diagnostics').click();
+    await $('button=Export diagnostics').click();
     await waitForMockCalls(mocks.export_diagnostics, 1);
-    await expect($('.actions')).toHaveText(expect.stringContaining('fixture export rejected'));
+    await expect($('.settings-dialog')).toHaveText(
+      expect.stringContaining('fixture export rejected')
+    );
   });
 
   it('covers runtime refresh and runtime update completion', async () => {
     const fixture = await startRenderer();
     const { mocks } = fixture;
+    await $('.settings-nav').click();
     await $('button=Check Runtime').click();
     await waitForMockCalls(mocks.check_downloader_runtime, 2);
     await $('button=Update Runtime').click();
@@ -733,7 +749,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       totalBytes: 20,
       message: 'Fixture runtime update failed.'
     });
-    await expect($('.url-bar')).toHaveText(
+    await expect($('.settings-dialog')).toHaveText(
       expect.stringContaining('Fixture runtime update failed.')
     );
     await expect($('button=Update Runtime')).toBeEnabled();
@@ -747,6 +763,7 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
   it('covers app update details and completion', async () => {
     const fixture = await startRenderer();
     const { mocks } = fixture;
+    await $('.settings-nav').click();
     const trigger = await $('button=Update v0.6.1');
     await trigger.click();
     const dialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
@@ -758,12 +775,8 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
     assert.equal(await browser.execute(() => document.querySelector('main')?.inert), true);
     await browser.keys('Escape');
     await expect(dialog).not.toBeDisplayed();
-    assert.equal(await browser.execute(() => document.querySelector('main')?.inert), false);
-    assert.equal(
-      await browser.execute(() => document.activeElement?.textContent?.trim()),
-      'Update v0.6.1'
-    );
-    await trigger.click();
+    assert.equal(await browser.execute(() => document.querySelector('main')?.inert), true);
+    await $('button=Update v0.6.1').click();
     const reopenedDialog = await $('[role="dialog"][aria-labelledby="update-modal-title"]');
     await reopenedDialog.waitForDisplayed();
     await expect(reopenedDialog).toHaveText(expect.stringContaining('Fixture release notes'));
@@ -777,7 +790,9 @@ describe('renderer workflows with deterministic Tauri IPC', () => {
       totalBytes: 20,
       message: 'Fixture app update failed.'
     });
-    await expect(reopenedDialog).toHaveText(expect.stringContaining('Fixture app update failed.'));
+    await expect(reopenedDialog).toHaveText(
+      expect.stringContaining('Check Settings for more information.')
+    );
     await fixture.emit('operation_upserted', operation(IDS.appUpdate, 'app_update', 'completed'));
     await reopenedDialog.$('button=Close').click();
     await expect(reopenedDialog).not.toBeDisplayed();

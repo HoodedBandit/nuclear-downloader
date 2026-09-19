@@ -8,12 +8,12 @@ on:
         required: true
         type: string
       release_version:
-        description: Exact application version (this workflow is pinned to 0.7.1)
+        description: Exact application version (this workflow is pinned to 0.7.9)
         required: true
-        default: 0.7.1
+        default: 0.7.9
         type: string
       confirmation:
-        description: Type PUBLISH v0.7.1, or PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING for pending qualification
+        description: Type PUBLISH v0.7.9, or PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING for pending qualification
         required: true
         type: string
       manual_qualification:
@@ -60,16 +60,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          if ($env:INPUT_RELEASE_VERSION -cne '0.7.1') {
-            throw 'This workflow is pinned to application version 0.7.1.'
+          if ($env:INPUT_RELEASE_VERSION -cne '0.7.9') {
+            throw 'This workflow is pinned to application version 0.7.9.'
           }
           if ($env:INPUT_MANUAL_QUALIFICATION -cnotin @('complete', 'pending')) {
             throw 'Select complete or pending manual qualification explicitly.'
           }
           $expectedConfirmation = if ($env:INPUT_MANUAL_QUALIFICATION -ceq 'pending') {
-            'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING'
+            'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING'
           } else {
-            'PUBLISH v0.7.1'
+            'PUBLISH v0.7.9'
           }
           if ($env:INPUT_CONFIRMATION -cne $expectedConfirmation) {
             throw 'The publish confirmation text is not exact.'
@@ -116,7 +116,7 @@ jobs:
       - name: Download the candidate by run ID
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: nuclear-downloader-0.7.1-candidate
+          name: nuclear-downloader-0.7.9-candidate
           path: candidate
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -125,7 +125,7 @@ jobs:
       - name: Download exact-run acceptance evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: nuclear-downloader-0.7.1-acceptance
+          name: nuclear-downloader-0.7.9-acceptance
           path: acceptance
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
@@ -216,7 +216,7 @@ jobs:
       - name: Retain private qualification record
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: nuclear-downloader-0.7.1-qualification
+          name: nuclear-downloader-0.7.9-qualification
           path: qualification/*.json
           if-no-files-found: error
           compression-level: 0
@@ -232,7 +232,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
-          $tag = 'v0.7.1'
+          $tag = 'v0.7.9'
           function Get-CandidateDraft {
             # The tag endpoint only finds published releases, not untagged drafts.
             $pages = gh api "repos/$env:GH_REPO/releases?per_page=100" --paginate --slurp | ConvertFrom-Json -DateKind String
@@ -269,24 +269,27 @@ jobs:
           }
 
           $releaseNotes = @(
-            'Nuclear Downloader 0.7.1 completes a substantial internal refactor while preserving the existing interface and workflows.'
+            '**Meet Clarity.** Nuclear Downloader 0.7.9 brings a completely new interface, a beautifully matched dark theme, a new Nuclear icon, and a major refactor underneath it all. This is the biggest visual upgrade to Nuclear Downloader yet.'
             ''
             '### Highlights'
             ''
-            '- Clear ownership for page lifecycle, queue presentation, and inspection, download, update, and settings workflows.'
-            '- Focused backend modules for state commands, process supervision, output handling, and safe file publication.'
-            '- Fixed stale asynchronous results, filename-edit races, and cancellation during playlist admission.'
-            '- Fixed queue scroll bounds moving lower-row controls during filename editing and download clicks.'
-            '- Removed a redundant link-inspection request and fixed multi-video X posts resolving to another playlist.'
-            '- Updated yt-dlp to 2026.08.19, resolving the reproduced YouTube HTTP 403 for Best-quality MP4.'
-            '- Fixed empty optional signing-key settings incorrectly blocking authenticated app and runtime updates.'
-            '- Expanded regression, lifecycle, architecture, and performance checks without changing the existing user experience.'
+            '- **A whole new UI:** a dedicated sidebar, clear download states, search, cleaner queue rows, focused controls, and consistent spacing and typography.'
+            '- **Dark mode done properly:** choose Light, Dark, or System in Settings. Your preference stays with you after restart.'
+            '- **The new Nuclear identity:** refreshed icons across the app, window, taskbar, shortcuts, and installer.'
+            '- **Settings earns its place:** advanced access options, app and tool updates, runtime health, diagnostics, and detailed errors now live together.'
+            '- **Less noise when something goes wrong:** friendly main-screen messages and a red Settings notification dot that clears automatically when you open it.'
+            '- **Click. Rename. Download.** Single-click filename editing works before submission and while waiting behind active downloads. Keyboard controls, saved drafts, and atomic queue updates keep names reliable.'
+            '- **Rebuilt underneath:** focused session, queue-view, filename, presentation, and error-reporting controllers replace tangled ownership and retired UI paths.'
+            '- **Reliability fixes throughout:** recovery restores download controls, repeated errors are tracked correctly, dialog failures reach Settings, and tool-update progress settles properly.'
+            '- **Stronger queue foundations:** durable playlist admission, bounded background metadata preparation, reliable worker startup, and safe concurrent staging-folder creation.'
             ''
-            'This is a normal 0.7.1 release. Work toward 1.0 continues.'
+            '### Get the update'
             ''
-            'This 0.7.1 build replaces the initial 0.7.1 publication to correct updater key handling. Original 0.6 and earlier 0.7.1 installations need a one-time manual installation of this corrected setup; an unchanged version number cannot trigger an update from the earlier 0.7.1 build.'
+            'Use the **x64 setup executable** for a normal installation, or extract the entire **x64 portable ZIP** into one folder. Existing supported installations can check for updates in Settings.'
             ''
-            'Windows x64 is the supported platform for this release. SHA256SUMS contains the complete public artifact inventory.'
+            'Windows 11 x64 is the supported client platform. Release bundles include the downloader and media tools. SHA256SUMS covers the public assets; app and runtime update descriptors are signed. The installer itself is not Authenticode-signed.'
+            ''
+            'The preview completed 236 frontend tests, 396 Rust tests, 31 browser checks, and real local-media rename/download/restart testing. Those preview results are separate from the exact release-artifact acceptance below. Native 150% Windows display scaling remains unverified; browser 150% emulation passed. One existing frontend skip and four Rust ignored tests remain.'
           ) -join "`n"
           $qualificationNote = switch -CaseSensitive ($env:MANUAL_QUALIFICATION) {
             'complete' { 'Automated acceptance and the recorded manual qualification checks passed for these exact artifacts.' }
@@ -301,7 +304,7 @@ jobs:
             & gh release create $tag @assetPaths `
               --repo $env:GH_REPO `
               --target $env:EXPECTED_COMMIT_SHA `
-              --title 'Nuclear Downloader 0.7.1' `
+              --title 'Nuclear Downloader 0.7.9' `
               --notes-file $releaseNotesPath `
               --draft
             if ($LASTEXITCODE -ne 0) {
@@ -317,7 +320,7 @@ jobs:
           if ($release.draft -ne $true -or $release.prerelease -ne $false -or
               [string]$release.id -cne [string]$draft.id -or
               [string]$release.tag_name -cne $tag -or
-              [string]$release.name -cne 'Nuclear Downloader 0.7.1' -or
+              [string]$release.name -cne 'Nuclear Downloader 0.7.9' -or
               [string]$release.target_commitish -cne $env:EXPECTED_COMMIT_SHA -or
               [string]$release.body -cne $releaseNotes -or
               @($release.assets).Count -ne $assetPaths.Count) {

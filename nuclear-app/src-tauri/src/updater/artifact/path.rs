@@ -74,7 +74,7 @@ pub(super) fn opened_file_is_reparse(metadata: &std::fs::Metadata) -> bool {
 pub(in crate::updater) fn updater_directory() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(std::env::temp_dir)
-        .join("NuclearDownloader")
+        .join(crate::app_paths::TOOL_DATA_FOLDER)
         .join(UPDATE_DIRECTORY_NAME)
 }
 

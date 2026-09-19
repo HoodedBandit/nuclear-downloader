@@ -827,63 +827,62 @@
       "classification": "test_support",
       "file": "src/backend_lifecycle_tests.rs",
       "line": 305,
-      "endLine": 342,
+      "endLine": 343,
       "symbol": "fixture",
       "qualifiedName": "backend_lifecycle_tests::fixture",
       "signature": "pub(crate) async fn fixture(store: &StateStore, root: &std::path::Path) -> QueueItemRecord",
-      "sourceDigest": "31b52331555b9321045e8363739c98981aea078bc68a328ffe894cefe1f09bd3",
+      "sourceDigest": "8c4818999f963e927a2610465134e92d2f326bdd8a57ba9db3fe248da4b1c5f7",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Creates one durable inspected queue item for lifecycle integration regressions.",
       "callers": [
-        "five_progress_producers_publish_one_contiguous_authoritative_stream",
-        "cancellation_after_dequeue_before_lookup_never_calls_the_process_factory",
-        "dropping_an_admission_response_does_not_abandon_committed_work_registration"
+        "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory and dropping_an_admission_response_does_not_abandon_committed_work_registration call fixture."
       ],
       "inputs": [
-        "Borrowed StateStore and output-root Path."
+        "Test StateStore and temporary root."
       ],
-      "output": "The newly added QueueItemRecord.",
       "sideEffects": [
-        "Creates and completes an inspection operation, then durably adds one 720p MP4 queue item rooted at the supplied output path."
+        "Creates/completes inspection and commits a queue item."
       ],
       "errors": [
-        "Panics on any begin/complete/add operation failure."
+        "Test unwraps panic on unexpected application error, timeout, or assertion failure."
       ],
       "ownership": [
-        "Borrows Store/root; owns intermediate inspection and input values; returns the queue record."
+        "Borrows the test StateStore and root path; owns the completed inspection result and returned QueueItemRecord; no spawned task or channel."
       ],
       "locks": [
-        "Uses StateStore durable mutation serialization for inspection and queue-item writes."
+        "Exercises coordinator transition/state locks and StateStore mutation ordering without introducing a separate test lock."
       ],
-      "cancellation": "Await points can be cancelled by the caller; there is no internal recovery branch because this is test fixture setup.",
       "invariants": [
-        "Creates one durable inspected queue item for lifecycle integration regressions."
+        "Fixture is inert and ready."
       ],
       "tests": [
-        "Covered by its three direct backend lifecycle test callers."
+        "Test-support helper directly exercised by the two named backend lifecycle tests."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/backend_lifecycle_tests.rs:304-340; SHA-256 86eab560e802ebb4d1ac4512f0912c0cbf05329bbe2aadff713dae65eaf9f525.",
-        "Rereviewed current changed test span src/backend_lifecycle_tests.rs:305-342, digest 31b52331555b9321045e8363739c98981aea078bc68a328ffe894cefe1f09bd3; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Source span src/backend_lifecycle_tests.rs:305-343 was read with both direct callers at lines 346 and 404.",
+        "The helper only begins/completes inspection and adds one queue item; it does not spawn or cancel work.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
       ],
+      "purpose": "Create and durably admit a ready queue item for lifecycle tests.",
+      "output": "A ready QueueItemRecord fixture.",
+      "cancellation": "The helper awaits three short StateStore mutations and has no explicit cancellation handling; dropping it may stop before returning, with StateStore durability governing completed awaits.",
+      "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/backend_lifecycle_tests.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span.",
+      "ownerCall": null
     },
     {
       "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory[cfg=test]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 345,
-      "endLine": 400,
+      "line": 346,
+      "endLine": 401,
       "symbol": "cancellation_after_dequeue_before_lookup_never_calls_the_process_factory",
       "qualifiedName": "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory",
       "signature": "async fn cancellation_after_dequeue_before_lookup_never_calls_the_process_factory()",
@@ -931,12 +930,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1@376[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1@377[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 376,
-      "endLine": 379,
+      "line": 377,
+      "endLine": 380,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory::async_block#1",
       "signature": "async",
@@ -989,8 +988,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 403,
-      "endLine": 454,
+      "line": 404,
+      "endLine": 455,
       "symbol": "dropping_an_admission_response_does_not_abandon_committed_work_registration",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration",
       "signature": "async fn dropping_an_admission_response_does_not_abandon_committed_work_registration()",
@@ -1038,12 +1037,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1@414[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1@415[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 414,
-      "endLine": 431,
+      "line": 415,
+      "endLine": 432,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::owned_async_closure#1",
       "signature": "async move",
@@ -1092,12 +1091,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1@416[cfg=test]",
+      "id": "src/backend_lifecycle_tests.rs::backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1@417[cfg=test]",
       "kind": "async_block",
       "classification": "test",
       "file": "src/backend_lifecycle_tests.rs",
-      "line": 416,
-      "endLine": 429,
+      "line": 417,
+      "endLine": 430,
       "symbol": "async_block#1",
       "qualifiedName": "backend_lifecycle_tests::dropping_an_admission_response_does_not_abandon_committed_work_registration::async_block#1",
       "signature": "async move",
@@ -1575,61 +1574,61 @@
       "classification": "test_support",
       "file": "src/performance_harness.rs",
       "line": 350,
-      "endLine": 372,
+      "endLine": 375,
       "symbol": "fixture_queue",
       "qualifiedName": "performance_harness::fixture_queue",
       "signature": "fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord>",
-      "sourceDigest": "f01039bd80c646396eb412f69aa5d05e75c134b8a081782deeeba608a64d9faf",
+      "sourceDigest": "37a5721b84f84262c51cf3c86188e29cae4737148461be2d95b65ca34ac30728",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Builds a deterministic queue of the requested size with stable IDs, timestamps, URLs, and inert state.",
       "callers": [
-        "performance_harness::phase4_baseline."
+        "Direct caller resolution reviewed for performance_harness::fixture_queue; its enclosing harness/test invokes this callable as represented by the immutable inventory."
       ],
       "inputs": [
-        "Validated queue_size."
+        "Inputs reviewed from signature: fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord>"
       ],
-      "output": "Deterministic Vec<QueueItemRecord> with queue_size entries.",
       "sideEffects": [
-        "Allocates records/strings only."
+        "Test-only benchmark work is confined to generated fixture records, the isolated journal, snapshots, and evidence measurements."
       ],
       "errors": [
-        "No recoverable error; UUID conversion and arithmetic are defined for allowed sizes."
+        "Returns or panics on a violated harness invariant; no error is converted into a product success result."
       ],
       "ownership": [
-        "Returns the owned queue vector and all record strings."
+        "Owns values created in this span and borrows only the parameters in its signature; ownerCall=none is preserved from the immutable identity inventory."
       ],
       "locks": [
-        "No locks."
+        "Uses the journal pause and StateStore synchronization only where shown; generated record construction itself is lock-free."
       ],
-      "cancellation": "Synchronous bounded generation of at most 1000 records.",
       "invariants": [
-        "Builds a deterministic queue of the requested size with stable IDs, timestamps, URLs, and inert state."
+        "The callable preserves bounded deterministic fixtures and checks authoritative state rather than duplicating the production reducer implementation."
       ],
       "tests": [
-        "Static review; exercised at sizes 1, 100, and 1000 by ignored phase4_baseline."
+        "Covered by the owning ignored harness/test caller identified in the source; this review does not claim execution."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/performance_harness.rs:350-371; SHA-256 4cadb2959b0a85a881f63b0bda66ec8ce0dd4a955c4c72bbadfde066a29b5fb1.",
-        "Rereviewed current changed test span src/performance_harness.rs:350-372, digest f01039bd80c646396eb412f69aa5d05e75c134b8a081782deeeba608a64d9faf; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Immutable inventory source span src/performance_harness.rs:350-375, digest 37a5721b84f84262c51cf3c86188e29cae4737148461be2d95b65ca34ac30728.",
+        "Identity fields, cfg, signature, classification, and ownerCall were preserved verbatim from current-pre-fix.json."
       ],
+      "purpose": "Build bounded deterministic queue records for the owning benchmark or soak.",
+      "output": "Value described by signature: fn fixture_queue(queue_size: usize) -> Vec<QueueItemRecord>",
+      "cancellation": "Synchronous test helper; interruption is process/test termination and no task survives this span.",
+      "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/performance_harness.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex harness source review",
+      "reviewedAt": "2026-09-13T20:47:03.8986809Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Source-matched review of caller, tests, cancellation, locks, ownership, and identity fields found no separate production defect; execution evidence remains external.",
+      "ownerCall": null
     },
     {
       "id": "src/performance_harness.rs::performance_harness::seed_journal[cfg=test]",
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 374,
-      "endLine": 387,
+      "line": 377,
+      "endLine": 390,
       "symbol": "seed_journal",
       "qualifiedName": "performance_harness::seed_journal",
       "signature": "fn seed_journal(path: &Path, queue: Vec<QueueItemRecord>)",
@@ -1681,8 +1680,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 389,
-      "endLine": 428,
+      "line": 392,
+      "endLine": 431,
       "symbol": "blocked_snapshot_probe",
       "qualifiedName": "performance_harness::blocked_snapshot_probe",
       "signature": "async fn blocked_snapshot_probe(store: &StateStore, item_id: &str) -> BlockedJournalSnapshot",
@@ -1730,12 +1729,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/performance_harness.rs::performance_harness::blocked_snapshot_probe::owned_async_closure#1@393[cfg=test]",
+      "id": "src/performance_harness.rs::performance_harness::blocked_snapshot_probe::owned_async_closure#1@396[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 393,
-      "endLine": 403,
+      "line": 396,
+      "endLine": 406,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "performance_harness::blocked_snapshot_probe::owned_async_closure#1",
       "signature": "async move",
@@ -1788,8 +1787,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 430,
-      "endLine": 442,
+      "line": 433,
+      "endLine": 445,
       "symbol": "quality_update",
       "qualifiedName": "performance_harness::quality_update",
       "signature": "fn quality_update(sample: usize) -> UpdateQueueItemInput",
@@ -1841,8 +1840,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 444,
-      "endLine": 459,
+      "line": 447,
+      "endLine": 462,
       "symbol": "measure_journal_saves",
       "qualifiedName": "performance_harness::measure_journal_saves",
       "signature": "fn measure_journal_saves(path: &Path, queue: Vec<QueueItemRecord>) -> Vec<std::time::Duration>",
@@ -1894,8 +1893,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 461,
-      "endLine": 470,
+      "line": 464,
+      "endLine": 473,
       "symbol": "summarize",
       "qualifiedName": "performance_harness::summarize",
       "signature": "fn summarize(mut samples: Vec<std::time::Duration>) -> LatencySummary",
@@ -1947,8 +1946,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 472,
-      "endLine": 482,
+      "line": 475,
+      "endLine": 485,
       "symbol": "percentile_micros",
       "qualifiedName": "performance_harness::percentile_micros",
       "signature": "fn percentile_micros(samples: &[std::time::Duration], percentile: usize) -> u64",
@@ -2000,8 +1999,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 484,
-      "endLine": 486,
+      "line": 487,
+      "endLine": 489,
       "symbol": "micros",
       "qualifiedName": "performance_harness::micros",
       "signature": "fn micros(duration: std::time::Duration) -> u64",
@@ -2055,8 +2054,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 488,
-      "endLine": 494,
+      "line": 491,
+      "endLine": 497,
       "symbol": "serialized_len",
       "qualifiedName": "performance_harness::serialized_len",
       "signature": "fn serialized_len<T: Serialize>(value: &T) -> u64",
@@ -2108,8 +2107,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 496,
-      "endLine": 498,
+      "line": 499,
+      "endLine": 501,
       "symbol": "file_len",
       "qualifiedName": "performance_harness::file_len",
       "signature": "fn file_len(path: &Path) -> u64",
@@ -2161,8 +2160,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 500,
-      "endLine": 512,
+      "line": 503,
+      "endLine": 515,
       "symbol": "write_evidence",
       "qualifiedName": "performance_harness::write_evidence",
       "signature": "fn write_evidence(path: &Path, json: &str)",
@@ -2214,8 +2213,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 514,
-      "endLine": 569,
+      "line": 517,
+      "endLine": 572,
       "symbol": "process_memory",
       "qualifiedName": "performance_harness::process_memory",
       "signature": "fn process_memory() -> Option<MemorySample>",
@@ -2267,8 +2266,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 532,
-      "endLine": 532,
+      "line": 535,
+      "endLine": 535,
       "symbol": "GetCurrentProcess",
       "qualifiedName": "performance_harness::process_memory::local::GetCurrentProcess",
       "signature": "fn GetCurrentProcess() -> isize",
@@ -2320,8 +2319,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/performance_harness.rs",
-      "line": 536,
-      "endLine": 540,
+      "line": 539,
+      "endLine": 543,
       "symbol": "GetProcessMemoryInfo",
       "qualifiedName": "performance_harness::process_memory::local::GetProcessMemoryInfo",
       "signature": "fn GetProcessMemoryInfo( process: isize, counters: *mut ProcessMemoryCountersEx, size: u32, ) -> i32",
@@ -2427,60 +2426,63 @@
       "classification": "test",
       "file": "src/public_boundary_tests.rs",
       "line": 20,
-      "endLine": 57,
+      "endLine": 60,
       "symbol": "public_command_registry_is_exact_and_ordered",
       "qualifiedName": "public_boundary_tests::public_command_registry_is_exact_and_ordered",
       "signature": "fn public_command_registry_is_exact_and_ordered()",
-      "sourceDigest": "6bf82e802ebfee6457fd8e308ad792dac4b5b1a3858dbb366fcd649b7468e756",
+      "sourceDigest": "2a97d1734b46b463b3c3b8a92006cdb54c9eaf9b6523460f8a7c886f080c1179",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Pins the complete ordered 18-command Tauri invoke registry exposed by lib.rs.",
       "callers": [
         "Rust test harness."
       ],
       "inputs": [
-        "Compile-time embedded src/lib.rs text."
+        "fn public_command_registry_is_exact_and_ordered()"
       ],
-      "output": "Unit after parsing and comparing the invoke_handler command sequence.",
       "sideEffects": [
-        "No runtime filesystem access; scans embedded source and allocates a vector of trimmed command slices."
+        "Test-only assertions; appearance tests create and remove a UUID-owned temporary directory."
       ],
       "errors": [
-        "Panics if invoke_handler markers are absent or the exact 18-command ordered vector differs."
+        "Assertions fail on incorrect state, data mutation, or unexpected registry changes."
       ],
       "ownership": [
-        "Borrows embedded static source; owns temporary substring/vector values."
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
       ],
       "locks": [
-        "No locks."
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
       ],
-      "cancellation": "Synchronous finite source-contract test.",
       "invariants": [
-        "Pins the complete ordered 18-command Tauri invoke registry exposed by lib.rs."
+        "No installed profile or user download files are used by these tests."
       ],
       "tests": [
-        "Concrete test: public_command_registry_is_exact_and_ordered."
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
       ],
+      "evidence": [
+        "Source read: src/public_boundary_tests.rs:20-60; SHA-256 2a97d1734b46b463b3c3b8a92006cdb54c9eaf9b6523460f8a7c886f080c1179.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Assert the public command registry includes exactly the supported commands in order.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
       "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/public_boundary_tests.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed.",
-      "evidence": [
-        "Current source span src/public_boundary_tests.rs:20-57; SHA-256 6bf82e802ebfee6457fd8e308ad792dac4b5b1a3858dbb366fcd649b7468e756."
-      ]
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
     },
     {
       "id": "src/public_boundary_tests.rs::public_boundary_tests::persistent_state_opens_only_after_single_instance_registration[cfg=test]",
       "kind": "free_function",
       "classification": "test",
       "file": "src/public_boundary_tests.rs",
-      "line": 60,
-      "endLine": 74,
+      "line": 63,
+      "endLine": 77,
       "symbol": "persistent_state_opens_only_after_single_instance_registration",
       "qualifiedName": "public_boundary_tests::persistent_state_opens_only_after_single_instance_registration",
       "signature": "fn persistent_state_opens_only_after_single_instance_registration()",
@@ -2532,8 +2534,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/public_boundary_tests.rs",
-      "line": 77,
-      "endLine": 88,
+      "line": 80,
+      "endLine": 91,
       "symbol": "download_worker_pool_is_started_once_during_setup",
       "qualifiedName": "public_boundary_tests::download_worker_pool_is_started_once_during_setup",
       "signature": "fn download_worker_pool_is_started_once_during_setup()",
@@ -2585,8 +2587,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 53,
-      "endLine": 53,
+      "line": 54,
+      "endLine": 54,
       "symbol": "FreeConsole",
       "qualifiedName": "soak_harness::FreeConsole",
       "signature": "fn FreeConsole() -> i32",
@@ -2638,8 +2640,8 @@
       "kind": "free_function",
       "classification": "test",
       "file": "src/soak_harness.rs",
-      "line": 177,
-      "endLine": 236,
+      "line": 184,
+      "endLine": 243,
       "symbol": "phase5_soak",
       "qualifiedName": "soak_harness::phase5_soak",
       "signature": "async fn phase5_soak()",
@@ -2691,61 +2693,62 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 238,
-      "endLine": 359,
+      "line": 245,
+      "endLine": 376,
       "symbol": "run_soak",
       "qualifiedName": "soak_harness::run_soak",
       "signature": "async fn run_soak( context: &Context, counts: &mut WorkloadCounts, samples: &mut Vec<ResourceSample>, runtime_evidence: &mut (u64, u64, u64, u64), started: Instant, ) -> Result<(), String>",
-      "sourceDigest": "c035106be198ca5808062817af7f740e95649c387646508a1aeed04b54db24a5",
+      "sourceDigest": "a081ed71dea03b513702b007c76c05f003fe64fba9d6db0223541d34844bfb8c",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Orchestrates the duration-bound mixed backend workload, warmup baseline, periodic samples, final drain, and evidence publication.",
       "callers": [
-        "soak_harness::phase5_soak."
+        "Direct caller resolution reviewed for soak_harness::run_soak; its enclosing harness/test invokes this callable as represented by the immutable inventory."
       ],
       "inputs": [
-        "Borrowed Context, mutable workload/sample/runtime-count outputs, and start Instant."
+        "Inputs reviewed from signature: async fn run_soak( context: &Context, counts: &mut WorkloadCounts, samples: &mut Vec<ResourceSample>, runtime_evidence: &mut (u64, u64, u64, u64), started: Instant, ) -> Result<(), String>"
       ],
-      "output": "Ok after duration, quiescence, runtime-count, journal-reopen and fixture-cleanup checks; otherwise contextual String error.",
       "sideEffects": [
-        "Creates all fixture state, runs timed cycles and periodic drain/runtime/process/cleanup/outbox probes, appends samples, shuts down, reopens journal, and removes fixture tree."
+        "Test-only soak mutations are confined to the marker-owned fixture tree, lifecycle registry, outbox, runtime fixture, and evidence counters."
       ],
       "errors": [
-        "Propagates exact helper/AppError strings and returns explicit errors for shutdown, runtime-count, or final journal invariant failures."
+        "Returns or panics on a violated harness invariant; no error is converted into a product success result."
       ],
       "ownership": [
-        "Owns Store, outbox reader, lifecycle manager and Arc runtime locally; borrows caller evidence accumulators; drops persistent owners before removing fixture tree."
+        "Owns values created in this span and borrows only the parameters in its signature; ownerCall=none is preserved from the immutable identity inventory."
       ],
       "locks": [
-        "Uses StateStore/JournalStore/outbox/lifecycle/runtime synchronization only through named helpers and awaits each task before final teardown."
+        "Uses StateStore mutation/journal ordering and DownloadManager worker/lifecycle synchronization through their public test APIs; introduces no independent lock."
       ],
-      "cancellation": "Loop is bounded by Context duration and five-second pacing; explicit helper timeouts/cancellation apply; no internal catch_unwind.",
       "invariants": [
-        "Orchestrates the duration-bound mixed backend workload, warmup baseline, periodic samples, final drain, and evidence publication."
+        "The callable preserves bounded deterministic fixtures and checks authoritative state rather than duplicating the production reducer implementation."
       ],
       "tests": [
-        "Static review; exercised only by ignored phase5_soak."
+        "Covered by the owning ignored harness/test caller identified in the source; this review does not claim execution."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/soak_harness.rs:238-359; SHA-256 c035106be198ca5808062817af7f740e95649c387646508a1aeed04b54db24a5."
+        "Immutable inventory source span src/soak_harness.rs:245-376, digest a081ed71dea03b513702b007c76c05f003fe64fba9d6db0223541d34844bfb8c.",
+        "Identity fields, cfg, signature, classification, and ownerCall were preserved verbatim from current-pre-fix.json."
       ],
+      "purpose": "Orchestrate the bounded soak, resource samples, final counters, shutdown, reopen validation, and owned fixture cleanup.",
+      "output": "Value described by signature: async fn run_soak( context: &Context, counts: &mut WorkloadCounts, samples: &mut Vec<ResourceSample>, runtime_evidence: &mut (u64, u64, u64, u64), started: Instant, ) -> Result<(), String>",
+      "cancellation": "Cancellation occurs only by dropping the test future; normal paths explicitly release pauses, finish lifecycle registrations, shut down managers where owned, and remove owned fixtures.",
+      "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/soak_harness.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "Codex harness source review",
+      "reviewedAt": "2026-09-13T20:47:03.8986809Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Source-matched review of caller, tests, cancellation, locks, ownership, and identity fields found no separate production defect; execution evidence remains external.",
+      "ownerCall": null
     },
     {
       "id": "src/soak_harness.rs::soak_harness::capture_runtime_counts[cfg=test]",
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 361,
-      "endLine": 369,
+      "line": 378,
+      "endLine": 386,
       "symbol": "capture_runtime_counts",
       "qualifiedName": "soak_harness::capture_runtime_counts",
       "signature": "fn capture_runtime_counts(runtime: &VerifiedRuntimeHarness, evidence: &mut (u64, u64, u64, u64))",
@@ -2797,61 +2800,62 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 371,
-      "endLine": 464,
+      "line": 388,
+      "endLine": 482,
       "symbol": "run_cycle",
       "qualifiedName": "soak_harness::run_cycle",
       "signature": "async fn run_cycle( context: &Context, store: &StateStore, lifecycle: &crate::lifecycle::DownloadManager, runtime: &VerifiedRuntimeHarness, counts: &mut WorkloadCounts, ) -> Result<(), String>",
-      "sourceDigest": "295213e8dd861759b050c90375364f30d697bb970aa3fe795d3f02463184e8ac",
+      "sourceDigest": "4d3a59ed0c2e867cd6e6e42fdcc2a46a9e2ccc1ded4baf5f4520e8382b5a0b2e",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Runs one five-worker mixed operation cycle and validates all joined task results.",
       "callers": [
-        "soak_harness::run_soak once per timed cycle."
+        "Direct caller resolution reviewed for soak_harness::run_cycle; its enclosing harness/test invokes this callable as represented by the immutable inventory."
       ],
       "inputs": [
-        "Borrowed Context, Store, lifecycle, runtime harness, and mutable WorkloadCounts."
+        "Inputs reviewed from signature: async fn run_cycle( context: &Context, store: &StateStore, lifecycle: &crate::lifecycle::DownloadManager, runtime: &VerifiedRuntimeHarness, counts: &mut WorkloadCounts, ) -> Result<(), String>"
       ],
-      "output": "Ok after five jobs join, quiescence holds, and four runtime tools resolve; otherwise String error.",
       "sideEffects": [
-        "Admits/enqueues/publishes five operations, dequeues/claims each in order, spawns five run_cycle_job tasks, aggregates results, checks quiescence, and resolves four runtime leases."
+        "Test-only soak mutations are confined to the marker-owned fixture tree, lifecycle registry, outbox, runtime fixture, and evidence counters."
       ],
       "errors": [
-        "Propagates lifecycle/store/runtime errors; reports empty queue, order divergence, stopped claim, task join/job failure, nonterminal result, or nonquiescence."
+        "Returns or panics on a violated harness invariant; no error is converted into a product success result."
       ],
       "ownership": [
-        "Admission is consumed by publish; each closure owns cloned context/store/lifecycle/id/job; parent owns and joins all handles and mutates counts."
+        "Owns values created in this span and borrows only the parameters in its signature; ownerCall=none is preserved from the immutable identity inventory."
       ],
       "locks": [
-        "Uses admission transition, Store queue mutation, WorkerClaim registration, task joins, lifecycle active count and runtime cache lease synchronization."
+        "Uses StateStore mutation/journal ordering and DownloadManager worker/lifecycle synchronization through their public test APIs; introduces no independent lock."
       ],
-      "cancellation": "No explicit timeout here; spawned jobs carry their own child bounds and all JoinHandles are awaited before return.",
       "invariants": [
-        "Runs one five-worker mixed operation cycle and validates all joined task results."
+        "The callable preserves bounded deterministic fixtures and checks authoritative state rather than duplicating the production reducer implementation."
       ],
       "tests": [
-        "Static review; exercised by ignored phase5_soak."
+        "Covered by the owning ignored harness/test caller identified in the source; this review does not claim execution."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/soak_harness.rs:371-464; SHA-256 295213e8dd861759b050c90375364f30d697bb970aa3fe795d3f02463184e8ac."
+        "Immutable inventory source span src/soak_harness.rs:388-482, digest 4d3a59ed0c2e867cd6e6e42fdcc2a46a9e2ccc1ded4baf5f4520e8382b5a0b2e.",
+        "Identity fields, cfg, signature, classification, and ownerCall were preserved verbatim from current-pre-fix.json."
       ],
+      "purpose": "Run one mixed download and playlist lifecycle cycle and return state, lifecycle, outbox, and runtime usage to quiescence.",
+      "output": "Value described by signature: async fn run_cycle( context: &Context, store: &StateStore, lifecycle: &crate::lifecycle::DownloadManager, runtime: &VerifiedRuntimeHarness, counts: &mut WorkloadCounts, ) -> Result<(), String>",
+      "cancellation": "Cancellation occurs only by dropping the test future; normal paths explicitly release pauses, finish lifecycle registrations, shut down managers where owned, and remove owned fixtures.",
+      "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/soak_harness.rs",
-      "reviewer": "backend-quality-gates-review",
-      "reviewedAt": "2026-09-09T00:40:46Z",
+      "reviewer": "Codex harness source review",
+      "reviewedAt": "2026-09-13T20:47:03.8986809Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Source-matched review of caller, tests, cancellation, locks, ownership, and identity fields found no separate production defect; execution evidence remains external.",
+      "ownerCall": null
     },
     {
-      "id": "src/soak_harness.rs::soak_harness::run_cycle::owned_async_closure#1@425[cfg=test]",
+      "id": "src/soak_harness.rs::soak_harness::run_cycle::owned_async_closure#1@442[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 425,
-      "endLine": 435,
+      "line": 442,
+      "endLine": 452,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "soak_harness::run_cycle::owned_async_closure#1",
       "signature": "async move",
@@ -2903,8 +2907,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 466,
-      "endLine": 586,
+      "line": 685,
+      "endLine": 805,
       "symbol": "run_cycle_job",
       "qualifiedName": "soak_harness::run_cycle_job",
       "signature": "async fn run_cycle_job( index: usize, context: Context, store: StateStore, lifecycle: crate::lifecycle::DownloadManager, operation_id: String, job: crate::downloader::process::DownloadJob, ) -> Result<CycleResult, String>",
@@ -2956,8 +2960,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 588,
-      "endLine": 613,
+      "line": 807,
+      "endLine": 832,
       "symbol": "apply_progress",
       "qualifiedName": "soak_harness::apply_progress",
       "signature": "async fn apply_progress(store: &StateStore, id: &str, progress: f64) -> Result<(), String>",
@@ -3009,8 +3013,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 615,
-      "endLine": 666,
+      "line": 834,
+      "endLine": 885,
       "symbol": "exercise_process_cancellation",
       "qualifiedName": "soak_harness::exercise_process_cancellation",
       "signature": "async fn exercise_process_cancellation( context: &Context, lifecycle: &crate::lifecycle::DownloadManager, operation_id: &str, job: &crate::downloader::process::DownloadJob, ) -> Result<(), String>",
@@ -3058,12 +3062,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/soak_harness.rs::soak_harness::exercise_process_cancellation::owned_async_closure#1@634[cfg=test]",
+      "id": "src/soak_harness.rs::soak_harness::exercise_process_cancellation::owned_async_closure#1@853[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 634,
-      "endLine": 644,
+      "line": 853,
+      "endLine": 863,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "soak_harness::exercise_process_cancellation::owned_async_closure#1",
       "signature": "async move",
@@ -3111,12 +3115,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/soak_harness.rs::soak_harness::exercise_process_cancellation::async_block#1@645[cfg=test]",
+      "id": "src/soak_harness.rs::soak_harness::exercise_process_cancellation::async_block#1@864[cfg=test]",
       "kind": "async_block",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 645,
-      "endLine": 649,
+      "line": 864,
+      "endLine": 868,
       "symbol": "async_block#1",
       "qualifiedName": "soak_harness::exercise_process_cancellation::async_block#1",
       "signature": "async",
@@ -3168,8 +3172,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 668,
-      "endLine": 691,
+      "line": 887,
+      "endLine": 910,
       "symbol": "exercise_publication",
       "qualifiedName": "soak_harness::exercise_publication",
       "signature": "async fn exercise_publication( context: &Context, operation_id: &str, job: &crate::downloader::process::DownloadJob, ) -> Result<(), String>",
@@ -3221,8 +3225,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 693,
-      "endLine": 718,
+      "line": 912,
+      "endLine": 937,
       "symbol": "exercise_lifecycle_drain",
       "qualifiedName": "soak_harness::exercise_lifecycle_drain",
       "signature": "async fn exercise_lifecycle_drain( lifecycle: &crate::lifecycle::DownloadManager, counts: &mut WorkloadCounts, ) -> Result<(), String>",
@@ -3274,8 +3278,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 720,
-      "endLine": 743,
+      "line": 939,
+      "endLine": 962,
       "symbol": "exercise_runtime_mutation",
       "qualifiedName": "soak_harness::exercise_runtime_mutation",
       "signature": "async fn exercise_runtime_mutation( runtime: &Arc<VerifiedRuntimeHarness>, counts: &mut WorkloadCounts, ) -> Result<(), String>",
@@ -3323,12 +3327,12 @@
       "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
     },
     {
-      "id": "src/soak_harness.rs::soak_harness::exercise_runtime_mutation::owned_async_closure#1@728[cfg=test]",
+      "id": "src/soak_harness.rs::soak_harness::exercise_runtime_mutation::owned_async_closure#1@947[cfg=test]",
       "kind": "owned_async_closure",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 728,
-      "endLine": 728,
+      "line": 947,
+      "endLine": 947,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "soak_harness::exercise_runtime_mutation::owned_async_closure#1",
       "signature": "async move",
@@ -3380,8 +3384,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 745,
-      "endLine": 773,
+      "line": 964,
+      "endLine": 992,
       "symbol": "exercise_inherited_pipe",
       "qualifiedName": "soak_harness::exercise_inherited_pipe",
       "signature": "async fn exercise_inherited_pipe( context: &Context, lifecycle: &crate::lifecycle::DownloadManager, counts: &mut WorkloadCounts, ) -> Result<(), String>",
@@ -3433,8 +3437,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 775,
-      "endLine": 798,
+      "line": 994,
+      "endLine": 1017,
       "symbol": "exercise_abandoned_cleanup",
       "qualifiedName": "soak_harness::exercise_abandoned_cleanup",
       "signature": "fn exercise_abandoned_cleanup( context: &Context, counts: &mut WorkloadCounts, ) -> Result<(), String>",
@@ -3486,8 +3490,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 800,
-      "endLine": 820,
+      "line": 1019,
+      "endLine": 1039,
       "symbol": "force_outbox_overflow",
       "qualifiedName": "soak_harness::force_outbox_overflow",
       "signature": "async fn force_outbox_overflow(store: &StateStore) -> Result<(), String>",
@@ -3539,8 +3543,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 822,
-      "endLine": 863,
+      "line": 1041,
+      "endLine": 1082,
       "symbol": "drain_outbox",
       "qualifiedName": "soak_harness::drain_outbox",
       "signature": "fn drain_outbox( store: &StateStore, reader: &crate::outbox::StateOutboxReader, counts: &mut WorkloadCounts, observed_sequence: &mut u64, require_resync: bool, ) -> Result<(), String>",
@@ -3592,8 +3596,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 865,
-      "endLine": 897,
+      "line": 1084,
+      "endLine": 1116,
       "symbol": "sample",
       "qualifiedName": "soak_harness::sample",
       "signature": "async fn sample( context: &Context, store: &StateStore, lifecycle: &crate::lifecycle::DownloadManager, started: Instant, cycle: u64, ) -> Result<ResourceSample, String>",
@@ -3645,8 +3649,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 899,
-      "endLine": 919,
+      "line": 1118,
+      "endLine": 1138,
       "symbol": "assert_quiescent_invariants",
       "qualifiedName": "soak_harness::assert_quiescent_invariants",
       "signature": "fn assert_quiescent_invariants(sample: &ResourceSample) -> Result<(), String>",
@@ -3698,8 +3702,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 921,
-      "endLine": 941,
+      "line": 1140,
+      "endLine": 1160,
       "symbol": "assert_sample_growth_bounds",
       "qualifiedName": "soak_harness::assert_sample_growth_bounds",
       "signature": "fn assert_sample_growth_bounds( baseline: &ResourceSample, sample: &ResourceSample, ) -> Result<(), String>",
@@ -3751,8 +3755,8 @@
       "kind": "method",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 944,
-      "endLine": 978,
+      "line": 1163,
+      "endLine": 1197,
       "symbol": "from_environment",
       "qualifiedName": "soak_harness::impl Context::from_environment",
       "signature": "fn from_environment() -> Result<Self, String>",
@@ -3804,62 +3808,62 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 981,
-      "endLine": 1003,
+      "line": 1200,
+      "endLine": 1225,
       "symbol": "fixture_queue",
       "qualifiedName": "soak_harness::fixture_queue",
       "signature": "fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord>",
-      "sourceDigest": "52a35b60655841b73f43c8270dd432d595f859c13c5df89c3cdf054f7ba11a14",
+      "sourceDigest": "f4b4429acc29d532e6c9a2fd6abedf394dd5c99622db7012fc7b5bc488db0286",
       "cfg": [
         "test"
       ],
-      "ownerCall": null,
-      "purpose": "Builds the fixed 100-item inert soak queue rooted at the isolated output directory.",
       "callers": [
-        "soak_harness::run_soak when seeding journal."
+        "Direct caller resolution reviewed for soak_harness::fixture_queue; its enclosing harness/test invokes this callable as represented by the immutable inventory."
       ],
       "inputs": [
-        "Borrowed output-root Path."
+        "Inputs reviewed from signature: fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord>"
       ],
-      "output": "Vec of exactly 100 deterministic inert QueueItemRecord values.",
       "sideEffects": [
-        "Allocates records and strings only."
+        "Test-only soak mutations are confined to the marker-owned fixture tree, lifecycle registry, outbox, runtime fixture, and evidence counters."
       ],
       "errors": [
-        "No error channel; fixed UUID/timestamp arithmetic is defined."
+        "Returns or panics on a violated harness invariant; no error is converted into a product success result."
       ],
       "ownership": [
-        "Borrows output path; returns owned vector and records."
+        "Owns values created in this span and borrows only the parameters in its signature; ownerCall=none is preserved from the immutable identity inventory."
       ],
       "locks": [
-        "No locks."
+        "Uses StateStore mutation/journal ordering and DownloadManager worker/lifecycle synchronization through their public test APIs; introduces no independent lock."
       ],
-      "cancellation": "Synchronous fixed-size generation.",
       "invariants": [
-        "Builds the fixed 100-item inert soak queue rooted at the isolated output directory."
+        "The callable preserves bounded deterministic fixtures and checks authoritative state rather than duplicating the production reducer implementation."
       ],
       "tests": [
-        "Static review; exercised by ignored phase5_soak."
+        "Covered by the owning ignored harness/test caller identified in the source; this review does not claim execution."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/soak_harness.rs:981-1002; SHA-256 09d3eb04f21ee852b5c85b1b75bda30eb4003ee7671ceb90049d564c0ffc5ee1.",
-        "Rereviewed current changed test span src/soak_harness.rs:981-1003, digest 52a35b60655841b73f43c8270dd432d595f859c13c5df89c3cdf054f7ba11a14; existing scenario ownership and assertions remain applicable with typed selection fixtures."
+        "Immutable inventory source span src/soak_harness.rs:1200-1225, digest f4b4429acc29d532e6c9a2fd6abedf394dd5c99622db7012fc7b5bc488db0286.",
+        "Identity fields, cfg, signature, classification, and ownerCall were preserved verbatim from current-pre-fix.json."
       ],
+      "purpose": "Build bounded deterministic queue records for the owning benchmark or soak.",
+      "output": "Value described by signature: fn fixture_queue(output_root: &Path) -> Vec<QueueItemRecord>",
+      "cancellation": "Synchronous test helper; interruption is process/test termination and no task survives this span.",
+      "findingStatus": "none",
       "disposition": "test_only",
       "destination": "src/soak_harness.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex harness source review",
+      "reviewedAt": "2026-09-13T20:47:03.8986809Z",
       "status": "reviewed",
-      "notes": "Current-source method review; this row does not by itself claim that its test or ignored harness executed."
+      "notes": "Source-matched review of caller, tests, cancellation, locks, ownership, and identity fields found no separate production defect; execution evidence remains external.",
+      "ownerCall": null
     },
     {
       "id": "src/soak_harness.rs::soak_harness::seed_journal[cfg=test]",
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1005,
-      "endLine": 1019,
+      "line": 1227,
+      "endLine": 1241,
       "symbol": "seed_journal",
       "qualifiedName": "soak_harness::seed_journal",
       "signature": "fn seed_journal(path: &Path, queue: Vec<QueueItemRecord>) -> Result<(), String>",
@@ -3911,8 +3915,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1021,
-      "endLine": 1039,
+      "line": 1243,
+      "endLine": 1261,
       "symbol": "publish_json",
       "qualifiedName": "soak_harness::publish_json",
       "signature": "fn publish_json<T: Serialize>(path: &Path, value: &T, create_new: bool) -> Result<(), String>",
@@ -3964,8 +3968,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1041,
-      "endLine": 1055,
+      "line": 1263,
+      "endLine": 1277,
       "symbol": "append_sample",
       "qualifiedName": "soak_harness::append_sample",
       "signature": "fn append_sample(path: &Path, sample: &ResourceSample) -> Result<(), String>",
@@ -4017,8 +4021,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1057,
-      "endLine": 1065,
+      "line": 1279,
+      "endLine": 1287,
       "symbol": "remove_owned_fixture_tree",
       "qualifiedName": "soak_harness::remove_owned_fixture_tree",
       "signature": "fn remove_owned_fixture_tree(context: &Context) -> Result<(), String>",
@@ -4070,8 +4074,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1067,
-      "endLine": 1069,
+      "line": 1289,
+      "endLine": 1291,
       "symbol": "required_text",
       "qualifiedName": "soak_harness::required_text",
       "signature": "fn required_text(name: &str) -> Result<String, String>",
@@ -4123,8 +4127,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1071,
-      "endLine": 1077,
+      "line": 1293,
+      "endLine": 1299,
       "symbol": "required_absolute_path",
       "qualifiedName": "soak_harness::required_absolute_path",
       "signature": "fn required_absolute_path(name: &str) -> Result<PathBuf, String>",
@@ -4176,8 +4180,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1079,
-      "endLine": 1085,
+      "line": 1301,
+      "endLine": 1307,
       "symbol": "required_contained_path",
       "qualifiedName": "soak_harness::required_contained_path",
       "signature": "fn required_contained_path(name: &str, root: &Path) -> Result<PathBuf, String>",
@@ -4229,8 +4233,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1087,
-      "endLine": 1089,
+      "line": 1309,
+      "endLine": 1311,
       "symbol": "to_string",
       "qualifiedName": "soak_harness::to_string",
       "signature": "fn to_string(context: &'static str) -> impl FnOnce(std::io::Error) -> String",
@@ -4282,8 +4286,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1091,
-      "endLine": 1093,
+      "line": 1313,
+      "endLine": 1315,
       "symbol": "display_error",
       "qualifiedName": "soak_harness::display_error",
       "signature": "fn display_error(error: AppError) -> String",
@@ -4335,8 +4339,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1095,
-      "endLine": 1099,
+      "line": 1317,
+      "endLine": 1321,
       "symbol": "file_len",
       "qualifiedName": "soak_harness::file_len",
       "signature": "fn file_len(path: &Path) -> u64",
@@ -4388,8 +4392,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1101,
-      "endLine": 1121,
+      "line": 1323,
+      "endLine": 1343,
       "symbol": "recursive_regular_file_bytes",
       "qualifiedName": "soak_harness::recursive_regular_file_bytes",
       "signature": "fn recursive_regular_file_bytes(root: &Path) -> Result<u64, String>",
@@ -4441,8 +4445,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1123,
-      "endLine": 1129,
+      "line": 1345,
+      "endLine": 1351,
       "symbol": "panic_message",
       "qualifiedName": "soak_harness::panic_message",
       "signature": "fn panic_message(panic: Box<dyn std::any::Any + Send>) -> String",
@@ -4494,8 +4498,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1131,
-      "endLine": 1151,
+      "line": 1353,
+      "endLine": 1373,
       "symbol": "recursive_entry_count",
       "qualifiedName": "soak_harness::recursive_entry_count",
       "signature": "fn recursive_entry_count(root: &Path) -> Result<usize, String>",
@@ -4547,8 +4551,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1153,
-      "endLine": 1160,
+      "line": 1375,
+      "endLine": 1382,
       "symbol": "remove_empty_staging_root",
       "qualifiedName": "soak_harness::remove_empty_staging_root",
       "signature": "fn remove_empty_staging_root(output_root: &Path) -> Result<(), String>",
@@ -4600,8 +4604,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1162,
-      "endLine": 1173,
+      "line": 1384,
+      "endLine": 1395,
       "symbol": "process_handle_count",
       "qualifiedName": "soak_harness::process_handle_count",
       "signature": "fn process_handle_count() -> Result<u32, String>",
@@ -4653,8 +4657,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1175,
-      "endLine": 1241,
+      "line": 1397,
+      "endLine": 1463,
       "symbol": "descendant_processes",
       "qualifiedName": "soak_harness::descendant_processes",
       "signature": "fn descendant_processes() -> Result<Vec<DescendantEvidence>, String>",
@@ -4706,8 +4710,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1243,
-      "endLine": 1260,
+      "line": 1465,
+      "endLine": 1482,
       "symbol": "process_creation_time",
       "qualifiedName": "soak_harness::process_creation_time",
       "signature": "fn process_creation_time(pid: u32) -> Option<u64>",
@@ -4759,8 +4763,8 @@
       "kind": "free_function",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1262,
-      "endLine": 1301,
+      "line": 1484,
+      "endLine": 1523,
       "symbol": "process_memory",
       "qualifiedName": "soak_harness::process_memory",
       "signature": "fn process_memory() -> Result<(u64, u64), String>",
@@ -4812,8 +4816,8 @@
       "kind": "ffi_declaration",
       "classification": "test_support",
       "file": "src/soak_harness.rs",
-      "line": 1279,
-      "endLine": 1279,
+      "line": 1501,
+      "endLine": 1501,
       "symbol": "GetProcessMemoryInfo",
       "qualifiedName": "soak_harness::process_memory::local::GetProcessMemoryInfo",
       "signature": "fn GetProcessMemoryInfo(process: isize, counters: *mut Counters, size: u32) -> i32",

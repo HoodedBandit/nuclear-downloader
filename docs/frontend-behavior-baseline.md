@@ -1,6 +1,35 @@
 # Frontend behavior baseline
 
-The historical comparison application is `df582df4ddc566712729b7006dfb080374c5ef45`; the 2026-09-13 follow-up uses `242d3270017dcb2c50631d9327e599b8d1ce5023` as its original application. This checklist describes executed renderer fixtures and the existing unit tests that constrain ownership extraction. Renderer commands are mocked; passing these fixtures does not prove native subprocess, filesystem, installer, or extractor behavior. The current matching-harness visual comparison passed as described below.
+## Current 0.7.9 Clarity obligations
+
+The approved redesign intentionally replaces the pre-Clarity pixel layout.
+Current interaction regressions live in `clarity-ui.e2e.mjs`,
+`renderer-workflows.e2e.mjs`, page/controller unit tests, and separate native
+fixture suites. Historical visual comparisons below belong to older sources.
+
+| Behavior | Regression coverage |
+| --- | --- |
+| Light/Dark/System, sidebar counts, filtering, Settings, and Help | Clarity browser scenarios and component/controller tests |
+| Actual pointer-click title activation, selected focused input, Enter/blur/Escape | Clarity tests at 1340x850 and 800x500, both themes, 100%/150% browser emulation |
+| Ready and waiting renames; read-only active/completed rows | Filename controller, queue row, native fixture, Rust queue/service tests |
+| Failed and invalid drafts survive save failures, filtering, and virtual remounts | Filename controller and 1,000-row browser interaction regression |
+| Enter/blur deduplication and stale callback suppression | Filename controller generation/attempt tests |
+| Starts await affected edits and do not use failed drafts | Queue action and filename controller tests |
+| Snapshot recovery restores availability without masking failed required listeners | Session/page lifecycle tests |
+| Error attempt deduplication, repeated failures, automatic read, disposal | Error reporter/inbox and page lifecycle tests |
+| Health refresh preserves runtime-update failures and clears stale progress | Runtime workflow regressions |
+| Rejected dialogs reach Settings; cancellation preserves settings | Settings/diagnostics workflow regressions |
+| Waiting rename versus worker claim, durability, rollback, restart, order | Rust queued-rename regressions and real local-media fixture |
+| Playlist admission, cancellation, retry, settings, updates, and reconciliation | Fifteen existing renderer workflows adapted to the live UI |
+
+Browser fixtures execute the real renderer with mocked IPC. Native fixture runs
+exercise actual Rust, subprocesses, output bytes, and restart; the two are
+reported separately in [Clarity QC](clarity-0.7.9.md). No claim of native Windows
+150% display qualification is made from browser emulation.
+
+## Historical pre-Clarity behavior and comparisons
+
+The historical comparison application is `df582df4ddc566712729b7006dfb080374c5ef45`; the 2026-09-13 follow-up uses `242d3270017dcb2c50631d9327e599b8d1ce5023` as its original application. This checklist describes executed renderer fixtures and the existing unit tests that constrain ownership extraction. Renderer commands are mocked; passing these fixtures does not prove native subprocess, filesystem, installer, or extractor behavior. The matching-harness comparison for that earlier interface passed as described below; it does not constrain the deliberately redesigned Clarity layout.
 
 The independent renderer cases in `nuclear-app/e2e/browser/renderer-workflows.e2e.mjs` passed together on Chrome 152.0.7977.76. Receipt: `target/engineering-structural-workflows-100.log`. All 15 cases passed, including the batch playlist workflow and bounded 100/1,000-row admission presentation checks.
 
@@ -45,7 +74,7 @@ The capture spec covers ten states at 800×500, 1000×700, and 1440×1000 CSS pi
 
 Capture execution and comparator acceptance are separate gates. `frontend-visual-contract.md` defines the paired-run contract, input archives, decoded-pixel comparison, stable-repeat requirement, and deliberate mutation fixtures. The accepted result in `target/engineering-matched-visual-comparison.json` compares the matching baseline and candidate harness and passes all 60 scenarios with unchanged decoded pixels, geometry, text, control state, and focus. `nativeScalingQualified` remains false: browser scale emulation does not qualify real Windows display scaling or WebView2 rendering.
 
-The unchanged 800-pixel-wide populated and persistence-degraded layouts expose a baseline quirk: the filename title button has a zero-width rectangle but remains enabled and reachable through real Tab navigation. The capture records both facts. A Tab-order entry must identify an enabled element; its initial screenshot visibility is compared independently and must not be inferred from focusability. This finding is retained for a later interface decision. No layout fix is included in the internal cleanup.
+The unchanged 800-pixel-wide populated and persistence-degraded layouts expose a baseline quirk: the filename title button has a zero-width rectangle but remains enabled and reachable through real Tab navigation. The capture records both facts. A Tab-order entry must identify an enabled element; its initial screenshot visibility is compared independently and must not be inferred from focusability. This describes the old interface. Clarity replaces that layout and adds actual pointer-click rename coverage at both minimum and normal sizes.
 
 ## Timing evidence
 

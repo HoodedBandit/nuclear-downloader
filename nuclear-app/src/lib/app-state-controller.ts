@@ -65,9 +65,13 @@ export class AppStateController {
       await this.load(session, false);
     } catch (error) {
       if (!this.isCurrent(session)) return;
-      this.end(session);
+      if (!session.registrationsComplete) this.end(session);
       throw error;
     }
+  }
+
+  get subscriptionsActive(): boolean {
+    return this.session?.registrationsComplete ?? false;
   }
 
   stop(): void {

@@ -501,7 +501,7 @@ pub(super) fn ensure_no_reparse_components(path: &Path) -> Result<(), String> {
 pub(super) fn local_data_root() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(std::env::temp_dir)
-        .join("NuclearDownloader")
+        .join(crate::app_paths::TOOL_DATA_FOLDER)
 }
 
 pub(super) fn managed_runtime_root() -> PathBuf {

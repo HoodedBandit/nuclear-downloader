@@ -1,6 +1,7 @@
 import { createReadStream, statSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
+import { Transform } from 'node:stream';
 
 const [mediaArgument, readyArgument] = process.argv.slice(2);
 if (!mediaArgument || !readyArgument) {
@@ -80,17 +81,21 @@ const server = http.createServer((request, response) => {
     highWaterMark: requestUrl.pathname.startsWith('/slow-') ? 32 * 1024 : 1024 * 1024
   });
   let timer;
-  stream.on('data', () => {
-    if (!requestUrl.pathname.startsWith('/slow-')) return;
-    stream.pause();
-    timer = setTimeout(() => stream.resume(), 150);
-  });
+  const throttle = requestUrl.pathname.startsWith('/slow-')
+    ? new Transform({
+        transform(chunk, _encoding, callback) {
+          timer = setTimeout(() => callback(null, chunk), 150);
+        }
+      })
+    : null;
   stream.on('error', () => response.destroy());
   response.on('close', () => {
     if (timer) clearTimeout(timer);
+    throttle?.destroy();
     stream.destroy();
   });
-  stream.pipe(response);
+  if (throttle) stream.pipe(throttle).pipe(response);
+  else stream.pipe(response);
 });
 
 server.listen(0, '127.0.0.1', () => {

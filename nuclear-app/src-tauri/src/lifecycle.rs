@@ -39,7 +39,9 @@ pub(crate) enum TrackedTaskKind {
     Network,
     Drain,
     Update,
+    // Only download workers satisfy the fixed download-pool startup barrier.
     Worker,
+    PreparationWorker,
     Cleanup,
     Events,
 }

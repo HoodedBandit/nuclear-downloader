@@ -1,4 +1,4 @@
-# Testing Nuclear Downloader 0.7.1
+# Testing Nuclear Downloader 0.7.9
 
 The test strategy deliberately separates renderer simulation from real Windows desktop acceptance.
 

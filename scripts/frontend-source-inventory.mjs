@@ -24,19 +24,159 @@ const { parse: parseSvelte } = requireFromFrontend("svelte/compiler");
 
 const OWNERSHIP = new Map([
   [
+    "src/lib/app-session.ts",
+    {
+      responsibility:
+        "Coordinate startup, subscriptions, snapshot recovery, waiters and disposal",
+      workflows: ["startup", "state-sync", "lifecycle"],
+    },
+  ],
+  [
+    "src/lib/ui-error-reporter.ts",
+    {
+      responsibility:
+        "Record synchronous failures with source and attempt identity",
+      workflows: ["diagnostics"],
+    },
+  ],
+  [
+    "src/lib/filename-editor.ts",
+    {
+      responsibility:
+        "Own filename drafts, validation, save ordering and stale completion guards",
+      workflows: ["queue", "download"],
+    },
+  ],
+  [
+    "src/lib/filename-editor-focus.ts",
+    {
+      responsibility:
+        "Focus and select the row-local filename input on activation",
+      workflows: ["accessibility", "queue"],
+    },
+  ],
+  [
+    "src/lib/queue-view-controller.ts",
+    {
+      responsibility:
+        "Own queue filtering, selection, viewport and scroll lifecycle",
+      workflows: ["queue", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/queue-row-actions.ts",
+    {
+      responsibility:
+        "Declare cohesive typed queue row and filename action ports",
+      workflows: ["queue"],
+    },
+  ],
+  [
+    "src/lib/components/DownloadDefaults.svelte",
+    {
+      responsibility:
+        "Render download format, quality and destination defaults",
+      workflows: ["settings", "queue"],
+    },
+  ],
+  [
+    "src/lib/components/DownloadAccessSettings.svelte",
+    {
+      responsibility:
+        "Render advanced cookie and configuration access settings",
+      workflows: ["settings"],
+    },
+  ],
+  [
+    "src/lib/components/HelpDialog.svelte",
+    {
+      responsibility: "Render the accessible keyboard and download help dialog",
+      workflows: ["dialogs", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/components/RuntimeSettings.svelte",
+    {
+      responsibility: "Compose download tools and application update controls",
+      workflows: ["settings", "runtime-update", "app-update"],
+    },
+  ],
+  [
+    "src/lib/components/DiagnosticsSettings.svelte",
+    {
+      responsibility: "Render diagnostics export and cleanup controls",
+      workflows: ["settings", "diagnostics"],
+    },
+  ],
+  [
+    "src/lib/components/Icon.svelte",
+    {
+      responsibility: "Render consistent accessible interface glyphs",
+      workflows: ["presentation"],
+    },
+  ],
+  [
+    "src/lib/components/Sidebar.svelte",
+    {
+      responsibility:
+        "Navigate queue filters and expose unread error notifications",
+      workflows: ["queue", "diagnostics"],
+    },
+  ],
+  [
+    "src/lib/components/SettingsDialog.svelte",
+    {
+      responsibility:
+        "Compose appearance, error history, tools, and diagnostics",
+      workflows: ["settings", "diagnostics", "accessibility"],
+    },
+  ],
+  [
+    "src/lib/theme.ts",
+    {
+      responsibility:
+        "Apply color tokens and invoke durable appearance preferences",
+      workflows: ["settings"],
+    },
+  ],
+  [
+    "src/lib/appearance-controller.ts",
+    {
+      responsibility:
+        "Own appearance initialization, system changes, and save rollback",
+      workflows: ["settings", "lifecycle"],
+    },
+  ],
+  [
+    "src/lib/error-inbox.ts",
+    {
+      responsibility:
+        "Retain bounded session error history and acknowledge unread errors",
+      workflows: ["diagnostics"],
+    },
+  ],
+  [
+    "src/lib/interface-errors.ts",
+    {
+      responsibility:
+        "Collect failure state from composed workflows into the error inbox",
+      workflows: ["diagnostics"],
+    },
+  ],
+  [
+    "src/lib/queue-view.ts",
+    {
+      responsibility:
+        "Filter and virtualize queue views and coordinate search visibility",
+      workflows: ["queue", "accessibility"],
+    },
+  ],
+  [
     "src/lib/components/StatusFooter.svelte",
     {
       responsibility:
         "Render the existing queue counts and status announcement.",
       workflows: ["queue", "download", "accessibility"],
-    },
-  ],
-  [
-    "src/lib/components/RowDiagnostics.svelte",
-    {
-      responsibility:
-        "Render one row's redacted error details and copy action.",
-      workflows: ["diagnostics", "queue"],
     },
   ],
   [
@@ -69,14 +209,6 @@ const OWNERSHIP = new Map([
       responsibility:
         "Render URL entry, inspection cancellation, and runtime progress.",
       workflows: ["inspection", "runtime-update"],
-    },
-  ],
-  [
-    "src/lib/components/SettingsRow.svelte",
-    {
-      responsibility:
-        "Render existing format, output, cookie, and compatibility settings.",
-      workflows: ["settings", "queue"],
     },
   ],
   [
@@ -131,7 +263,7 @@ const OWNERSHIP = new Map([
     "src/lib/queue-presentation.ts",
     {
       responsibility:
-        "Own queue projection, progress presentation, selection, and filename drafts.",
+        "Own queue projection, metadata, and progress reconciliation.",
       workflows: ["queue", "download", "state-sync"],
     },
   ],

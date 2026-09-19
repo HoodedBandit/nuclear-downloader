@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/lifecycle/tests.rs",
+    "src/services/preparation.rs"
+  ],
+  "reviewer": "Codex startup regression source review",
+  "entries": [
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 529,
+      "endLine": 561,
+      "symbol": "desktop_worker_set_opens_startup_and_drains_on_shutdown",
+      "qualifiedName": "lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown",
+      "signature": "async fn desktop_worker_set_opens_startup_and_drains_on_shutdown()",
+      "sourceDigest": "2f349e0776841296e867c4a423f806e719ba21b2cd4775db977c99e380a5967a",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "Fresh UUID-owned temporary journal and diagnostics paths; empty queues."
+      ],
+      "sideEffects": [
+        "Create an isolated journal fixture, register tracked workers, then drain and remove the owned fixture."
+      ],
+      "errors": [
+        "Two-second deadlines detect a stuck startup or shutdown; assertions retain incomplete-pool rejection."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Five download workers and preparation can coexist without blocking startup.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:529-561; SHA-256 2f349e0776841296e867c4a423f806e719ba21b2cd4775db977c99e380a5967a.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Exercise the actual desktop download and preparation worker registrations through startup, admission, and tracked shutdown.",
+      "output": "A passing regression assertion or a test failure.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.855Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown::owned_async_closure#1@538[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 538,
+      "endLine": 538,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown::owned_async_closure#1",
+      "signature": "async",
+      "sourceDigest": "06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "No external inputs; owned synthetic startup callback."
+      ],
+      "sideEffects": [
+        "No filesystem or network effects."
+      ],
+      "errors": [
+        "Synthetic cleanup returns Ok; the completion callback ignores its argument intentionally."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Five download workers and preparation can coexist without blocking startup.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:538-538; SHA-256 06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Resolve the synthetic cleanup phase successfully so the real startup barrier is exercised.",
+      "output": "Unit completion or a successful synthetic cleanup result.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls."
+    },
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown::owned_work_closure#1@538[cfg=test]",
+      "kind": "owned_work_closure",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 538,
+      "endLine": 538,
+      "symbol": "owned_work_closure#1",
+      "qualifiedName": "lifecycle::tests::desktop_worker_set_opens_startup_and_drains_on_shutdown::owned_work_closure#1",
+      "signature": "|_|",
+      "sourceDigest": "02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "No external inputs; owned synthetic startup callback."
+      ],
+      "sideEffects": [
+        "No filesystem or network effects."
+      ],
+      "errors": [
+        "Synthetic cleanup returns Ok; the completion callback ignores its argument intentionally."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Five download workers and preparation can coexist without blocking startup.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:538-538; SHA-256 02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Leave the startup completion callback without side effects; the test observes wait_for_startup.",
+      "output": "Unit completion or a successful synthetic cleanup result.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls."
+    },
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 564,
+      "endLine": 601,
+      "symbol": "incomplete_worker_set_cannot_count_preparation_as_a_download_worker",
+      "qualifiedName": "lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker",
+      "signature": "async fn incomplete_worker_set_cannot_count_preparation_as_a_download_worker()",
+      "sourceDigest": "7a0d9ad762897ea03a4839b2bc3bf0e8d1738f9ea055dd06dc88d4590b0d1132",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "Fresh UUID-owned temporary journal and diagnostics paths; empty queues."
+      ],
+      "sideEffects": [
+        "Create an isolated journal fixture, register tracked workers, then drain and remove the owned fixture."
+      ],
+      "errors": [
+        "Two-second deadlines detect a stuck startup or shutdown; assertions retain incomplete-pool rejection."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Preparation cannot supply a missing download slot.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:564-601; SHA-256 7a0d9ad762897ea03a4839b2bc3bf0e8d1738f9ea055dd06dc88d4590b0d1132.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Prove that four download workers plus the actual preparation worker cannot open download admission.",
+      "output": "A passing regression assertion or a test failure.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker::owned_async_closure#1@581[cfg=test]",
+      "kind": "owned_async_closure",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 581,
+      "endLine": 581,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker::owned_async_closure#1",
+      "signature": "async",
+      "sourceDigest": "06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "No external inputs; owned synthetic startup callback."
+      ],
+      "sideEffects": [
+        "No filesystem or network effects."
+      ],
+      "errors": [
+        "Synthetic cleanup returns Ok; the completion callback ignores its argument intentionally."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Preparation cannot supply a missing download slot.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:581-581; SHA-256 06d2a7f55de36e9f2de755a5e4c0fb5480d28085026f3f6925662101434e6ea4.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Resolve the synthetic cleanup phase successfully so the real startup barrier is exercised.",
+      "output": "Unit completion or a successful synthetic cleanup result.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls."
+    },
+    {
+      "id": "src/lifecycle/tests.rs::lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker::owned_work_closure#1@581[cfg=test]",
+      "kind": "owned_work_closure",
+      "classification": "test",
+      "file": "src/lifecycle/tests.rs",
+      "line": 581,
+      "endLine": 581,
+      "symbol": "owned_work_closure#1",
+      "qualifiedName": "lifecycle::tests::incomplete_worker_set_cannot_count_preparation_as_a_download_worker::owned_work_closure#1",
+      "signature": "|_|",
+      "sourceDigest": "02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e",
+      "cfg": [
+        "test"
+      ],
+      "ownerCall": "spawn_startup",
+      "callers": [
+        "Rust lifecycle regression test runner."
+      ],
+      "inputs": [
+        "No external inputs; owned synthetic startup callback."
+      ],
+      "sideEffects": [
+        "No filesystem or network effects."
+      ],
+      "errors": [
+        "Synthetic cleanup returns Ok; the completion callback ignores its argument intentionally."
+      ],
+      "ownership": [
+        "The test owns its coordinator, store, task guards, and unique temporary directory."
+      ],
+      "locks": [
+        "Uses existing coordinator registry and startup gate; no additional production lock."
+      ],
+      "invariants": [
+        "Preparation cannot supply a missing download slot.",
+        "Tracked tasks are drained before fixture deletion."
+      ],
+      "tests": [
+        "cargo test --lib --features local-preview worker_set"
+      ],
+      "evidence": [
+        "Source read: src/lifecycle/tests.rs:581-581; SHA-256 02ffd3a3ce87f0060833e4de95c2e0e5a7c4519f4f2058b0afbeee474347ae1e.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Leave the startup completion callback without side effects; the test observes wait_for_startup.",
+      "output": "Unit completion or a successful synthetic cleanup result.",
+      "cancellation": "Explicitly begins coordinator shutdown and waits for all tracked tasks before deleting its isolated fixture.",
+      "findingStatus": "resolved",
+      "disposition": "test_only",
+      "destination": "src/lifecycle/tests.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Both regressions failed before the task-type fix and passed afterward. These tests use real worker registration without external media or network calls."
+    },
+    {
+      "id": "src/services/preparation.rs::services::preparation::spawn_preparation_worker[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/services/preparation.rs",
+      "line": 14,
+      "endLine": 71,
+      "symbol": "spawn_preparation_worker",
+      "qualifiedName": "services::preparation::spawn_preparation_worker",
+      "signature": "pub(crate) fn spawn_preparation_worker( store: &StateStore, manager: &DownloadManager, ) -> Result<(), AppError>",
+      "sourceDigest": "4793adb9e85f7241e443ecd1ed3a9334f1859a5abc6bf0944090ef6d8e329958",
+      "cfg": [],
+      "callers": [
+        "lib::run registers exactly one preparation worker during setup."
+      ],
+      "inputs": [
+        "Parameters in signature: pub(crate) fn spawn_preparation_worker( store: &StateStore, manager: &DownloadManager, ) -> Result<(), AppError>."
+      ],
+      "sideEffects": [
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
+      ],
+      "errors": [
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
+      ],
+      "ownership": [
+        "The tracked closure owns cloned store/manager and one claimed job/work item per loop iteration."
+      ],
+      "locks": [
+        "WorkerClaim transition barrier is dropped after registered_job lookup; inspection permit is acquired later by execute_inspection."
+      ],
+      "invariants": [
+        "Only the five download Worker tasks satisfy the fixed download-pool startup barrier.",
+        "Preparation shares the existing inspection permit and startup/maintenance claim gate.",
+        "Every task kind remains tracked for shutdown; the preparation worker exits on the common shutdown token."
+      ],
+      "tests": [
+        "services::preparation::tests::playlist_admission_registers_every_row_before_metadata_preparation, immediate_removal_cancels_registered_preparation_before_a_worker_claim, and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
+      ],
+      "evidence": [
+        "Source read: src/services/preparation.rs:14-71; SHA-256 4793adb9e85f7241e443ecd1ed3a9334f1859a5abc6bf0944090ef6d8e329958.",
+        "Executed red/green regression logs: nuclear-app/src-tauri/target/clarity-worker-before.log and clarity-worker-after.log."
+      ],
+      "purpose": "Run the single bounded playlist preparation consumer as a distinct lifecycle-owned PreparationWorker.",
+      "output": "Unit registration result or tracked-task AppError.",
+      "cancellation": "Selects shutdown before availability, and registered jobs carry cancellation through permit wait and inspection.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
+      "destination": "src/services/preparation.rs",
+      "reviewer": "Codex startup regression source review",
+      "reviewedAt": "2026-09-19T00:14:51.856Z",
+      "status": "reviewed",
+      "notes": "Reviewed the one-line registration change and the surrounding claim, registration, finalization, cancellation, and shutdown flow. No concurrency capacity or startup guard was loosened.",
+      "ownerCall": null
+    }
+  ]
+}

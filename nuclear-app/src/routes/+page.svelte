@@ -1,8 +1,18 @@
 <script lang="ts">
+  import Sidebar from '$lib/components/Sidebar.svelte';
+  import SettingsDialog from '$lib/components/SettingsDialog.svelte';
+  import Icon from '$lib/components/Icon.svelte';
+  import { filterLabels } from '$lib/queue-view';
+  import { applyTheme, type ThemePreference } from '$lib/theme';
+  import { AppearanceController, createAppearanceState } from '$lib/appearance-controller';
+  import { collectInterfaceErrors } from '$lib/interface-errors';
   import AppUpdateDialog from '$lib/components/AppUpdateDialog.svelte';
   import PlaylistDialog from '$lib/components/PlaylistDialog.svelte';
-  import HeaderRuntime from '$lib/components/HeaderRuntime.svelte';
-  import SettingsRow from '$lib/components/SettingsRow.svelte';
+  import DownloadDefaults from '$lib/components/DownloadDefaults.svelte';
+  import DownloadAccessSettings from '$lib/components/DownloadAccessSettings.svelte';
+  import HelpDialog from '$lib/components/HelpDialog.svelte';
+  import DiagnosticsSettings from '$lib/components/DiagnosticsSettings.svelte';
+  import RuntimeSettings from '$lib/components/RuntimeSettings.svelte';
   import UrlBar from '$lib/components/UrlBar.svelte';
   import QueueToolbar from '$lib/components/QueueToolbar.svelte';
   import QueueTable from '$lib/components/QueueTable.svelte';
@@ -10,22 +20,21 @@
   import StatusFooter from '$lib/components/StatusFooter.svelte';
   import { getVersion } from '@tauri-apps/api/app';
   import { open, save } from '@tauri-apps/plugin-dialog';
-  import { onMount, tick } from 'svelte';
-  import { AppStateController } from '$lib/app-state-controller';
-  import { isTerminalOperation } from '$lib/backend-state';
-  import type { AppSnapshot } from '$lib/bindings/AppSnapshot';
-  import type { OperationSnapshot } from '$lib/bindings/OperationSnapshot';
-  import type { StateDelta } from '$lib/bindings/StateDelta';
-  import { normalizeAppError } from '$lib/frontend-errors';
+  import { onMount, tick, untrack } from 'svelte';
+  import { createErrorInbox, syncErrors } from '$lib/error-inbox';
+  import { AppSessionController, createAppSessionState } from '$lib/app-session';
+  import { QueueViewController, createQueueViewState } from '$lib/queue-view-controller';
+  import { FilenameEditorController, createFilenameEditorState } from '$lib/filename-editor';
+  import { InterfaceErrorReporter } from '$lib/ui-error-reporter';
+  import { PageLifetime } from '$lib/page-lifetime';
+  import type { QueueRowActions } from '$lib/queue-row-actions';
   import { type QueueItem, type OutputFormat } from '$lib/frontend-types';
   import { invokeCommand as invoke, listenEvent as listen } from '$lib/ipc-client';
-  import { OperationWaitRegistry } from '$lib/operation-wait-registry';
-  import { PageLifetime } from '$lib/page-lifetime';
   import {
     QueuePresentationController,
     createQueuePresentationState,
-    getQueueItemDisplayTitle,
-    formatDuration
+    formatDuration,
+    formatByteCount
   } from '$lib/queue-presentation';
   import { QueueActionsController, createQueueActionState } from '$lib/queue-actions';
   import { InspectionWorkflow, createInspectionState } from '$lib/inspection-workflow';
@@ -45,12 +54,7 @@
     isUpdateBlockingStatus,
     resolveAvailableFormat
   } from '$lib/queue-logic';
-  import {
-    createStartupSubsystems,
-    deriveStartupState,
-    type StartupSubsystem,
-    type StartupSubsystemState
-  } from '$lib/startup-state';
+  import { deriveStartupState } from '$lib/startup-state';
 
   const queueState = $state(createQueuePresentationState());
   const settingsState = $state(createSettingsDiagnosticsState());
@@ -59,57 +63,50 @@
   const runtimeState = $state(createRuntimeWorkflowState());
   const appUpdateState = $state(createAppUpdateWorkflowState());
 
-  function formatByteCount(bytes: number): string {
-    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let value = bytes;
-    let unitIndex = 0;
-
-    while (value >= 1024 && unitIndex < units.length - 1) {
-      value /= 1024;
-      unitIndex += 1;
-    }
-
-    const digits = value >= 10 || unitIndex === 0 ? 0 : 1;
-    return `${value.toFixed(digits)} ${units[unitIndex]}`;
-  }
-  let titleEditorInput = $state<HTMLInputElement | null>(null);
-  let startupSubsystems = $state(createStartupSubsystems());
-  let startupIssues = $state<string[]>([]);
-  let queueSelectAll = $state<HTMLInputElement | null>(null);
+  let settingsOpen = $state(false);
+  let helpOpen = $state(false);
+  let searchInput = $state<HTMLInputElement | null>(null);
   let queueViewport = $state<HTMLElement | null>(null);
-  let backendStateError = $state<string | null>(null);
-  let persistenceHealthError = $state<string | null>(null);
-  const operationWaiters = new OperationWaitRegistry();
-  const pageLifetime = new PageLifetime((error) => globalThis.reportError(error));
-  const rendererUnloadError = new Error('Renderer was unloaded before the operation completed.');
-  const appStateController = new AppStateController(
-    () => invoke('get_app_snapshot'),
-    pageLifetime.guard(applyBackendSnapshot),
-    pageLifetime.guard(handleBackendStateError)
+  const errorInbox = $state(createErrorInbox());
+  const sessionState = $state(createAppSessionState());
+  const viewState = $state(createQueueViewState());
+  const filenameState = $state(createFilenameEditorState());
+  const lifetime = new PageLifetime((error) => globalThis.reportError(error));
+  const errors = new InterfaceErrorReporter(
+    errorInbox,
+    () => settingsOpen,
+    () => lifetime.isActive
   );
-
+  const queuePresentation = new QueuePresentationController(queueState, {
+    isActive: () => lifetime.isActive
+  });
+  const session = new AppSessionController(sessionState, {
+    lifetime,
+    invoke,
+    listen,
+    errors,
+    queue: queuePresentation,
+    runtime: runtimeState,
+    appUpdate: appUpdateState
+  });
+  const queueView = new QueueViewController(viewState, () => queueState.items);
   const commands = {
     invoke,
-    isActive: () => pageLifetime.isActive,
-    unloadedError: rendererUnloadError
+    isActive: () => session.isActive,
+    unloadedError: session.unloadedError
   };
-  const operationCommands = { ...commands, waitForOperation };
-  let queueActions!: QueueActionsController;
-  const queuePresentation = new QueuePresentationController(queueState, {
-    isActive: commands.isActive,
-    saveFilename: (itemId, filenameOverride) => queueActions.saveFilename(itemId, filenameOverride),
-    focusFilenameEditor: async () => {
-      await tick();
-      if (!pageLifetime.isActive) return;
-      titleEditorInput?.focus();
-      titleEditorInput?.select();
-    },
-    clearFilenameEditor: () => {
-      titleEditorInput = null;
-    }
+  const operationCommands = {
+    ...commands,
+    waitForOperation: (id: string, timeout?: number) => session.waitForOperation(id, timeout)
+  };
+  const filenameEditor = new FilenameEditorController(filenameState, {
+    ...commands,
+    errors,
+    getItems: () => queueState.items,
+    save: (itemId, filenameOverride) =>
+      invoke('update_queue_item', { itemId, input: { filenameOverride } })
   });
-  queueActions = new QueueActionsController(queueActionState, {
+  const queueActions = new QueueActionsController(queueActionState, {
     ...commands,
     getItems: () => queuePresentation.getItems(),
     replaceItem: (id, mapper) => queuePresentation.replaceItem(id, mapper),
@@ -117,55 +114,48 @@
     getGlobalQuality: () => settingsState.globalQuality,
     getGlobalFormat: () => settingsState.globalFormat,
     clearProgressDisplayState: (id) => queuePresentation.clearProgressDisplayState(id),
-    getEditingTitleId: () => queueState.editing.itemId,
-    cancelFilenameEdit: () => queuePresentation.cancelFilenameEdit(),
-    reloadAppSnapshot
+    getEditingTitleId: () => filenameState.itemId,
+    cancelFilenameEdit: () => filenameEditor.cancel(),
+    flushFilenameEdits: (ids) => filenameEditor.flushFor(ids),
+    reloadAppSnapshot: () => session.reload()
   });
   const settingsWorkflow = new SettingsDiagnosticsWorkflow(settingsState, {
     commands,
+    errors,
     ui: {
       dialogs: { open, save },
-      confirm: (message) => window.confirm(message),
-      clipboard: { writeText: (text) => navigator.clipboard.writeText(text) }
+      confirm: (message) => window.confirm(message)
     },
     queue: {
       getItems: () => queueState.items,
       updateQueueItemSettings: (item, input) => queueActions.updateQueueItemSettings(item, input)
     },
-    startup: { setSubsystem: setStartupSubsystem, reportIssue: reportStartupIssue },
-    getRuntimeStatus: () => runtimeState.status,
-    getQueueItemDisplayTitle
+    startup: { setSubsystem: (name, state) => session.setSubsystem(name, state) }
   });
   const runtimeWorkflow = new RuntimeWorkflowController(runtimeState, {
     ...operationCommands,
+    errors,
     appUpdateRunning: () => appUpdateState.installRunning,
     hasUpdateBlockingWork,
     backendReadiness: () => queueState.backendSnapshot?.runtimeReadiness ?? null,
-    setStartupSubsystem: (state) => setStartupSubsystem('runtime', state),
-    reportStartupIssue
+    setStartupSubsystem: (state) => session.setSubsystem('runtime', state)
   });
   const appUpdateWorkflow = new AppUpdateWorkflowController(appUpdateState, {
     ...operationCommands,
+    errors,
     getVersion,
     runtimeUpdateRunning: () => runtimeState.updateRunning,
     hasUpdateBlockingWork,
-    setAppVersionStartup: (state) => setStartupSubsystem('appVersion', state),
-    setUpdateCheckStartup: (state) => setStartupSubsystem('updateCheck', state),
-    reportStartupIssue,
-    appendStartupIssue: (message) => {
-      startupIssues = [...startupIssues, message];
-    }
+    setAppVersionStartup: (state) => session.setSubsystem('appVersion', state),
+    setUpdateCheckStartup: (state) => session.setSubsystem('updateCheck', state)
   });
   const inspectionWorkflow = new InspectionWorkflow(inspectionState, {
     ...operationCommands,
     getSettings: () => ({
+      ...settingsState,
       canStartDownloads,
       startupState,
-      runtimeCanDownload: runtimeWorkflow.canDownload(),
-      outputDirError: settingsState.outputDirError,
-      globalFormat: settingsState.globalFormat,
-      globalQuality: settingsState.globalQuality,
-      outputDir: settingsState.outputDir
+      runtimeCanDownload: runtimeWorkflow.canDownload()
     }),
     readCookie: () => settingsWorkflow.getCookieConfigSnapshot(),
     readCompat: () => settingsWorkflow.getCompatConfigSnapshot(),
@@ -180,205 +170,58 @@
     }
   });
 
-  // -- Lifecycle --
-  onMount(() => {
-    let stateListening = false;
-    pageLifetime.own(() => appStateController.stop());
-    pageLifetime.own(() => operationWaiters.dispose(rendererUnloadError));
-    pageLifetime.own(() => queuePresentation.dispose());
-    const queueResizeObserver =
-      typeof ResizeObserver === 'undefined'
-        ? undefined
-        : new ResizeObserver(
-            pageLifetime.guard(([entry]) => {
-              if (entry) queueState.viewport.height = entry.contentRect.height;
-            })
-          );
-    if (queueResizeObserver) pageLifetime.own(() => queueResizeObserver.disconnect());
-    if (queueViewport) {
-      queueState.viewport.height = queueViewport.clientHeight || queueState.viewport.height;
-      queueResizeObserver?.observe(queueViewport);
-    }
+  const filter = $derived(viewState.filter);
+  const searchState = viewState.search;
+  const appearanceState = $state(createAppearanceState());
+  const appearance = new AppearanceController(appearanceState, () => session.isActive);
+  const visibleItems = $derived(queueView.visibleItems());
+  const filterCounts = $derived(queueView.counts());
+  const unreadErrors = $derived(errorInbox.entries.filter((entry) => !entry.read).length);
+  const errorSources = $derived(
+    collectInterfaceErrors({
+      inspectionState,
+      queueActionState,
+      runtimeState,
+      themeError: appearanceState.error,
+      queueState
+    })
+  );
+  const hasCurrentError = $derived(
+    errorSources.some((source) => Boolean(source.detail)) ||
+      Object.keys(errorInbox.reportedActive).length > 0
+  );
+  $effect(() => {
+    const sources = errorSources;
+    const opened = settingsOpen;
+    untrack(() => syncErrors(errorInbox, sources, opened));
+  });
+  function openSettings(): void {
+    settingsOpen = true;
+  }
+  const selectedCount = $derived(queueView.selectedCount());
 
-    const setup = async () => {
-      const listenerErrors: string[] = [];
-
-      try {
-        await appStateController.start(
-          (handler) =>
-            listen(
-              'app-state-changed',
-              pageLifetime.guard((event) => handler(event.payload))
-            ),
-          (handler) =>
-            listen(
-              'app-state-resync-required',
-              pageLifetime.guard((event) => handler(event.payload))
-            )
-        );
-        stateListening = true;
-      } catch (error) {
-        if (!pageLifetime.isActive) return;
-        listenerErrors.push(`App state: ${normalizeAppError(error)}`);
-      }
-      if (!pageLifetime.isActive) return;
-
-      try {
-        const unlisten = await listen(
-          'download-progress',
-          pageLifetime.guard((event) => {
-            queuePresentation.applyProgress(event.payload);
-          })
-        );
-        pageLifetime.own(unlisten);
-      } catch (error) {
-        if (!pageLifetime.isActive) return;
-        listenerErrors.push(`Download progress: ${normalizeAppError(error)}`);
-      }
-      if (!pageLifetime.isActive) return;
-
-      try {
-        const unlisten = await listen(
-          'update-install-progress',
-          pageLifetime.guard((event) => {
-            appUpdateWorkflow.applyProgress(event.payload);
-          })
-        );
-        pageLifetime.own(unlisten);
-      } catch (error) {
-        if (!pageLifetime.isActive) return;
-        listenerErrors.push(`App update progress: ${normalizeAppError(error)}`);
-      }
-      if (!pageLifetime.isActive) return;
-
-      try {
-        const unlisten = await listen(
-          'downloader-runtime-update-progress',
-          pageLifetime.guard((event) => {
-            runtimeWorkflow.applyProgress(event.payload);
-          })
-        );
-        pageLifetime.own(unlisten);
-      } catch (error) {
-        if (!pageLifetime.isActive) return;
-        listenerErrors.push(`Runtime update progress: ${normalizeAppError(error)}`);
-      }
-      if (!pageLifetime.isActive) return;
-
-      if (!stateListening || backendStateError) {
-        startupIssues = [...startupIssues, ...listenerErrors];
-        setStartupSubsystem('listeners', 'error');
-      } else if (listenerErrors.length > 0) {
-        startupIssues = [...startupIssues, ...listenerErrors];
-        setStartupSubsystem('listeners', 'degraded');
-      } else {
-        setStartupSubsystem('listeners', 'ready');
-      }
-
-      await Promise.all([
-        initializeAppVersion(),
-        initializeRuntime(),
-        initializeOutputDirectory(),
-        initializeUpdateCheck()
-      ]);
-    };
-
-    void setup();
-
-    return () => {
-      pageLifetime.dispose();
-    };
+  const resetQueueScroll = () => queueView.resetScroll();
+  const changeFilter = (next: typeof viewState.filter) => queueView.changeFilter(next);
+  const selectVisible = () => queueView.selectVisible();
+  const toggleSearch = () => queueView.toggleSearch(() => tick().then(() => searchInput?.focus()));
+  const changeTheme = (next: ThemePreference) => appearance.change(next);
+  $effect(() => {
+    applyTheme(appearanceState.theme, appearanceState.systemDark);
   });
 
-  // -- Helpers --
-  function setStartupSubsystem(subsystem: StartupSubsystem, state: StartupSubsystemState): void {
-    startupSubsystems = { ...startupSubsystems, [subsystem]: state };
-  }
-
-  function reportStartupIssue(subsystem: string, error: unknown): void {
-    startupIssues = [...startupIssues, `${subsystem}: ${normalizeAppError(error)}`];
-  }
-
-  function handleBackendStateError(error: unknown): void {
-    backendStateError = normalizeAppError(error);
-    reportStartupIssue('App state event', error);
-    setStartupSubsystem('listeners', 'error');
-    operationWaiters.rejectAll(
-      new Error(`The app state stream failed: ${normalizeAppError(error)}`)
-    );
-  }
-
-  async function reloadAppSnapshot(): Promise<void> {
-    try {
-      await appStateController.reload();
-    } catch (error) {
-      if (!pageLifetime.isActive) return;
-      handleBackendStateError(error);
-      throw error;
-    }
-  }
-
-  function applyBackendSnapshot(snapshot: AppSnapshot, delta?: StateDelta): void {
-    queuePresentation.applySnapshot(snapshot, delta);
-    backendStateError = null;
-    persistenceHealthError = snapshot.persistenceHealth.degraded
-      ? `Queue history is not being saved. ${normalizeAppError(snapshot.persistenceHealth.error ?? 'Persistence is degraded.')}`
-      : null;
-    operationWaiters.settle(snapshot.operations);
-
-    runtimeState.updateRunning = snapshot.operations.some(
-      (operation) => operation.kind === 'runtime_update' && !isTerminalOperation(operation)
-    );
-    appUpdateState.installRunning = snapshot.operations.some(
-      (operation) => operation.kind === 'app_update' && !isTerminalOperation(operation)
-    );
-  }
-
-  function waitForOperation(
-    operationId: string,
-    timeoutMs = 35 * 60 * 1000
-  ): Promise<OperationSnapshot> {
-    return operationWaiters.waitWithRefresh(
-      operationId,
-      () => queueState.backendSnapshot?.operations ?? [],
-      timeoutMs,
-      reloadAppSnapshot
-    );
-  }
+  onMount(() => {
+    session.own(appearance.start());
+    if (queueViewport) session.own(queueView.attach(queueViewport));
+    void session.start({
+      runtime: runtimeWorkflow,
+      appUpdate: appUpdateWorkflow,
+      initializeOutputDirectory: () => settingsWorkflow.initializeOutputDirectory()
+    });
+    return () => session.dispose();
+  });
 
   function hasUpdateBlockingWork(): boolean {
     return queueState.items.some((item) => isUpdateBlockingStatus(item.status));
-  }
-
-  function handleFilenameEditorKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      void commitFilenameEdit();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      cancelFilenameEdit();
-    }
-  }
-
-  function handleQueueSelectionChange(event: Event): void {
-    const checked = (event.currentTarget as HTMLInputElement).checked;
-    queuePresentation.setAllSelected(checked);
-  }
-
-  function handleQueueScroll(event: Event): void {
-    queueState.viewport.scrollTop = (event.currentTarget as HTMLElement).scrollTop;
-  }
-
-  async function handleItemQualityChange(item: QueueItem, event: Event): Promise<void> {
-    const quality = (event.currentTarget as HTMLSelectElement).value;
-    await updateQueueItemSettings(item, { quality });
-  }
-
-  async function handleItemFormatChange(item: QueueItem, event: Event): Promise<void> {
-    const requested = (event.currentTarget as HTMLSelectElement).value as OutputFormat;
-    await updateQueueItemSettings(item, {
-      format: resolveAvailableFormat(requested, item.hasAudio, 'mp4')
-    });
   }
 
   function handleUrlSubmit(event: SubmitEvent): void {
@@ -386,7 +229,7 @@
     void addToQueue();
   }
   let queueSummary = $derived(queuePresentation.summary());
-  let startupState = $derived(deriveStartupState(startupSubsystems));
+  let startupState = $derived(deriveStartupState(sessionState.subsystems));
   let maintenanceActive = $derived(
     queueState.backendSnapshot?.maintenanceActive ??
       (runtimeState.updateRunning || appUpdateState.installRunning)
@@ -402,49 +245,30 @@
       maintenanceActive
     })
   );
-  let queueSelectionState = $derived(queuePresentation.selectionState());
-  let queueWindow = $derived(queuePresentation.window());
+  let queueSelectionState = $derived(queueView.selection());
+  let queueWindow = $derived(queueView.window());
   let playlistSelectionState = $derived(
     deriveSelectionState(inspectionState.playlistModal?.entries ?? [])
   );
 
   $effect(() => {
-    // Remeasure the rendered extent after the queue or viewport changes.
-    void queueState.items.length;
-    void queueState.viewport.height;
-    const maxScrollTop = queueViewport
-      ? Math.max(0, queueViewport.scrollHeight - queueViewport.clientHeight)
-      : 0;
-    if (queueState.viewport.scrollTop > maxScrollTop) {
-      queueState.viewport.scrollTop = maxScrollTop;
-      if (queueViewport) queueViewport.scrollTop = maxScrollTop;
-    }
+    void visibleItems.length;
+    void viewState.viewport.height;
+    queueView.clampScroll();
   });
 
-  $effect(() => {
-    if (queueSelectAll) {
-      queueSelectAll.indeterminate = queueSelectionState === 'some';
-    }
-  });
-
-  const initializeAppVersion = () => appUpdateWorkflow.initializeAppVersion();
-  const initializeRuntime = () => runtimeWorkflow.initialize();
-  const initializeOutputDirectory = () => settingsWorkflow.initializeOutputDirectory();
-  const initializeUpdateCheck = () => appUpdateWorkflow.initializeUpdateCheck();
-  const runtimeBadgeClass = () => runtimeWorkflow.badgeClass();
-  const runtimeBadgeText = () => runtimeWorkflow.badgeText();
-  const runtimeBadgeTitle = () => runtimeWorkflow.badgeTitle();
-  const refreshDownloaderRuntime = () => runtimeWorkflow.refresh();
-  const updateDownloaderRuntime = () => runtimeWorkflow.update();
-  const browseCookieFile = () => settingsWorkflow.browseCookieFile();
-  const browseCompatConfigFile = () => settingsWorkflow.browseCompatConfigFile();
-  const browseOutputDir = () => settingsWorkflow.browseOutputDir();
-  const exportDiagnostics = () => settingsWorkflow.exportDiagnostics();
-  const clearDiagnostics = () => settingsWorkflow.clearDiagnostics();
-  const openUpdateModal = () => appUpdateWorkflow.openModal();
-  const closeUpdateModal = () => appUpdateWorkflow.closeModal();
-  const handleManualUpdateCheck = () =>
-    appUpdateWorkflow.check({ openModal: true, showErrors: true });
+  const openUpdateModal = () => {
+    settingsOpen = false;
+    appUpdateWorkflow.openModal();
+  };
+  const closeUpdateModal = () => {
+    appUpdateWorkflow.closeModal();
+    settingsOpen = true;
+  };
+  const handleManualUpdateCheck = () => {
+    settingsOpen = false;
+    return appUpdateWorkflow.check({ openModal: true, showErrors: true });
+  };
   const installAppUpdate = () => appUpdateWorkflow.install();
   const addToQueue = () => inspectionWorkflow.addToQueue();
   const cancelInspection = () => inspectionWorkflow.cancelInspection();
@@ -459,132 +283,169 @@
   const clearCompleted = () => queueActions.clearCompleted();
   const applyGlobalQuality = () => queueActions.applyGlobalQuality();
   const applyGlobalFormat = () => queueActions.applyGlobalFormat();
-  const cancelFilenameEdit = () => queuePresentation.cancelFilenameEdit();
-  const downloadItem = (item: QueueItem) => queueActions.downloadItem(item);
-  const cancelItem = (item: QueueItem) => queueActions.cancelItem(item);
-  const retryItem = (item: QueueItem) => queueActions.retryItem(item);
-  const updateQueueItemSettings = (
-    item: QueueItem,
-    input: Parameters<QueueActionsController['updateQueueItemSettings']>[1]
-  ) => queueActions.updateQueueItemSettings(item, input);
-  const beginFilenameEdit = (item: QueueItem) => queuePresentation.beginFilenameEdit(item);
-  const commitFilenameEdit = (id?: string | null) => queuePresentation.commitFilenameEdit(id);
-  const toggleDiagnostics = (id: string) => queuePresentation.toggleDiagnostics(id);
-  const copyDiagnostics = (item: QueueItem) => settingsWorkflow.copyDiagnostics(item);
+  const rowActions: QueueRowActions = {
+    select: (id, selected) => queueView.setSelected(id, selected),
+    details: () => openSettings(),
+    quality: (item, quality) => queueActions.updateQueueItemSettings(item, { quality }),
+    format: (item, value) =>
+      queueActions.updateQueueItemSettings(item, {
+        format: resolveAvailableFormat(value as OutputFormat, item.hasAudio, 'mp4')
+      }),
+    download: (item) => queueActions.downloadItem(item),
+    cancel: (item) => queueActions.cancelItem(item),
+    retry: (item) => queueActions.retryItem(item),
+    reveal: (item) => queueActions.revealDownload(item)
+  };
+  const editorActions = {
+    state: filenameState,
+    begin: (item: QueueItem) => filenameEditor.begin(item),
+    commit: (id: string) => filenameEditor.commit(id),
+    cancel: () => filenameEditor.cancel(),
+    setDraft: (draft: string) => filenameEditor.setDraft(draft)
+  };
+  const browseOutputDir = () => settingsWorkflow.browseOutputDir();
   const changePlaylistPage = (delta: number) => inspectionWorkflow.changePage(delta);
 </script>
 
-<main>
-  <!-- Header -->
-  <HeaderRuntime
-    {appUpdateState}
-    {runtimeState}
-    {maintenanceActive}
-    backendDraining={queueState.backendSnapshot?.draining ?? false}
-    {runtimeBadgeClass}
-    {runtimeBadgeTitle}
-    {runtimeBadgeText}
-    {hasUpdateBlockingWork}
-    {updateDownloaderRuntime}
-    {openUpdateModal}
-    {refreshDownloaderRuntime}
-    {handleManualUpdateCheck}
+<main class="app-shell">
+  <Sidebar
+    {filter}
+    counts={filterCounts}
+    onFilter={changeFilter}
+    onSettings={openSettings}
+    {unreadErrors}
+    onHelp={() => (helpOpen = true)}
   />
-
-  {#if startupState === 'error' || startupState === 'degraded'}
-    <section
-      class="startup-status {startupState}"
-      role={startupState === 'error' ? 'alert' : 'status'}
-      aria-live={startupState === 'error' ? 'assertive' : 'polite'}
-    >
-      <strong>
-        {startupState === 'error'
-          ? 'Startup requires attention.'
-          : 'Started with limited functionality.'}
-      </strong>
-      {#if startupIssues.length > 0}
-        <span>{startupIssues.join(' ')}</span>
+  <section class="workspace" aria-label="Downloads workspace">
+    <div class="workspace-content">
+      <header class="workspace-header">
+        <div>
+          <h1>{filterLabels[filter]}</h1>
+          <p>
+            {filterCounts.active} in progress <span aria-hidden="true">·</span>
+            {filterCounts.queued} queued
+          </p>
+        </div>
+        <div class="header-actions">
+          <button
+            class="icon-button"
+            aria-label={searchState.open ? 'Close search' : 'Search downloads'}
+            aria-expanded={searchState.open}
+            onclick={toggleSearch}
+            ><Icon name={searchState.open ? 'close' : 'search'} size={22} /></button
+          ><button
+            class="icon-button"
+            aria-label="Open settings"
+            title="Settings"
+            onclick={openSettings}><Icon name="more" size={24} /></button
+          >
+        </div>
+      </header>
+      {#if searchState.open}<div class="search-bar">
+          <Icon name="search" size={18} /><input
+            bind:this={searchInput}
+            bind:value={searchState.query}
+            oninput={resetQueueScroll}
+            aria-label="Search downloads"
+            placeholder="Search titles, channels, or links"
+            onkeydown={(event) => {
+              if (event.key === 'Escape') void toggleSearch();
+            }}
+          />{#if searchState.query}<button
+              class="text-button"
+              onclick={() => {
+                searchState.query = '';
+                resetQueueScroll();
+              }}>Clear</button
+            >{/if}
+        </div>{/if}
+      {#if hasCurrentError}
+        <div class="inline-alert error-notice" role="alert">
+          <Icon name="alert" size={18} /><span
+            >An error occurred. Check Settings for more information.</span
+          ><button class="text-button" onclick={openSettings}>Open Settings</button>
+        </div>
       {/if}
-    </section>
-  {/if}
-
-  <!-- URL Input -->
-  <UrlBar
-    bind:urlInput={inspectionState.urlInput}
-    playlistLoading={inspectionState.playlistLoading}
-    urlError={inspectionState.urlError}
-    {maintenanceActive}
-    {canStartDownloads}
-    {runtimeState}
-    runtimeUpdatePercent={() => runtimeWorkflow.getUpdatePercent()}
-    {handleUrlSubmit}
-    {cancelInspection}
-  />
-
-  <!-- Settings Row -->
-  <SettingsRow
-    bind:globalQuality={settingsState.globalQuality}
-    bind:globalFormat={settingsState.globalFormat}
-    bind:outputDir={settingsState.outputDir}
-    bind:useCookies={settingsState.useCookies}
-    bind:cookieMode={settingsState.cookieMode}
-    bind:cookieBrowser={settingsState.cookieBrowser}
-    bind:compatConfigPath={settingsState.compatConfigPath}
-    outputDirError={settingsState.outputDirError}
-    cookieFilePath={settingsState.cookieFilePath}
-    {applyGlobalQuality}
-    {applyGlobalFormat}
-    {browseOutputDir}
-    {browseCookieFile}
-    {browseCompatConfigFile}
-  />
-
-  <!-- Action Buttons -->
-  <QueueToolbar
-    summary={queueSummary}
-    {canStartDownloads}
-    cancelAllError={queueActionState.cancelAllError}
-    queueActionError={queueActionState.queueActionError}
-    {persistenceHealthError}
-    diagnosticsError={settingsState.diagnosticsError}
-    diagnosticsMessage={settingsState.diagnosticsMessage}
-    {downloadAll}
-    {downloadSelected}
-    {removeSelected}
-    {clearCompleted}
-    {cancelAll}
-    {exportDiagnostics}
-    {clearDiagnostics}
-  />
-
-  <!-- Queue Table -->
-  <QueueTable
-    state={queueState}
-    window={queueWindow}
-    selectionState={queueSelectionState}
-    {canStartDownloads}
-    bind:viewport={queueViewport}
-    bind:selectAll={queueSelectAll}
-    bind:titleEditorInput
-    onScroll={handleQueueScroll}
-    onSelectionChange={handleQueueSelectionChange}
-    setSelected={(itemId, selected) => queuePresentation.setSelected(itemId, selected)}
-    setDraft={(draft) => (queueState.editing.draft = draft)}
-    {beginFilenameEdit}
-    {commitFilenameEdit}
-    {handleFilenameEditorKeydown}
-    {toggleDiagnostics}
-    changeQuality={handleItemQualityChange}
-    changeFormat={handleItemFormatChange}
-    {downloadItem}
-    {cancelItem}
-    {retryItem}
-    {copyDiagnostics}
-  />
-
-  <!-- Status Bar -->
-  <StatusFooter counts={queueSummary.counts} />
+      <UrlBar
+        bind:urlInput={inspectionState.urlInput}
+        playlistLoading={inspectionState.playlistLoading}
+        urlError={inspectionState.urlError}
+        {maintenanceActive}
+        {canStartDownloads}
+        {runtimeState}
+        {handleUrlSubmit}
+        {cancelInspection}
+      />
+      <DownloadDefaults
+        state={settingsState}
+        onQuality={applyGlobalQuality}
+        onFormat={applyGlobalFormat}
+        {browseOutputDir}
+      />
+      <QueueToolbar
+        summary={queueSummary}
+        {canStartDownloads}
+        {downloadAll}
+        {downloadSelected}
+        {removeSelected}
+        {clearCompleted}
+        {cancelAll}
+        selectAll={selectVisible}
+        selectionState={queueSelectionState}
+        {selectedCount}
+      />
+      <QueueTable
+        window={queueWindow}
+        {canStartDownloads}
+        bind:viewport={queueViewport}
+        onScroll={(event) => queueView.scroll(event.currentTarget.scrollTop)}
+        actions={rowActions}
+        editor={editorActions}
+        {visibleItems}
+        filtered={filter !== 'all' || Boolean(searchState.query.trim())}
+      />
+    </div>
+    <StatusFooter
+      total={queueState.items.length}
+      outputDir={settingsState.outputDir}
+      {browseOutputDir}
+    />
+  </section>
 </main>
+
+{#if settingsOpen}
+  <SettingsDialog
+    errors={errorInbox.entries}
+    theme={appearanceState.theme}
+    saving={appearanceState.saving}
+    error={appearanceState.error}
+    onTheme={changeTheme}
+    onClose={() => (settingsOpen = false)}
+  >
+    {#snippet advanced()}<DownloadAccessSettings
+        state={settingsState}
+        browseCookies={() => settingsWorkflow.browseCookieFile()}
+        browseConfig={() => settingsWorkflow.browseCompatConfigFile()}
+      />{/snippet}
+    {#snippet runtime()}
+      <RuntimeSettings
+        {appUpdateState}
+        {runtimeState}
+        workflow={runtimeWorkflow}
+        {maintenanceActive}
+        backendDraining={queueState.backendSnapshot?.draining ?? false}
+        {hasUpdateBlockingWork}
+        {openUpdateModal}
+        {handleManualUpdateCheck}
+      />
+    {/snippet}
+    {#snippet diagnostics()}<DiagnosticsSettings
+        state={settingsState}
+        workflow={settingsWorkflow}
+      />{/snippet}
+  </SettingsDialog>
+{/if}
+{#if helpOpen}<HelpDialog onClose={() => (helpOpen = false)} />{/if}
 
 <!-- Playlist Picker Modal -->
 {#if inspectionState.playlistModal}

@@ -109,7 +109,7 @@ function commandResult(command: string): unknown {
 async function openPlaylist(completed: OperationSnapshot = completedInspection) {
   const view = render(Page);
   const input = view.getByLabelText('Video or playlist URL');
-  const add = view.getByRole('button', { name: 'Add' });
+  const add = view.getByRole('button', { name: 'Add link' });
   await waitFor(() => expect((add as HTMLButtonElement).disabled).toBe(false));
   input.focus();
   await fireEvent.input(input, { target: { value: 'https://example.test/large-playlist' } });

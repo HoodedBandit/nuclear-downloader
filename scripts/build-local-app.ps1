@@ -1,9 +1,11 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+$')]
-    [string] $Version = '0.7.1',
+    [string] $Version = '0.7.9',
 
     [string] $BuildRoot,
+
+    [switch] $Preview,
 
     [switch] $PreflightOnly
 )
@@ -167,6 +169,13 @@ foreach ($sidecar in $sidecarLock.sidecars) {
     }
 }
 
+$previewConfigPath = Join-Path $tauriRoot 'tauri.preview.conf.json'
+if ($Preview) {
+    $previewConfig = Get-Content -Raw -LiteralPath $previewConfigPath | ConvertFrom-Json
+    if ($previewConfig.identifier -cne 'com.mrw.nuclear.preview' -or $previewConfig.productName -cne 'Nuclear Downloader Preview') {
+        throw 'Preview configuration must use the isolated preview identity.'
+    }
+}
 $sourceBefore = Get-SourceIdentity $repositoryRoot
 if ($PreflightOnly) {
     [pscustomobject]@{ version = $Version; buildRoot = $buildRootFull; source = $sourceBefore; toolchains = $toolchains; updateKeys = $updateKeysBefore }
@@ -189,14 +198,16 @@ Assert-NuclearNoReparseComponents -Candidate $cargoTarget -Root $targetRoot | Ou
 [IO.File]::WriteAllText((Join-Path $ownedRoot '.nuclear-local-build-owned'), $runId, $script:Utf8NoBom)
 
 $startedAt = [DateTimeOffset]::UtcNow
-$command = @($nodeExecutable,$tauriCli,'build','--no-sign','--bundles','nsis','--target',$script:TargetTriple)
+$buildArguments = @('build','--no-sign','--bundles','nsis','--target',$script:TargetTriple)
+if ($Preview) { $buildArguments += @('--features','local-preview','--config',$previewConfigPath) }
+$command = @($nodeExecutable,$tauriCli) + $buildArguments
 $previousTarget = $env:CARGO_TARGET_DIR
 $previousPath = $env:PATH
 try {
     $env:CARGO_TARGET_DIR = $cargoTarget
     $env:PATH = "$(Split-Path -Parent $npmExecutable);$(Split-Path -Parent $nodeExecutable);$previousPath"
     Push-Location $appRoot
-    try { & $nodeExecutable $tauriCli build --no-sign --bundles nsis --target $script:TargetTriple }
+    try { & $nodeExecutable $tauriCli @buildArguments }
     finally { Pop-Location }
     if ($LASTEXITCODE -ne 0) { throw 'The Tauri packaged build failed.' }
 } finally {
@@ -219,8 +230,9 @@ foreach ($name in @('yt-dlp.exe','ffmpeg.exe','ffprobe.exe','deno.exe')) {
     }
     $artifacts += Get-ArtifactRecord $builtSidecar $ownedRoot 'sidecar'
 }
+$installerProductName = if ($Preview) { 'Nuclear Downloader Preview' } else { 'Nuclear Downloader' }
 $installerCandidates = @(Get-ChildItem -LiteralPath (Join-Path $releaseRoot 'bundle\nsis') -File |
-    Where-Object { $_.Name -ceq "Nuclear Downloader_${Version}_x64-setup.exe" })
+    Where-Object { $_.Name -ceq "${installerProductName}_${Version}_x64-setup.exe" })
 if ($installerCandidates.Count -ne 1) { throw "Expected one exact NSIS installer; found $($installerCandidates.Count)." }
 $artifacts += Get-ArtifactRecord $installerCandidates[0].FullName $ownedRoot 'nsis-installer-container'
 
@@ -240,7 +252,7 @@ if (($updateKeysAfter | ConvertTo-Json -Compress -Depth 5) -cne ($updateKeysBefo
 $receipt = [ordered]@{
     schemaVersion = 'nuclear-local-packaged-build/v1'
     runId = $runId
-    purpose = 'local-packaged-custom-protocol-gui'
+    purpose = if ($Preview) { 'isolated-ui-preview' } else { 'local-packaged-custom-protocol-gui' }
     version = $Version
     target = $script:TargetTriple
     startedAtUtc = $startedAt.ToString('o')

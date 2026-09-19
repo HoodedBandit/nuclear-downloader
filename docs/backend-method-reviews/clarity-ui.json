@@ -1,0 +1,878 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "src/appearance.rs",
+    "src/diagnostics.rs",
+    "src/journal.rs",
+    "src/lib.rs",
+    "src/public_boundary_tests.rs",
+    "src/runtime/manifest.rs",
+    "src/updater/artifact/path.rs"
+  ],
+  "reviewer": "Codex UI implementation review",
+  "entries": [
+    {
+      "id": "src/appearance.rs::appearance::preference_path[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 18,
+      "endLine": 20,
+      "symbol": "preference_path",
+      "qualifiedName": "appearance::preference_path",
+      "signature": "fn preference_path() -> Result<PathBuf, AppError>",
+      "sourceDigest": "073daae170fa8a6a09e56c1e82027349de04e7d51a05f9d3bcbf01244b4bcc0a",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "fn preference_path() -> Result<PathBuf, AppError>"
+      ],
+      "sideEffects": [
+        "No filesystem mutation; returns the profile-owned appearance path."
+      ],
+      "errors": [
+        "JournalStore::default_path errors propagate."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Preview and regular profiles resolve different parent folders."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:18-20; SHA-256 073daae170fa8a6a09e56c1e82027349de04e7d51a05f9d3bcbf01244b4bcc0a.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Resolve appearance beside the active queue journal.",
+      "output": "Result<PathBuf, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.879Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::read_theme[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 22,
+      "endLine": 24,
+      "symbol": "read_theme",
+      "qualifiedName": "appearance::read_theme",
+      "signature": "pub fn read_theme() -> Result<UiTheme, AppError>",
+      "sourceDigest": "51544eeebce78cf9dd7259aed00897209aab04004c713ec2ba0a9853a03566dd",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "pub fn read_theme() -> Result<UiTheme, AppError>"
+      ],
+      "sideEffects": [
+        "Reads the preference through the bounded reader."
+      ],
+      "errors": [
+        "Read and format errors propagate as AppError."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "A missing preference chooses Light."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:22-24; SHA-256 51544eeebce78cf9dd7259aed00897209aab04004c713ec2ba0a9853a03566dd.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Load the saved appearance enum from the active profile.",
+      "output": "Result<UiTheme, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::read_theme_at[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 26,
+      "endLine": 52,
+      "symbol": "read_theme_at",
+      "qualifiedName": "appearance::read_theme_at",
+      "signature": "fn read_theme_at(path: &Path) -> Result<UiTheme, AppError>",
+      "sourceDigest": "d7c44fcd77e2695d60ed71720a4eb035a525f413fd673dc5bd221830bdc33bae",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "fn read_theme_at(path: &Path) -> Result<UiTheme, AppError>"
+      ],
+      "sideEffects": [
+        "Reads a file without changing its contents."
+      ],
+      "errors": [
+        "Missing means Light; unreadable, oversized, or malformed content reports a safe error."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "The JSON value must be light, dark, or system; malformed contents remain intact."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:26-52; SHA-256 d7c44fcd77e2695d60ed71720a4eb035a525f413fd673dc5bd221830bdc33bae.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Read at most 1025 bytes and validate the saved appearance enum.",
+      "output": "Result<UiTheme, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::write_theme[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 54,
+      "endLine": 56,
+      "symbol": "write_theme",
+      "qualifiedName": "appearance::write_theme",
+      "signature": "pub fn write_theme(theme: UiTheme) -> Result<(), AppError>",
+      "sourceDigest": "9bbc70acbb1650c979b0144c25a55c907d2c0084e80e6e6f2842909cce84bf28",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "pub fn write_theme(theme: UiTheme) -> Result<(), AppError>"
+      ],
+      "sideEffects": [
+        "Delegates to atomic file replacement."
+      ],
+      "errors": [
+        "Directory and write errors propagate as AppError."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Renderer input is deserialized to UiTheme before any write."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:54-56; SHA-256 9bbc70acbb1650c979b0144c25a55c907d2c0084e80e6e6f2842909cce84bf28.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Persist one validated appearance preference in the active profile.",
+      "output": "Result<(), AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::write_theme_at[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 58,
+      "endLine": 82,
+      "symbol": "write_theme_at",
+      "qualifiedName": "appearance::write_theme_at",
+      "signature": "fn write_theme_at(path: &Path, theme: UiTheme) -> Result<(), AppError>",
+      "sourceDigest": "03b83d2425c7eb5a78216756c549dfaf5add5fc26c986780299e5e61d6458549",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "fn write_theme_at(path: &Path, theme: UiTheme) -> Result<(), AppError>"
+      ],
+      "sideEffects": [
+        "Creates the profile directory and a UUID temporary file; replaces appearance.json."
+      ],
+      "errors": [
+        "Failed writes or rename remove only this operation temporary file and report a safe error."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "The previous destination survives a failed save; successful replacement contains a complete enum."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:58-82; SHA-256 03b83d2425c7eb5a78216756c549dfaf5add5fc26c986780299e5e61d6458549.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Write and sync an owned temporary file, then replace the preference.",
+      "output": "Result<(), AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::published_file[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 84,
+      "endLine": 118,
+      "symbol": "published_file",
+      "qualifiedName": "appearance::published_file",
+      "signature": "pub fn published_file(snapshot: &AppSnapshot, item_id: &str) -> Result<PathBuf, AppError>",
+      "sourceDigest": "f05a9d5a342c5e6112c1abca4a2296c18593a67ef080af5c6aee2af7b2992b69",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "pub fn published_file(snapshot: &AppSnapshot, item_id: &str) -> Result<PathBuf, AppError>"
+      ],
+      "sideEffects": [
+        "Read-only snapshot lookup and file metadata query; returns an absolute PathBuf."
+      ],
+      "errors": [
+        "Missing item, incomplete operation, absent output, and moved files are explicit errors."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Queue id, latest operation id, operation owner, completed state, and published output must agree."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:84-118; SHA-256 f05a9d5a342c5e6112c1abca4a2296c18593a67ef080af5c6aee2af7b2992b69.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Resolve a completed output from authoritative queue state.",
+      "output": "Result<PathBuf, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::reveal_file[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/appearance.rs",
+      "line": 120,
+      "endLine": 139,
+      "symbol": "reveal_file",
+      "qualifiedName": "appearance::reveal_file",
+      "signature": "pub fn reveal_file(path: &Path) -> Result<(), AppError>",
+      "sourceDigest": "6fc953df01a359aa604eb62fff9605159f2bf38e6aba810e31c87e87d0c42a78",
+      "cfg": [],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "pub fn reveal_file(path: &Path) -> Result<(), AppError>"
+      ],
+      "sideEffects": [
+        "Spawns Explorer with one select argument; no shell script interpretation."
+      ],
+      "errors": [
+        "Spawn failure and unsupported platforms return safe errors."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "The only production caller resolves the destination through published_file; arbitrary renderer paths are not accepted."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:120-139; SHA-256 6fc953df01a359aa604eb62fff9605159f2bf38e6aba810e31c87e87d0c42a78.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Ask Windows Explorer to select the authoritative output file.",
+      "output": "Result<(), AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::tests::appearance_round_trips_across_restarts_and_replaces_existing_value[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/appearance.rs",
+      "line": 145,
+      "endLine": 155,
+      "symbol": "appearance_round_trips_across_restarts_and_replaces_existing_value",
+      "qualifiedName": "appearance::tests::appearance_round_trips_across_restarts_and_replaces_existing_value",
+      "signature": "fn appearance_round_trips_across_restarts_and_replaces_existing_value()",
+      "sourceDigest": "a480626d9015d9cd026ad2c0b8f5b14c11786afdd7e1fef511d9d0ab657f5cb3",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "fn appearance_round_trips_across_restarts_and_replaces_existing_value()"
+      ],
+      "sideEffects": [
+        "Test-only assertions; appearance tests create and remove a UUID-owned temporary directory."
+      ],
+      "errors": [
+        "Assertions fail on incorrect state, data mutation, or unexpected registry changes."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "No installed profile or user download files are used by these tests."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:145-155; SHA-256 a480626d9015d9cd026ad2c0b8f5b14c11786afdd7e1fef511d9d0ab657f5cb3.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Verify Light default and repeated Dark/System/Light replacement.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/appearance.rs::appearance::tests::malformed_or_oversized_preferences_are_reported_without_overwriting[cfg=test]",
+      "kind": "free_function",
+      "classification": "test",
+      "file": "src/appearance.rs",
+      "line": 157,
+      "endLine": 168,
+      "symbol": "malformed_or_oversized_preferences_are_reported_without_overwriting",
+      "qualifiedName": "appearance::tests::malformed_or_oversized_preferences_are_reported_without_overwriting",
+      "signature": "fn malformed_or_oversized_preferences_are_reported_without_overwriting()",
+      "sourceDigest": "7858daa0eabf6ea39d455986ff2acbb47a185b27ddb62205e8ce3cc70eb92b33",
+      "cfg": [
+        "test"
+      ],
+      "callers": [
+        "Appearance IPC boundary or appearance unit tests."
+      ],
+      "inputs": [
+        "fn malformed_or_oversized_preferences_are_reported_without_overwriting()"
+      ],
+      "sideEffects": [
+        "Test-only assertions; appearance tests create and remove a UUID-owned temporary directory."
+      ],
+      "errors": [
+        "Assertions fail on incorrect state, data mutation, or unexpected registry changes."
+      ],
+      "ownership": [
+        "Borrowed input path/snapshot; opened handles and temporary buffers are scoped to the function."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "No installed profile or user download files are used by these tests."
+      ],
+      "tests": [
+        "appearance_round_trips_across_restarts_and_replaces_existing_value",
+        "malformed_or_oversized_preferences_are_reported_without_overwriting"
+      ],
+      "evidence": [
+        "Source read: src/appearance.rs:157-168; SHA-256 7858daa0eabf6ea39d455986ff2acbb47a185b27ddb62205e8ce3cc70eb92b33.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Verify malformed and oversized preferences are reported and preserved.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "test_only",
+      "destination": "src/appearance.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::set_window_appearance[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 218,
+      "endLine": 225,
+      "symbol": "set_window_appearance",
+      "qualifiedName": "set_window_appearance",
+      "signature": "fn set_window_appearance(window: &tauri::Window, theme: appearance::UiTheme)",
+      "sourceDigest": "4f4fdf17fb566b6bc72b03673b08241f886fcc26acfd2e0e15a98296bddc7ebb",
+      "cfg": [],
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "fn set_window_appearance(window: &tauri::Window, theme: appearance::UiTheme)"
+      ],
+      "sideEffects": [
+        "Changes native window chrome; system uses None."
+      ],
+      "errors": [
+        "Window theme failure is nonfatal; the renderer color preference remains authoritative."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Only the three enum values map to native theme options."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:218-225; SHA-256 4f4fdf17fb566b6bc72b03673b08241f886fcc26acfd2e0e15a98296bddc7ebb.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Set native window theme to match the selected renderer appearance.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::get_ui_theme[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 228,
+      "endLine": 232,
+      "symbol": "get_ui_theme",
+      "qualifiedName": "get_ui_theme",
+      "signature": "fn get_ui_theme(window: tauri::Window) -> Result<appearance::UiTheme, AppError>",
+      "sourceDigest": "51a3f9a224190da33b00be8e91e70cf281f69a4719e9e4e203363aa552da43a0",
+      "cfg": [],
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "fn get_ui_theme(window: tauri::Window) -> Result<appearance::UiTheme, AppError>"
+      ],
+      "sideEffects": [
+        "Reads the active profile and applies native theme."
+      ],
+      "errors": [
+        "Preference read failure propagates to Settings."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "No caller supplied path is accepted."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:228-232; SHA-256 51a3f9a224190da33b00be8e91e70cf281f69a4719e9e4e203363aa552da43a0.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Return saved appearance and synchronize native window chrome.",
+      "output": "Result<appearance::UiTheme, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::set_ui_theme[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 235,
+      "endLine": 239,
+      "symbol": "set_ui_theme",
+      "qualifiedName": "set_ui_theme",
+      "signature": "fn set_ui_theme(window: tauri::Window, theme: appearance::UiTheme) -> Result<(), AppError>",
+      "sourceDigest": "708e7c43fdf68f31460259944b842ce9df17c8a345f51967deea61a4c7bbefed",
+      "cfg": [],
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "fn set_ui_theme(window: tauri::Window, theme: appearance::UiTheme) -> Result<(), AppError>"
+      ],
+      "sideEffects": [
+        "Atomically writes the active profile preference and changes native theme."
+      ],
+      "errors": [
+        "Save errors are returned so the renderer can roll back."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "No chrome update is attempted until persistence succeeds."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:235-239; SHA-256 708e7c43fdf68f31460259944b842ce9df17c8a345f51967deea61a4c7bbefed.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Save validated appearance before synchronizing native chrome.",
+      "output": "Result<(), AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::reveal_download[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 242,
+      "endLine": 245,
+      "symbol": "reveal_download",
+      "qualifiedName": "reveal_download",
+      "signature": "fn reveal_download(state: State<'_, AppState>, item_id: String) -> Result<(), AppError>",
+      "sourceDigest": "4beaa6c1644940d1a7de1719533ea6fa375e436d8690b8e05fb85959edacf409",
+      "cfg": [],
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "fn reveal_download(state: State<'_, AppState>, item_id: String) -> Result<(), AppError>"
+      ],
+      "sideEffects": [
+        "Takes a backend snapshot and launches Explorer for its verified published path."
+      ],
+      "errors": [
+        "Snapshot, lookup, missing file, and Explorer failures propagate."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "The command accepts an item id only, not a renderer-selected executable or file path."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:242-245; SHA-256 4beaa6c1644940d1a7de1719533ea6fa375e436d8690b8e05fb85959edacf409.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Show a completed download in its folder.",
+      "output": "Result<(), AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::run_with_graceful_shutdown[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 336,
+      "endLine": 367,
+      "symbol": "run_with_graceful_shutdown",
+      "qualifiedName": "run_with_graceful_shutdown",
+      "signature": "fn run_with_graceful_shutdown( app: tauri::App, shutdown_started: Arc<AtomicBool>, shutdown_complete: Arc<AtomicBool>, )",
+      "sourceDigest": "8639ac73860d95b26f0e38b97d530290a9adeacfd705df4cf7844650a4187131",
+      "cfg": [],
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "fn run_with_graceful_shutdown( app: tauri::App, shutdown_started: Arc<AtomicBool>, shutdown_complete: Arc<AtomicBool>, )"
+      ],
+      "sideEffects": [
+        "Prevents exit while bootstrap shutdown cancels and drains owned work, then exits."
+      ],
+      "errors": [
+        "The no-state branch releases exit with a failure code; normal shutdown preserves requested code."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Atomic started/completed guards schedule shutdown at most once."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:336-367; SHA-256 8639ac73860d95b26f0e38b97d530290a9adeacfd705df4cf7844650a4187131.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Own the original app exit callback outside builder composition.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Preserves the existing bounded bootstrap shutdown continuation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
+    },
+    {
+      "id": "src/lib.rs::run_with_graceful_shutdown::owned_async_closure#1@360[cfg=all]",
+      "kind": "owned_async_closure",
+      "classification": "production",
+      "file": "src/lib.rs",
+      "line": 360,
+      "endLine": 364,
+      "symbol": "owned_async_closure#1",
+      "qualifiedName": "run_with_graceful_shutdown::owned_async_closure#1",
+      "signature": "async move",
+      "sourceDigest": "f5820d09ec96427e26bfc3d1d712e7db7891887d56b0f9c3f726b463ba3f73a1",
+      "cfg": [],
+      "ownerCall": "spawn",
+      "callers": [
+        "Tauri application boundary or named unit tests."
+      ],
+      "inputs": [
+        "async move"
+      ],
+      "sideEffects": [
+        "Owns backend state, progress sink, completion flag, and app handle until shutdown ends."
+      ],
+      "errors": [
+        "Uses the existing bootstrap shutdown error/reporting contract."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
+      ],
+      "invariants": [
+        "Completion is published before requesting final exit; this is a move of the prior closure."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/lib.rs:360-364; SHA-256 f5820d09ec96427e26bfc3d1d712e7db7891887d56b0f9c3f726b463ba3f73a1.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Run the existing asynchronous graceful shutdown continuation.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Preserves the existing bounded bootstrap shutdown continuation.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/lib.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "movedFrom": "src/lib.rs::run::owned_async_closure#1@310[cfg=all]",
+      "staleReason": "moved_requires_context_review"
+    },
+    {
+      "id": "src/updater/artifact/path.rs::updater::artifact::path::updater_directory[cfg=all]",
+      "kind": "free_function",
+      "classification": "production",
+      "file": "src/updater/artifact/path.rs",
+      "line": 74,
+      "endLine": 79,
+      "symbol": "updater_directory",
+      "qualifiedName": "updater::artifact::path::updater_directory",
+      "signature": "pub(in crate::updater) fn updater_directory() -> PathBuf",
+      "sourceDigest": "df79a66fb970e07a2596943d3abcc7a087c02b92515976a436664b44d0e0e07f",
+      "cfg": [],
+      "callers": [
+        "Updater artifact cleanup and installer preparation select their shared root through this helper."
+      ],
+      "inputs": [
+        "pub(in crate::updater) fn updater_directory() -> PathBuf"
+      ],
+      "sideEffects": [
+        "Retains the existing directory creation and fallback behavior of this function."
+      ],
+      "errors": [
+        "Retains the existing path and I/O error contract."
+      ],
+      "ownership": [
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
+      ],
+      "locks": [
+        "Existing function synchronization is unchanged."
+      ],
+      "invariants": [
+        "Regular builds preserve their exact historical folder names; preview builds use distinct names."
+      ],
+      "tests": [
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
+      ],
+      "evidence": [
+        "Source read: src/updater/artifact/path.rs:74-79; SHA-256 df79a66fb970e07a2596943d3abcc7a087c02b92515976a436664b44d0e0e07f.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
+      ],
+      "purpose": "Resolve existing application storage through feature-selected folder constants.",
+      "output": "PathBuf",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/updater/artifact/path.rs",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.881Z",
+      "status": "reviewed",
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null,
+      "previousDigest": "51c9f0559d4f9f68d20d5f58dd0459a570fed3e7c5633fc8dc0112898613f9a2",
+      "staleReason": "source_changed"
+    }
+  ]
+}

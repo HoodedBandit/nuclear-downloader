@@ -1,8 +1,49 @@
 # Changelog
 
-## Unreleased
+## v0.7.9 - 2026-09-19
 
-No changes have been recorded after the corrected 0.7.1 publication yet.
+**Meet Clarity.** Nuclear Downloader has a completely new interface, a matching
+dark theme, a new Nuclear icon, and a major cleanup underneath it all.
+
+### A new everyday experience
+
+- Rebuilt the window around a dedicated sidebar, clear download states, search,
+  compact queue rows, focused actions, and consistent spacing and typography.
+- Added Light, Dark, and System appearance options with persistent preferences.
+- Replaced the app, window, taskbar, shortcut, and installer icon artwork.
+- Moved advanced access settings, tool health, updates, diagnostics, and detailed
+  session errors into Settings. Main-screen errors stay concise; the red Settings
+  dot clears automatically when Settings opens, with no extra dismissal button.
+- Restored single-click filename editing with focus/selection, keyboard
+  activation, Enter/blur save, and Escape cancellation. Prepared waiting items
+  can be renamed while other downloads are active. Failed drafts are retained.
+
+### Refactor and reliability
+
+- Separated session lifecycle/recovery, queue view state, filename editing, queue
+  presentation, and typed error reporting. Removed retired UI implementations
+  and obsolete page architecture exceptions without increasing size budgets.
+- Reconciliation restores controls after transient connection failures while
+  failed required subscriptions remain blocked. History survives recovery.
+- Deduplicated errors by attempt; later failures notify again. Healthy tool
+  refreshes no longer erase failed updates, and update progress ends correctly.
+- Caught rejected folder, cookie, configuration, and diagnostic-save dialogs;
+  cancellation remains a normal no-op that preserves existing settings.
+- Made waiting-item filename changes atomic with worker claims, preserving queue
+  order, operation identity, persistence, and rollback. Starts await pending edits.
+- Added durable batch playlist admission and bounded background metadata work.
+- Fixed download worker startup publication and simultaneous staging-root creation.
+
+### Verification
+
+The isolated UI preview passed 236 frontend tests, 396 Rust tests, 31 browser
+checks, type/lint/format/architecture gates, and native six-file download,
+waiting-rename, and restart checks. One existing frontend skip and four ignored
+Rust tests remain. Browser 150% scaling was emulated; native 150% Windows scaling
+was not exercised. These preview results do not qualify rebuilt release bytes.
+The official release pipeline independently builds, signs, verifies, and tests
+the exact installer and portable artifacts. See the release notes for their
+artifact-specific acceptance and any pending manual qualification.
 
 ## v0.7.1 - 2026-09-10
 

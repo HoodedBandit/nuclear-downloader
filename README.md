@@ -6,10 +6,25 @@ A Windows desktop app for downloading video and audio from YouTube, X, and other
 sites supported by yt-dlp. Paste a link, choose the items, format, and quality,
 then download to your chosen folder.
 
-[Download](https://github.com/HoodedBandit/nuclear-downloader/releases) ·
+**Meet Clarity in 0.7.9:** a completely redesigned interface, carefully matched
+light and dark themes, a new Nuclear icon, and a substantial refactor underneath.
+
+[Download the latest release](https://github.com/HoodedBandit/nuclear-downloader/releases/latest) ·
 [Changelog](CHANGELOG.md) · [Documentation](docs/README.md) ·
 [Report a bug](https://github.com/HoodedBandit/nuclear-downloader/issues/new/choose) ·
 [Support the project](https://ko-fi.com/hoodedbandit)
+
+![Nuclear Downloader Clarity interface in light mode](docs/screenshots/clarity-light.png)
+
+<details>
+<summary>See the dark theme</summary>
+
+![Nuclear Downloader Clarity interface in dark mode](docs/screenshots/clarity-dark.png)
+
+</details>
+
+Screenshots show the actual renderer with deterministic sample downloads and
+placeholder thumbnails. They are not concept artwork.
 
 ## Download and run
 
@@ -30,48 +45,57 @@ Keep the portable app and its adjacent tools together. A loose `nuclear.exe`
 needs those tools or an authenticated managed runtime. The installed app can
 check for published updates and hand off to a verified installer.
 
-**Current release:** The corrected version **0.7.1** is public with the ownership
-refactor, async-race and queue-scroll fixes, selected-media handling, and bundled
-yt-dlp `2026.08.19` YouTube fix described in the changelog. Its replacement
-exact-byte release checks passed; the separate seven-case manual Windows
-qualification remains pending.
+Official downloads, version numbers, and artifact-specific validation are listed
+on the [latest release](https://github.com/HoodedBandit/nuclear-downloader/releases/latest).
+Use the setup executable for a normal installation or the portable ZIP for a
+self-contained folder. The Windows installer is not Authenticode-signed;
+authenticated update manifests and SHA-256 checksums protect the updater path.
 
 ## Features
 
 - Single videos, supported playlists, and individual media from multi-video posts.
 - MP4, MKV, and WebM video; MP3, FLAC, WAV, AAC, and Opus audio.
-- Per-item format and quality choices, inline filenames, selection, and queue actions.
+- Light, Dark, and System appearance options, saved across restarts.
+- Sidebar filters, search, selection, and a compact download queue.
+- Per-item format and quality choices; click a prepared file title to rename it,
+  including while it is waiting behind active downloads.
 - Progress, speed, ETA, conversion status, cancellation, and explicit retry.
 - Saved queues and recent operation history across restarts. Interrupted work stays
   paused until you choose to retry.
 - Collision-safe output names that preserve files already in the destination.
 - Optional browser cookies or a `cookies.txt` file for content your account can access.
-- Runtime health, repair/update controls, app updates, and redacted diagnostics.
+- Settings brings together download access, runtime health, app/tool updates,
+  redacted diagnostics, and detailed session errors.
+- A red Settings notification dot marks new errors and clears automatically when
+  Settings opens. Main-screen messages stay brief.
 
 Five downloads can run concurrently, with one inspection and one explicit WebM
 conversion at a time. Large queues use virtual rows and playlists use pages to
 keep the interface responsive.
 
-## What changed in 0.7.1
+## What changed in 0.7.9
 
-The refactor preserves the existing interface and workflows while making their
-ownership explicit:
+The Clarity redesign rebuilds the everyday experience: a dedicated sidebar,
+cleaner typography and spacing, focused queue controls, a new icon across the app
+and Windows shell, and a dark theme designed alongside the light theme.
 
-- Each mounted page has one lifecycle owner. Late async results cannot update a
-  disposed page, and renderer reloads do not cancel durable backend downloads.
-- Queue presentation and workflow controllers are separated from the Svelte
-  components that render them. Rust remains the authority for saved state.
-- State commands, process supervision/output readers, staging, output resolution,
-  and file publication have focused modules with source-matched reviews.
-- Follow-up fixes address stale state events, filename-edit races, late cancellation,
-  duplicate inspection work, X multi-video selection, and the reproduced YouTube 403.
+- Session recovery, filename editing, filtering/selection, queue presentation,
+  and error reporting have focused typed owners. Retired UI implementations and
+  obsolete architecture exceptions are removed.
+- Filename editing supports click or keyboard activation, Enter, Escape, and
+  blur. Failed saves retain the draft; downloads wait for the affected edit.
+- Waiting-item renames and worker claims share an atomic backend boundary, so
+  a download cannot silently start with an unintended name.
+- Connection recovery restores controls without losing error history. Tool
+  refreshes preserve update failures, and rejected file dialogs reach Settings.
+- Playlist admission is durable and batched; metadata preparation is bounded.
+  Concurrent downloads can safely initialize their shared staging directory.
 
-See the [refactor record](docs/internal-cleanup.md) and
-[current evidence guide](docs/README.md#validation-and-qualification) for executed
-checks and their limits. Browser comparisons and earlier two-hour soaks remain
-bound to their recorded candidates. The corrected exact 0.7.1 release assets
-are public; clean Windows 11, cookies, controlled-site, and signed-update manual
-qualification remains pending.
+See the [Clarity changes and QC](docs/clarity-0.7.9.md),
+[changelog](CHANGELOG.md), and [frontend ownership map](docs/frontend-ownership.md).
+Preview checks and older soak records belong to their recorded builds; the
+signed release pipeline independently tests the official installer and portable
+artifacts. Each release states its remaining manual qualification work.
 
 ## Build from source
 

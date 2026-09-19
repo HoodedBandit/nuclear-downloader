@@ -17,64 +17,7 @@
     "queuePresentationNoIpc": true,
     "workflowsNoSvelteComponents": true,
     "pageCompositionNoDomainMethodBodies": true,
-    "exceptions": [
-      {
-        "id": "page-domain:formatByteCount",
-        "responsibility": "Format diagnostic byte counts",
-        "ceiling": 14,
-        "why": "Existing route-local display helper",
-        "alternatives": "Move to a formatting module",
-        "tests": ["frontend tests"]
-      },
-      {
-        "id": "page-domain:getSettings",
-        "responsibility": "Read composed settings state",
-        "ceiling": 17,
-        "why": "Existing adapter across composed controllers",
-        "alternatives": "Expose one settings projection",
-        "tests": ["frontend tests"]
-      },
-      {
-        "id": "page-domain:setup",
-        "responsibility": "Connect controller ports",
-        "ceiling": 88,
-        "why": "Existing composition-root setup",
-        "alternatives": "Extract a page controller factory",
-        "tests": ["frontend lifecycle tests"]
-      },
-      {
-        "id": "page-domain:reloadAppSnapshot",
-        "responsibility": "Reload composed state",
-        "ceiling": 9,
-        "why": "Existing page recovery adapter",
-        "alternatives": "Move to state reconciler",
-        "tests": ["state presentation tests"]
-      },
-      {
-        "id": "page-domain:applyBackendSnapshot",
-        "responsibility": "Apply state to composed controllers",
-        "ceiling": 15,
-        "why": "Existing composition adapter",
-        "alternatives": "Move to app state controller",
-        "tests": ["state presentation tests"]
-      },
-      {
-        "id": "page-domain:waitForOperation",
-        "responsibility": "Delegate operation waits",
-        "ceiling": 11,
-        "why": "Existing composition adapter",
-        "alternatives": "Expose the registry directly",
-        "tests": ["operation wait registry tests"]
-      },
-      {
-        "id": "page-domain:handleFilenameEditorKeydown",
-        "responsibility": "Map editor keys to composed actions",
-        "ceiling": 11,
-        "why": "Existing route event adapter",
-        "alternatives": "Move into QueueRow",
-        "tests": ["queue component tests"]
-      }
-    ]
+    "exceptions": []
   },
   "frontendExceptions": {},
   "exceptions": {
@@ -100,7 +43,7 @@
     },
     "file:loc:src/downloader/publication/staging.rs": {
       "responsibility": "Atomic publication staging",
-      "ceiling": 594,
+      "ceiling": 532,
       "why": "Keeps destination validation, collision handling, temporary staging, and atomic publication cleanup in one custody boundary.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
       "tests": [
@@ -113,21 +56,30 @@
       "ceiling": 619,
       "why": "Validates manifest schema, paths, hashes, executable identity, and managed-runtime completeness before trust is granted.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "file:loc:src/runtime/promotion.rs": {
       "responsibility": "Runtime promotion transaction",
       "ceiling": 724,
       "why": "Owns crash-recoverable runtime promotion, rollback, journal transitions, and cleanup ordering.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "file:loc:src/runtime.rs": {
       "responsibility": "Managed runtime workflow",
       "ceiling": 617,
       "why": "Coordinates runtime discovery, repair, download, verification, promotion, cancellation, and progress reporting.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/downloader/engine.rs::downloader::engine::run_webm_conversion[cfg=all]": {
       "responsibility": "WebM conversion lifecycle",
@@ -214,42 +166,60 @@
       "ceiling": 113,
       "why": "Checks all managed runtime tools while preserving one cancellation and progress contract.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/runtime.rs::runtime::update_downloader_runtime_inner[cfg=all]": {
       "responsibility": "Runtime update transaction",
       "ceiling": 158,
       "why": "Coordinates download, verification, promotion, rollback, cancellation, and terminal progress for one update.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/runtime/archive.rs::runtime::archive::extract_runtime_zip[cfg=all]": {
       "responsibility": "Bounded archive extraction",
       "ceiling": 175,
       "why": "Validates every archive entry and extracts within path, type, count, and byte limits.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/runtime/manifest.rs::runtime::manifest::discover_managed_runtime_at_with_verifier[cfg=all]": {
       "responsibility": "Managed runtime discovery",
       "ceiling": 104,
       "why": "Discovers a complete managed runtime only after manifest and executable verification.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/runtime/manifest.rs::runtime::manifest::validate_manifest_at[cfg=all]": {
       "responsibility": "Runtime manifest verification",
       "ceiling": 119,
       "why": "Verifies schema, version, tool inventory, paths, sizes, and hashes before accepting a runtime.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/runtime/promotion.rs::runtime::promotion::recover_runtime_update_transaction_at[cfg=all]": {
       "responsibility": "Runtime transaction recovery",
       "ceiling": 138,
       "why": "Reconciles interrupted promotion states without exposing a partially installed runtime.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/runtime/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/runtime/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     },
     "callable:loc:src/state/commit.rs::state::commit::impl StateStore::finalize_operation_inner[cfg=all]": {
       "responsibility": "Operation finalization",
@@ -267,7 +237,10 @@
       "ceiling": 212,
       "why": "Streams and hashes the installer under size, cancellation, ownership, and cleanup constraints.",
       "alternatives": "Extract an independently testable validation or data-shaping phase, then lower this ceiling in the same reviewed change.",
-      "tests": ["src/updater/tests.rs", "scripts/source-health.test.py"]
+      "tests": [
+        "src/updater/tests.rs",
+        "scripts/source-health.test.py"
+      ]
     }
   }
 }

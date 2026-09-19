@@ -90,6 +90,86 @@ afterEach(() => {
 });
 
 describe('page lifecycle ownership', () => {
+  it('recovers an initial snapshot failure using the still-active critical subscriptions', async () => {
+    const handlers = new Map<string, (event: { payload: { latestSequence: number } }) => void>();
+    ipc.listen.mockImplementation(async (name, handler) => {
+      handlers.set(name, handler);
+      return vi.fn();
+    });
+    let failed = false;
+    ipc.invoke.mockImplementation(async (command) => {
+      if (command === 'get_app_snapshot' && !failed) {
+        failed = true;
+        throw new Error('initial snapshot unavailable');
+      }
+      return commandResult(command);
+    });
+    const view = render(Page);
+    await waitFor(() => expect(ipc.invoke).toHaveBeenCalledWith('check_downloader_runtime'));
+    const add = view.getByRole('button', { name: 'Add link' }) as HTMLButtonElement;
+    expect(add.disabled).toBe(true);
+    handlers.get('app-state-resync-required')!({ payload: { latestSequence: 0 } });
+    await waitFor(() => expect(add.disabled).toBe(false));
+    expect(view.container.querySelector('.error-notice')).toBeNull();
+    view.unmount();
+  });
+  it('keeps downloads blocked when a required subscription was not registered', async () => {
+    ipc.listen.mockImplementation(async (name) => {
+      if (name === 'app-state-resync-required') throw new Error('registration failed');
+      return vi.fn();
+    });
+    const view = render(Page);
+    await waitFor(() => expect(ipc.invoke).toHaveBeenCalledWith('check_downloader_runtime'));
+    expect((view.getByRole('button', { name: 'Add link' }) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect(view.container.querySelector('.notification-dot')).not.toBeNull();
+    view.unmount();
+  });
+
+  it('keeps downloads usable when an optional progress subscription fails', async () => {
+    ipc.listen.mockImplementation(async (name) => {
+      if (name === 'download-progress') throw new Error('optional registration failed');
+      return vi.fn();
+    });
+    const view = render(Page);
+    await waitFor(() =>
+      expect((view.getByRole('button', { name: 'Add link' }) as HTMLButtonElement).disabled).toBe(
+        false
+      )
+    );
+    expect(view.container.querySelector('.notification-dot')).not.toBeNull();
+    view.unmount();
+  });
+
+  it('restores admission after a transient state resync failure without losing error history', async () => {
+    const handlers = new Map<string, (event: { payload: { latestSequence: number } }) => void>();
+    ipc.listen.mockImplementation(async (name, handler) => {
+      handlers.set(name, handler);
+      return vi.fn();
+    });
+    const view = render(Page);
+    const add = view.getByRole('button', { name: 'Add link' }) as HTMLButtonElement;
+    await waitFor(() => expect(add.disabled).toBe(false));
+    let fail = true;
+    ipc.invoke.mockImplementation(async (command) => {
+      if (command === 'get_app_snapshot' && fail) throw new Error('temporary state failure');
+      return commandResult(command);
+    });
+    handlers.get('app-state-resync-required')!({ payload: { latestSequence: 0 } });
+    await waitFor(() => expect(add.disabled).toBe(true));
+    fail = false;
+    handlers.get('app-state-resync-required')!({ payload: { latestSequence: 0 } });
+    await waitFor(() => expect(add.disabled).toBe(false));
+    expect(view.container.querySelector('.error-notice')).toBeNull();
+    await fireEvent.click(view.getByRole('button', { name: /Settings/ }));
+    expect(view.container.querySelectorAll('.error-entry')).toHaveLength(1);
+    expect(view.container.querySelector('.error-history')?.textContent).toContain(
+      'temporary state failure'
+    );
+    view.unmount();
+  });
+
   it.each(eventNames)(
     'releases a late %s listener and stops startup after unmount',
     async (heldEvent) => {
@@ -165,7 +245,10 @@ describe('page lifecycle ownership', () => {
     resolveSnapshot(snapshot);
     await Promise.resolve();
 
-    expect(ipc.invoke).toHaveBeenCalledTimes(1);
+    expect(ipc.invoke.mock.calls.map(([command]) => command)).toEqual([
+      'get_ui_theme',
+      'get_app_snapshot'
+    ]);
   });
 
   it.each(['default_download_dir', 'check_downloader_runtime', 'check_app_update'])(
@@ -210,7 +293,7 @@ describe('page lifecycle ownership', () => {
 
     const view = render(Page);
     const input = await view.findByLabelText('Video or playlist URL');
-    const addButton = view.getByRole('button', { name: 'Add' });
+    const addButton = view.getByRole('button', { name: 'Add link' });
     await waitFor(() =>
       expect(ipc.invoke.mock.calls.some(([command]) => command === 'check_app_update')).toBe(true)
     );

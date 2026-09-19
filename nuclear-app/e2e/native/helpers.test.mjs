@@ -35,58 +35,34 @@ describe('rendered terminal status', () => {
 });
 
 describe('restored interruption evidence', () => {
-  function interruptedRow({
-    summary = 'The application stopped before this operation finished.',
-    code = 'interrupted'
-  } = {}) {
+  function interruptedRow({ summary = 'Check Settings for details.', code = 'interrupted' } = {}) {
     const events = [];
-    const status = {
-      getText: async () => 'Error',
-      waitUntil: async (predicate) => expect(await predicate()).toBe(true)
-    };
-    const diagnosticsToggle = {
-      click: async () => events.push('toggle')
-    };
     const elements = {
-      '.status-pill': status,
-      '.error-summary': { getText: async () => summary },
-      'button=Retry': {
-        waitForDisplayed: async () => events.push('retry')
+      '.status-pill': {
+        getText: async () => 'Error',
+        waitUntil: async (predicate) => expect(await predicate()).toBe(true)
       },
-      'button[title="Show diagnostics"]': diagnosticsToggle
+      '.error-summary': { getText: async () => summary },
+      'button=Retry': { waitForDisplayed: async () => events.push('retry') },
+      'button[title="View error in Settings"]': { click: async () => events.push('open') }
     };
-    return {
-      events,
-      row: {
-        $: async (selector) =>
-          selector.startsWith('./following-sibling::')
-            ? {
-                getText: async () => code,
-                waitForDisplayed: async () => events.push('diagnostics')
-              }
-            : elements[selector]
-      }
-    };
+    vi.stubGlobal('$', (selector) =>
+      selector === '.error-entry summary'
+        ? { click: async () => events.push('details') }
+        : { getText: async () => code }
+    );
+    vi.stubGlobal('browser', { keys: async () => events.push('close') });
+    return { row: { $: (selector) => elements[selector] }, events };
   }
-
-  it('proves the visible error is a retryable backend interruption', async () => {
+  it('proves the visible error is retryable and preserves backend details in Settings', async () => {
     const { row, events } = interruptedRow();
     await assertInterruptedQueueRow(row);
-    expect(events).toEqual(['retry', 'toggle', 'diagnostics', 'toggle']);
+    expect(events).toEqual(['retry', 'open', 'details', 'close']);
   });
-
   it.each([
-    {
-      summary: 'Download failed.',
-      code: 'interrupted',
-      expected: 'interruption-specific summary'
-    },
-    {
-      summary: 'The application stopped before this operation finished.',
-      code: 'download_failed',
-      expected: 'backend interruption code'
-    }
-  ])('rejects an ordinary failure with $expected missing', async ({ summary, code, expected }) => {
+    { summary: 'Download failed.', code: 'interrupted', expected: 'direct the user to Settings' },
+    { summary: 'Check Settings for details.', code: 'download_failed', expected: 'interrupted' }
+  ])('rejects missing evidence: $expected', async ({ summary, code, expected }) => {
     const { row } = interruptedRow({ summary, code });
     await expect(assertInterruptedQueueRow(row)).rejects.toThrow(expected);
   });

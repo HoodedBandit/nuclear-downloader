@@ -313,7 +313,7 @@ impl JournalStore {
     pub fn default_path() -> Result<PathBuf, AppError> {
         let root = dirs::data_local_dir()
             .ok_or_else(|| AppError::internal("Could not locate per-user application data."))?
-            .join("Nuclear Downloader");
+            .join(crate::app_paths::USER_DATA_FOLDER);
         Ok(root.join(JOURNAL_FILENAME))
     }
 

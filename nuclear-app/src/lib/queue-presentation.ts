@@ -3,7 +3,7 @@ import type { AppSnapshot } from './bindings/AppSnapshot';
 import type { QueueItemRecord } from './bindings/QueueItemRecord';
 import type { MediaSelection } from './bindings/MediaSelection';
 import type { StateDelta } from './bindings/StateDelta';
-import { normalizeAppError, normalizeDownloadError } from './frontend-errors';
+import { normalizeDownloadError } from './frontend-errors';
 import type { DownloadProgressPayload, QueueItem } from './frontend-types';
 import { mediaIdentityKey } from './media-identity';
 import { reduceOperationProgress, shouldIgnoreOperationProgress } from './operation-reducer';
@@ -12,7 +12,6 @@ import {
   type PlaylistMetadataEntry,
   type PlaylistMetadataLease
 } from './playlist-metadata-owner';
-import { deriveSelectionState } from './queue-logic';
 import {
   OPERATION_FIELDS,
   assignQueueFields,
@@ -21,19 +20,17 @@ import {
   displayDownloadProgress,
   displayEta,
   displayProgress,
-  getQueueItemDisplayTitle,
   inspectionDisplayMetadata,
   isActiveStatus,
-  isEditablePendingStatus,
   isTerminalStatus,
   projectQueueItem,
-  projectionRecordChanged,
-  sanitizeFilenameDraft
+  projectionRecordChanged
 } from './queue-presentation-helpers';
 export {
   canEditFilename,
   canRetryItem,
   formatDuration,
+  formatByteCount,
   getQueueItemDisplayTitle,
   getStatusLabel,
   isActiveStatus,
@@ -45,30 +42,22 @@ export {
 } from './queue-presentation-helpers';
 
 const DISPLAY_INTERVAL_MS = 500;
-export const QUEUE_ROW_HEIGHT_PX = 53;
-const ROW_OVERSCAN = 8;
+export const QUEUE_ROW_HEIGHT_PX = 88;
 
 export interface QueuePresentationState {
   items: QueueItem[];
   backendSnapshot: AppSnapshot | null;
-  editing: { itemId: string | null; draft: string; error: string };
-  viewport: { scrollTop: number; height: number };
 }
 
 export interface QueuePresentationOptions {
   isActive: () => boolean;
-  saveFilename: (itemId: string, filenameOverride: string | null) => Promise<void>;
-  focusFilenameEditor?: () => void | Promise<void>;
-  clearFilenameEditor?: () => void;
   now?: () => number;
 }
 
 export function createQueuePresentationState(): QueuePresentationState {
   return {
     items: [],
-    backendSnapshot: null,
-    editing: { itemId: null, draft: '', error: '' },
-    viewport: { scrollTop: 0, height: 600 }
+    backendSnapshot: null
   };
 }
 
@@ -76,7 +65,6 @@ export class QueuePresentationController {
   private readonly metadataByIdentity = new Map<string, RetainedMetadata[]>();
   private readonly playlistMetadataOwner: PlaylistMetadataOwner<QueueItemRecord>;
   private readonly displayUpdatedAt = new Map<string, { operationId: string; updatedAt: number }>();
-  private filenameEditGeneration = 0;
 
   constructor(
     readonly state: QueuePresentationState,
@@ -225,109 +213,8 @@ export class QueuePresentationController {
     const index = this.state.items.findIndex((item) => item.id === id);
     if (index !== -1) this.state.items[index] = mapper(this.state.items[index]);
   }
-  selectionState(): ReturnType<typeof deriveSelectionState> {
-    return deriveSelectionState(this.state.items);
-  }
-  setSelected(id: string, selected: boolean): void {
-    const item = this.state.items.find((candidate) => candidate.id === id);
-    if (item) item.selected = selected;
-  }
-  setAllSelected(selected: boolean): void {
-    this.state.items = this.state.items.map((item) => ({ ...item, selected }));
-  }
-  selectedItems(): QueueItem[] {
-    return this.state.items.filter((item) => item.selected);
-  }
   summary() {
     return buildQueueSummary(this.state.items);
-  }
-
-  setViewport(scrollTop: number, height = this.state.viewport.height): void {
-    this.state.viewport.height = height;
-    const max = Math.max(0, this.state.items.length * QUEUE_ROW_HEIGHT_PX - height);
-    this.state.viewport.scrollTop = Math.min(Math.max(0, scrollTop), max);
-  }
-  window() {
-    const calculatedStart = Math.max(
-      0,
-      Math.floor(this.state.viewport.scrollTop / QUEUE_ROW_HEIGHT_PX) - ROW_OVERSCAN
-    );
-    const start = Math.min(Math.max(0, this.state.items.length - 1), calculatedStart);
-    const end = Math.min(
-      this.state.items.length,
-      Math.ceil(
-        (this.state.viewport.scrollTop + this.state.viewport.height) / QUEUE_ROW_HEIGHT_PX
-      ) + ROW_OVERSCAN
-    );
-    return {
-      start,
-      end,
-      rows: this.state.items
-        .slice(start, end)
-        .map((item, offset) => ({ item, index: start + offset })),
-      topSpacerHeight: start * QUEUE_ROW_HEIGHT_PX,
-      bottomSpacerHeight: Math.max(0, (this.state.items.length - end) * QUEUE_ROW_HEIGHT_PX)
-    };
-  }
-
-  async beginFilenameEdit(item: QueueItem): Promise<void> {
-    if (!isEditablePendingStatus(item.status) || !item.infoLoaded) return;
-    if (this.state.editing.itemId && this.state.editing.itemId !== item.id) {
-      await this.commitFilenameEdit(this.state.editing.itemId);
-      if (!this.options.isActive() || this.state.editing.itemId) return;
-    }
-    this.filenameEditGeneration += 1;
-    this.state.editing.itemId = item.id;
-    this.state.editing.draft = getQueueItemDisplayTitle(item);
-    this.state.editing.error = '';
-    await this.options.focusFilenameEditor?.();
-  }
-
-  async commitFilenameEdit(id: string | null = this.state.editing.itemId): Promise<void> {
-    if (!id) return;
-    if (this.state.editing.itemId !== id) return;
-    const item = this.state.items.find((candidate) => candidate.id === id);
-    if (!item) {
-      this.cancelFilenameEdit();
-      return;
-    }
-    const generation = this.filenameEditGeneration;
-    const draft = this.state.editing.draft;
-    const cleaned = sanitizeFilenameDraft(draft);
-    if (!cleaned) {
-      this.state.editing.error = 'Filename must contain at least one valid character.';
-      return;
-    }
-    try {
-      await this.options.saveFilename(id, cleaned !== item.title ? cleaned : null);
-      if (!this.options.isActive()) return;
-      if (this.ownsFilenameEdit(generation, id, draft)) this.cancelFilenameEdit();
-    } catch (error) {
-      if (this.options.isActive() && this.ownsFilenameEdit(generation, id, draft))
-        this.state.editing.error = normalizeAppError(error);
-    }
-  }
-
-  cancelFilenameEdit(): void {
-    this.filenameEditGeneration += 1;
-    this.state.editing.itemId = null;
-    this.state.editing.draft = '';
-    this.state.editing.error = '';
-    this.options.clearFilenameEditor?.();
-  }
-
-  private ownsFilenameEdit(generation: number, id: string, draft: string): boolean {
-    return (
-      this.filenameEditGeneration === generation &&
-      this.state.editing.itemId === id &&
-      this.state.editing.draft === draft
-    );
-  }
-
-  toggleDiagnostics(id: string): void {
-    this.state.items = this.state.items.map((item) =>
-      item.id === id ? { ...item, diagnosticsOpen: !item.diagnosticsOpen } : item
-    );
   }
 
   private now(): number {

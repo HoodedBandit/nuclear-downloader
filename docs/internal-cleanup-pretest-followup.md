@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Preparation before native testing
 
 Tested source: `a3fd3e767a8f555cc797ec8e6d05a4823d806758`, including frontend fix `b2f17f5c2de0a0541d10dbd5676feae7759b9cdd`. The [receipt](internal-cleanup-pretest-followup.json) records changed-source hashes, executed results, and retained evidence identities. Tests ran before committing; changed-source hashes and complete renderer input manifests were verified against the committed working tree afterward. Subsequent delivery changes only documentation.

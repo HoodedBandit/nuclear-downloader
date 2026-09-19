@@ -1,5 +1,5 @@
 import type { UpdateCheckResult } from './bindings/UpdateCheckResult';
-import { normalizeAppError } from './frontend-errors';
+import type { ErrorAttempt, UiErrorReporter } from './ui-error-reporter';
 import type { UpdateInstallProgressPayload } from './frontend-types';
 import type { OperationWorkflow } from './frontend-workflow-ports';
 import type { StartupSubsystemState } from './startup-state';
@@ -15,13 +15,12 @@ export interface AppUpdateWorkflowState {
 }
 
 export interface AppUpdateWorkflowDependencies extends OperationWorkflow {
+  errors: UiErrorReporter;
   getVersion: () => Promise<string>;
   runtimeUpdateRunning: () => boolean;
   hasUpdateBlockingWork: () => boolean;
   setAppVersionStartup: (state: StartupSubsystemState) => void;
   setUpdateCheckStartup: (state: StartupSubsystemState) => void;
-  reportStartupIssue: (subsystem: string, error: unknown) => void;
-  appendStartupIssue: (message: string) => void;
 }
 
 export function createAppUpdateWorkflowState(): AppUpdateWorkflowState {
@@ -37,12 +36,18 @@ export function createAppUpdateWorkflowState(): AppUpdateWorkflowState {
 }
 
 export class AppUpdateWorkflowController {
+  private installAttempt: ErrorAttempt | null = null;
+  private installPending = false;
   constructor(
     readonly state: AppUpdateWorkflowState,
     private readonly dependencies: AppUpdateWorkflowDependencies
   ) {}
 
   async initializeAppVersion(): Promise<void> {
+    const attempt = this.dependencies.errors.begin(
+      'app-version',
+      'Reading the application version'
+    );
     try {
       const version = await this.dependencies.getVersion();
       if (!this.dependencies.isActive()) return;
@@ -51,7 +56,7 @@ export class AppUpdateWorkflowController {
     } catch (error) {
       if (!this.dependencies.isActive()) return;
       this.state.appVersion = null;
-      this.dependencies.reportStartupIssue('App version', error);
+      attempt.fail(error);
       this.dependencies.setAppVersionStartup('degraded');
     }
   }
@@ -59,10 +64,6 @@ export class AppUpdateWorkflowController {
   async initializeUpdateCheck(): Promise<void> {
     const succeeded = await this.check({ openModal: false, showErrors: false });
     if (!this.dependencies.isActive()) return;
-    if (!succeeded)
-      this.dependencies.appendStartupIssue(
-        'App update check was unavailable; downloads remain usable.'
-      );
     this.dependencies.setUpdateCheckStartup(succeeded ? 'ready' : 'degraded');
   }
 
@@ -75,15 +76,23 @@ export class AppUpdateWorkflowController {
     if (options.openModal) this.state.modalOpen = true;
     if (options.showErrors) this.state.error = null;
     if (!this.state.installRunning) this.state.installProgress = null;
+    const attempt = this.dependencies.errors.begin(
+      'app-update-check',
+      'Checking for application updates'
+    );
     try {
       const result = await this.dependencies.invoke('check_app_update');
       if (!this.dependencies.isActive()) return false;
       this.state.info = result;
       this.state.appVersion = result.currentVersion;
+      this.dependencies.errors.resolve('app-version');
+      this.dependencies.setAppVersionStartup('ready');
+      this.dependencies.setUpdateCheckStartup('ready');
       return true;
     } catch (error) {
       if (!this.dependencies.isActive()) return false;
-      if (options.showErrors) this.state.error = normalizeAppError(error);
+      const detail = attempt.fail(error);
+      if (options.showErrors) this.state.error = detail;
       return false;
     } finally {
       if (this.dependencies.isActive()) this.state.checkState = 'idle';
@@ -99,20 +108,35 @@ export class AppUpdateWorkflowController {
 
   async install(): Promise<void> {
     const targetVersion = this.state.info?.latestVersion;
-    if (!targetVersion || !this.state.info?.hasUpdate || this.state.installRunning) return;
+    if (
+      !targetVersion ||
+      !this.state.info?.hasUpdate ||
+      this.installPending ||
+      this.state.installRunning
+    )
+      return;
+    this.installAttempt = this.dependencies.errors.begin(
+      'app-update-install',
+      'Installing an application update'
+    );
     if (this.dependencies.runtimeUpdateRunning()) {
-      this.state.error = 'Wait for the downloader runtime update to finish.';
+      this.state.error = this.installAttempt.fail(
+        'Wait for the downloader runtime update to finish.'
+      );
       this.state.modalOpen = true;
       return;
     }
     if (this.dependencies.hasUpdateBlockingWork()) {
-      this.state.error = 'Finish or cancel queued downloads before installing the app update.';
+      this.state.error = this.installAttempt.fail(
+        'Finish or cancel queued downloads before installing the app update.'
+      );
       this.state.modalOpen = true;
       return;
     }
     this.state.error = null;
     this.state.modalOpen = true;
     this.state.installRunning = true;
+    this.installPending = true;
     this.state.installProgress = {
       status: 'downloading',
       version: targetVersion,
@@ -131,8 +155,9 @@ export class AppUpdateWorkflowController {
         throw operation.error ?? new Error('Application update failed.');
     } catch (error) {
       if (!this.dependencies.isActive()) return;
-      this.state.error = normalizeAppError(error);
+      this.state.error = this.installAttempt.fail(error);
     } finally {
+      this.installPending = false;
       if (this.dependencies.isActive()) this.state.installRunning = false;
     }
   }
@@ -141,7 +166,13 @@ export class AppUpdateWorkflowController {
     this.state.installProgress = progress;
     if (progress.status === 'error') {
       this.state.installRunning = false;
-      this.state.error = progress.message ?? 'Update installation failed.';
+      this.installAttempt ??= this.dependencies.errors.begin(
+        'app-update-install',
+        'Installing an application update'
+      );
+      this.state.error = this.installAttempt.fail(
+        progress.message ?? 'Update installation failed.'
+      );
     }
   }
 

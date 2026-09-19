@@ -21,8 +21,8 @@ export async function assertInterruptedQueueRow(row, timeout = 30_000) {
   const summary = await row.$('.error-summary');
   assert.equal(
     (await summary.getText()).trim(),
-    'The application stopped before this operation finished.',
-    'The restored queue item did not show the interruption-specific summary.'
+    'Check Settings for details.',
+    'The restored queue item did not direct the user to Settings.'
   );
 
   const retry = await row.$('button=Retry');
@@ -31,23 +31,12 @@ export async function assertInterruptedQueueRow(row, timeout = 30_000) {
     timeoutMsg: 'The interrupted queue item did not expose Retry.'
   });
 
-  const diagnosticsToggle = await row.$('button[title="Show diagnostics"]');
-  await diagnosticsToggle.click();
+  await row.$('button[title="View error in Settings"]').click();
   try {
-    const diagnosticsCode = await row.$(
-      './following-sibling::tr[1][contains(@class, "diagnostics-row")]//div[contains(@class, "diagnostics-header")]/span[1]'
-    );
-    await diagnosticsCode.waitForDisplayed({
-      timeout,
-      timeoutMsg: 'The interrupted queue item did not expose diagnostics.'
-    });
-    assert.equal(
-      (await diagnosticsCode.getText()).trim(),
-      'interrupted',
-      'The restored queue item diagnostics did not retain the backend interruption code.'
-    );
+    await $('.error-entry summary').click();
+    assert.match(await $('.error-history').getText(), /interrupted/);
   } finally {
-    await diagnosticsToggle.click();
+    await browser.keys('Escape');
   }
 }
 
@@ -55,7 +44,7 @@ export async function waitForWorkReady() {
   await $('h1').waitForDisplayed();
   // The heading can render before hydration, runtime probes, folder validation,
   // and snapshot/listener initialization. A click on disabled Add is a no-op.
-  await $('button=Add').waitForClickable({
+  await $('button=Add link').waitForClickable({
     timeout: 60_000,
     timeoutMsg: 'The application did not enable work after startup.'
   });
@@ -72,7 +61,7 @@ export async function waitForQueueCount(expected, timeout = 60_000) {
 async function submitReadyUrl(url) {
   const input = await $('#video-url');
   await input.setValue(url);
-  const add = await $('button=Add');
+  const add = await $('button=Add link');
   await add.waitForClickable({ timeout: 60_000 });
   await add.click();
 }

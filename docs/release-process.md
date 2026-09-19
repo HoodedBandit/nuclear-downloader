@@ -1,37 +1,21 @@
-# Nuclear Downloader 0.7.1 release process
+# Nuclear Downloader 0.7.9 release process
 
-> **Corrected 0.7.1 publication:** The initial release, public release ID
-> `386707141`, came from candidate run `34452333097`, publisher run `34546523118`,
-> and source commit `34e7af7f154cc57b5ce4bf558f02813847aa1741`; its artifacts and
-> receipts are archived historical evidence only. The authorized one-time
-> version-reuse replacement was published as release ID `386743660` from candidate
-> run `34551136992`, publisher run `34554200245`, and source commit
-> `42860b77ea31912d903784901472d8a137ef7ff6`. The public latest endpoint and all
-> ten assets match the tested candidate. The maintainer reports that the local
-> repaired 0.6 updater now works, and the installed 0.7.1 executable independently
-> matches the published installer. The seven-case manual Windows qualification
-> remains pending.
+Version 0.7.9 ships the Clarity redesign, Light/Dark/System themes, new icon,
+filename editing repairs, and the UI/backend ownership cleanup. Windows x64
+is the only release target. A candidate is built once, tested as exact bytes,
+and published without rebuilding.
 
-Nuclear Downloader 0.7.1 is a Windows x64-only release. ARM64 builds are not produced or supported. A release candidate is built once, tested as exact bytes, and later published without rebuilding. Do not commit, push, tag, upload a candidate, or publish a release without the maintainer's explicit approval for that step.
+This process is pinned to 0.7.9 across application metadata, workflows,
+packaging, signature verification, and acceptance contracts. Release source
+pushes, protected candidate builds, and publication require maintainer
+instruction; an explicit request to perform the whole release authorizes those
+steps. Preserve the signing and evidence gates throughout.
 
-This document describes the workflow prepared for application version 0.7.1.
-The corrected public 0.7.1 release is the replacement identified above.
-Independent post-publication verification confirmed the anonymous latest
-endpoint, all ten replacement asset hashes, and downloadable manifest/signature
-hashes. The receipt at
-`target/release-0.7.1-34551136992/publication-verification.json` has SHA-256
-`68e78f445c7fe7f4ca0d21cf0a86cb16fa48e73c43850eb2c4930f79fdeb31bc`.
-The published pending qualification record is retained under
-`target/release-0.7.1-34551136992/published-qualification`.
-Manual qualification remains incomplete until a replacement-candidate-bound
-seven-case record is completed and verified.
-The published v0.6.0 assets were built from commit `493bcab` with the yt-dlp
-2026.07.04 runtime; they remain the compatibility and historical release record.
-Version 0.7.1 requires the verified exact-byte candidate and every automated
-gate below. Full qualification also requires every manual gate. Publication
-with those manual gates pending requires the explicit pending mode in Gate 4.
-Source, browser, performance, soak, or a successful individual YouTube download
-alone does not authorize publication.
+The official release notes are assembled in `publish-release.yml`. They identify
+which checks passed on the exact release artifacts and retain any pending manual
+qualification. Preview QC is separately documented in [Clarity QC](clarity-0.7.9.md).
+The corrected 0.7.1 publication and its receipts are retained in
+[the historical release record](release-process-0.7.1.md).
 
 ## Trust and distribution boundaries
 
@@ -61,15 +45,15 @@ Configure the `release-candidate` environment with required reviewers, deploymen
 
 Configure `production-release` with required reviewers and deployment-branch restrictions. Protect both workflow files with normal branch review. See [key-rotation.md](key-rotation.md) for private-key custody, backup, and rotation.
 
-## Exact 0.7.1 public assets
+## Exact 0.7.9 public assets
 
 The publish workflow accepts exactly these application files:
 
-- `Nuclear.Downloader_0.7.1_x64-setup.exe`
-- `Nuclear.Downloader_0.7.1_x64-portable.zip`
-- `nuclear-downloader-v0.7.1-update.json`
-- `nuclear-downloader-v0.7.1-update.json.sig`
-- `nuclear-downloader-v0.7.1-sha256.txt`
+- `Nuclear.Downloader_0.7.9_x64-setup.exe`
+- `Nuclear.Downloader_0.7.9_x64-portable.zip`
+- `nuclear-downloader-v0.7.9-update.json`
+- `nuclear-downloader-v0.7.9-update.json.sig`
+- `nuclear-downloader-v0.7.9-sha256.txt`
 - `SHA256SUMS`
 
 It also accepts exactly these managed-runtime files, where `VERSION` has three numeric components:
@@ -79,7 +63,7 @@ It also accepts exactly these managed-runtime files, where `VERSION` has three n
 - `nuclear-downloader-runtime-VERSION-windows-x64.zip`
 - `nuclear-downloader-runtime-VERSION-windows-x64.zip.sha256`
 
-`nuclear-downloader-v0.7.1-sha256.txt` and the runtime `.zip.sha256` are the bounded compatibility bridge for older clients. Version 0.6.0 and later require the signed JSON contracts. The runtime descriptor also binds the exact SHA-256 of the archive's sole root `runtime-manifest.json`; both candidate verification and runtime installation enforce that inner binding. `SHA256SUMS` covers every other public asset. The candidate-only `release-candidate-inventory.json` additionally records every public asset's exact size and hash, the source commit, the key ID, and toolchain versions; it is retained in the candidate artifact rather than attached to the release.
+`nuclear-downloader-v0.7.9-sha256.txt` and the runtime `.zip.sha256` are the bounded compatibility bridge for older clients. Version 0.6.0 and later require the signed JSON contracts. The runtime descriptor also binds the exact SHA-256 of the archive's sole root `runtime-manifest.json`; both candidate verification and runtime installation enforce that inner binding. `SHA256SUMS` covers every other public asset. The candidate-only `release-candidate-inventory.json` additionally records every public asset's exact size and hash, the source commit, the key ID, and toolchain versions; it is retained in the candidate artifact rather than attached to the release.
 
 The app update manifest is UTF-8 without a byte-order mark. Its exact bytes are signed, and its schema is:
 
@@ -87,11 +71,11 @@ The app update manifest is UTF-8 without a byte-order mark. Its exact bytes are 
 {
   "schemaVersion": 1,
   "keyId": "maintainer-assigned-key-id",
-  "version": "0.7.1",
+  "version": "0.7.9",
   "platform": "windows-x86_64",
   "publishedAt": "2026-09-10T00:00:00Z",
   "installer": {
-    "fileName": "Nuclear.Downloader_0.7.1_x64-setup.exe",
+    "fileName": "Nuclear.Downloader_0.7.9_x64-setup.exe",
     "size": 123,
     "sha256": "64 lowercase hexadecimal digits"
   }
@@ -148,21 +132,21 @@ After the maintainer explicitly approves pushing the exact commit:
 
 1. Push that commit normally. Do not create a release tag yet.
 2. Manually dispatch **Release Candidate**.
-3. Set `release_version` to `0.7.1`.
+3. Set `release_version` to `0.7.9`.
 4. Set `runtime_version` to the approved three-component runtime version. The
    current workflow default is `2026.08.19`; confirm it matches the reviewed
    sidecar lock instead of relying on the default blindly.
 5. Optionally supply a canonical UTC `published_at` value such as `2026-09-10T00:00:00Z`. If omitted, the builder records its current UTC time.
-6. Enter the exact confirmation `BUILD v0.7.1`.
+6. Enter the exact confirmation `BUILD v0.7.9`.
 7. Approve the protected `release-candidate` environment after reviewing the commit and inputs.
 
-The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the candidate inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. It creates no public release or tag. It uploads the unpublished `nuclear-downloader-0.7.1-candidate` artifact after successful acceptance and separately retains sanitized acceptance evidence in `nuclear-downloader-0.7.1-acceptance`, including bounded diagnostics when acceptance fails. Record the successful Actions run ID.
+The workflow reruns the complete gate, fetches only checksum-locked x64 sidecars, builds NSIS and portable outputs with the configured public trust set compiled in, packages the runtime, signs the exact app/runtime manifest bytes using `npm exec tauri signer sign`, creates checksums and the candidate inventory, then cryptographically verifies both detached signatures with the corresponding configured public key. It creates no public release or tag. It uploads the unpublished `nuclear-downloader-0.7.9-candidate` artifact after successful acceptance and separately retains sanitized acceptance evidence in `nuclear-downloader-0.7.9-acceptance`, including bounded diagnostics when acceptance fails. Record the successful Actions run ID.
 
 After the candidate is built, the same protected job installs pinned external `tauri-driver` 2.0.6 and runs `scripts/run-windows-candidate-acceptance-user.ps1`. The wrapper launches the acceptance worker with a restricted Medium-integrity token and an owned kill-on-close process job, preserving the runner account, environment, and exact production bytes. It does not alter UAC policy or add a WebDriver plugin to the app. An early CI fixture verifies the token, exit-code forwarding, environment, Unicode arguments, timeout, and descendant cleanup before building. Acceptance records the verified integrity RID alongside the WebView2 and EdgeDriver versions. This is required because [WebView2 ignores environment-supplied debugging arguments for elevated hosts](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645#issuecomment-4934355430).
 
 The restricted token retains its user's access to newly created process objects instead of relying on the now-disabled Administrators group. Existing desktop and window-station permissions are never changed; fixtures verify they remain identical after success and timeout.
 
-The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.7.1-acceptance` as a separate unpublished evidence artifact. Evidence verification allows only the exact JSON contract and bounded, regularly named diagnostic logs; elevated runs and unexpected files fail closed. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
+The runner installs and exercises the exact candidate bytes, then uploads `nuclear-downloader-0.7.9-acceptance` as a separate unpublished evidence artifact. Evidence verification allows only the exact JSON contract and bounded, regularly named diagnostic logs; elevated runs and unexpected files fail closed. Browser-mode mocked renderer coverage and native desktop results are distinct in the evidence; browser mocks are never described as native acceptance. See [testing.md](testing.md).
 
 The builder refuses a dirty worktree, version drift among npm/Tauri/Cargo metadata, an output path outside Cargo's target directory, existing candidate output, reparse-point traversal, wrong artifact names, oversized files, and manifest/hash mismatches. It never prints the signing key or password.
 
@@ -180,7 +164,7 @@ Download the candidate artifact from the successful run. Preserve the archive an
 8. Uninstall and retained-data behavior.
 9. Maintainer-controlled YouTube and X fixtures.
 10. Manual authenticated/cookie testing with a dedicated account. Never place cookies in CI secrets or artifacts.
-11. Signed application update and signed managed-runtime update/rollback using protected test assets. The real 0.7.1 application-update case runs only after 0.7.1 is public because the updater resolves the hardcoded latest release; it remains pending when publication uses the explicit pending-manual-qualification mode.
+11. Signed application update and signed managed-runtime update/rollback using protected test assets. The real 0.7.9 application-update case runs only after 0.7.9 is public because the updater resolves the hardcoded latest release; it remains pending when publication uses the explicit pending-manual-qualification mode.
 
 The automated exact-byte runner covers items 1-4, portable startup, diagnostics clear, uninstall, retained data, and post-test hash verification using locally generated deterministic media. Diagnostics export uses the deterministic renderer suite because the native save dialog is outside the WebDriver DOM. Protected workflow variables may optionally provide paired maintainer-controlled YouTube/X fixtures: `NUCLEAR_E2E_YOUTUBE_FIXTURE_URL` with `NUCLEAR_E2E_YOUTUBE_FIXTURE_ID`, and `NUCLEAR_E2E_X_FIXTURE_URL` with `NUCLEAR_E2E_X_FIXTURE_ID`. Supplying only one member of a pair fails the run. IDs must match `^[a-z0-9][a-z0-9._-]{0,127}$`. YouTube URLs must use HTTPS on `youtube.com`, `www.youtube.com`, or `youtu.be`; X URLs must use HTTPS on `x.com`, `www.x.com`, `twitter.com`, or `www.twitter.com`. URLs reach only the child process environment and are excluded from evidence and retained log assertions; evidence records case-to-fixture ID mappings. Each unavailable site remains in `controlledSiteFixtures.missing`, and `extractorQualificationStatus` becomes `complete` only when both controlled extracts pass. Overall `qualificationStatus` remains `incomplete`, with all seven cases in `incompleteRequirements`, until the separate manual record exists. The GitHub `windows-latest` runner is not a Windows 11 client and cannot satisfy the manual client gate. Clean Windows 11 installer and portable checks, the controlled fixtures, the dedicated-account cookie test, and signed app/runtime update and rollback checks remain explicit maintainer acceptance items. The generated automated acceptance JSON records all seven manual case IDs and cannot authorize publication by itself.
 
@@ -203,7 +187,7 @@ pwsh -NoProfile -File scripts/write-windows-manual-acceptance.ps1 `
   -CandidateDirectory C:\acceptance\candidate `
   -InputPath C:\acceptance\manual-input.json `
   -OutputDirectory C:\acceptance\evidence `
-  -ExpectedVersion 0.7.1 `
+  -ExpectedVersion 0.7.9 `
   -ExpectedCommitSha <40-character-lowercase-commit> `
   -ExpectedCandidateRunId <candidate-run-id> `
   -Submitter <github-operator>
@@ -215,8 +199,8 @@ The writer refuses to overwrite evidence and validates the finished `windows-x64
 
 Publication has two explicit manual-qualification modes. `complete` remains the
 strict compatibility default and accepts only an already verified seven-case
-manual record. In the present production update design, its signed 0.7.1 update
-case cannot be authentically exercised while 0.7.1 is unpublished because the
+manual record. In the present production update design, its signed 0.7.9 update
+case cannot be authentically exercised while 0.7.9 is unpublished because the
 application resolves the public latest release. `pending` explicitly breaks
 that ordering circle while preserving the incomplete qualification state. A
 pending publication is a public release; it does not claim that manual
@@ -232,9 +216,9 @@ For `complete` mode:
 
 1. Manually dispatch **Publish Release**.
 2. Supply the successful `candidate_run_id`.
-3. Keep `release_version` exactly `0.7.1`.
+3. Keep `release_version` exactly `0.7.9`.
 4. Leave `manual_qualification` at its default, `complete`.
-5. Enter the exact confirmation `PUBLISH v0.7.1`.
+5. Enter the exact confirmation `PUBLISH v0.7.9`.
 6. Paste the original `windows-x64-manual-acceptance.json` text into `manual_acceptance_json`.
 7. Approve the protected `production-release` environment.
 
@@ -250,20 +234,20 @@ For an explicitly accepted pending publication:
 2. Set `manual_qualification` to `pending`.
 3. Leave `manual_acceptance_json` empty.
 4. Enter the exact confirmation
-   `PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING`.
+   `PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING`.
 5. Approve the protected `production-release` environment after reviewing the
    automatic evidence and the pending status.
 
 The pending workflow writes a candidate-bound incomplete qualification
 record with all seven required case IDs marked pending and retains it as the
-`nuclear-downloader-0.7.1-qualification` Actions artifact. The public release
+`nuclear-downloader-0.7.9-qualification` Actions artifact. The public release
 notes state that manual qualification is pending. The incomplete record,
 protected approval, and successful automatic evidence do not constitute
 completed manual acceptance.
 
 The publish workflow verifies that the selected run is a successful first-party **Release Candidate** workflow, checks out its recorded commit, downloads both the candidate and acceptance artifacts from that exact run ID, and validates that the evidence binds the source commit, candidate creation time, Windows x64 platform, every asset size/hash, and every automated acceptance result. In `complete` mode it separately verifies the supplied structured Windows 11 manual evidence, including its candidate inventory digest, complete asset list, submitter, environment versions, seven passed cases, operators, and timestamps. In `pending` mode it instead requires empty manual JSON and creates the candidate-bound incomplete record with all seven cases pending; it does not call the completed-manual verifier or claim that any pending case passed. The applicable complete or pending qualification record is retained as an Actions artifact before any draft mutation. The workflow fetches the exact `minisign-verify` 0.2.5 source pinned in `Cargo.lock` to crates.io checksum `22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e` before verification. Verification resolves offline with `--locked`, checks the registry source and checksum lock entry, and reruns the complete structural/hash/inventory and detached-signature verification. It compiles only a temporary zero-dependency signature-verification helper; it does not rebuild or sign any application, installer, portable, runtime, manifest, or release asset.
 
-The workflow then creates a draft `v0.7.1` release targeted at the candidate commit and uploads only the ten inventoried public files. It discovers unpublished drafts through the release listing and verifies them by numeric release ID, not the published-release tag endpoint. Every asset must be fully uploaded and have the exact inventoried name, size, and SHA-256 digest. The draft must also target the exact candidate commit. Only after those checks does the workflow publish that verified release ID and mark it latest. Qualification records remain retained Actions evidence and are never added to the immutable public asset set; they have the same repository-reader access as other Actions artifacts.
+The workflow then creates a draft `v0.7.9` release targeted at the candidate commit and uploads only the ten inventoried public files. It discovers unpublished drafts through the release listing and verifies them by numeric release ID, not the published-release tag endpoint. Every asset must be fully uploaded and have the exact inventoried name, size, and SHA-256 digest. The draft must also target the exact candidate commit. Only after those checks does the workflow publish that verified release ID and mark it latest. Qualification records remain retained Actions evidence and are never added to the immutable public asset set; they have the same repository-reader access as other Actions artifacts.
 
 GitHub's workflow token can reject creating a new tag at an older commit with
 `403 Resource not accessible by integration`, even with `contents: write`.
@@ -277,29 +261,21 @@ A failed check may leave a draft for inspection when draft creation succeeded. A
 
 After a pending publication, install an older released version in an isolated
 Windows environment and execute the real signed application-update path to the
-public 0.7.1 release. Record that result with the other six manual cases using
+public 0.7.9 release. Record that result with the other six manual cases using
 the unchanged manual evidence contract, verify it locally, and retain it as
 project evidence. Do not rerun **Publish Release** against the already public
 release; the publisher remains fail-closed for an existing published tag and
 the public assets remain immutable. This later evidence does not change the
 application code or make the publication workflow retroactively report a
 complete gate. Until the candidate-bound seven-case record is verified and
-retained, 0.7.1 remains published with manual qualification pending. Do not edit
+retained, 0.7.9 remains published with manual qualification pending. Do not edit
 README or other published qualification claims before that verification is
 complete, and do not mark release qualification complete through policy alone.
 
 ## Immutability and recovery
 
-Published assets are immutable. Do not delete, replace, or upload a second file under the `v0.7.1` release. If 0.7.1 is faulty, preserve it and ship a newly signed follow-up version through the same reviewed pipeline.
+Published assets are immutable. Do not delete, replace, or upload a second file under the `v0.7.9` release. If 0.7.9 is faulty, preserve it and ship a newly signed follow-up version through the same reviewed pipeline.
 
-The empty-rotation-field incident above was an explicitly authorized one-time
-exception to that normal version-bump rule. Archives of the original release,
-assets, hashes, workflow receipts, and qualification state were preserved before
-the public release and tag were replaced. Those archives document the superseded
-publication but provide no evidence for the replacement. The replacement came
-from a newly built candidate and independently passed the automatic, signature,
-source, asset, acceptance, and protected-approval checks recorded above. Manual
-qualification remains pending unless a replacement-candidate-bound seven-case
-record is actually completed and verified.
+The corrected 0.7.1 publication remains documented in [its historical process record](release-process-0.7.1.md). Those assets, signatures, and receipts do not qualify 0.7.9.
 
 Do not run `gh release create`, `gh release upload`, or `git tag` from a local release workspace for this process. The protected publish workflow is the only publication path.

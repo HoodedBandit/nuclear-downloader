@@ -15,6 +15,42 @@ fn temp_stage() -> PathBuf {
     path
 }
 
+#[test]
+fn simultaneous_downloads_share_a_new_staging_root() {
+    let output = temp_stage();
+    let mut errors = Vec::new();
+    for round in 0..4 {
+        let destination = output.join(round.to_string());
+        std::fs::create_dir(&destination).unwrap();
+        let barrier = std::sync::Barrier::new(32);
+        let results = std::thread::scope(|scope| {
+            let workers = (0..32)
+                .map(|_| {
+                    let destination = &destination;
+                    let barrier = &barrier;
+                    scope.spawn(move || {
+                        let id = uuid::Uuid::new_v4().to_string();
+                        let stage = build_staging_dir(destination, &id);
+                        barrier.wait();
+                        reset_staging_dir(&stage, destination, &id)?;
+                        super::verify_staging_marker(&stage, &id)
+                    })
+                })
+                .collect::<Vec<_>>();
+            workers
+                .into_iter()
+                .map(|worker| worker.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        errors.extend(results.into_iter().filter_map(Result::err));
+    }
+    std::fs::remove_dir_all(output).unwrap();
+    assert!(
+        errors.is_empty(),
+        "Simultaneous staging failures: {errors:?}"
+    );
+}
+
 fn write_record(stage: &std::path::Path, path: &std::path::Path) {
     let record = serde_json::json!({
         "schema_version": 1,

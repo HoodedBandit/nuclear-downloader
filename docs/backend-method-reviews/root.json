@@ -27,8 +27,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 11,
-      "endLine": 109,
+      "line": 10,
+      "endLine": 108,
       "symbol": "start",
       "qualifiedName": "bootstrap::start",
       "signature": "pub(crate) fn start(backend: &Backend, current_version: String) -> Result<(), AppError>",
@@ -75,12 +75,12 @@
       "notes": "GUI-free startup orchestration extracted unchanged."
     },
     {
-      "id": "src/bootstrap.rs::bootstrap::start::owned_async_closure#1@16[cfg=all]",
+      "id": "src/bootstrap.rs::bootstrap::start::owned_async_closure#1@15[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 16,
-      "endLine": 97,
+      "line": 15,
+      "endLine": 96,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "bootstrap::start::owned_async_closure#1",
       "signature": "async move",
@@ -128,12 +128,12 @@
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
     {
-      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#2@46[cfg=all]",
+      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#2@45[cfg=all]",
       "kind": "owned_work_closure",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 46,
-      "endLine": 48,
+      "line": 45,
+      "endLine": 47,
       "symbol": "owned_work_closure#2",
       "qualifiedName": "bootstrap::start::owned_work_closure#2",
       "signature": "move ||",
@@ -181,12 +181,12 @@
       "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
     },
     {
-      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#1@98[cfg=all]",
+      "id": "src/bootstrap.rs::bootstrap::start::owned_work_closure#1@97[cfg=all]",
       "kind": "owned_work_closure",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 98,
-      "endLine": 107,
+      "line": 97,
+      "endLine": 106,
       "symbol": "owned_work_closure#1",
       "qualifiedName": "bootstrap::start::owned_work_closure#1",
       "signature": "move |result|",
@@ -238,113 +238,114 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 113,
-      "endLine": 165,
+      "line": 112,
+      "endLine": 172,
       "symbol": "shutdown",
       "qualifiedName": "bootstrap::shutdown",
       "signature": "pub(crate) async fn shutdown(backend: Backend, publish_progress: DownloadProgressSink)",
-      "sourceDigest": "70b2ad3789b97a5071f03d0d47e5d83b36e8e284b6fa578e12322031f981338f",
+      "sourceDigest": "72fbaa7d6b780affb267f5c8bad0d77c6d97a709601d149f51db42dc5d3b1f35",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Coordinates application shutdown, pending-download cancellation/finalization, and bounded tracked-task drain.",
       "callers": [
-        "src/lib.rs ExitRequested untracked shutdown driver."
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
       ],
       "inputs": [
-        "pub(crate) async fn shutdown(backend: Backend, publish_progress: DownloadProgressSink)"
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
       ],
-      "output": "Returns after tracked tasks finish or the ordinary 15-second diagnostic threshold elapses.",
       "sideEffects": [
-        "Registers shutdown cleanup, begins manager shutdown, marks maintenance, finalizes pending downloads, finishes registrations, and logs timeout diagnostics."
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
       ],
       "errors": [
-        "Cleanup registration/state/finalization failures are logged; 15-second overrun is diagnostic and does not cancel protected publication."
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
       ],
       "ownership": [
-        "Untracked driver owns Backend; cleanup continuation owns cloned store/manager/progress callback."
+        "Moves DownloadManager and StateStore out of Backend; clones cleanup inputs into the registered continuation while retaining manager/store to initiate and await shutdown."
       ],
       "locks": [
-        "DownloadManager shutdown/task registry and StateStore durable serialization only."
+        "State mutations use StateStore serialization; lifecycle startup and shutdown modes close admissions before cleanup."
       ],
-      "cancellation": "Triggers the shared shutdown token; protected publication may continue beyond the ordinary 15-second wait by design.",
       "invariants": [
-        "Driver is not registered in the task set it waits for; pending finalization precedes manager.finish."
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
       ],
       "tests": [
-        "Static source and caller review of bootstrap::shutdown; no dedicated test in this sidecar directly isolates the complete shutdown sequence."
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and shutdown_between_durable_admission_and_registration_compensates_as_one_batch cover pending cleanup primitives; lifecycle::tests::shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks covers cleanup task accounting."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/bootstrap.rs:113",
-        "src/lib.rs ExitRequested callback"
+        "Source span src/bootstrap.rs:112-172, digest 72fbaa7d6b780affb267f5c8bad0d77c6d97a709601d149f51db42dc5d3b1f35.",
+        "Direct caller review: lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
       ],
+      "purpose": "Drive coordinated shutdown, finalize pending work, wait up to the ordinary grace period, and log recoverable cleanup failures.",
+      "output": "Unit after coordinator shutdown and bounded cleanup wait.",
+      "cancellation": "This function is itself the shutdown driver: it registers cleanup first, signals coordinator shutdown, and bounds the wait to 15 seconds.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/bootstrap.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
       "status": "reviewed",
-      "notes": "Ordinary timeout is observability, not a hard cancellation deadline."
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span.",
+      "ownerCall": null
     },
     {
-      "id": "src/bootstrap.rs::bootstrap::shutdown::owned_async_closure#1@120[cfg=all]",
+      "id": "src/bootstrap.rs::bootstrap::shutdown::owned_async_closure#1@119[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
       "file": "src/bootstrap.rs",
-      "line": 120,
-      "endLine": 142,
+      "line": 119,
+      "endLine": 149,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "bootstrap::shutdown::owned_async_closure#1",
       "signature": "async move",
-      "sourceDigest": "da9af7a1a3ac1158349dcfe389559eb6e3cf58a47faaf98f1d2fec50eee5abc8",
+      "sourceDigest": "4ecdd0140bfa214beabd08f9f5a9fbf93e1b9e829a07d7dfb236a37d35433874",
       "cfg": [],
       "ownerCall": "spawn_cleanup_continuation",
-      "purpose": "Waits for shutdown cancellation, marks shutdown maintenance, terminally cancels pending downloads, then calls manager.finish for each.",
       "callers": [
-        "Created only by its enclosing callable src/bootstrap.rs::bootstrap::shutdown."
+        "lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown."
       ],
       "inputs": [
-        "async move"
+        "Backend/store/coordinator, current version, progress sink, shutdown token, and journaled output roots as applicable."
       ],
-      "output": "Returns unit after shutdown-triggered pending cleanup.",
       "sideEffects": [
-        "Waits for shutdown cancellation, marks shutdown maintenance, terminally cancels pending downloads, then calls manager.finish for each."
+        "Changes maintenance/readiness, recovers transactions, cleans owned stages, initializes runtime cache, begins shutdown, finalizes pending work, and writes diagnostics."
       ],
       "errors": [
-        "Logs maintenance failure; finalize_download logs its own failure; no error escapes the cleanup continuation."
+        "Startup propagates durable recovery/runtime errors; cleanup warnings are logged; shutdown cleanup registration/finalization/timeout are logged."
       ],
       "ownership": [
-        "Owns cleanup StateStore, DownloadManager, progress sink, and shutdown token until pending cleanup completes."
+        "The cleanup registry owns cloned store, manager, progress sink, and shutdown token until the pending batch is finalized or logged failed."
       ],
       "locks": [
-        "Uses StateStore terminal commits and DownloadManager finish sequentially; owns no publication guard."
+        "Waits without a lock for the shutdown token; pending batch finalization uses one StateStore mutation and per-ID deregistration uses short manager/store locks."
       ],
-      "cancellation": "Begins only after cleanup_shutdown is cancelled, then runs cleanup to completion.",
       "invariants": [
-        "Waits for shutdown cancellation, marks shutdown maintenance, terminally cancels pending downloads, then calls manager.finish for each."
+        "Admission stays closed until startup recovery completes; shutdown cleanup is registered before shutdown cancellation is signaled."
       ],
       "tests": [
-        "Static source and caller review of this exact nested body; no dedicated test directly isolates it."
+        "services::preparation::tests::cancel_all_releases_a_thousand_preparations_and_reopens_admission covers batched pending finalization; lifecycle::tests::shutdown_accounts_for_cleanup_and_rejects_unrelated_new_tasks covers cleanup-continuation accounting."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/bootstrap.rs:120",
-        "Enclosing callable: src/bootstrap.rs::bootstrap::shutdown.",
-        "Waits for shutdown cancellation, marks shutdown maintenance, terminally cancels pending downloads, then calls manager.finish for each."
+        "Source span src/bootstrap.rs:119-149, digest 4ecdd0140bfa214beabd08f9f5a9fbf93e1b9e829a07d7dfb236a37d35433874.",
+        "Direct caller review: lib::run setup invokes bootstrap::start; the desktop ExitRequested task invokes bootstrap::shutdown.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
       ],
+      "purpose": "After shutdown begins, durably cancel pending operations and remove their lifecycle registrations.",
+      "output": "Unit when pending shutdown cleanup finishes or logs a finalization failure.",
+      "cancellation": "Waits for the coordinator shutdown token, then runs as an accounted cleanup continuation during the 15-second grace period.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/bootstrap.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span."
     },
     {
       "id": "src/desktop.rs::desktop::record_event_delivery_failure[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 11,
-      "endLine": 18,
+      "line": 19,
+      "endLine": 26,
       "symbol": "record_event_delivery_failure",
       "qualifiedName": "desktop::record_event_delivery_failure",
       "signature": "fn record_event_delivery_failure(diagnostics: &Diagnostics, event: &str, error: &str)",
@@ -395,8 +396,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 20,
-      "endLine": 28,
+      "line": 28,
+      "endLine": 36,
       "symbol": "download_progress_sink",
       "qualifiedName": "desktop::download_progress_sink",
       "signature": "pub(crate) fn download_progress_sink(app: &AppHandle, store: &StateStore) -> DownloadProgressSink",
@@ -447,8 +448,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 30,
-      "endLine": 42,
+      "line": 38,
+      "endLine": 50,
       "symbol": "runtime_progress_sink",
       "qualifiedName": "desktop::runtime_progress_sink",
       "signature": "pub(crate) fn runtime_progress_sink(app: &AppHandle, store: &StateStore) -> RuntimeProgressSink",
@@ -499,8 +500,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 44,
-      "endLine": 56,
+      "line": 52,
+      "endLine": 64,
       "symbol": "update_progress_sink",
       "qualifiedName": "desktop::update_progress_sink",
       "signature": "pub(crate) fn update_progress_sink(app: &AppHandle, store: &StateStore) -> UpdateProgressSink",
@@ -551,8 +552,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 58,
-      "endLine": 77,
+      "line": 66,
+      "endLine": 85,
       "symbol": "installer_actions",
       "qualifiedName": "desktop::installer_actions",
       "signature": "pub(crate) fn installer_actions(app: &AppHandle) -> InstallerActions",
@@ -603,8 +604,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 78,
-      "endLine": 104,
+      "line": 86,
+      "endLine": 112,
       "symbol": "spawn_state_events",
       "qualifiedName": "desktop::spawn_state_events",
       "signature": "pub(crate) fn spawn_state_events( app: &tauri::AppHandle, store: &StateStore, manager: &DownloadManager, ) -> Result<(), AppError>",
@@ -651,12 +652,12 @@
       "notes": "Desktop-only adapter; no workflow state transition is owned here."
     },
     {
-      "id": "src/desktop.rs::desktop::spawn_state_events::owned_async_closure#1@87[cfg=all]",
+      "id": "src/desktop.rs::desktop::spawn_state_events::owned_async_closure#1@95[cfg=all]",
       "kind": "owned_async_closure",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 87,
-      "endLine": 103,
+      "line": 95,
+      "endLine": 111,
       "symbol": "owned_async_closure#1",
       "qualifiedName": "desktop::spawn_state_events::owned_async_closure#1",
       "signature": "async move",
@@ -708,8 +709,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 107,
-      "endLine": 129,
+      "line": 115,
+      "endLine": 137,
       "symbol": "report_startup_failure",
       "qualifiedName": "desktop::report_startup_failure",
       "signature": "pub(crate) fn report_startup_failure(error: &AppError)",
@@ -762,8 +763,8 @@
       "kind": "ffi_declaration",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 113,
-      "endLine": 113,
+      "line": 121,
+      "endLine": 121,
       "symbol": "MessageBoxW",
       "qualifiedName": "desktop::report_startup_failure::local::MessageBoxW",
       "signature": "fn MessageBoxW(window: isize, text: *const u16, caption: *const u16, kind: u32) -> i32",
@@ -816,8 +817,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/desktop.rs",
-      "line": 132,
-      "endLine": 137,
+      "line": 140,
+      "endLine": 145,
       "symbol": "report_startup_failure",
       "qualifiedName": "desktop::report_startup_failure",
       "signature": "pub(crate) fn report_startup_failure(error: &AppError)",
@@ -870,8 +871,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 48,
-      "endLine": 54,
+      "line": 50,
+      "endLine": 56,
       "symbol": "begin_inspection",
       "qualifiedName": "begin_inspection",
       "signature": "async fn begin_inspection( _app: tauri::AppHandle, state: State<'_, AppState>, input: BeginInspectionInput, ) -> Result<BeginOperationResult, AppError>",
@@ -922,8 +923,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 57,
-      "endLine": 68,
+      "line": 59,
+      "endLine": 70,
       "symbol": "cancel_operation",
       "qualifiedName": "cancel_operation",
       "signature": "async fn cancel_operation( app: tauri::AppHandle, state: State<'_, AppState>, operation_id: String, ) -> Result<(), AppError>",
@@ -974,8 +975,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 71,
-      "endLine": 77,
+      "line": 73,
+      "endLine": 79,
       "symbol": "dismiss_operation",
       "qualifiedName": "dismiss_operation",
       "signature": "async fn dismiss_operation( _app: tauri::AppHandle, state: State<'_, AppState>, operation_id: String, ) -> Result<(), AppError>",
@@ -1026,8 +1027,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 80,
-      "endLine": 89,
+      "line": 82,
+      "endLine": 91,
       "symbol": "cancel_all_downloads",
       "qualifiedName": "cancel_all_downloads",
       "signature": "async fn cancel_all_downloads( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<CancelAllResult, AppError>",
@@ -1078,8 +1079,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 92,
-      "endLine": 94,
+      "line": 94,
+      "endLine": 96,
       "symbol": "get_app_snapshot",
       "qualifiedName": "get_app_snapshot",
       "signature": "fn get_app_snapshot(state: State<'_, AppState>) -> Result<AppSnapshot, AppError>",
@@ -1130,60 +1131,61 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 97,
-      "endLine": 103,
+      "line": 99,
+      "endLine": 105,
       "symbol": "add_inspection_result_to_queue",
       "qualifiedName": "add_inspection_result_to_queue",
-      "signature": "async fn add_inspection_result_to_queue( _app: tauri::AppHandle, state: State<'_, AppState>, input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>",
-      "sourceDigest": "844ab5b403c959d26c80e37f16a6f570e1b4137a230ad94499ac2327708335a4",
+      "signature": "async fn add_inspection_result_to_queue( _app: tauri::AppHandle, state: State<'_, AppState>, input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>",
+      "sourceDigest": "f1892d29a79c1a9ba36f7a77ae55ea830894d0c75ea9f28107aae13149777786",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Exposes the Tauri command add_inspection_result_to_queue and delegates the request to services::queue::add_inspection_result_to_queue with typed application state.",
       "callers": [
-        "Registered by tauri::generate_handler! in src/lib.rs::run as command add_inspection_result_to_queue."
+        "Tauri invoke handler dispatches renderer add_inspection_result_to_queue requests."
       ],
       "inputs": [
-        "async fn add_inspection_result_to_queue( _app: tauri::AppHandle, state: State<'_, AppState>, input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>"
+        "Tauri AppHandle, managed Backend state, and deserialized AddQueueItemInput."
       ],
-      "output": "Returns the new QueueItemRecord or AppError.",
       "sideEffects": [
-        "Invokes services::queue::add_inspection_result_to_queue exactly once; callback/package-version construction is explicit in this wrapper."
+        "Delegates durable queue admission and lifecycle registration to services::queue."
       ],
       "errors": [
-        "Returns the AppError from services::queue::add_inspection_result_to_queue unchanged; no local suppression or remapping."
+        "Propagates validation, persistence, lifecycle, and idempotency errors unchanged."
       ],
       "ownership": [
-        "Clones Backend and moves the command input values into the delegated async service; the unused AppHandle is not retained."
+        "Borrows managed state for the command and moves the input into the service future."
       ],
       "locks": [
-        "Acquires no local lock or permit; services::queue::add_inspection_result_to_queue owns any StateStore/DownloadManager synchronization."
+        "Acquires no boundary lock; delegated service owns admission and mutation ordering."
       ],
-      "cancellation": "The delegated bounded command has no wrapper-level cancellation branch.",
       "invariants": [
-        "Command name and serialized signature for add_inspection_result_to_queue remain unchanged."
+        "The command adds no alternate admission path or response transformation."
       ],
       "tests": [
-        "public_boundary_tests::public_command_registry_is_exact_and_ordered; delegated service behavior is reviewed at its owning method/test rows."
+        "state::tests::playlist_tests::receipt_replays_after_restart_and_rejects_changed_payload and backend lifecycle dropped-admission tests cover the delegated service; no Tauri command-shell test directly invokes this wrapper."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:97",
-        "src/lib.rs tauri::generate_handler! registration"
+        "Source span src/lib.rs:97-103, digest f1892d29a79c1a9ba36f7a77ae55ea830894d0c75ea9f28107aae13149777786.",
+        "Direct caller review: Tauri invoke handler dispatches renderer add_inspection_result_to_queue requests.",
+        "Supplied target/engineering-structural-rust-final.log records 379 passed, 0 failed, 4 ignored; no tests were run for this sidecar review."
       ],
+      "purpose": "Expose typed single-item or playlist queue admission through the Tauri command boundary.",
+      "output": "AddQueueItemResult or AppError from the queue service.",
+      "cancellation": "The service uses tracked admission ownership and cleanup guards so renderer cancellation cannot abandon committed work.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/lib.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex lifecycle ledger review",
+      "reviewedAt": "2026-09-13T20:40:08.345469Z",
       "status": "reviewed",
-      "notes": "Reviewed as a thin public boundary and against its service caller contract."
+      "notes": "Substantive source, ownership, lock, cancellation, caller, and test review found no separate defect in this callable span.",
+      "ownerCall": null
     },
     {
       "id": "src/lib.rs::update_queue_item[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 106,
-      "endLine": 113,
+      "line": 108,
+      "endLine": 115,
       "symbol": "update_queue_item",
       "qualifiedName": "update_queue_item",
       "signature": "async fn update_queue_item( _app: tauri::AppHandle, state: State<'_, AppState>, item_id: String, input: UpdateQueueItemInput, ) -> Result<(), AppError>",
@@ -1234,8 +1236,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 116,
-      "endLine": 122,
+      "line": 118,
+      "endLine": 124,
       "symbol": "remove_queue_items",
       "qualifiedName": "remove_queue_items",
       "signature": "async fn remove_queue_items( _app: tauri::AppHandle, state: State<'_, AppState>, item_ids: Vec<String>, ) -> Result<(), AppError>",
@@ -1286,8 +1288,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 125,
-      "endLine": 132,
+      "line": 127,
+      "endLine": 134,
       "symbol": "enqueue_queue_items",
       "qualifiedName": "enqueue_queue_items",
       "signature": "async fn enqueue_queue_items( _app: tauri::AppHandle, state: State<'_, AppState>, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
@@ -1338,8 +1340,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 135,
-      "endLine": 140,
+      "line": 137,
+      "endLine": 142,
       "symbol": "check_downloader_runtime",
       "qualifiedName": "check_downloader_runtime",
       "signature": "async fn check_downloader_runtime( _app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::DownloaderRuntimeStatus, AppError>",
@@ -1390,8 +1392,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 143,
-      "endLine": 148,
+      "line": 145,
+      "endLine": 150,
       "symbol": "check_runtime_update",
       "qualifiedName": "check_runtime_update",
       "signature": "async fn check_runtime_update( _app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::DownloaderRuntimeUpdateCheck, AppError>",
@@ -1442,8 +1444,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 151,
-      "endLine": 160,
+      "line": 153,
+      "endLine": 162,
       "symbol": "begin_runtime_update",
       "qualifiedName": "begin_runtime_update",
       "signature": "async fn begin_runtime_update( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<BeginOperationResult, AppError>",
@@ -1494,8 +1496,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 163,
-      "endLine": 165,
+      "line": 165,
+      "endLine": 167,
       "symbol": "default_download_dir",
       "qualifiedName": "default_download_dir",
       "signature": "fn default_download_dir() -> Result<String, AppError>",
@@ -1546,8 +1548,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 168,
-      "endLine": 170,
+      "line": 170,
+      "endLine": 172,
       "symbol": "validate_output_directory",
       "qualifiedName": "validate_output_directory",
       "signature": "fn validate_output_directory(path: String) -> Result<String, AppError>",
@@ -1598,8 +1600,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 173,
-      "endLine": 182,
+      "line": 175,
+      "endLine": 184,
       "symbol": "check_app_update",
       "qualifiedName": "check_app_update",
       "signature": "async fn check_app_update( app: tauri::AppHandle, state: State<'_, AppState>, ) -> Result<models::UpdateCheckResult, AppError>",
@@ -1650,60 +1652,62 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 185,
-      "endLine": 198,
+      "line": 187,
+      "endLine": 203,
       "symbol": "begin_app_update",
       "qualifiedName": "begin_app_update",
       "signature": "async fn begin_app_update( app: tauri::AppHandle, state: State<'_, AppState>, expected_version: String, ) -> Result<BeginOperationResult, AppError>",
-      "sourceDigest": "c8dc7d8f6b2ec6ca08065ff718adc01cba2998575f96f9b493ac2667dc94d77c",
+      "sourceDigest": "44a0560e248421718f110a3ef9ec5a46a02496bfde277352d92b50c47991bd67",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Exposes the Tauri command begin_app_update and delegates the request to services::updates::begin_app_update with typed application state.",
       "callers": [
         "Registered by tauri::generate_handler! in src/lib.rs::run as command begin_app_update."
       ],
       "inputs": [
         "async fn begin_app_update( app: tauri::AppHandle, state: State<'_, AppState>, expected_version: String, ) -> Result<BeginOperationResult, AppError>"
       ],
-      "output": "Returns admitted app-update ID or AppError.",
       "sideEffects": [
-        "Invokes services::updates::begin_app_update exactly once; callback/package-version construction is explicit in this wrapper."
+        "Preview returns before update work; regular builds call the existing supervised update service."
       ],
       "errors": [
-        "Returns the AppError from services::updates::begin_app_update unchanged; no local suppression or remapping."
+        "Preview returns preview_update_disabled; normal workflow errors propagate."
       ],
       "ownership": [
-        "Clones Backend and captures an AppHandle-backed progress/installer adapter for the delegated async service."
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
       ],
       "locks": [
-        "Acquires no local lock or permit; services::updates::begin_app_update owns any StateStore/DownloadManager synchronization."
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
       ],
-      "cancellation": "Delegated UpdateTaskContext owns pre-publication cancellation; protected publication is deferred by design.",
       "invariants": [
-        "Command name and serialized signature for begin_app_update remain unchanged."
+        "A local UI preview cannot install over the regular application."
       ],
       "tests": [
-        "public_boundary_tests::public_command_registry_is_exact_and_ordered; delegated service behavior is reviewed at its owning method/test rows."
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:185",
-        "src/lib.rs tauri::generate_handler! registration"
+        "Source read: src/lib.rs:187-203; SHA-256 44a0560e248421718f110a3ef9ec5a46a02496bfde277352d92b50c47991bd67.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
       ],
+      "purpose": "Reject installer updates in the local preview and retain the standard app update workflow elsewhere.",
+      "output": "Result<BeginOperationResult, AppError>",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/lib.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
       "status": "reviewed",
-      "notes": "Reviewed as a thin public boundary and against its service caller contract."
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
     },
     {
       "id": "src/lib.rs::export_diagnostics[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 201,
-      "endLine": 206,
+      "line": 206,
+      "endLine": 211,
       "symbol": "export_diagnostics",
       "qualifiedName": "export_diagnostics",
       "signature": "fn export_diagnostics(state: State<'_, AppState>, destination: String) -> Result<(), AppError>",
@@ -1754,8 +1758,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 209,
-      "endLine": 211,
+      "line": 214,
+      "endLine": 216,
       "symbol": "clear_diagnostics",
       "qualifiedName": "clear_diagnostics",
       "signature": "fn clear_diagnostics(state: State<'_, AppState>) -> Result<(), AppError>",
@@ -1806,109 +1810,54 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/lib.rs",
-      "line": 214,
-      "endLine": 319,
+      "line": 248,
+      "endLine": 334,
       "symbol": "run",
       "qualifiedName": "run",
       "signature": "pub fn run()",
-      "sourceDigest": "d60f70ecb8514c95f2da6f55653e7fb3e87452dad5bca30073aba2c93989387b",
+      "sourceDigest": "34d8f463408ffd0738f1d19f7eccfa8138e189b4cc86568526be52c509ae2d6e",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Builds and runs the Tauri application, registering plugins, durable backend state, event publisher, five workers, startup recovery, commands, and graceful exit handling.",
       "callers": [
-        "src/main.rs::main is the sole caller."
+        "Desktop binary main invokes nuclear_app_lib::run."
       ],
       "inputs": [
         "pub fn run()"
       ],
-      "output": "Runs the desktop event loop until exit; returns after build failure or application shutdown.",
       "sideEffects": [
-        "Opens default durable state only after single-instance registration; manages Backend; starts event, worker, and startup tasks; intercepts ExitRequested and drives bootstrap::shutdown."
+        "Registers single-instance before opening state, installs command handlers, starts workers, then delegates exit handling."
       ],
       "errors": [
-        "Setup/build errors show one native startup failure report and return; shutdown diagnostics are handled by bootstrap::shutdown."
+        "Preview identifier mismatch rejects setup; initialization failures retain existing reporting behavior."
       ],
       "ownership": [
-        "Atomic flags are shared with the run callback; the shutdown task owns cloned Backend/AppHandle until exit."
+        "Preserves ownership of existing backend state; moved shutdown captures retain Arc ownership until completion."
       ],
       "locks": [
-        "StateStore controls its journal/outbox locks; DownloadManager controls task/admission state; AtomicBool gates duplicate shutdown."
+        "No new synchronization locks; shutdown guards retain atomic single-execution semantics."
       ],
-      "cancellation": "ExitRequested starts manager shutdown once; later exit requests are prevented until shutdown_complete.",
       "invariants": [
-        "Exactly 18 commands are registered; single-instance plugin precedes StateStore::open_default; state events and five workers start once."
+        "Preview feature requires preview app identity; existing single-instance and worker startup ordering are preserved."
       ],
       "tests": [
-        "public_boundary_tests::legacy_state_bypassing_commands_are_not_registered",
-        "public_boundary_tests::persistent_state_opens_only_after_single_instance_registration",
-        "public_boundary_tests::download_worker_pool_is_started_once_during_setup"
+        "public_command_registry_is_exact_and_ordered",
+        "persistent_state_opens_only_after_single_instance_registration",
+        "download_worker_pool_is_started_once_during_setup"
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/lib.rs:214",
-        "src/public_boundary_tests.rs source guards",
-        "Named public_boundary_tests source guards listed in this row; no aggregate suite count is used as behavioral proof."
+        "Source read: src/lib.rs:248-334; SHA-256 34d8f463408ffd0738f1d19f7eccfa8138e189b4cc86568526be52c509ae2d6e.",
+        "UI preview implementation review in the current task; static source review is distinct from native workflow qualification."
       ],
+      "purpose": "Compose the application shell and initialize owned backend workers.",
+      "output": "Unit; behavior described in purpose.",
+      "cancellation": "Synchronous file/UI boundary or existing service delegation; no new cancellable background owner.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/lib.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex UI implementation review",
+      "reviewedAt": "2026-09-18T18:34:15.880Z",
       "status": "reviewed",
-      "notes": "Thin desktop composition root; behavior-preserving extraction reviewed."
-    },
-    {
-      "id": "src/lib.rs::run::owned_async_closure#1@312[cfg=all]",
-      "kind": "owned_async_closure",
-      "classification": "production",
-      "file": "src/lib.rs",
-      "line": 312,
-      "endLine": 316,
-      "symbol": "owned_async_closure#1",
-      "qualifiedName": "run::owned_async_closure#1",
-      "signature": "async move",
-      "sourceDigest": "f5820d09ec96427e26bfc3d1d712e7db7891887d56b0f9c3f726b463ba3f73a1",
-      "cfg": [],
-      "ownerCall": "spawn",
-      "purpose": "Owns Backend, AppHandle and completion flag while awaiting bootstrap shutdown, then marks completion and requests the saved exit code.",
-      "callers": [
-        "Created only by its enclosing callable src/lib.rs::run."
-      ],
-      "inputs": [
-        "async move"
-      ],
-      "output": "Returns unit after requesting application exit.",
-      "sideEffects": [
-        "Owns Backend, AppHandle and completion flag while awaiting bootstrap shutdown, then marks completion and requests the saved exit code."
-      ],
-      "errors": [
-        "bootstrap::shutdown reports failures through diagnostics, so this driver has no error result."
-      ],
-      "ownership": [
-        "Owns Backend, cloned AppHandle, completion AtomicBool Arc, and saved exit code until exit is requested."
-      ],
-      "locks": [
-        "Uses the shared shutdown_complete AtomicBool after bootstrap coordination."
-      ],
-      "cancellation": "This is the untracked shutdown driver and is not cancelled by the manager it waits on.",
-      "invariants": [
-        "Owns Backend, AppHandle and completion flag while awaiting bootstrap shutdown, then marks completion and requests the saved exit code."
-      ],
-      "tests": [
-        "public_boundary_tests::persistent_state_opens_only_after_single_instance_registration",
-        "public_boundary_tests::download_worker_pool_is_started_once_during_setup"
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/lib.rs:312",
-        "Enclosing callable: src/lib.rs::run.",
-        "Owns Backend, AppHandle and completion flag while awaiting bootstrap shutdown, then marks completion and requests the saved exit code."
-      ],
-      "disposition": "keep",
-      "destination": "src/lib.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Reviewed for profile isolation, bounded preference I/O, authoritative output lookup, and preservation of existing lifecycle behavior. This is a local implementation review, not an independent release qualification.",
+      "ownerCall": null
     },
     {
       "id": "src/main.rs::main[cfg=all]",
@@ -2847,49 +2796,50 @@
       "endLine": 149,
       "symbol": "bounded_inspection",
       "qualifiedName": "services::inspection::bounded_inspection",
-      "signature": "async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,",
-      "sourceDigest": "1200a7ee8b6faf7da98935bd40103a6f745758ce70ebede302fab0c73da77c8f",
+      "signature": "pub(super) async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,",
+      "sourceDigest": "d0f000e4573852c646bd7c43ee72f00962b9e04b0f15677204106b70bd6601aa",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Applies the inspection deadline, terminates children on timeout, and briefly retains their owner to observe exit.",
       "callers": [
-        "services::inspection::begin_inspection detached task"
+        "services::inspection::execute_inspection and services::preparation::prepare wrap downloader inspection with this timeout."
       ],
       "inputs": [
-        "async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,"
+        "Parameters in signature: pub(super) async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,."
       ],
-      "output": "Returns the inner success/error, or retryable inspection_timeout after deadline and child termination.",
       "sideEffects": [
-        "Creates and publishes the inspection operation, starts the downloader inspector, commits its terminal result, and finishes its lifecycle registration."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Returns the `Result<T, AppError> where F: Future<Output = Result<T, AppError>>,` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Borrows DownloadJob and pins the supplied future locally, retaining it for the five-second exit observation after timeout."
+        "Borrows DownloadJob and owns the supplied future until completion or timeout."
       ],
       "locks": [
-        "Job admission/inspection permit comes from DownloadManager; StateStore serializes each durable state transition."
+        "No application lock; tokio timeout drives the inner future."
       ],
-      "cancellation": "DownloadJob cancellation is checked before/after permit acquisition and converts cancellation races to Cancelled terminal state; timeout terminates children.",
       "invariants": [
-        "Applies the inspection deadline, terminates children on timeout, and briefly retains their owner to observe exit."
+        "Timeout always terminates associated child processes before returning inspection_timeout."
       ],
       "tests": [
-        "Static call-path review of services::inspection::bounded_inspection at src/services/inspection.rs:123; no dedicated behavioral test targets this helper alone."
+        "services::inspection tests cover timeout and cancellation process termination; preparation tests exercise the same wrapper."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/inspection.rs:123",
-        "Signature: async fn bounded_inspection<F, T>( job: &downloader::process::DownloadJob, future: F, timeout: Duration, ) -> Result<T, AppError> where F: Future<Output = Result<T, AppError>>,",
-        "Direct source call sites for bounded_inspection reviewed after Stage4 move."
+        "Source span src/services/inspection.rs:126-149, digest d0f000e4573852c646bd7c43ee72f00962b9e04b0f15677204106b70bd6601aa.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Bound one inspection future by the inspection timeout and terminate its process job on timeout.",
+      "output": "Result from the inner future or timeout AppError.",
+      "cancellation": "Timeout terminates job processes; ordinary caller/job cancellation is handled by the inner inspection future.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
       "id": "src/services/inspection.rs::services::inspection::execute_inspection[cfg=all]",
@@ -2897,54 +2847,53 @@
       "classification": "production",
       "file": "src/services/inspection.rs",
       "line": 151,
-      "endLine": 197,
+      "endLine": 206,
       "symbol": "execute_inspection",
       "qualifiedName": "services::inspection::execute_inspection",
-      "signature": "async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>",
-      "sourceDigest": "6a606a66ae897011b9cac15f0f07dc19b980e534f02aa2809de2f2645758a7e4",
+      "signature": "pub(super) async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>",
+      "sourceDigest": "af1a7e1edc043cecabee802323a7c62ae0ee58024cd2a169e0bd04527c88cc6b",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Execute one registered inspection and durably publish its result.",
       "callers": [
-        "begin_inspection owned task."
+        "begin_inspection worker and services::preparation::prepare call execute_inspection."
       ],
       "inputs": [
-        "State, operation id, URL/config/selection, and tracked work."
+        "Parameters in signature: pub(super) async fn execute_inspection( store: &StateStore, manager: &DownloadManager, operation_id: &str, input: BeginInspectionInput, job: &downloader::process::DownloadJob, ) -> Result<Option<models::UrlInspection>, AppError>."
       ],
-      "output": "Unit after terminal handling.",
       "sideEffects": [
-        "Creates DownloadJob, calls downloader inspection, commits success/error unless cancelled, and sends state deltas."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Normalizes downloader and persistence errors into operation finalization."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Tracked work owns cancellation; DownloadJob owns child processes."
+        "Borrows store/manager/job and owns BeginInspectionInput plus the acquired inspection permit."
       ],
       "locks": [
-        "State commits acquire store synchronization through delegated APIs."
+        "Holds one inspection semaphore permit only around downloader inspection; no StateStore mutation lock."
       ],
-      "cancellation": "Checks tracked cancellation and preserves cancellation terminal semantics.",
       "invariants": [
-        "Selected identity flows unchanged into downloader inspection; terminal commit corresponds to the registered operation."
+        "No process starts after observed job cancellation; playlist results carry the cookie/compat fingerprint of this exact input."
       ],
       "tests": [
-        "rejected_inspection_metadata_finishes_the_registered_operation; panic_after_durable_inspection_before_publish_is_cleaned_up."
+        "downloader inspection tests cover parser/normalization; services inspection tests cover cancellation and timeout; playlist settings tests cover fingerprint reuse."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/services/inspection.rs:151-197, digest 6a606a66ae897011b9cac15f0f07dc19b980e534f02aa2809de2f2645758a7e4.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source span src/services/inspection.rs:151-206, digest af1a7e1edc043cecabee802323a7c62ae0ee58024cd2a169e0bd04527c88cc6b.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Acquire the shared inspection permit, run downloader inspection, normalize metadata, and stamp playlist context fingerprint.",
+      "output": "Optional UrlInspection; None represents cancellation.",
+      "cancellation": "Checks the job before and after permit acquisition and maps cancellation-like process errors to None.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/inspection.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "previousDigest": "e07d42bcf38dbd2a7a043c6a62e3b362d5e3aa16168bcbb72f84a6ecf7ee0d9a",
-      "staleReason": "source_changed"
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
       "id": "src/services/maintenance.rs::services::maintenance::impl AppMaintenanceLease::release[cfg=all]",
@@ -3269,492 +3218,446 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 12,
-      "endLine": 49,
+      "line": 14,
+      "endLine": 55,
       "symbol": "add_inspection_result_to_queue",
       "qualifiedName": "services::queue::add_inspection_result_to_queue",
-      "signature": "pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<QueueItemRecord, AppError>",
-      "sourceDigest": "e1a1c357a08ff7bdb6a7bf80b7cf6082daf3f02036351e1201d7590c99d93226",
+      "signature": "pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>",
+      "sourceDigest": "3c6e6821969be749e6dc56728bdce6a684f71667068cbe73306f95d52034728f",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Add an inspected video to the queue while preserving its typed selection.",
       "callers": [
-        "Tauri command adapter and frontend inspection workflow."
+        "Tauri command add_inspection_result_to_queue calls this service."
       ],
       "inputs": [
-        "State and AddInspectionResultInput containing inspected VideoInfo and queue settings."
+        "Parameters in signature: pub(crate) async fn add_inspection_result_to_queue( backend: Backend, mut input: AddQueueItemInput, ) -> Result<AddQueueItemResult, AppError>."
       ],
-      "output": "Added QueueItem.",
       "sideEffects": [
-        "Validates/normalizes fields, commits the queue item, and emits resulting state delta."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Rejects invalid action fields or selection and propagates state persistence errors."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Moves normalized metadata/selection into the new queue record."
+        "run_tracked_command owns the inner async admission future independently of renderer response lifetime."
       ],
       "locks": [
-        "Delegates commit serialization to StateStore."
+        "No service lock; delegated state/lifecycle methods own ordering."
       ],
-      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "Queue identity includes optional MediaSelection, so two clips sharing a parent URL remain distinct and retryable."
+        "Playlist input remains raw until admit_playlist; single-item output is canonicalized before durable construction."
       ],
       "tests": [
-        "distinct_media_selections_survive_queue_persistence_and_retry_mapping; inspection display/action validation tests."
+        "service raw-fingerprint tests cover playlist dispatch; backend lifecycle dropped-response test covers tracked admission ownership."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/services/queue.rs:12-49, digest e1a1c357a08ff7bdb6a7bf80b7cf6082daf3f02036351e1201d7590c99d93226.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source span src/services/queue.rs:14-55, digest 3c6e6821969be749e6dc56728bdce6a684f71667068cbe73306f95d52034728f.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Run typed single or playlist admission in lifecycle-tracked command ownership.",
+      "output": "Single queue row or playlist admission result.",
+      "cancellation": "Renderer caller loss does not own the tracked admission task; cleanup guards cover committed publication gaps.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "previousDigest": "069824924730aba109e71a5118c49952589d5b82b10bf4eff2b6e84991222c90",
-      "staleReason": "source_changed"
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
-      "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue::async_block#1@17[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::add_inspection_result_to_queue::async_block#1@19[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 17,
-      "endLine": 47,
+      "line": 19,
+      "endLine": 53,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::add_inspection_result_to_queue::async_block#1",
       "signature": "async move",
-      "sourceDigest": "0bc08622a54b629f743e96bd6f6d02961aad86067646d98dddd8caa530790e2e",
+      "sourceDigest": "198df7bd01cf113bf6902ce552a995280b76b907a788a5c01ee22a1136834017",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Execute the current services queue add inspection result to queue async block#1 adapter/owned closure after typed selection propagation.",
       "callers": [
-        "Lexically enclosing callable or current direct source call site."
+        "Tauri command add_inspection_result_to_queue calls this service."
       ],
       "inputs": [
-        "Arguments named by the current signature, validated at the boundary described below."
+        "Parameters in signature: async move."
       ],
-      "output": "The Result or value in the current signature.",
       "sideEffects": [
-        "No external side effect beyond the explicit mutation, process, persistence, or publication action described below."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Propagates the current validation, I/O, process, or state error without converting an invalid selection into an unselected fallback."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Borrows caller inputs and owns only values created in this body unless an explicit job, store, or process owner is named below."
+        "run_tracked_command owns the inner async admission future independently of renderer response lifetime."
       ],
       "locks": [
-        "No lock is acquired directly unless delegated state or job ownership is named below."
+        "No service lock; delegated state/lifecycle methods own ordering."
       ],
-      "cancellation": "Synchronous code has no cancellation point; async cancellation follows the owned job or state operation described below.",
       "invariants": [
-        "The closure captures and forwards the same typed selection/state values as its enclosing owner; it does not manufacture or discard identity."
+        "Playlist input remains raw until admit_playlist; single-item output is canonicalized before durable construction."
       ],
       "tests": [
-        "Covered through its named enclosing test or caller; no standalone direct invocation exists for compiler-generated closures."
+        "service raw-fingerprint tests cover playlist dispatch; backend lifecycle dropped-response test covers tracked admission ownership."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "Current source span src/services/queue.rs:17-47, digest 0bc08622a54b629f743e96bd6f6d02961aad86067646d98dddd8caa530790e2e.",
-        "Executed Rust backend suite: target/inspection-fix/rust-tests-final.log, 332 passed, 0 failed, 3 ignored; suite count is supporting evidence, while named tests above are the direct behavior evidence.",
-        "Source-matched review confirms optional MediaSelection is validated and preserved across inspection, queue persistence/retry, download targeting, and final publication authority; captured JSON uses its aggregate bound while streamed progress retains its line bound."
+        "Source span src/services/queue.rs:19-53, digest 198df7bd01cf113bf6902ce552a995280b76b907a788a5c01ee22a1136834017.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Run typed single or playlist admission in lifecycle-tracked command ownership.",
+      "output": "Single queue row or playlist admission result.",
+      "cancellation": "Renderer caller loss does not own the tracked admission task; cleanup guards cover committed publication gaps.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Reviewed against the cargo-fmt-stable source after the typed media-selection and one-pass inspection change. No UI behavior or native qualification claim is implied.",
-      "previousDigest": "1253404f3f3dc436b418801ee24ac634343e7fc53bdc6a62c1fe35d2546544c9",
-      "staleReason": "source_changed"
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified."
     },
     {
       "id": "src/services/queue.rs::services::queue::update_queue_item[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 51,
-      "endLine": 93,
+      "line": 93,
+      "endLine": 137,
       "symbol": "update_queue_item",
       "qualifiedName": "services::queue::update_queue_item",
       "signature": "pub(crate) async fn update_queue_item( backend: Backend, item_id: String, mut input: UpdateQueueItemInput, ) -> Result<(), AppError>",
-      "sourceDigest": "a6bd6821f328e202912137fd89ebd24b1e1cffdc9acf561c7b576fb93ae50a2f",
+      "sourceDigest": "483bceb39005fd577b94c21767fbaea25b0dfb83d6a509385a7c6e8f7bb0ff4b",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Builds and validates the resulting request, canonicalizes its output path, then durably updates the queue item.",
       "callers": [
-        "src/lib.rs::update_queue_item"
+        "update_queue_item IPC service and queue regression tests."
       ],
       "inputs": [
-        "pub(crate) async fn update_queue_item( backend: Backend, item_id: String, mut input: UpdateQueueItemInput, ) -> Result<(), AppError>"
+        "Item ID and typed UpdateQueueItemInput; existing queue, operation and pending-download state."
       ],
-      "output": "Returns unit after durable patch or validation/state AppError.",
       "sideEffects": [
-        "Validates request fields/paths and mutates durable queue/pending-operation state; enqueue also publishes lifecycle registrations or compensates them."
+        "Service validates destination and request; StateStore commits only the requested fields and emits the existing queue delta."
       ],
       "errors": [
-        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Active or already-claimed work rejects a rename; invalid fields, unprepared metadata and journal failures remain explicit errors."
       ],
       "ownership": [
-        "Consumes Backend/item ID/patch; current queue item and synthesized request are local until commit."
+        "The existing tracked command and durable commit machinery retain operation and state ownership."
       ],
       "locks": [
-        "JobAdmission keeps capacity reserved through StateStore enqueue and registration publication; StateStore serializes queue mutation."
+        "Tracked admission owns the lifecycle gate; the final StateStore call acquires the same mutation gate as worker claims."
       ],
-      "cancellation": "Tracked admission waits for startup; after it begins, the bounded durable queue mutation/compensation runs to completion even if IPC disconnects.",
       "invariants": [
-        "Builds and validates the resulting request, canonicalizes its output path, then durably updates the queue item."
+        "Destination is added to the mutation only if explicitly requested.",
+        "Actual queued eligibility is rechecked under the StateStore mutation gate, after potentially stale service reads."
       ],
       "tests": [
-        "Static call-path review of services::queue::update_queue_item at src/services/queue.rs:50; no dedicated behavioral test targets this helper alone."
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:50",
-        "Signature: pub(crate) async fn update_queue_item( backend: Backend, item_id: String, mut input: UpdateQueueItemInput, ) -> Result<(), AppError>",
-        "Direct source call sites for update_queue_item reviewed after Stage4 move."
+        "Source read: src/services/queue.rs:93-137; SHA-256 483bceb39005fd577b94c21767fbaea25b0dfb83d6a509385a7c6e8f7bb0ff4b.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
       ],
-      "disposition": "keep",
+      "purpose": "Validate a queue update against the existing request without turning a filename-only request into a destination change.",
+      "output": "Committed state deltas or a validation/claim/persistence error; predicate returns eligibility.",
+      "cancellation": "No new background work or cancellation boundary; existing tracked admission and durable commit ownership remain in force.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "ownerCall": null,
+      "previousDigest": "a6bd6821f328e202912137fd89ebd24b1e1cffdc9acf561c7b576fb93ae50a2f",
+      "staleReason": "source_changed"
     },
     {
-      "id": "src/services/queue.rs::services::queue::update_queue_item::async_block#1@57[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::update_queue_item::async_block#1@99[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 57,
-      "endLine": 91,
+      "line": 99,
+      "endLine": 135,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::update_queue_item::async_block#1",
       "signature": "async move",
-      "sourceDigest": "decd0534a49a927c45873bc3cfeaab71650cfba3805a09173334629e74d80964",
+      "sourceDigest": "be3fe08b584cf508edf0be5295968ee661685ef185787913244bb3cbc18b035d",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch.",
       "callers": [
-        "Created only by its enclosing callable src/services/queue.rs::services::queue::update_queue_item."
+        "update_queue_item IPC service and queue regression tests."
       ],
       "inputs": [
-        "async move"
+        "Item ID and typed UpdateQueueItemInput; existing queue, operation and pending-download state."
       ],
-      "output": "Returns the enclosing queue command result after validation and its durable mutation/publication.",
       "sideEffects": [
-        "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch."
+        "Service validates destination and request; StateStore commits only the requested fields and emits the existing queue delta."
       ],
       "errors": [
-        "Propagates queue lookup, merged-request validation, output-path validation, audio-compatibility, or StateStore update AppError."
+        "Active or already-claimed work rejects a rename; invalid fields, unprepared metadata and journal failures remain explicit errors."
       ],
       "ownership": [
-        "Owns Backend and the command input values through the single tracked admission transaction."
+        "The existing tracked command and durable commit machinery retain operation and state ownership."
       ],
       "locks": [
-        "Tracked Admission spans the command; enqueue additionally retains JobAdmission through publication/compensation."
+        "Tracked admission owns the lifecycle gate; the final StateStore call acquires the same mutation gate as worker claims."
       ],
-      "cancellation": "Runs admitted durable mutation to completion despite IPC disconnection.",
       "invariants": [
-        "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch."
+        "Destination is added to the mutation only if explicitly requested.",
+        "Actual queued eligibility is rechecked under the StateStore mutation gate, after potentially stale service reads."
       ],
       "tests": [
-        "Static source and caller review of services::queue::update_queue_item::async_block#1; no dedicated test directly isolates this service block."
+        "cargo test --lib: 395 passed, 4 ignored; includes state::tests::queue_rename_tests and services::queue::tests."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:56",
-        "Enclosing callable: src/services/queue.rs::services::queue::update_queue_item.",
-        "Owns Backend, item ID and patch while validating the resulting request, canonicalizing output, checking audio compatibility, and committing the patch.",
-        "Digest-identical context remapped to current span src/services/queue.rs:57-91 during the typed-selection inventory refresh."
+        "Source read: src/services/queue.rs:99-135; SHA-256 be3fe08b584cf508edf0be5295968ee661685ef185787913244bb3cbc18b035d.",
+        "Executed red/green and full-suite logs: nuclear-app/src-tauri/target/qc-code-audit/rename-before.log, rename-after.log, rust-final.log."
       ],
-      "disposition": "keep",
+      "purpose": "Validate a queue update against the existing request without turning a filename-only request into a destination change.",
+      "output": "Committed state deltas or a validation/claim/persistence error; predicate returns eligibility.",
+      "cancellation": "No new background work or cancellation boundary; existing tracked admission and durable commit ownership remain in force.",
+      "findingStatus": "resolved",
+      "disposition": "fix",
       "destination": "src/services/queue.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex UI quality source review",
+      "reviewedAt": "2026-09-19T01:47:06.532018Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Reviewed the eligibility predicate, service field preservation, durable gate ownership and regression assertions. Inventory discovery alone was not treated as review.",
+      "previousDigest": "decd0534a49a927c45873bc3cfeaab71650cfba3805a09173334629e74d80964",
+      "staleReason": "source_changed"
     },
     {
       "id": "src/services/queue.rs::services::queue::remove_queue_items[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 95,
-      "endLine": 105,
+      "line": 139,
+      "endLine": 182,
       "symbol": "remove_queue_items",
       "qualifiedName": "services::queue::remove_queue_items",
       "signature": "pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>",
-      "sourceDigest": "3b54a05b9bf44f9a78ff9068d4b86dc119e8885fe3a4890e6ebdc94db9100fbf",
+      "sourceDigest": "1d86eb9484465618747601c3d10aee2c265e803df38ef3698bb5ffacc7594917",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Durably removes the requested eligible queue items inside tracked admission.",
       "callers": [
-        "src/lib.rs::remove_queue_items"
+        "Tauri remove_queue_items command calls this tracked service."
       ],
       "inputs": [
-        "pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>"
+        "Parameters in signature: pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>."
       ],
-      "output": "Returns unit after removal or StateStore AppError.",
       "sideEffects": [
-        "Validates request fields/paths and mutates durable queue/pending-operation state; enqueue also publishes lifecycle registrations or compensates them."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Returns the `Result<(), AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Consumes Backend and item ID vector into tracked admission."
+        "Tracked closure owns Backend and item ID vector through cancellation and durable removal."
       ],
       "locks": [
-        "JobAdmission keeps capacity reserved through StateStore enqueue and registration publication; StateStore serializes queue mutation."
+        "Per-item reads precede operation cancellation; StateStore remove performs the atomic final validation/mutation under its gate."
       ],
-      "cancellation": "Tracked admission waits for startup; after it begins, the bounded durable queue mutation/compensation runs to completion even if IPC disconnects.",
       "invariants": [
-        "Durably removes the requested eligible queue items inside tracked admission."
+        "All rows are prevalidated before cancelling any preparation; active non-preparation downloads reject removal."
       ],
       "tests": [
-        "Static call-path review of services::queue::remove_queue_items at src/services/queue.rs:94; no dedicated behavioral test targets this helper alone."
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:94",
-        "Signature: pub(crate) async fn remove_queue_items( backend: Backend, item_ids: Vec<String>, ) -> Result<(), AppError>",
-        "Direct source call sites for remove_queue_items reviewed after Stage4 move."
+        "Source span src/services/queue.rs:137-180, digest 1d86eb9484465618747601c3d10aee2c265e803df38ef3698bb5ffacc7594917.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Validate a whole removal, cancel active preparation attempts, then durably remove all requested rows.",
+      "output": "Unit or AppError.",
+      "cancellation": "Explicitly cancels preparation operations before row removal; active downloads reject removal.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
-      "id": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@100[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@144[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 100,
-      "endLine": 103,
+      "line": 144,
+      "endLine": 180,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::remove_queue_items::async_block#1",
       "signature": "async move",
-      "sourceDigest": "8519708ac47a2f0da5c9f0af3fc8b69dce0bb650238e9edb17e6808e998765db",
+      "sourceDigest": "1645e2417f12a6373b79c1963f9f4ee023afdf47d1a4518a212bc6e38257a661",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Owns Backend and item IDs and awaits the durable queue removal mutation.",
       "callers": [
-        "Created only by its enclosing callable src/services/queue.rs::services::queue::remove_queue_items."
+        "Tauri remove_queue_items command calls this tracked service."
       ],
       "inputs": [
-        "async move"
+        "Parameters in signature: async move."
       ],
-      "output": "Returns the enclosing queue command result after validation and its durable mutation/publication.",
       "sideEffects": [
-        "Owns Backend and item IDs and awaits the durable queue removal mutation."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Propagates only the StateStore queue-removal AppError after tracked startup admission succeeds."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Owns Backend and the command input values through the single tracked admission transaction."
+        "Tracked closure owns Backend and item ID vector through cancellation and durable removal."
       ],
       "locks": [
-        "Tracked Admission spans the command; enqueue additionally retains JobAdmission through publication/compensation."
+        "Per-item reads precede operation cancellation; StateStore remove performs the atomic final validation/mutation under its gate."
       ],
-      "cancellation": "Runs admitted durable mutation to completion despite IPC disconnection.",
       "invariants": [
-        "Owns Backend and item IDs and awaits the durable queue removal mutation."
+        "All rows are prevalidated before cancelling any preparation; active non-preparation downloads reject removal."
       ],
       "tests": [
-        "Static source and caller review of services::queue::remove_queue_items::async_block#1; no dedicated test directly isolates this service block."
+        "services::preparation::tests::immediate_removal_cancels_registered_preparation_before_a_worker_claim and removing_claimed_preparation_waiting_for_the_inspection_permit_releases_it."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:99",
-        "Enclosing callable: src/services/queue.rs::services::queue::remove_queue_items.",
-        "Owns Backend and item IDs and awaits the durable queue removal mutation.",
-        "Digest-identical context remapped to current span src/services/queue.rs:100-103 during the typed-selection inventory refresh."
+        "Source span src/services/queue.rs:142-178, digest 1645e2417f12a6373b79c1963f9f4ee023afdf47d1a4518a212bc6e38257a661.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Validate a whole removal, cancel active preparation attempts, then durably remove all requested rows.",
+      "output": "Unit or AppError.",
+      "cancellation": "Explicitly cancels preparation operations before row removal; active downloads reject removal.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "movedFrom": "src/services/queue.rs::services::queue::remove_queue_items::async_block#1@142[cfg=all]",
+      "staleReason": "moved_requires_context_review"
     },
     {
       "id": "src/services/queue.rs::services::queue::enqueue_queue_items[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 107,
-      "endLine": 130,
+      "line": 184,
+      "endLine": 212,
       "symbol": "enqueue_queue_items",
       "qualifiedName": "services::queue::enqueue_queue_items",
       "signature": "pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
-      "sourceDigest": "589e7924989622cc0b802554d7088c2817bfbc2e3cec77ba393a69594f6df03a",
+      "sourceDigest": "37a6c9a49a0b4e1b4906571438148a8dc5417708aff4f868e5518ca6dd1bb162",
       "cfg": [],
-      "ownerCall": null,
-      "purpose": "Reserves admission, durably creates pending operations, publishes registrations, and compensates failed publication.",
       "callers": [
-        "src/lib.rs::enqueue_queue_items"
+        "Tauri enqueue_queue_items command calls this tracked service."
       ],
       "inputs": [
-        "pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>"
+        "Parameters in signature: pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>."
       ],
-      "output": "Returns one BeginOperationResult per published ID or compensated admission error.",
       "sideEffects": [
-        "Validates request fields/paths and mutates durable queue/pending-operation state; enqueue also publishes lifecycle registrations or compensates them."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Returns the `Result<Vec<BeginOperationResult>, AppError>` error channel from the exact calls named in the purpose; locally suppressed failures are logged in this body."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Consumes Backend, item IDs and priority; JobAdmission and generated IDs remain owned through publish/compensation."
+        "Tracked closure owns Backend/IDs; JobAdmission reserves jobs and QueueAdmissionGuard owns compensation until publish succeeds."
       ],
       "locks": [
-        "JobAdmission keeps capacity reserved through StateStore enqueue and registration publication; StateStore serializes queue mutation."
+        "Lifecycle transition barrier covers reservation through publication; StateStore enqueue commits between those phases."
       ],
-      "cancellation": "Tracked admission waits for startup; after it begins, the bounded durable queue mutation/compensation runs to completion even if IPC disconnects.",
       "invariants": [
-        "Reserves admission, durably creates pending operations, publishes registrations, and compensates failed publication."
+        "Returned IDs equal durably created and registered operation IDs; publication failure compensates the full batch."
       ],
       "tests": [
-        "Static call-path review of services::queue::enqueue_queue_items at src/services/queue.rs:106; no dedicated behavioral test targets this helper alone."
+        "backend lifecycle dropped-admission test and preparation shutdown-between-admission test cover registration/cleanup."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:106",
-        "Signature: pub(crate) async fn enqueue_queue_items( backend: Backend, item_ids: Vec<String>, priority: QueuePriority, ) -> Result<Vec<BeginOperationResult>, AppError>",
-        "Direct source call sites for enqueue_queue_items reviewed after Stage4 move."
+        "Source span src/services/queue.rs:182-210, digest 37a6c9a49a0b4e1b4906571438148a8dc5417708aff4f868e5518ca6dd1bb162.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Reserve jobs, durably enqueue selected rows, publish exact operation registrations, and return operation IDs.",
+      "output": "BeginOperationResult vector or AppError.",
+      "cancellation": "Tracked task and admission guard compensate a dropped/publish-failed command.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
-      "id": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@113[cfg=all]",
+      "id": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@190[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 113,
-      "endLine": 128,
+      "line": 190,
+      "endLine": 210,
       "symbol": "async_block#1",
       "qualifiedName": "services::queue::enqueue_queue_items::async_block#1",
       "signature": "async move",
-      "sourceDigest": "93ad6d0398e4e4131154e8c64f29be8ec6a301d1b71b9a36a39b334bbc7b7eb0",
+      "sourceDigest": "8c34626311e156a864685ef09e4b3dc6d1dbd28f16d6eeeb4b1c3b04a66626a1",
       "cfg": [],
       "ownerCall": null,
-      "purpose": "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure.",
       "callers": [
-        "Created only by its enclosing callable src/services/queue.rs::services::queue::enqueue_queue_items."
+        "Tauri enqueue_queue_items command calls this tracked service."
       ],
       "inputs": [
-        "async move"
+        "Parameters in signature: async move."
       ],
-      "output": "Returns the enclosing queue command result after validation and its durable mutation/publication.",
       "sideEffects": [
-        "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure."
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "Propagates the exact validation, StateStore, or admission publication error; enqueue performs compensation before returning publication error."
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "Owns Backend and the command input values through the single tracked admission transaction."
+        "Tracked closure owns Backend/IDs; JobAdmission reserves jobs and QueueAdmissionGuard owns compensation until publish succeeds."
       ],
       "locks": [
-        "Tracked Admission spans the command; enqueue additionally retains JobAdmission through publication/compensation."
+        "Lifecycle transition barrier covers reservation through publication; StateStore enqueue commits between those phases."
       ],
-      "cancellation": "Runs admitted durable mutation to completion despite IPC disconnection.",
       "invariants": [
-        "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure."
+        "Returned IDs equal durably created and registered operation IDs; publication failure compensates the full batch."
       ],
       "tests": [
-        "Static source and caller review of services::queue::enqueue_queue_items::async_block#1; no dedicated test directly isolates this service block."
+        "backend lifecycle dropped-admission test and preparation shutdown-between-admission test cover registration/cleanup."
       ],
-      "findingStatus": "none",
       "evidence": [
-        "src/services/queue.rs:112",
-        "Enclosing callable: src/services/queue.rs::services::queue::enqueue_queue_items.",
-        "Owns Backend, item IDs and priority across admission reservation, durable enqueue, registration publication, and compensation on publication failure.",
-        "Digest-identical context remapped to current span src/services/queue.rs:113-128 during the typed-selection inventory refresh."
+        "Source span src/services/queue.rs:188-208, digest 8c34626311e156a864685ef09e4b3dc6d1dbd28f16d6eeeb4b1c3b04a66626a1.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
+      "purpose": "Reserve jobs, durably enqueue selected rows, publish exact operation registrations, and return operation IDs.",
+      "output": "BeginOperationResult vector or AppError.",
+      "cancellation": "Tracked task and admission guard compensate a dropped/publish-failed command.",
+      "findingStatus": "none",
       "disposition": "keep",
       "destination": "src/services/queue.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-10T00:40:09Z",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
       "status": "reviewed",
-      "notes": "Nested execution boundary reviewed separately from the enclosing admission wrapper."
-    },
-    {
-      "id": "src/services/queue.rs::services::queue::cancel_unregistered_operations[cfg=all]",
-      "kind": "free_function",
-      "classification": "production",
-      "file": "src/services/queue.rs",
-      "line": 132,
-      "endLine": 148,
-      "symbol": "cancel_unregistered_operations",
-      "qualifiedName": "services::queue::cancel_unregistered_operations",
-      "signature": "async fn cancel_unregistered_operations(store: &StateStore, ids: &[String])",
-      "sourceDigest": "88d9ba84537dac77b652f93c9b2a3712744421ef28df9f7475477060ca132667",
-      "cfg": [],
-      "ownerCall": null,
-      "purpose": "Finalizes and removes pending operations whose lifecycle publication failed.",
-      "callers": [
-        "services::queue::enqueue_queue_items publication-failure branch"
-      ],
-      "inputs": [
-        "async fn cancel_unregistered_operations(store: &StateStore, ids: &[String])"
-      ],
-      "output": "Returns unit after sequential best-effort compensation.",
-      "sideEffects": [
-        "Validates request fields/paths and mutates durable queue/pending-operation state; enqueue also publishes lifecycle registrations or compensates them."
-      ],
-      "errors": [
-        "Has no returned error channel; the body logs or encodes any handled failure at its explicit branch."
-      ],
-      "ownership": [
-        "Borrows StateStore and ID slice sequentially; retains nothing."
-      ],
-      "locks": [
-        "JobAdmission keeps capacity reserved through StateStore enqueue and registration publication; StateStore serializes queue mutation."
-      ],
-      "cancellation": "Tracked admission waits for startup; after it begins, the bounded durable queue mutation/compensation runs to completion even if IPC disconnects.",
-      "invariants": [
-        "Finalizes and removes pending operations whose lifecycle publication failed."
-      ],
-      "tests": [
-        "Static call-path review of services::queue::cancel_unregistered_operations at src/services/queue.rs:131; no dedicated behavioral test targets this helper alone."
-      ],
-      "findingStatus": "none",
-      "evidence": [
-        "src/services/queue.rs:131",
-        "Signature: async fn cancel_unregistered_operations(store: &StateStore, ids: &[String])",
-        "Direct source call sites for cancel_unregistered_operations reviewed after Stage4 move."
-      ],
-      "disposition": "keep",
-      "destination": "src/services/queue.rs",
-      "reviewer": "independent_backend_review",
-      "reviewedAt": "2026-09-08T23:45:34Z",
-      "status": "reviewed",
-      "notes": "Moved body re-reviewed in its new visibility, caller, ownership, and cancellation context."
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "movedFrom": "src/services/queue.rs::services::queue::enqueue_queue_items::async_block#1@188[cfg=all]",
+      "staleReason": "moved_requires_context_review"
     },
     {
       "id": "src/services/queue.rs::services::queue::default_download_dir[cfg=all]",
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 150,
-      "endLine": 155,
+      "line": 214,
+      "endLine": 219,
       "symbol": "default_download_dir",
       "qualifiedName": "services::queue::default_download_dir",
       "signature": "pub(crate) fn default_download_dir() -> Result<String, AppError>",
@@ -3806,8 +3709,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 157,
-      "endLine": 159,
+      "line": 221,
+      "endLine": 223,
       "symbol": "validate_output_directory",
       "qualifiedName": "services::queue::validate_output_directory",
       "signature": "pub(crate) fn validate_output_directory(path: String) -> Result<String, AppError>",
@@ -3859,8 +3762,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/queue.rs",
-      "line": 161,
-      "endLine": 172,
+      "line": 225,
+      "endLine": 236,
       "symbol": "display_output_directory",
       "qualifiedName": "services::queue::display_output_directory",
       "signature": "pub(crate) fn display_output_directory(path: String) -> String",
@@ -5491,8 +5394,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/operations.rs",
-      "line": 11,
-      "endLine": 21,
+      "line": 10,
+      "endLine": 20,
       "symbol": "cancel_all_downloads",
       "qualifiedName": "services::operations::cancel_all_downloads",
       "signature": "pub(crate) async fn cancel_all_downloads( backend: Backend, publish_progress: DownloadProgressSink, ) -> Result<CancelAllResult, AppError>",
@@ -5546,8 +5449,8 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/operations.rs",
-      "line": 22,
-      "endLine": 46,
+      "line": 21,
+      "endLine": 45,
       "symbol": "cancel_operation",
       "qualifiedName": "services::operations::cancel_operation",
       "signature": "pub(crate) async fn cancel_operation( publish_progress: DownloadProgressSink, backend: Backend, operation_id: String, ) -> Result<(), AppError>",
@@ -5611,12 +5514,12 @@
       "notes": "The outer normalization covers any not_found produced after the initial kind proof, including a completion/dismissal race after cancel_known_operation returns."
     },
     {
-      "id": "src/services/operations.rs::services::operations::cancel_operation::async_block#1@30[cfg=all]",
+      "id": "src/services/operations.rs::services::operations::cancel_operation::async_block#1@29[cfg=all]",
       "kind": "async_block",
       "classification": "production",
       "file": "src/services/operations.rs",
-      "line": 30,
-      "endLine": 44,
+      "line": 29,
+      "endLine": 43,
       "symbol": "async_block#1",
       "qualifiedName": "services::operations::cancel_operation::async_block#1",
       "signature": "async move",
@@ -5672,68 +5575,54 @@
       "kind": "free_function",
       "classification": "production",
       "file": "src/services/operations.rs",
-      "line": 48,
+      "line": 47,
       "endLine": 94,
       "symbol": "cancel_known_operation",
       "qualifiedName": "services::operations::cancel_known_operation",
-      "signature": "async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>",
-      "sourceDigest": "3a672666c8a25dc221636b666d93ea9376ec2a9502c463ba6149ce49a2059494",
+      "signature": "pub(super) async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>",
+      "sourceDigest": "f213f01129def41d6b7ab9905e6ae76fc663a64da0a9ba1571a132e77bb3cdd1",
       "cfg": [],
-      "ownerCall": null,
-      "destination": "src/services/operations.rs",
-      "reviewer": "root_ledger",
-      "reviewedAt": "2026-09-09T16:58:29Z",
-      "status": "reviewed",
-      "findingStatus": "none",
-      "disposition": "keep",
-      "purpose": "Cancel a kind-proven operation while preserving update publication deferral, pending-download finalization, and the existing bounded wait for terminal state.",
       "callers": [
-        "cancel_operation"
+        "cancel_operation tracked body and services::queue::remove_queue_items call cancel_known_operation."
       ],
       "inputs": [
-        "borrowed progress callback",
-        "borrowed Backend",
-        "borrowed operation ID",
-        "previously proven OperationKind"
+        "Parameters in signature: pub(super) async fn cancel_known_operation( publish_progress: &DownloadProgressSink, backend: &Backend, operation_id: &str, kind: OperationKind, ) -> Result<(), AppError>."
       ],
-      "output": "Unit when cancellation reaches terminal state or the known operation has finished; AppError otherwise.",
       "sideEffects": [
-        "cancels update or ordinary manager registration",
-        "requests StateStore cancellation unless update publication is deferred",
-        "finalizes and finishes a cancelled pending download",
-        "waits for terminal state"
+        "Performs only the state, lifecycle, process, or candidate mutations described in purpose; nested calls were followed to their durable boundary."
       ],
       "errors": [
-        "propagates manager not_found and every other manager error to the outer race normalizer",
-        "propagates nonterminal StateStore cancellation errors and terminal-wait timeout/errors"
+        "Returns or propagates typed AppError for validation, lifecycle, persistence, timeout, cancellation, or identity failures applicable to this span."
       ],
       "ownership": [
-        "borrows all inputs",
-        "manager retains cancellation token/update publication ownership",
-        "StateStore owns durable transitions",
-        "finalize_download owns progress publication for a pending download"
+        "Borrows Backend/progress sink; operation ID and kind remain caller-owned."
       ],
       "locks": [
-        "delegated manager and StateStore locks are scoped inside each call",
-        "no local lock guard crosses an await"
+        "Lifecycle cancel and StateStore cancellation acquire independent short locks; no lock spans progress callback."
       ],
-      "cancellation": "Update publication may defer cancellation until publication completes; other live operations request cancellation and wait within CANCELLATION_WAIT_TIMEOUT.",
       "invariants": [
-        "DeferredPublication skips request_cancellation and still waits for terminal state",
-        "pending downloads finalize Cancelled and release manager registration",
-        "this helper never suppresses manager not_found; cancel_operation classifies it after the full attempt"
+        "Pending operation finalization happens only after it is removed from the pending queue; terminal races normalize to success."
       ],
       "tests": [
-        "known_terminal_update_treats_missing_registration_as_finished",
-        "known_dismissed_update_treats_missing_registration_as_finished",
-        "live_update_without_registration_preserves_not_found",
-        "live_update_reports_requested_and_deferred_publication"
+        "backend_lifecycle_tests::cancellation_after_dequeue_before_lookup_never_calls_the_process_factory and preparation immediate-removal tests cover cancel races."
       ],
       "evidence": [
-        "Current exact source span src/services/operations.rs:48-94 reviewed after final helper simplification.",
-        "Final stable-source backend library run: 309 passed, 0 failed, 3 ignored (target/pretest-followup/backend-tests-complete.log); strict all-target/all-feature Clippy and formatting passed in adjacent retained receipts."
+        "Source span src/services/operations.rs:47-94, digest f213f01129def41d6b7ab9905e6ae76fc663a64da0a9ba1571a132e77bb3cdd1.",
+        "Reviewed final source callers plus state playlist, service queue, and preparation named tests for this span.",
+        "Final Rust gate target/engineering-structural-rust-final.log records 384 passed, 0 failed, 4 ignored; this reviewer did not rerun tests.",
+        "Final Clippy rerun target/engineering-final-clippy-rerun.log completed successfully; this reviewer did not rerun Clippy."
       ],
-      "notes": "Private cancellation workflow extracted from cancel_operation; post-proof result normalization remains solely in the caller."
+      "purpose": "Cancel one known operation across lifecycle state, durable state, pending queues, and progress publication.",
+      "output": "Unit or AppError after cancellation ownership is established.",
+      "cancellation": "Cancellation is the purpose: pending work is terminalized immediately; active work is signaled and finishes through its worker.",
+      "findingStatus": "none",
+      "disposition": "keep",
+      "destination": "src/services/operations.rs",
+      "reviewer": "Codex playlist services ledger review",
+      "reviewedAt": "2026-09-13T20:51:51.520081Z",
+      "status": "reviewed",
+      "notes": "Reviewed this exact final-source span and its direct role; no separate unresolved defect identified.",
+      "ownerCall": null
     },
     {
       "id": "src/services/operations.rs::services::operations::normalize_after_known_operation[cfg=all]",

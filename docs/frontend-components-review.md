@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Frontend component extraction record
 
 The comparison remains the fixed `df582df` production baseline. Stage 3's controllers retain workflow and backend-state ownership. Components receive typed values, callbacks, and the DOM references needed by the page lifetime; they add no layout wrappers or application state containers.

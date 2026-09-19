@@ -1,8 +1,6 @@
-import type { DownloaderRuntimeStatus } from './bindings/DownloaderRuntimeStatus';
-import { normalizeAppError } from './frontend-errors';
 import type { WorkflowCommands } from './frontend-workflow-ports';
 import type { BrowserName, CookieConfig, OutputFormat, QueueItem } from './frontend-types';
-import { redactDiagnosticText } from './queue-logic';
+import type { UiErrorReporter } from './ui-error-reporter';
 import type { StartupSubsystem, StartupSubsystemState } from './startup-state';
 
 export interface SettingsDiagnosticsState {
@@ -16,6 +14,7 @@ export interface SettingsDiagnosticsState {
   cookieBrowser: BrowserName;
   cookieFilePath: string;
   compatConfigPath: string;
+  accessError: string | null;
   diagnosticsMessage: string | null;
   diagnosticsError: string | null;
 }
@@ -32,6 +31,7 @@ export function createSettingsDiagnosticsState(): SettingsDiagnosticsState {
     cookieBrowser: 'firefox',
     cookieFilePath: '',
     compatConfigPath: '',
+    accessError: null,
     diagnosticsMessage: null,
     diagnosticsError: null
   };
@@ -58,22 +58,19 @@ export interface QueueSettingsPort {
 
 export interface SettingsDiagnosticsStartupPort {
   setSubsystem: (subsystem: StartupSubsystem, state: StartupSubsystemState) => void;
-  reportIssue: (label: string, error: unknown) => void;
 }
 
 export interface SettingsDiagnosticsUi {
   dialogs: SettingsDiagnosticsDialogs;
   confirm: (message: string) => boolean;
-  clipboard: { writeText: (text: string) => Promise<void> };
 }
 
 export interface SettingsDiagnosticsWorkflowOptions {
+  errors: UiErrorReporter;
   commands: WorkflowCommands;
   ui: SettingsDiagnosticsUi;
   queue: QueueSettingsPort;
   startup: SettingsDiagnosticsStartupPort;
-  getRuntimeStatus: () => DownloaderRuntimeStatus | null;
-  getQueueItemDisplayTitle: (item: QueueItem) => string;
 }
 
 export function getPathBasename(path: string): string {
@@ -118,9 +115,10 @@ export class SettingsDiagnosticsWorkflow {
     const { state } = this;
     if (!commands.isActive()) return false;
     state.outputDirError = null;
+    const attempt = this.options.errors.begin('folder', 'Validating the download folder');
     if (!candidate.trim()) {
       state.outputDirValidated = false;
-      state.outputDirError = 'Choose a writable output folder before downloading.';
+      state.outputDirError = attempt.fail('Choose a writable output folder before downloading.');
       return false;
     }
     try {
@@ -132,7 +130,7 @@ export class SettingsDiagnosticsWorkflow {
     } catch (error) {
       if (!commands.isActive()) return false;
       state.outputDirValidated = false;
-      state.outputDirError = normalizeAppError(error);
+      state.outputDirError = attempt.fail(error);
       return false;
     }
   }
@@ -149,7 +147,6 @@ export class SettingsDiagnosticsWorkflow {
         startup.setSubsystem('outputDirectory', 'ready');
       } else {
         if (!commands.isActive()) return;
-        startup.reportIssue('Output folder', state.outputDirError ?? 'Invalid folder');
         startup.setSubsystem('outputDirectory', 'error');
       }
     } catch (error) {
@@ -157,14 +154,14 @@ export class SettingsDiagnosticsWorkflow {
       state.outputDir = '';
       state.outputDirValidated = false;
       state.outputDirError = 'Choose a writable output folder before downloading.';
-      startup.reportIssue('Output folder discovery', error);
+      this.options.errors.begin('folder', 'Finding the download folder').fail(error);
       startup.setSubsystem('outputDirectory', 'error');
     }
   }
 
   async browseCookieFile(): Promise<void> {
-    const file = pickFirstPath(
-      await this.options.ui.dialogs.open({
+    const file = await this.choosePath('accessError', 'cookies', 'Choosing a cookie file', () =>
+      this.options.ui.dialogs.open({
         filters: [{ name: 'Cookie Files', extensions: ['txt'] }]
       })
     );
@@ -173,18 +170,27 @@ export class SettingsDiagnosticsWorkflow {
   }
 
   async browseCompatConfigFile(): Promise<void> {
-    const file = pickFirstPath(
-      await this.options.ui.dialogs.open({
-        multiple: false,
-        filters: [{ name: 'yt-dlp config', extensions: ['conf', 'txt'] }]
-      })
+    const file = await this.choosePath(
+      'accessError',
+      'compatibility',
+      'Choosing a compatibility configuration',
+      () =>
+        this.options.ui.dialogs.open({
+          multiple: false,
+          filters: [{ name: 'yt-dlp config', extensions: ['conf', 'txt'] }]
+        })
     );
     if (!this.options.commands.isActive()) return;
     if (file) this.state.compatConfigPath = file;
   }
 
   async browseOutputDir(): Promise<void> {
-    const dir = pickFirstPath(await this.options.ui.dialogs.open({ directory: true }));
+    const dir = await this.choosePath(
+      'outputDirError',
+      'folder',
+      'Choosing a download folder',
+      () => this.options.ui.dialogs.open({ directory: true })
+    );
     if (!this.options.commands.isActive() || !dir) return;
     this.state.outputDir = dir;
     if (await this.validateOutputDirectory(dir)) {
@@ -206,58 +212,24 @@ export class SettingsDiagnosticsWorkflow {
     }
   }
 
-  buildDiagnostics(item: QueueItem): string {
-    const runtimeStatus = this.options.getRuntimeStatus();
-    const runtimeLines =
-      runtimeStatus?.tools
-        .map(
-          (tool) =>
-            `${tool.name}: ${tool.available ? (tool.version ?? 'available') : 'missing'} (${tool.source})`
-        )
-        .join('\n') ?? 'Runtime status unavailable';
-    return redactDiagnosticText(
-      [
-        `Title: ${this.options.getQueueItemDisplayTitle(item)}`,
-        `Format: ${item.format}`,
-        `Quality: ${item.quality}`,
-        `Status: ${item.status}`,
-        `Phase: ${item.phase ?? 'n/a'}`,
-        `Error code: ${item.errorCode ?? 'n/a'}`,
-        `Error: ${item.error ?? 'n/a'}`,
-        '',
-        'Detail:',
-        redactDiagnosticText(item.errorDetail ?? 'No backend detail captured.'),
-        '',
-        'Runtime:',
-        runtimeLines,
-        runtimeStatus?.message ? `Runtime message: ${runtimeStatus.message}` : ''
-      ]
-        .filter((line) => line !== '')
-        .join('\n')
-    );
-  }
-
-  async copyDiagnostics(item: QueueItem): Promise<void> {
-    await this.options.ui.clipboard.writeText(this.buildDiagnostics(item));
-  }
-
   async exportDiagnostics(): Promise<void> {
     const { commands } = this.options;
     const { state } = this;
     state.diagnosticsError = null;
     state.diagnosticsMessage = null;
-    const destination = await this.options.ui.dialogs.save({
-      defaultPath: 'nuclear-downloader-diagnostics.jsonl',
-      filters: [{ name: 'JSON Lines', extensions: ['jsonl'] }]
-    });
-    if (!commands.isActive() || !destination) return;
+    const attempt = this.options.errors.begin('diagnostics', 'Exporting diagnostics');
     try {
+      const destination = await this.options.ui.dialogs.save({
+        defaultPath: 'nuclear-downloader-diagnostics.jsonl',
+        filters: [{ name: 'JSON Lines', extensions: ['jsonl'] }]
+      });
+      if (!commands.isActive() || !destination) return;
       await commands.invoke('export_diagnostics', { destination });
       if (!commands.isActive()) return;
       state.diagnosticsMessage = 'Diagnostics exported successfully.';
     } catch (error) {
       if (!commands.isActive()) return;
-      state.diagnosticsError = normalizeAppError(error);
+      state.diagnosticsError = attempt.fail(error);
     }
   }
 
@@ -266,6 +238,7 @@ export class SettingsDiagnosticsWorkflow {
     const { state } = this;
     state.diagnosticsError = null;
     state.diagnosticsMessage = null;
+    const attempt = this.options.errors.begin('diagnostics', 'Clearing diagnostics');
     if (!this.options.ui.confirm('Clear all local Nuclear Downloader diagnostics logs?')) return;
     try {
       await commands.invoke('clear_diagnostics');
@@ -273,7 +246,24 @@ export class SettingsDiagnosticsWorkflow {
       state.diagnosticsMessage = 'Local diagnostics were cleared.';
     } catch (error) {
       if (!commands.isActive()) return;
-      state.diagnosticsError = normalizeAppError(error);
+      state.diagnosticsError = attempt.fail(error);
+    }
+  }
+
+  private async choosePath(
+    field: 'outputDirError' | 'accessError',
+    source: string,
+    context: string,
+    choose: () => Promise<PathSelection>
+  ): Promise<string | null> {
+    this.state[field] = null;
+    const attempt = this.options.errors.begin(source, context);
+    try {
+      const selected = pickFirstPath(await choose());
+      return this.options.commands.isActive() ? selected : null;
+    } catch (error) {
+      if (this.options.commands.isActive()) this.state[field] = attempt.fail(error);
+      return null;
     }
   }
 }

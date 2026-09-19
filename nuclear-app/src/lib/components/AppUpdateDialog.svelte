@@ -104,7 +104,11 @@
         {#if state.installProgress}
           <div class="update-progress-panel">
             <div class="update-progress-header">
-              <span>{state.installProgress.message ?? 'Working...'}</span>
+              <span
+                >{state.installProgress.status === 'error'
+                  ? 'Update could not be completed.'
+                  : (state.installProgress.message ?? 'Working...')}</span
+              >
               <span>
                 {#if state.installProgress.totalBytes}
                   {formatByteCount(state.installProgress.downloadedBytes)} / {formatByteCount(
@@ -124,7 +128,12 @@
         {/if}
 
         {#if state.error}
-          <p class="update-error" role="alert" aria-live="assertive">{state.error}</p>
+          <p class="update-error" role="alert" aria-live="assertive">
+            An error occurred. Check Settings for more information. <button
+              class="text-button"
+              onclick={onClose}>Open Settings</button
+            >
+          </p>
         {/if}
 
         <div class="update-notes-block">

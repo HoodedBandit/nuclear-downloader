@@ -98,14 +98,15 @@ impl StateStore {
         }
         let mutation = self.inner.mutation_gate.clone().lock_owned().await;
         let (mut state, mut recovery_deltas, retention_now) = self.durable_candidate()?;
+        let waiting_filename = permits_waiting_filename(&state, id, &input);
         let item = state
             .queue
             .get_mut(id)
             .ok_or_else(|| AppError::not_found("queue item"))?;
-        if !item.state.is_editable() {
+        if !item.state.is_editable() && !waiting_filename {
             return Err(AppError::new(
                 "queue_item_active",
-                "A queued or running item cannot be edited.",
+                "This download has already been claimed, or the requested settings cannot be changed while queued.",
             ));
         }
         if item.preparation == Some(QueuePreparation::Pending) {
@@ -114,10 +115,6 @@ impl StateStore {
                 "A queue item cannot be edited while metadata preparation is pending.",
             ));
         }
-        let item = state
-            .queue
-            .get_mut(id)
-            .ok_or_else(|| AppError::not_found("queue item"))?;
         if let Some(format) = input.format {
             item.format = format;
         }
@@ -214,4 +211,33 @@ impl StateStore {
         roots.dedup();
         roots
     }
+}
+
+fn permits_waiting_filename(
+    state: &super::data::StateData,
+    id: &str,
+    input: &UpdateQueueItemInput,
+) -> bool {
+    if input.filename_override.is_none()
+        || input.format.is_some()
+        || input.quality.is_some()
+        || input.output_dir.is_some()
+    {
+        return false;
+    }
+    state.queue.get(id).is_some_and(|item| {
+        item.state == QueueItemState::Queued
+            && item.preparation.is_none()
+            && item
+                .latest_operation_id
+                .as_ref()
+                .is_some_and(|operation_id| {
+                    state.pending_downloads.contains(operation_id)
+                        && state.operations.get(operation_id).is_some_and(|operation| {
+                            operation.kind == crate::models::OperationKind::Download
+                                && operation.state == crate::models::OperationState::Queued
+                                && operation.queue_item_id.as_deref() == Some(id)
+                        })
+                })
+    })
 }

@@ -1,3 +1,5 @@
+> Historical record for the earlier interface and its named source revisions. For the current 0.7.9 UI and validation boundaries, see [Clarity](clarity-0.7.9.md) and the [documentation index](README.md).
+
 # Stage 5 candidate qualification
 
 Candidate: `fd58050b054f921d315658880a14793fb93fcae6`

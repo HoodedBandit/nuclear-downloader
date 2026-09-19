@@ -50,6 +50,9 @@ interface CommandContract<Args, Result> {
 }
 
 export interface CommandMap {
+  get_ui_theme: CommandContract<undefined, 'light' | 'dark' | 'system'>;
+  set_ui_theme: CommandContract<{ theme: 'light' | 'dark' | 'system' }, undefined>;
+  reveal_download: CommandContract<{ itemId: string }, undefined>;
   get_app_snapshot: CommandContract<undefined, AppSnapshot>;
   begin_inspection: CommandContract<{ input: BeginInspectionInput }, BeginOperationResult>;
   add_inspection_result_to_queue: CommandContract<{ input: AddQueueItemInput }, AddQueueItemResult>;

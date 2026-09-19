@@ -124,6 +124,9 @@ export async function registerRenderer(snapshot, oldMocks = [], beforeStartup) {
   }, snapshot);
 
   const commands = [
+    'get_ui_theme',
+    'set_ui_theme',
+    'reveal_download',
     'get_app_snapshot',
     'check_downloader_runtime',
     'check_runtime_update',
@@ -150,6 +153,9 @@ export async function registerRenderer(snapshot, oldMocks = [], beforeStartup) {
   );
   const mocks = Object.fromEntries(entries);
 
+  await mocks.get_ui_theme.mockResolvedValue('light');
+  await mocks.set_ui_theme.mockResolvedValue(undefined);
+  await mocks.reveal_download.mockResolvedValue(undefined);
   await mocks.get_app_snapshot.mockImplementation(() => window.__NUCLEAR_E2E_SNAPSHOT__);
   await mocks.check_downloader_runtime.mockResolvedValue({
     state: 'ready',
@@ -211,6 +217,6 @@ export async function registerRenderer(snapshot, oldMocks = [], beforeStartup) {
   );
   if (beforeStartup) await beforeStartup(mocks);
   await browser.execute(() => window.__NUCLEAR_WEBDRIVER_RELEASE_STARTUP__());
-  await $('button=Add').waitForEnabled();
+  await $('button=Add link').waitForEnabled();
   return mocks;
 }

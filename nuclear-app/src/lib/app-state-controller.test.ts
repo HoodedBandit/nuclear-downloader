@@ -249,7 +249,7 @@ describe('AppStateController', () => {
     expect(load).not.toHaveBeenCalled();
   });
 
-  it('releases every listener and retains the primary startup failure', async () => {
+  it('keeps registered listeners after a snapshot failure and releases all on disposal', async () => {
     const firstUnlisten = vi.fn(() => {
       throw new Error('first cleanup failed');
     });
@@ -269,6 +269,9 @@ describe('AppStateController', () => {
         async () => secondUnlisten
       )
     ).rejects.toThrow('snapshot failed');
+    expect(controller.subscriptionsActive).toBe(true);
+    expect(firstUnlisten).not.toHaveBeenCalled();
+    controller.stop();
     expect(firstUnlisten).toHaveBeenCalledOnce();
     expect(secondUnlisten).toHaveBeenCalledOnce();
     expect(cleanupErrors).toHaveLength(1);
@@ -433,6 +436,8 @@ describe('AppStateController', () => {
       )
     ).rejects.toThrow('Unsupported app state schema');
     expect(published).toEqual([]);
+    expect(controller.current()).toBeNull();
+    controller.stop();
     expect(unlistenState).toHaveBeenCalledOnce();
     expect(unlistenResync).toHaveBeenCalledOnce();
   });

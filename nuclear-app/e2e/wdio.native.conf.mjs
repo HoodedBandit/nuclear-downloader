@@ -53,17 +53,19 @@ if (nativeDriverPath) {
 
 const suite = process.env.NUCLEAR_E2E_NATIVE_SUITE ?? 'full';
 const specs =
-  suite === 'smoke'
-    ? [path.resolve('e2e/native/smoke.e2e.mjs')]
-    : suite === 'restart'
-      ? [path.resolve('e2e/native/restart.e2e.mjs')]
-      : suite === 'interrupt'
-        ? [path.resolve('e2e/native/interrupt.e2e.mjs')]
-        : suite === 'full'
-          ? [path.resolve('e2e/native/workflows.e2e.mjs')]
-          : (() => {
-              throw new Error(`Unknown NUCLEAR_E2E_NATIVE_SUITE: ${suite}`);
-            })();
+  suite === 'qc-rename'
+    ? [path.resolve('e2e/native/filename-qc.e2e.mjs')]
+    : suite === 'smoke'
+      ? [path.resolve('e2e/native/smoke.e2e.mjs')]
+      : suite === 'restart'
+        ? [path.resolve('e2e/native/restart.e2e.mjs')]
+        : suite === 'interrupt'
+          ? [path.resolve('e2e/native/interrupt.e2e.mjs')]
+          : suite === 'full'
+            ? [path.resolve('e2e/native/workflows.e2e.mjs')]
+            : (() => {
+                throw new Error(`Unknown NUCLEAR_E2E_NATIVE_SUITE: ${suite}`);
+              })();
 
 export const config = {
   runner: 'local',
@@ -104,7 +106,7 @@ export const config = {
         runtime: document.querySelector('[data-testid="runtime-status"]')?.textContent,
         startup: document.querySelector('.startup-status')?.textContent?.slice(0, 2_000),
         addDisabled: document.querySelector('.url-bar button[type="submit"]')?.disabled,
-        outputConfigured: Boolean(document.querySelector('#outdir')?.value),
+        outputConfigured: Boolean(document.querySelector('#outdir')?.getAttribute('title')),
         alerts: Array.from(document.querySelectorAll('[role="alert"]'))
           .slice(0, 10)
           .map((element) => element.textContent?.slice(0, 1_000)),

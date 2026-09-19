@@ -12,10 +12,10 @@ if (-not $workflow.Contains('manual_qualification:') -or
     $workflow.Contains('manual_acceptance_confirmation:') -or
     $workflow.Contains('COOKIE AND RUNTIME ACCEPTED') -or
     -not $workflow.Contains('-ExpectedSubmitter $env:EXPECTED_MANUAL_SUBMITTER') -or
-    -not $workflow.Contains("'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING'") -or
+    -not $workflow.Contains("'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING'") -or
     -not $workflow.Contains("'status=incomplete' >> `$env:GITHUB_OUTPUT") -or
     -not $workflow.Contains('pending-manual-qualification.json') -or
-    -not $workflow.Contains('name: nuclear-downloader-0.7.1-qualification') -or
+    -not $workflow.Contains('name: nuclear-downloader-0.7.9-qualification') -or
     $manualVerificationIndex -lt 0 -or
     $qualificationRetentionIndex -le $manualVerificationIndex -or
     $draftStepIndex -le $qualificationRetentionIndex) {
@@ -73,12 +73,12 @@ function gh {
         $pages[1] = @($script:drafts)
         return ConvertTo-Json -InputObject $pages -Depth 10 -Compress
     }
-    if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/git/matching-refs/tags/v0.7.1") {
+    if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/git/matching-refs/tags/v0.7.9") {
         return ConvertTo-Json -InputObject @($script:tagRefs) -Depth 10 -Compress
     }
     if ($args[0] -ceq 'api' -and $args[1] -ceq "repos/$env:GH_REPO/releases/123") {
         $release = @{} + $script:drafts[0]
-        $release.name = if ($script:wrongTitle) { 'Wrong title' } else { 'Nuclear Downloader 0.7.1' }
+        $release.name = if ($script:wrongTitle) { 'Wrong title' } else { 'Nuclear Downloader 0.7.9' }
         $release.body = if ($script:wrongBody) {
             'Wrong body'
         } else {
@@ -88,7 +88,7 @@ function gh {
     }
     if ($args[0] -ceq 'release' -and $args[1] -ceq 'create') {
         $script:createCount++
-        if ($args[2] -cne 'v0.7.1' -or $args -cnotcontains '--draft' -or
+        if ($args[2] -cne 'v0.7.9' -or $args -cnotcontains '--draft' -or
             $args[([array]::IndexOf($args, '--target') + 1)] -cne $env:EXPECTED_COMMIT_SHA) {
             throw 'The workflow attempted to create a release with the wrong identity or visibility.'
         }
@@ -113,7 +113,7 @@ function gh {
 function Invoke-PublishCase {
     param([string] $Name, [scriptblock] $Mutate, [bool] $Reject = $true, [int] $ExpectedCreates = 0)
     $script:validDraft = @{
-        id = 123; tag_name = 'v0.7.1'; target_commitish = ('b' * 40)
+        id = 123; tag_name = 'v0.7.9'; target_commitish = ('b' * 40)
         draft = $true; prerelease = $false
         assets = @($fixtureAssets | ForEach-Object {
             @{ name = $_.fileName; size = $_.size; digest = "sha256:$($_.sha256)"; state = 'uploaded' }
@@ -158,7 +158,7 @@ try {
     )
     $env:GH_REPO = 'fixture/never-contacted'
     $env:EXPECTED_COMMIT_SHA = ('b' * 40)
-    $env:EXPECTED_RELEASE_VERSION = '0.7.1'
+    $env:EXPECTED_RELEASE_VERSION = '0.7.9'
     $env:EXPECTED_MANUAL_SUBMITTER = 'fixture-maintainer'
     $env:GITHUB_OUTPUT = Join-Path $fixtureRoot 'outputs.txt'
     Push-Location $fixtureRoot
@@ -181,7 +181,7 @@ try {
                 [string] $ManualJson,
                 [bool] $Reject
             )
-            $env:INPUT_RELEASE_VERSION = '0.7.1'
+            $env:INPUT_RELEASE_VERSION = '0.7.9'
             $env:INPUT_CANDIDATE_RUN_ID = '34452333097'
             $env:INPUT_MANUAL_QUALIFICATION = $Mode
             $env:INPUT_CONFIRMATION = $Confirmation
@@ -193,14 +193,14 @@ try {
                 throw "Candidate validation returned the wrong result for mode '$Mode': $errorText"
             }
         }
-        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.1' '{}' $false
-        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING' '' $false
-        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.1' '' $true
-        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING' '{}' $true
-        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING' '{}' $true
-        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.1 WITH MANUAL CHECKS PENDING' ' ' $true
-        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.1' '' $true
-        Invoke-CandidateValidationCase 'unexpected' 'PUBLISH v0.7.1' '' $true
+        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.9' '{}' $false
+        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING' '' $false
+        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.9' '' $true
+        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING' '{}' $true
+        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING' '{}' $true
+        Invoke-CandidateValidationCase 'pending' 'PUBLISH v0.7.9 WITH MANUAL CHECKS PENDING' ' ' $true
+        Invoke-CandidateValidationCase 'complete' 'PUBLISH v0.7.9' '' $true
+        Invoke-CandidateValidationCase 'unexpected' 'PUBLISH v0.7.9' '' $true
         Write-Output 'Passed: qualification mode, confirmation, and pending JSON validation'
 
         $stub = @'
@@ -331,7 +331,7 @@ if ($global:qualificationFailure -ceq [System.IO.Path]::GetFileName($MyInvocatio
         Invoke-PublishCase 'new draft uses matching lightweight candidate tag' {
             $script:drafts = @()
             $script:tagRefs = @(@{
-                ref = 'refs/tags/v0.7.1'
+                ref = 'refs/tags/v0.7.9'
                 object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
             })
         } -Reject $false -ExpectedCreates 1
@@ -350,25 +350,25 @@ if ($global:qualificationFailure -ceq [System.IO.Path]::GetFileName($MyInvocatio
         Invoke-PublishCase 'ambiguous drafts rejected' { $script:drafts = @($script:validDraft, $script:validDraft) }
         Invoke-PublishCase 'matching lightweight tag and existing draft accepted without asset upload' {
             $script:tagRefs = @(@{
-                ref = 'refs/tags/v0.7.1'
+                ref = 'refs/tags/v0.7.9'
                 object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
             })
         } -Reject $false
         Invoke-PublishCase 'tag at wrong commit rejected' {
             $script:tagRefs = @(@{
-                ref = 'refs/tags/v0.7.1'
+                ref = 'refs/tags/v0.7.9'
                 object = @{ type = 'commit'; sha = ('c' * 40) }
             })
         }
         Invoke-PublishCase 'annotated tag object rejected' {
             $script:tagRefs = @(@{
-                ref = 'refs/tags/v0.7.1'
+                ref = 'refs/tags/v0.7.9'
                 object = @{ type = 'tag'; sha = $env:EXPECTED_COMMIT_SHA }
             })
         }
         Invoke-PublishCase 'duplicate exact tag refs rejected' {
             $tag = @{
-                ref = 'refs/tags/v0.7.1'
+                ref = 'refs/tags/v0.7.9'
                 object = @{ type = 'commit'; sha = $env:EXPECTED_COMMIT_SHA }
             }
             $script:tagRefs = @($tag, $tag)
@@ -394,7 +394,7 @@ if ($global:qualificationFailure -ceq [System.IO.Path]::GetFileName($MyInvocatio
         $env:VERIFIED_RELEASE_ID = '123'
         & $publishCode
         if ($script:publishCount -ne 1) { throw 'Publishing did not use the exact verified numeric release ID.' }
-        foreach ($badId in @('', 'v0.7.1', '../123')) {
+        foreach ($badId in @('', 'v0.7.9', '../123')) {
             $env:VERIFIED_RELEASE_ID = $badId
             $rejected = $false
             try { & $publishCode } catch { $rejected = $true }

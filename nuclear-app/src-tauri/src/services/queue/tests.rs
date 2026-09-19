@@ -5,6 +5,48 @@ use crate::models::{
 use crate::services::test_support::started_backend;
 use std::path::{Path, PathBuf};
 
+#[tokio::test]
+async fn filename_only_service_update_preserves_the_waiting_destination() {
+    let (backend, root) = started_backend("queued-rename").await;
+    let output = root.join("output");
+    std::fs::create_dir_all(&output).unwrap();
+    let input = completed_playlist_input(&backend, &output, "queued-rename").await;
+    let receipt = playlist_receipt(
+        add_inspection_result_to_queue(backend.clone(), input)
+            .await
+            .unwrap(),
+    );
+    let id = &receipt.item_ids[0];
+    let before = backend.state_store.queue_item(id).unwrap();
+    backend
+        .state_store
+        .enqueue(
+            std::slice::from_ref(id),
+            crate::models::QueuePriority::Normal,
+        )
+        .await
+        .unwrap();
+    update_queue_item(
+        backend.clone(),
+        id.clone(),
+        UpdateQueueItemInput {
+            filename_override: Some(Some("Waiting service rename".into())),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    let after = backend.state_store.queue_item(id).unwrap();
+    assert_eq!(after.output_dir, before.output_dir);
+    assert_eq!(
+        after.filename_override.as_deref(),
+        Some("Waiting service rename")
+    );
+    backend.download_manager.begin_shutdown().await;
+    drop(backend);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 async fn completed_playlist_input(
     backend: &Backend,
     output_dir: &Path,

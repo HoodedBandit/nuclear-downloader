@@ -22,6 +22,7 @@ export interface QueueActionDependencies extends WorkflowCommands {
   clearProgressDisplayState: (itemId: string) => void;
   getEditingTitleId: () => string | null;
   cancelFilenameEdit: () => void;
+  flushFilenameEdits: (itemIds: readonly string[]) => Promise<boolean>;
   reloadAppSnapshot: () => Promise<void>;
 }
 
@@ -31,11 +32,12 @@ export class QueueActionsController {
     private readonly dependencies: QueueActionDependencies
   ) {}
 
-  async saveFilename(itemId: string, filenameOverride: string | null): Promise<void> {
-    await this.dependencies.invoke('update_queue_item', {
-      itemId,
-      input: { filenameOverride }
-    });
+  async revealDownload(item: QueueItem): Promise<void> {
+    try {
+      await this.dependencies.invoke('reveal_download', { itemId: item.id });
+    } catch (error) {
+      if (this.dependencies.isActive()) this.state.queueActionError = normalizeAppError(error);
+    }
   }
 
   async enqueueItems(itemIds: string[], prioritize = false): Promise<void> {
@@ -43,6 +45,8 @@ export class QueueActionsController {
     if (uniqueIds.length === 0 || !this.dependencies.getCanStartDownloads()) return;
     this.state.queueActionError = null;
     try {
+      if (!(await this.dependencies.flushFilenameEdits(uniqueIds))) return;
+      if (!this.dependencies.isActive() || !this.dependencies.getCanStartDownloads()) return;
       await this.dependencies.invoke('enqueue_queue_items', {
         itemIds: uniqueIds,
         priority: prioritize ? 'front' : 'normal'
@@ -102,8 +106,7 @@ export class QueueActionsController {
               status: previousStatus,
               error: `Cancellation failed: ${normalizeAppError(error)}`,
               errorCode: 'cancel_failed',
-              errorDetail: appErrorDetail(error),
-              diagnosticsOpen: true
+              errorDetail: appErrorDetail(error)
             }
           : candidate
       );

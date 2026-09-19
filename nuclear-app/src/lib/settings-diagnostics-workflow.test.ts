@@ -1,5 +1,6 @@
+import { InterfaceErrorReporter } from './ui-error-reporter';
+import { createErrorInbox } from './error-inbox';
 import { describe, expect, it, vi } from 'vitest';
-import type { DownloaderRuntimeStatus } from './bindings/DownloaderRuntimeStatus';
 import type { WorkflowCommands } from './frontend-workflow-ports';
 import type { QueueItem } from './frontend-types';
 import {
@@ -36,7 +37,6 @@ function queueItem(overrides: Partial<QueueItem> = {}): QueueItem {
     error: null,
     errorCode: null,
     errorDetail: null,
-    diagnosticsOpen: false,
     filename: null,
     selected: false,
     ...overrides
@@ -50,9 +50,13 @@ function setup(overrides: Partial<SettingsDiagnosticsWorkflowOptions> = {}) {
   const save = vi.fn();
   const updateQueueItemSettings = vi.fn().mockResolvedValue(undefined);
   const setSubsystem = vi.fn();
-  const reportIssue = vi.fn();
-  const writeText = vi.fn().mockResolvedValue(undefined);
+  const inbox = createErrorInbox();
   const options: SettingsDiagnosticsWorkflowOptions = {
+    errors: new InterfaceErrorReporter(
+      inbox,
+      () => false,
+      () => true
+    ),
     commands: {
       invoke: invoke as unknown as WorkflowCommands['invoke'],
       isActive: () => true,
@@ -60,13 +64,10 @@ function setup(overrides: Partial<SettingsDiagnosticsWorkflowOptions> = {}) {
     },
     ui: {
       dialogs: { open, save },
-      confirm: () => true,
-      clipboard: { writeText }
+      confirm: () => true
     },
     queue: { getItems: () => [], updateQueueItemSettings },
-    startup: { setSubsystem, reportIssue },
-    getRuntimeStatus: () => null,
-    getQueueItemDisplayTitle: (item) => item.customFilename ?? item.title,
+    startup: { setSubsystem },
     ...overrides
   };
   return {
@@ -77,12 +78,76 @@ function setup(overrides: Partial<SettingsDiagnosticsWorkflowOptions> = {}) {
     save,
     updateQueueItemSettings,
     setSubsystem,
-    reportIssue,
-    writeText
+    inbox
   };
 }
 
 describe('settings diagnostics workflow', () => {
+  it.each(['browseCookieFile', 'browseCompatConfigFile', 'exportDiagnostics'] as const)(
+    'captures failures from %s exactly once without changing settings',
+    async (method) => {
+      const { workflow, state, open, save, inbox } = setup();
+      state.cookieFilePath = 'existing.txt';
+      state.compatConfigPath = 'existing.conf';
+      open.mockRejectedValue(new Error('dialog failed'));
+      save.mockRejectedValue(new Error('dialog failed'));
+      await expect(workflow[method]()).resolves.toBeUndefined();
+      expect(state.cookieFilePath).toBe('existing.txt');
+      expect(state.compatConfigPath).toBe('existing.conf');
+      expect(inbox.entries).toHaveLength(1);
+      expect(inbox.entries[0].detail).toBe('dialog failed');
+    }
+  );
+  it('treats cancelled pickers as no-op outcomes', async () => {
+    const { workflow, state, open, save, inbox, invoke } = setup();
+    state.outputDir = 'C:\\Downloads';
+    state.outputDirValidated = true;
+    open.mockResolvedValue(null);
+    save.mockResolvedValue(null);
+    await workflow.browseOutputDir();
+    await workflow.browseCookieFile();
+    await workflow.browseCompatConfigFile();
+    await workflow.exportDiagnostics();
+    expect(state.outputDir).toBe('C:\\Downloads');
+    expect(state.outputDirValidated).toBe(true);
+    expect(inbox.entries).toHaveLength(0);
+    expect(invoke).not.toHaveBeenCalled();
+  });
+  it('ignores a dialog failure after the workflow has been disposed', async () => {
+    let active = true;
+    const invoke = vi.fn();
+    const configured = setup({
+      commands: {
+        invoke: invoke as WorkflowCommands['invoke'],
+        isActive: () => active,
+        unloadedError: new Error('unloaded')
+      }
+    });
+    let reject!: (error: Error) => void;
+    configured.open.mockReturnValueOnce(
+      new Promise((_, fail) => {
+        reject = fail;
+      })
+    );
+    const pending = configured.workflow.browseCookieFile();
+    active = false;
+    reject(new Error('late dialog error'));
+    await pending;
+    expect(configured.inbox.entries).toHaveLength(0);
+    expect(configured.state.accessError).toBeNull();
+  });
+  it('records rejected folder dialogs without changing a valid destination', async () => {
+    const { workflow, state, open, invoke } = setup();
+    state.outputDir = 'C:\\Downloads';
+    state.outputDirValidated = true;
+    open.mockRejectedValueOnce(new Error('picker unavailable'));
+    await expect(workflow.browseOutputDir()).resolves.toBeUndefined();
+    expect(state.outputDir).toBe('C:\\Downloads');
+    expect(state.outputDirValidated).toBe(true);
+    expect(state.outputDirError).toContain('picker unavailable');
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it('creates the exact settings defaults and snapshots cookies and config at read time', () => {
     const { workflow, state } = setup();
     expect(state).toEqual({
@@ -96,6 +161,7 @@ describe('settings diagnostics workflow', () => {
       cookieBrowser: 'firefox',
       cookieFilePath: '',
       compatConfigPath: '',
+      accessError: null,
       diagnosticsMessage: null,
       diagnosticsError: null
     });
@@ -134,7 +200,7 @@ describe('settings diagnostics workflow', () => {
     first.invoke.mockRejectedValueOnce(new Error('discovery failed'));
     await first.workflow.initializeOutputDirectory();
     expect(first.state.outputDirError).toBe('Choose a writable output folder before downloading.');
-    expect(first.reportIssue).toHaveBeenCalledWith('Output folder discovery', expect.any(Error));
+    expect(first.inbox.entries[0].detail).toBe('discovery failed');
     expect(first.setSubsystem).toHaveBeenCalledWith('outputDirectory', 'error');
 
     const second = setup();
@@ -195,20 +261,6 @@ describe('settings diagnostics workflow', () => {
     await workflow.clearDiagnostics();
     expect(invoke).toHaveBeenNthCalledWith(2, 'clear_diagnostics');
     expect(state.diagnosticsMessage).toBe('Local diagnostics were cleared.');
-  });
-
-  it('builds redacted diagnostics and copies them through the injected clipboard', async () => {
-    const runtime = {
-      tools: [{ name: 'yt-dlp', available: true, version: '1.2.3', source: 'bundled' }],
-      message: 'ready'
-    } as DownloaderRuntimeStatus;
-    const { workflow, writeText } = setup({ getRuntimeStatus: () => runtime });
-    const item = queueItem({ errorDetail: 'Source: https://private.example/video' });
-    await workflow.copyDiagnostics(item);
-    const copied = writeText.mock.calls[0][0] as string;
-    expect(copied).toContain('Title: Video');
-    expect(copied).toContain('yt-dlp: 1.2.3 (bundled)');
-    expect(copied).not.toContain('private.example');
   });
 
   it('does not mutate state after the workflow becomes inactive', async () => {

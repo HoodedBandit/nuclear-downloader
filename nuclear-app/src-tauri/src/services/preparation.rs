@@ -17,7 +17,7 @@ pub(crate) fn spawn_preparation_worker(
 ) -> Result<(), AppError> {
     let store = store.clone();
     let worker_manager = manager.clone();
-    manager.spawn_tracked(TrackedTaskKind::Worker, async move {
+    manager.spawn_tracked(TrackedTaskKind::PreparationWorker, async move {
         let manager = worker_manager;
         let shutdown = manager.shutdown_token();
         loop {

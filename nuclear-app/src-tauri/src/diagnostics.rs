@@ -55,7 +55,7 @@ impl Diagnostics {
     pub fn open_default() -> Result<Self, AppError> {
         let directory = dirs::data_local_dir()
             .ok_or_else(|| AppError::internal("Could not locate per-user application data."))?
-            .join("Nuclear Downloader")
+            .join(crate::app_paths::USER_DATA_FOLDER)
             .join("diagnostics");
         Self::open(directory)
     }
